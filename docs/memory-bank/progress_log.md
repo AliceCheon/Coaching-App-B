@@ -149,3 +149,21 @@ Fase 2b, prima porta: il carico si conta, il rischio non si inventa.
 - guardia `tests/13-struttura.test.mjs` (date impossibili, zero inventati, pausa lunga,
   distribuzione, assenza di scritture/DOM/rete nel modulo).
 - build `b0.4-fase2b-struttura`; suite verde.
+
+## b0.5-fase2c-voce — la Diva Bot dice la frase che conta (3 novembre 2026, notte)
+
+Fase 2c: il quadro strutturale smette di essere solo numeri e diventa una voce.
+- `voceDelQuadro(quadro)` in `comune/diva-bot.js`: una frase sola, scelta da una
+  scala di priorità dichiarata (pausa lunga > settimane vuote di fila > pausa oltre
+  la settimana > distribuzione storta > struttura che tiene > sotto soglia > vuoto).
+  Ogni numero pronunciato viene dal quadro; ogni assenza la dichiara.
+- tono `bene | attenzione | neutro` come attributo `data-tono` sulla bolla: il colore
+  dice quanto pesa la frase, il testo non cambia di una parola. Stile in `tema-b.css`
+  con i token esistenti (`--verde`, `--pink`), nessun token nuovo, nessuna forzatura.
+- `frasiPerDati(riepilogo, quadro)` mette la voce per prima: una bolla si legge una
+  volta, e la prima frase deve essere quella che conta. Telefono e PC passano lo
+  stesso `quadro` già calcolato per le card: una sola verità per schermata.
+- guardia `tests/14-voce.test.mjs` (14 test): priorità rispettate, «ieri»/«oggi»
+  senza «1 giorni fa», nessuna cifra estranea al quadro, frase entro 220 caratteri,
+  tono applicato come attributo e testo sempre `textContent`.
+- build `b0.5-fase2c-voce`; suite 70/70.

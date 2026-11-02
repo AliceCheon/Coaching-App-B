@@ -361,3 +361,24 @@ body[data-theme="light"] .rail .bottone-secondario {
   background: color-mix(in srgb, #ffffff 8%, transparent);
   border-color: color-mix(in srgb, var(--pink) 34%, transparent);
 }
+
+/* ---------- la voce del quadro (fase 2c) ----------
+   Il tono cambia il bordo della bolla, non il testo: la frase è la stessa
+   cosa detta, il colore dice quanto pesa. Neutro resta com'era. */
+
+.bd-bolla[data-tono="bene"] {
+  border-color: color-mix(in srgb, var(--verde) 58%, var(--line));
+}
+
+.bd-bolla[data-tono="bene"] .bd-bolla-testo {
+  color: var(--text);
+}
+
+.bd-bolla[data-tono="attenzione"] {
+  border-color: color-mix(in srgb, var(--pink) 72%, var(--line));
+  box-shadow: 0 18px 38px -20px color-mix(in srgb, var(--pink) 45%, var(--ombra));
+}
+
+.bd-bolla[data-tono="attenzione"] .bd-bolla-testo {
+  color: var(--text);
+}

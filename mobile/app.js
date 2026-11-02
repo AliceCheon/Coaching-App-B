@@ -10,7 +10,7 @@ import { applicaTema, temaSalvato, alternaTema } from "../comune/tema.js";
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
-import { frasiPerDati, montaDivaBot } from "../comune/diva-bot.js";
+import { frasiPerDati, montaDivaBot, voceDelQuadro } from "../comune/diva-bot.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
 const NON_REGISTRATO = "non registrato";
@@ -207,13 +207,19 @@ export async function avvia(doc, win) {
         sessionCount: radice.sessionCount,
         programCount: radice.programCount
       });
-      renderDashboard(doc, doc.querySelector("#griglia"), modello, { quadro: quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso }) });
+      const quadro = quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso });
+      renderDashboard(doc, doc.querySelector("#griglia"), modello, { quadro });
       contenitoreDiva.textContent = "";
-      montaDivaBot(contenitoreDiva, frasiPerDati({
-        numeroSedute: modello.numeroSedute || 0,
-        pesoPresente: Boolean(modello.peso),
-        checkinPresente: Boolean(modello.checkin)
-      }));
+      const voce = voceDelQuadro(quadro);
+      montaDivaBot(
+        contenitoreDiva,
+        frasiPerDati({
+          numeroSedute: modello.numeroSedute || 0,
+          pesoPresente: Boolean(modello.peso),
+          checkinPresente: Boolean(modello.checkin)
+        }, quadro),
+        voce.tono
+      );
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");
     }
