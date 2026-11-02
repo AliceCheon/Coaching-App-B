@@ -27,3 +27,22 @@
 - Prossimi passi: primo push con il `.bat` consegnato; Pages da `main` (radice);
   primo accesso vero in sola lettura; poi le decisioni per la fase 1 (scritture
   sulle sottoraccolte nuove, solo con account di prova in profilo separato).
+- ESITO SUL CAMPO (2 novembre 2026, ore ~14:50): primo push riuscito —
+  commit `2f8d71a`, 28 file, ramo `main` su github.com/AliceCheon/Coaching-App-B.
+  Imprevisti risolti dall'assistente direttamente sul PC: firma Git assente
+  (impostata `AliceCheon` + email noreply) ed estrazione con cartella doppia
+  (sistemata: `Coaching-App-B` ora è direttamente in Barbell-Diva-B).
+  GitHub Pages attivo da `main`/radice; build riuscita (ore 13:48 UTC).
+- Verificato dalla cliente: accesso Google OK; dashboard di lettura con dati
+  VERI di A (sottoraccolta sessions: 123 documenti; ultimo check-in 2026-10-21,
+  wellness stress=basso hunger=alta); tema doppio OK su PC e telefono;
+  `mobile/` aperta sul telefono, ufficiale identica, si apre.
+  Estetica «bruttina» registrata come NORMALE: è la fase 0, le fondamenta —
+  la cura grafica e il branding (mockup) sono rimandati a fase successiva
+  DI PROGETTO, non per dimenticanza.
+- APPUNTO FASE 1 (primo in lista): la card «Sedute registrate» mostra
+  0 (contatore nel documento radice di A) contro 123 documenti reali nella
+  sottoraccolta — decidere quale delle due letture è la verità da mostrare.
+- Rimasto facoltativo, non ancora fatto: verifica DevTools della separazione
+  della sessione Auth (chiave attesa `firebase:authUser:<apiKey>:B`),
+  procedura nel README. Nessun problema riscontrato in uso normale.
