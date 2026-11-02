@@ -1,11 +1,11 @@
-# Barbell Diva B — fase 0 (sola lettura)
+# Barbell Diva B — dashboard di sola lettura (fase 1)
 
 B è l'evoluzione dell'app di Allenamento Barbell Diva (A, repo Coaching-App-):
 stesso progetto Firebase, stesso login Google, stessi dati — ma struttura nuova
 (PC + telefono) e, in fase 0, **occhi soltanto**: B legge i dati veri e non
 scrive nulla da nessuna parte.
 
-## Cosa c'è in fase 0
+## Cosa c'è (fase 0 + fase 1)
 
 1. Accesso con Google (popup su PC, redirect su telefono, come in A).
 2. Dashboard di lettura PC (`desktop/index.html`): card con numeri veri e
@@ -49,14 +49,46 @@ davvero, senza toccare la console.
 
 | Card | Percorso del dato in A | Riferimento (src/app-main.js di main, verificato il 2/11/2026) |
 |---|---|---|
-| Sedute registrate | `state.training.sessions` (lunghezza) | r.3069 (lettura dell'elenco), merge/dedupe r.3173-3182 |
+| Sedute registrate | sottoraccolta `sessions` — documenti con `session.id` valido, senza doppioni per id | r.6257 (collezione), r.6365 (campo `session`), filtro r.5581 |
+| Controllo sedute | `sessionCount` di primo livello nella radice (A lo scrive a ogni salvataggio) | r.5937; la card lo confronta con i documenti veri e dichiara l'eventuale differenza |
 | Sedute per-seduta | sottoraccolta `sessions`, campo `session` | r.6257 (accesso alla sottoraccolta), r.6365 (`data()?.session \|\| data()`) |
-| Ultima seduta | `state.training.sessions` — campi `dateInput`, `sessionCode`, `sessionName` | ordinamento come latestAppWorkout r.6894-6898; i nomi dei campi sono quelli del tool di diagnosi della repo |
+| Ultima seduta | sottoraccolta `sessions` — campi `dateInput`, `sessionCode`, `sessionName` | ordinamento come latestAppWorkout r.6894-6898 |
 | Peso corrente | `state.metrics.weight` | scrittore dal v148.38 r.15034; timbratura sulle sedute r.15603 |
 | Ultimo check-in | `state.quiz.questionnaireHistory` | nome canonico r.4777; struttura voce (date/createdAt/questionnaireId/answers/wellness) r.15021 |
-| Programma attivo | `state.programs` — esplicito: `status === "active"` oppure `active === true`, non archiviato | regola r.7019-7022; ripiego (etichettato in B) r.7023-7027 |
-| Settimana | campo `week` della seduta App più recente, altrimenti il numero in coda al codice scheda | r.6882-6892; senza sedute App B mostra «non registrata» |
+| Programma attivo | sottoraccolta `nutritionPhotos`, SOLO documenti `program-v1-…` e `program-v2-meta-…` (query per intervallo di id), filtrati per `programIds` e deduplicati per `programId` | id e formati r.5224-5234, r.5396-5417; ricostruzione r.5586-5642; filtro r.5591 e r.5600; v1 scartato se già in v2 r.5636-5639; regola attivo r.7019-7027 |
+| Controllo programmi | `programCount` di primo livello nella radice, confrontato con i programmi ricostruiti | r.5933 (scrittura), r.5640 («cloud programs missing») |
+| Settimana | campo `week` della seduta App più recente (dalla sottoraccolta `sessions`), altrimenti il numero in coda al codice scheda | r.6882-6899; senza sedute App B mostra «non registrata» |
 | Blobbi di stato | sottoraccolta `stateBlobs`, documenti `blob-v1-<campo>` | campi di stato sopra 120000 byte (r.5340-5365); B ricarica dai blob i campi mancanti in radice |
+
+### Perché la radice non è più la fonte (fase 1, 2 novembre 2026)
+
+A ha spostato i dati fuori dal documento radice, e B segue A:
+
+- **sedute**: `state.training.sessions` viene azzerato a ogni salvataggio
+  (r.5888) e le sedute viaggiano una per documento nella sottoraccolta
+  `sessions` (r.6257, r.6365). La radice conserva solo `sessionCount` (r.5937),
+  che B mostra come **controllo**: se il conteggio della radice e i documenti
+  validi non coincidono, la card lo dichiara.
+- **programmi**: `programs` viene tolto dal payload della radice (r.5854) e
+  salvato nella sottoraccolta `nutritionPhotos` con id prefissati
+  (`program-v1-…`, `program-v2-meta-…`, `program-v2-sheet-…`,
+  `program-v2-exercise-…`, `program-v2-archived-…`). B legge **solo** i
+  metadati, con due query per intervallo di id: mai l'intera sottoraccolta,
+  che contiene anche le foto di nutrizione. E come A, non basta leggere:
+  - **programmi cancellati**: la radice porta l'elenco dei `programIds` vivi
+    (r.5934); un documento con un `programId` fuori elenco è la traccia di un
+    programma cancellato e va scartato (r.5591, r.5600). Elenco assente o
+    vuoto = nessun filtro, esattamente come A.
+  - **doppioni v1/v2**: il formato vecchio salva il programma intero (`program-v1-…`),
+    il nuovo i soli metadati (`program-v2-meta-…`). Durante la migrazione
+    convivono, e A usa il v1 solo se quel `programId` non è già arrivato in v2
+    (r.5636-5639). Deduplicare per id del documento — come faceva la prima
+    stesura di B — li contava come due programmi.
+  - **conteggio**: se `programCount` (r.5933) dice che ci sono programmi e la
+    ricostruzione non ne trova nessuno, A lancia «cloud programs missing»
+    (r.5640); B non lancia, ma lo scrive nella card.
+- La lettura della radice resta per **peso** e **check-in**, che vivono
+  davvero lì (`state.metrics.weight`, `state.quiz.questionnaireHistory`).
 
 Il documento radice porta lo stato dentro il campo `state` (commento a
 r.6080); per prudenza B accetta anche il formato piatto dei documenti più
@@ -87,7 +119,7 @@ di prova. In fase 0 non serve: nessuna scrittura esiste.
 
 ## Versione a sorgente unico
 
-La build vive solo in `app-config-b.js` (`build: "b0.1-fase0"`); i file HTML
+La build vive solo in `app-config-b.js` (`build: "b0.2-fase1-programmi"`); i file HTML
 la leggono da lì. Bump: `bash scripts/bump-b.sh "b0.2-nome-scelto"` (aggiorna
 solo quel file e rilancia il test di guardia).
 

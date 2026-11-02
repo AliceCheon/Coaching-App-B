@@ -1,11 +1,15 @@
-/* Barbell Diva B — ingresso telefono (fase 0, SOLA LETTURA).
+/* Barbell Diva B — ingresso telefono (SOLA LETTURA).
  * Stessa pipeline di lettura del desktop, vista in colonna per il telefono.
- * Nessun service worker, nessun IndexedDB, nessuna scrittura. */
+ * Nessun service worker, nessun IndexedDB, nessuna scrittura.
+ *
+ * Fase 1: le sedute e i programmi arrivano dalle LORO sottoraccolte (sessions,
+ * nutritionPhotos), non più dalla radice — vedi comune/modello-dati.js.
+ */
 
 import { applicaTema, temaSalvato, alternaTema } from "../comune/tema.js";
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
-import { leggiDocumentoAtleta, leggiSedute, riepilogoDati } from "../comune/lettura-dati.js";
+import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot } from "../comune/diva-bot.js";
 
 const NON_REGISTRATO = "non registrato";
@@ -28,25 +32,91 @@ function carta(doc, titolo, righe, fonte) {
   return c;
 }
 
+/* Le stesse righe del desktop: numero dalla sottoraccolta, sessionCount della
+ * radice come controprova dichiarata. */
+function righeSedute(modello) {
+  if (!modello.presente) return [{ testo: NON_REGISTRATO, classe: "valore" }];
+  if (modello.seduteNonLette) {
+    return [
+      { testo: "lettura non riuscita", classe: "valore" },
+      { testo: "la sottoraccolta sessions non ha risposto: nessun numero inventato, riprova con «Ricarica».", classe: "errore" }
+    ];
+  }
+  const righe = [
+    { testo: modello.numeroSedute == null ? NON_REGISTRATO : modello.numeroSedute, classe: "valore" },
+    { testo: "sottoraccolta sessions: " + modello.numeroSedute + " sedute valide su " + (modello.numeroDocumentiSedute == null ? "?" : modello.numeroDocumentiSedute) + " documenti" }
+  ];
+  if (modello.seduteSenzaId || modello.seduteDuplicate) {
+    righe.push({ testo: "scartati come in A: " + modello.seduteSenzaId + " senza id · " + modello.seduteDuplicate });
+  }
+  const controllo = modello.controlloSessioni;
+  if (!controllo) {
+    righe.push({ testo: "controllo · sessionCount nella radice: non registrato" });
+  } else if (controllo.coincide) {
+    righe.push({ testo: "controllo · sessionCount nella radice: " + controllo.radice + " · coincide", classe: "lemmacarta" });
+  } else {
+    righe.push({ testo: "controllo · sessionCount nella radice: " + controllo.radice + " · NON coincide (differenza " + (controllo.radice - controllo.sottoraccolta) + ")", classe: "errore" });
+  }
+  return righe;
+}
+
+/* Stessa logica del desktop: nome dalla sottoraccolta, programCount della
+ * radice come controprova; se la radice dichiara programmi e non se ne trova
+ * nessuno, lo dice come A («cloud programs missing», r.5640). */
+function righeProgramma(modello) {
+  if (!modello.presente) return [{ testo: NON_REGISTRATO, classe: "valore" }];
+  if (modello.programmiNonLetti) {
+    return [
+      { testo: "lettura non riuscita", classe: "valore" },
+      { testo: "la sottoraccolta nutritionPhotos non ha risposto: nessun nome inventato, riprova con «Ricarica».", classe: "errore" }
+    ];
+  }
+  const pr = modello.programma;
+  const controllo = modello.controlloProgrammi;
+  const righe = [];
+  if (pr) {
+    righe.push({ testo: pr.nome, classe: "valore" });
+    righe.push({ testo: pr.esplicito ? "attivo (marcato esplicitamente)" : "aggiornato più di recente (ripiego di A, non marcato attivo)", classe: "lemmacarta" });
+    righe.push({ testo: "Settimana: " + (pr.settimana == null ? NON_REGISTRATA : pr.settimana) });
+  } else if (controllo && controllo.mancanti) {
+    righe.push({ testo: "programmi mancanti nel cloud", classe: "valore" });
+    righe.push({ testo: "la radice dichiara " + controllo.radice + " programmi (programCount) ma nei documenti-programma non ne resta nessuno: come A, «cloud programs missing» — nessun nome inventato.", classe: "errore" });
+  } else {
+    righe.push({ testo: NON_REGISTRATO, classe: "valore" });
+  }
+  if (modello.numeroProgrammi != null) {
+    righe.push({ testo: "programmi letti dai documenti-programma: " + modello.numeroProgrammi + " su " + (modello.documentiProgrammi == null ? "?" : modello.documentiProgrammi) + " documenti" });
+  }
+  if (!controllo) {
+    righe.push({ testo: "controllo · programCount nella radice: non registrato" });
+  } else if (controllo.coincide) {
+    righe.push({ testo: "controllo · programCount nella radice: " + controllo.radice + " · coincide", classe: "lemmacarta" });
+  } else {
+    righe.push({ testo: "controllo · programCount nella radice: " + controllo.radice + " · NON coincide (differenza " + (controllo.radice - controllo.letti) + ")", classe: "errore" });
+  }
+  if (modello.programmiScartatiFiltro || modello.programmiV1Doppioni) {
+    righe.push({ testo: "scartati come in A: " + modello.programmiScartatiFiltro + " fuori da programIds (programmi cancellati) · " + modello.programmiV1Doppioni + " v1 già presenti in v2" });
+  }
+  return righe;
+}
+
 /* Vista telefono: le stesse card del desktop, layout in colonna. */
 export function renderDashboard(doc, contenitore, modello) {
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const presente = modello.presente === true;
 
-  contenitore.appendChild(carta(doc, "Sedute registrate", [
-    { testo: presente ? (modello.numeroSedute == null ? NON_REGISTRATO : modello.numeroSedute) : NON_REGISTRATO, classe: "valore" },
-    { testo: "sottoraccolta sessions: " + (modello.numeroSeduteSottoraccolta == null ? NON_REGISTRATO : modello.numeroSeduteSottoraccolta + " documenti") }
-  ], "state.training.sessions · A, src/app-main.js r.3069; sessions/ · r.6257"));
+  contenitore.appendChild(carta(doc, "Sedute registrate", righeSedute(modello),
+    "sottoraccolta sessions, campo session.id · A r.6257, r.6365, filtro r.5581 · controllo sessionCount r.5937"));
 
   const u = modello.ultima;
   contenitore.appendChild(carta(doc, "Ultima seduta", [
     { testo: u ? u.data : NON_REGISTRATO, classe: "valore" },
     u ? { testo: "scheda " + u.codice + (u.nome ? " · " + u.nome : "") } : null
-  ], "state.training.sessions — dateInput/sessionCode/sessionName · r.6894"));
+  ], "sottoraccolta sessions — dateInput/sessionCode/sessionName · ordinamento A r.6894-6898"));
 
   contenitore.appendChild(carta(doc, "Peso corrente", [
     { testo: modello.peso ? modello.peso + " kg" : NON_REGISTRATO, classe: "valore" }
-  ], "state.metrics.weight · r.15034 (scrittore dal v148.38)"));
+  ], "state.metrics.weight · A r.15034 (scrittore dal v148.38)"));
 
   const ck = modello.checkin;
   const righeCheckin = [];
@@ -58,20 +128,15 @@ export function renderDashboard(doc, contenitore, modello) {
     if (voci.length) righeCheckin.push({ testo: voci.join("\n"), classe: "pre" });
   }
   contenitore.appendChild(carta(doc, "Ultimo check-in", righeCheckin.length ? righeCheckin : [{ testo: NON_REGISTRATO, classe: "valore" }],
-    "state.quiz.questionnaireHistory · r.4777 e r.15021"));
+    "state.quiz.questionnaireHistory · A r.4777 e r.15021"));
 
-  const pr = modello.programma;
-  contenitore.appendChild(carta(doc, "Programma attivo", pr ? [
-    { testo: pr.nome, classe: "valore" },
-    { testo: pr.esplicito ? "attivo (marcato esplicitamente)" : "aggiornato più di recente (ripiego di A, non marcato attivo)", classe: "lemmacarta" },
-    { testo: "Settimana: " + (pr.settimana == null ? NON_REGISTRATA : pr.settimana) }
-  ] : [{ testo: NON_REGISTRATO, classe: "valore" }],
-    "state.programs · r.7019-7027; settimana r.6882-6892"));
+  contenitore.appendChild(carta(doc, "Programma attivo", righeProgramma(modello),
+    "nutritionPhotos, soli documenti program-v1- e program-v2-meta- · filtro programIds r.5591/5600 · v1 scartato se già in v2 r.5636 · controllo programCount r.5633/5640 · regola attivo r.7019-7027 · settimana r.6882-6899"));
 
   if (!presente) {
     contenitore.appendChild(carta(doc, "Documento di A", [
       { testo: "Non risulta un documento per questo account: mostro il vuoto, senza numeri inventati." }
-    ], "barbellDivaAccounts/{uid} · r.24 e r.6080"));
+    ], "barbellDivaAccounts/{uid} · A r.24 e r.6080"));
   }
   return contenitore;
 }
@@ -101,12 +166,44 @@ export async function avvia(doc, win) {
     messaggioErrore.textContent = "";
     try {
       const radice = await leggiDocumentoAtleta(db, utente.uid);
-      let sedute = [];
-      try { sedute = await leggiSedute(db, utente.uid); } catch (e) { sedute = []; }
-      const modello = riepilogoDati(radice.stato, sedute);
+      let sedute = { sedute: [], documenti: 0, senzaId: 0, duplicati: 0 };
+      let seduteNonLette = false;
+      try {
+        sedute = await leggiSedute(db, utente.uid);
+      } catch (e) {
+        seduteNonLette = true;
+      }
+      let programmi = { programmi: [], documenti: 0, scartatiFiltro: 0, v1Doppioni: 0, fonte: null };
+      let programmiNonLetti = false;
+      try {
+        // programIds/programCount/programStorage stanno nella radice (r.5932-5935).
+        programmi = await leggiProgrammi(db, utente.uid, radice);
+      } catch (e) {
+        programmiNonLetti = true;
+      }
+      const modello = riepilogoDati({
+        stato: radice.stato,
+        sedute: sedute.sedute,
+        documentiSedute: sedute.documenti,
+        seduteSenzaId: sedute.senzaId,
+        seduteDuplicate: sedute.duplicati,
+        seduteNonLette,
+        programmi: programmi.programmi,
+        documentiProgrammi: programmi.documenti,
+        programmiScartatiFiltro: programmi.scartatiFiltro,
+        programmiV1Doppioni: programmi.v1Doppioni,
+        programmiFonte: programmi.fonte,
+        programmiNonLetti,
+        sessionCount: radice.sessionCount,
+        programCount: radice.programCount
+      });
       renderDashboard(doc, doc.querySelector("#griglia"), modello);
       contenitoreDiva.textContent = "";
-      montaDivaBot(contenitoreDiva, frasiPerDati({ numeroSedute: modello.numeroSedute || 0, pesoPresente: Boolean(modello.peso), checkinPresente: Boolean(modello.checkin) }));
+      montaDivaBot(contenitoreDiva, frasiPerDati({
+        numeroSedute: modello.numeroSedute || 0,
+        pesoPresente: Boolean(modello.peso),
+        checkinPresente: Boolean(modello.checkin)
+      }));
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");
     }

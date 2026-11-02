@@ -1,11 +1,47 @@
 /* Finto Firebase per i test di B: SOLO LETTURA, con registratore di tentativi.
  * Ogni chiamata fuori dalle letture ammesse viene registrata e rifiutata:
- * i test di guardia controllano che il registratore resti vuoto. */
+ * i test di guardia controllano che il registratore resti vuoto.
+ *
+ * Il finto sa fare anche le query per intervallo di id usate sui programmi
+ * (`where("__name__", ">=", …)` / `where("__name__", "<", …)`) e registra se
+ * qualcuno tenta una lettura INTEGRALE della sottoraccolta (vietata: contiene
+ * le foto di nutrizione). */
+
+function confrontaId(id, filtro) {
+  const valore = String(filtro.valore);
+  if (filtro.operatore === ">=") return id >= valore;
+  if (filtro.operatore === ">") return id > valore;
+  if (filtro.operatore === "<=") return id <= valore;
+  if (filtro.operatore === "<") return id < valore;
+  if (filtro.operatore === "==") return id === valore;
+  return false;
+}
+
+/* Sottoraccolta con query: `documenti` sono { id, data() }. */
+function collezioneConQuery(nome, documenti, registri, filtri = []) {
+  const query = {
+    // Ogni where produce una query NUOVA (come l'SDK vero): due query di
+    // intervallo consecutive non devono sommarsi nella stessa catena.
+    where: (campo, operatore, valore) => {
+      if (campo !== "__name__" && campo !== "id") {
+        registri.scritture.push({ nome: "filtro-non-ammesso:" + nome + ":" + campo });
+        throw new Error("Filtro non ammesso (sola lettura): " + campo);
+      }
+      registri.filtri.push({ collezione: nome, campo, operatore, valore });
+      return collezioneConQuery(nome, documenti, registri, filtri.concat([{ campo, operatore, valore }]));
+    },
+    get: async () => {
+      registri.letture.push(nome + (filtri.length ? ":query" : ":integrale"));
+      return { docs: documenti.filter((d) => filtri.every((f) => confrontaId(String(d.id), f))) };
+    }
+  };
+  return query;
+}
 
 function collezioneFinta(nome, registri, opzioni) {
   if (nome !== "barbellDivaAccounts") {
     registri.scritture.push({ nome: "collezione-non-ammessa:" + nome });
-    throw new Error("Collezione non ammessa in fase 0: " + nome);
+    throw new Error("Collezione non ammessa: " + nome);
   }
   return {
     doc: (uid) => ({
@@ -25,17 +61,20 @@ function collezioneFinta(nome, registri, opzioni) {
           };
         }
         if (sotto === "stateBlobs") {
-          return { get: async () => ({ docs: opzioni.blobbi || [] }) };
+          return { get: async () => { registri.letture.push("stateBlobs"); return { docs: opzioni.blobbi || [] }; } };
+        }
+        if (sotto === "nutritionPhotos") {
+          return collezioneConQuery("nutritionPhotos", opzioni.documentiNutrizione || [], registri);
         }
         registri.scritture.push({ nome: "sottoraccolta-non-ammessa:" + sotto });
-        throw new Error("Sottoraccolta non ammessa in fase 0: " + sotto);
+        throw new Error("Sottoraccolta non ammessa: " + sotto);
       }
     })
   };
 }
 
 export function creaFirebaseFinto(opzioni = {}) {
-  const registri = { scritture: [], letture: [], nomiApp: [], configs: [], persistenze: [] };
+  const registri = { scritture: [], letture: [], filtri: [], nomiApp: [], configs: [], persistenze: [] };
   const authFinto = {
     setPersistence: async (modalita) => { registri.persistenze.push(modalita); return "ok"; },
     onAuthStateChanged: (cb) => { registri.callback = cb; cb(opzioni.utente || null); return () => {}; },

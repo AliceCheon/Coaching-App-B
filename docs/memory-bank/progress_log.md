@@ -28,9 +28,9 @@
   primo accesso vero in sola lettura; poi le decisioni per la fase 1 (scritture
   sulle sottoraccolte nuove, solo con account di prova in profilo separato).
 - ESITO SUL CAMPO (2 novembre 2026, ore ~14:50): primo push riuscito —
-  commit `2f8d71a`, 28 file, ramo `main` su github.com/AliceCheon/Coaching-App-B.
+  commit `2f8d71a`, 28 file, ramo `main` su la repo B dell'account della coach.
   Imprevisti risolti dall'assistente direttamente sul PC: firma Git assente
-  (impostata `AliceCheon` + email noreply) ed estrazione con cartella doppia
+  (impostata `account-coach` + email noreply) ed estrazione con cartella doppia
   (sistemata: `Coaching-App-B` ora è direttamente in Barbell-Diva-B).
   GitHub Pages attivo da `main`/radice; build riuscita (ore 13:48 UTC).
 - Verificato dalla cliente: accesso Google OK; dashboard di lettura con dati
@@ -46,3 +46,60 @@
 - Rimasto facoltativo, non ancora fatto: verifica DevTools della separazione
   della sessione Auth (chiave attesa `firebase:authUser:<apiKey>:B`),
   procedura nel README. Nessun problema riscontrato in uso normale.
+
+
+## b0.2-fase1-sedute — fase 1, punto 1: sedute e programmi dalla loro sottoraccolta (2 novembre 2026, sera)
+
+- Decisione presa con la coach dopo la verifica del codice di A: la card
+  «Sedute registrate» mostrava 0 perché leggeva `state.training.sessions`, che
+  A azzera a ogni salvataggio (r.5888). La verità è la sottoraccolta `sessions`.
+- Sedute: lettura dalla sottoraccolta con `session.id` valido (come A, r.5581)
+  e senza doppioni per id (si tiene la revision più alta). Il `sessionCount`
+  della radice (r.5937) resta come CONTROLLO visibile: se non coincide con i
+  documenti validi, la card lo dichiara con la differenza.
+- Ultima seduta, settimana e numero passato alla Diva Bot: dalle stesse sedute.
+- Programmi: aggiunto all'elenco chiuso il percorso `nutritionPhotos` in sola
+  lettura, con due query per intervallo di id (`program-v2-meta-…` e
+  `program-v1-…`). Mai la sottoraccolta intera: contiene le foto di nutrizione.
+  La regola del programma attivo resta quella di A (r.7019-7027).
+- Etichette di fonte corrette riga per riga su A (verificate sul sorgente):
+  sedute r.6257/r.6365/r.5581, sessionCount r.5937, ultima seduta r.6894-6898,
+  programmi r.5224-5234/r.5396-5417/r.7019-7027, settimana r.6882-6899.
+- Aggiornati test 03 (pipeline con radice vuota e sessionCount), nuovi test 10
+  (sedute: conteggi, doppioni, senza id, controllo, lettura fallita) e 11
+  (programmi: query per prefisso, esclusione foto, attivo/ripiego, settimana).
+- Sistemato anche un guasto PRE-ESISTENTE della guardia privacy (test 08): il
+  brief di consegna conteneva percorsi assoluti Windows, che la guardia vieta.
+  Sostituiti con la forma `~/…` (nessun cambio di contenuto informativo).
+- Nessun push: si attende l'accordo della coach. Nessuna scrittura su Firebase,
+  A non toccata (solo lettura del sorgente pubblico).
+- Da verificare sul campo (non provabile da qui): numeri veri nel browser dopo
+  il deploy — 123 sedute attese, ultima seduta, settimana, programma attivo.
+
+## b0.2-fase1-programmi — 2 novembre 2026 (revisione delle regole sui programmi)
+
+La lettura delle sedute era già corretta; la lettura dei programmi copiava la
+query ma non due regole di A (`loadCloudPrograms`, r.5586-5642). Verifica della
+coach su una copia ricostruita: con programma attuale (v2-meta), la sua copia
+v1 e un programma cancellato con id che viene prima in ordine alfabetico, B
+leggeva 3 programmi e poteva scegliere come attivo il cancellato.
+
+- `leggiDocumentoAtleta` ritorna anche `programCount` e `programIds` di primo
+  livello (r.5932-5935).
+- `leggiProgrammi(db, uid, radice)` filtra per `programIds` (r.5591, r.5600:
+  elenco assente o vuoto = nessun filtro), deduplica per `programId` col v2 che
+  vince sul v1 (r.5636-5639), e ritorna i conteggi: documenti letti, scartati
+  dal filtro, v1 doppioni, v2 doppioni, fonte.
+- Controllo `programCount` ↔ programmi ricostruiti: se la radice ne dichiara e
+  non se ne trova nessuno, la card scrive «programmi mancanti nel cloud» con la
+  formula di A «cloud programs missing» (r.5640); se il numero non coincide, la
+  differenza è dichiarata.
+- `programmaAttivo` non dipende più dall'ordine dei documenti: l'elenco è
+  ordinato per id prima di applicare la regola di A (r.7019-7027); con un solo
+  programma attivo l'esito è identico ad A.
+- Formato vecchio (`programStorage` diverso da v1/v2): i programmi si leggono da
+  `state.programs` come A (r.5587), senza toccare la sottoraccolta.
+- Test: nuovo `tests/12-programmi-regole-A.test.mjs` (14 prove), che riproduce
+  il caso della coach e fallisce sulla stesura precedente. Suite 46/46.
+- `docs/fase1-brief.md`: i segnaposto non sembrano più indirizzi veri
+  (`<utente-github>.github.io`).

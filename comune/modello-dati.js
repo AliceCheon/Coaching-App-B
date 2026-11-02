@@ -1,42 +1,72 @@
-/* Barbell Diva B — contratto dei dati (fase 0: SOLO LETTURA).
+/* Barbell Diva B — contratto dei dati (SOLA LETTURA, fase 1).
  *
  * B legge i dati dell'app A sotto `barbellDivaAccounts/{uid}`. L'elenco dei
  * percorsi leggibili è CHIUSO: qualunque percorso diverso viene rifiutato con
- * errore esplicito (cintura di sicurezza 2, punto "b" delle regole di fase 0).
+ * errore esplicito (cintura di sicurezza 2).
  *
- * In A (riferimenti verificati sul codice di main il 2/11/2026):
- *  - il documento radice porta lo stato dentro il campo `state` (vedi il
- *    commento a src/app-main.js:6080 "rootData.state");
- *  - i campi di stato sopra 120000 byte viaggiano in documenti dedicati della
- *    sottoraccolta `stateBlobs` (src/app-main.js, costante CLOUD_BLOB_MIN_BYTES
- *    = 120000, id documento `blob-v1-<campo>`, esclusi meta/profile/migrations);
- *  - le sedute sincronizzate per singola seduta (dalla v148.15) stanno nella
- *    sottoraccolta `sessions`, ciascuna con il campo `session` (src/app-main.js:6365).
+ * FASE 1 — cambio di fonte deciso con la coach il 2/11/2026, dopo verifica sul
+ * codice di A (main, v148.38):
+ *
+ *  - SEDUTE. Non vivono più in `state.training.sessions`: A azzera quel campo a
+ *    ogni salvataggio (r.5888: `sessions: []`) e le sincronizza una per una
+ *    nella sottoraccolta `sessions` (r.6257 accesso, r.6365 campo `session`).
+ *    La radice conserva solo il CONTEGGIO in `sessionCount` (r.5937), che B
+ *    mostra come controllo. La vecchia lettura da `state.training.sessions`
+ *    dava sempre 0: non è più una fonte.
+ *
+ *  - PROGRAMMI. Non vivono più in `state.programs`: A li toglie dal payload
+ *    della radice (r.5854) e li salva nella sottoraccolta `nutritionPhotos`
+ *    (riuso della sottoraccolta privata già autorizzata dalle regole, r.5224-
+ *    5230) con id prefissati:
+ *      program-v1-…            programma intero (formato vecchio)
+ *      program-v2-meta-…       metadati del programma (formato attuale)
+ *      program-v2-sheet-…      una scheda
+ *      program-v2-exercise-…   un esercizio di una scheda troppo grande
+ *      program-v2-archived-…   una scheda archiviata
+ *    (r.5232-5234, r.5396-5417). B legge SOLO i metadati, con una query per
+ *    intervallo di id: MAI l'intera sottoraccolta, che contiene anche le foto
+ *    di nutrizione (r.5226-5228: «i documenti programma […] vengono ignorati
+ *    dal lettore delle foto», e viceversa).
  */
 
 export const COLLEZIONE_ATLETI = "barbellDivaAccounts";
 
-/* Percorsi ammessi in fase 0, con la loro fonte di verità nel codice di A. */
-export const PERCORSI_LETTURA_FASE0 = [
+/* Percorsi ammessi, con la loro fonte di verità nel codice di A. */
+export const PERCORSI_LETTURA = [
   {
     tipo: "documento-atleta",
     modello: "barbellDivaAccounts/{uid}",
-    fonte: "src/app-main.js di A, r.24 (CLOUD_COLLECTION) e r.6080 (rootData.state)"
+    fonte: "src/app-main.js di A, r.24 (CLOUD_COLLECTION), r.6080 (rootData.state), r.5937 (sessionCount di primo livello), r.5932-5935 (programCount e programIds di primo livello)"
   },
   {
     tipo: "sedute-per-seduta",
     modello: "barbellDivaAccounts/{uid}/sessions",
-    fonte: "src/app-main.js di A, r.6257 e r.6365 (sincronizzazione v148.15)"
+    fonte: "src/app-main.js di A, r.6257 (collezione), r.6365 (campo session), r.5581 (si scartano i documenti senza id)"
   },
   {
     tipo: "blobbi-stato",
     modello: "barbellDivaAccounts/{uid}/stateBlobs",
     fonte: "src/app-main.js di A, r.5340-5365 (CLOUD_BLOB_MIN_BYTES, blob-v1-<campo>)"
+  },
+  {
+    tipo: "programmi-metadati",
+    modello: "barbellDivaAccounts/{uid}/nutritionPhotos",
+    filtro: "solo id compresi in [program-v1-, program-v1.) e [program-v2-meta-, program-v2-meta.); mai l'intera sottoraccolta. In più, come A: si tengono solo i programId elencati in programIds (r.5591, r.5600) e il v1 di un programma già presente in v2 viene scartato (r.5636-5639)",
+    fonte: "src/app-main.js di A, r.5224-5234 (collezione e id v1), r.5396-5398 (id v2 dei metadati), r.5413-5417 (schede archiviate), r.5586-5642 (ricostruzione dei programmi)"
   }
 ];
 
+/* Intervalli di id per i documenti-programma. In ASCII il carattere subito
+ * dopo «-» è «.»: [prefisso, prefisso senza l'ultimo «-» + «.») contiene
+ * esattamente gli id che cominciano con quel prefisso, e nient'altro.
+ * Le foto di nutrizione non hanno questi prefissi: restano fuori dalla query. */
+export const INTERVALLI_PROGRAMMI = Object.freeze([
+  { da: "program-v2-meta-", a: "program-v2-meta." },
+  { da: "program-v1-", a: "program-v1." }
+]);
+
 /* Sottoraccolte future di B (contratto già deciso dalla coach, nomi italiani).
- * SOLO DICHIARAZIONE: in fase 0 nessun codice scrive nulla, qui o altrove.
+ * SOLO DICHIARAZIONE: il codice di B non scrive nulla, qui o altrove.
  * Servono a fissare il contratto per le fasi successive (≥ 1). */
 export const SCRITTURE_FUTURE = Object.freeze([
   { nome: "checkin-giornaliero", idDocumento: "AAAA-MM-GG", fase: "da 1" },
@@ -60,7 +90,7 @@ export const SCRITTURE_FUTURE = Object.freeze([
 /* Errore esplicito per qualunque percorso fuori dall'elenco chiuso. */
 export class ErrorePercorsoNonAmmesso extends Error {
   constructor(percorso) {
-    super("Percorso non ammesso in fase 0 (sola lettura, elenco chiuso): " + percorso);
+    super("Percorso non ammesso (sola lettura, elenco chiuso): " + percorso);
     this.name = "ErrorePercorsoNonAmmesso";
     this.percorso = percorso;
   }
@@ -68,8 +98,6 @@ export class ErrorePercorsoNonAmmesso extends Error {
 
 /* Controlla che il percorso richiesto sia nell'elenco chiuso. */
 export function percorsoAmmesso(percorso, uid) {
-  const ammessi = PERCORSI_LETTURA_FASE0.map((p) =>
-    p.modello.replace("{uid}", uid)
-  );
+  const ammessi = PERCORSI_LETTURA.map((p) => p.modello.replace("{uid}", uid));
   return ammessi.includes(percorso);
 }
