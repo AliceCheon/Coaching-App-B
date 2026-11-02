@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barbell Diva B · Dashboard di lettura (PC)</title>
+<link rel="icon" href="data:,">
+<!-- Configurazione (fonte unica di versione) e SDK compat di A, 10.12.5 -->
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<style>
+:root{--pink:#ff4fa3;--pink2:#ff80c1;--purple:#a855f7;--core:#ffe066;--prugna:#1d0f2a;--testo-rail:#fff8fd;--testo-azione:#190c1c}
+html[data-theme="dark"]{background:#090918;color-scheme:dark}
+body[data-theme="dark"]{--gradiente:linear-gradient(160deg,#050612 0%,#0b0b20 55%,#080719 100%);--surface:#15152f;--raised:#211b3e;--text:#fff8fd;--muted:#cbbbd7;--line:rgba(202,107,225,.24);--campo:#17111f;--lav:#c9a7ff;--verde:#7be0a8;--ombra:rgba(0,0,0,.5)}
+html[data-theme="light"]{background:#fff7fb;color-scheme:light}
+body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 38%,#e7c9e8 72%,#b897db 100%);--surface:#fffafd;--raised:#f8eafa;--text:#241238;--muted:#705b82;--line:rgba(105,55,145,.18);--campo:#fffafd;--lav:#7c2bd1;--verde:#237350;--ombra:rgba(78,37,111,.16)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--gradiente) fixed;color:var(--text);font-family:"Nunito Sans",system-ui,-apple-system,sans-serif}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(620px 420px at 85% 8%,color-mix(in srgb,var(--purple) 16%,transparent),transparent 70%),radial-gradient(520px 400px at 8% 92%,color-mix(in srgb,var(--pink) 12%,transparent),transparent 70%)}
+.corpo{display:flex;min-height:100vh;position:relative}
+.rail{width:230px;flex:0 0 230px;background:var(--prugna);color:var(--testo-rail);padding:20px 18px;display:flex;flex-direction:column;gap:12px;position:sticky;top:0;height:100vh}
+.marchio{font-weight:800;font-size:19px;letter-spacing:.3px}
+.marchio b{color:var(--pink2)}
+.rail .nota{font-size:11px;opacity:.75;margin-top:auto}
+.testata{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-top:env(safe-area-inset-top)}
+.testata h1{font-size:22px;margin:0}
+.sotto{color:var(--muted);font-size:12px}
+.maino{flex:1;padding:22px;max-width:1000px}
+.azioni{display:flex;gap:10px;align-items:center;margin:14px 0}
+.azione{background:linear-gradient(135deg,var(--pink),var(--purple));color:var(--testo-azione);border:none;border-radius:12px;padding:10px 18px;font-weight:800;cursor:pointer;font-family:inherit}
+.bottone-secondario{background:color-mix(in srgb,var(--raised) 82%,transparent);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:9px 14px;cursor:pointer;font-family:inherit}
+.errore{color:var(--pink);font-size:12px}
+.griglia{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.carta{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 12px 30px var(--ombra)}
+.carta h2{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.valore{font-size:30px;font-weight:800;color:var(--lav)}
+.riga{margin-top:6px;font-size:14px}
+.pre{white-space:pre-line;font-size:13px;color:var(--text);background:color-mix(in srgb,var(--campo) 70%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
+.fonte{margin-top:10px;font-size:11px;font-style:italic;color:var(--muted)}
+.lemmacarta{font-size:12px;color:var(--verde)}
+.diva{position:fixed;right:20px;bottom:20px;display:flex;justify-content:flex-end;align-items:flex-end}
+.bd-diva{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--purple));border:none;font-size:22px;cursor:pointer;box-shadow:0 10px 24px var(--ombra)}
+.bd-bolla{position:absolute;right:0;bottom:58px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;max-width:270px;box-shadow:0 10px 30px var(--ombra)}
+.bd-bolla-testo{margin:0;font-size:13px}
+</style>
+</head>
+<body data-theme="dark">
+<div class="corpo">
+  <aside class="rail">
+    <div class="marchio">Barbell Diva <b>B</b></div>
+    <div class="sotto" data-build></div>
+    <button id="bottoneTema" class="bottone-secondario" type="button">Tema chiaro/scuro</button>
+    <div class="nota">Fase 0 · solo lettura · nessuna scrittura</div>
+  </aside>
+  <main class="maino">
+    <header class="testata">
+      <h1>Dashboard di lettura</h1>
+      <span id="statoUtente" class="sotto"></span>
+      <span id="oraLettura" class="sotto"></span>
+    </header>
+    <div id="vistaLogin" class="carta" hidden>
+      <h2>Accesso</h2>
+      <p class="riga">Entra con Google, come nell'app A. B legge soltanto.</p>
+      <button id="bottoneEntra" class="azione" type="button">Entra con Google</button>
+      <p class="fonte">Stesso progetto Firebase, stesso dominio: nessun dato passa dai file.</p>
+    </div>
+    <div id="vistaDash" hidden>
+      <div class="azioni">
+        <button id="bottoneRicarica" class="azione" type="button">Ricarica</button>
+        <button id="bottoneEsci" class="bottone-secondario" type="button">Esci</button>
+        <span id="messaggioErrore" class="errore"></span>
+      </div>
+      <section id="griglia" class="griglia"></section>
+    </div>
+  </main>
+</div>
+<div id="divaContenitore" class="diva" data-avvio-b></div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

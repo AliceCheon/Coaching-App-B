@@ -1,0 +1,9 @@
+{
+  "name": "coaching-app-b",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Barbell Diva B - dashboard lettura (fase 0)",
+  "type": "module",
+  "scripts": { "test": "node --test tests/" },
+  "devDependencies": { "jsdom": "^24.0.0" }
+}

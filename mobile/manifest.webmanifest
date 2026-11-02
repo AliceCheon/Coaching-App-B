@@ -1,0 +1,10 @@
+{
+  "name": "Barbell Diva B",
+  "short_name": "BD B",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090918",
+  "theme_color": "#090918"
+}
