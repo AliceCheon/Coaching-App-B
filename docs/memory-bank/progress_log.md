@@ -103,3 +103,21 @@ leggeva 3 programmi e poteva scegliere come attivo il cancellato.
   il caso della coach e fallisce sulla stesura precedente. Suite 46/46.
 - `docs/fase1-brief.md`: i segnaposto non sembrano più indirizzi veri
   (`<utente-github>.github.io`).
+
+## b0.2-fase1-programmi — chiusura della fase 1 (2 novembre 2026, sera)
+
+- Collaudo sul campo SUPERATO: la coach ha aperto la build `b0.2-fase1-programmi`
+  dal server locale (`http://localhost:8769/desktop/`, servito dalla cartella
+  della repo: nessun push, nessuna pubblicazione) e riferisce che torna tutto —
+  sedute, programma attivo e riga di controllo coerenti con i dati veri.
+  Nessun dato personale riportato in questo registro.
+- Commit della fase 1: `20953e7` «fase 1: dashboard B in sola lettura sui dati di
+  App A» — 13 file, +1401/−159, identico riga per riga alla patch verificata su
+  un clone pulito di `f8de7bc`.
+- Suite sulla repo della coach, con `jsdom` installato: 46 test, 46 pass, 0
+  falliti (`node --test tests/*.test.mjs`, Node 24.18.1). I test che importano
+  `jsdom` (03, 07, 10, 11, 12) richiedono `npm install` prima di girare.
+- Stato: `main`, HEAD `20953e7`, albero pulito, nessun push, Pages non ancora
+  aggiornato (aggiorna da solo dopo il push su `main`).
+- Prossimi passi: fase 2 — estetica e branding dal mockup Barbell Diva (file del
+  mockup da ricevere); push della fase 1 quando la coach dà il via.
