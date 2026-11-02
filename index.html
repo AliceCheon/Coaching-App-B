@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Barbell Diva B — entra</title>
+<meta name="description" content="Barbell Diva B: dashboard di sola lettura sui dati di App A. Scegli la vista per PC o per telefono.">
+<style>
+  :root{
+    --pink:#ff4fa3;
+    --pink-hot:#ff2d95;
+    --pink-soft:#ffb8dc;
+    --purple:#a855f7;
+    --lavender:#c9a7ff;
+    --mint:#7be0a8;
+    --sans:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+    --mono:"JetBrains Mono","Cascadia Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  }
+  html[data-theme="dark"]{
+    background:#090918;
+    --fondo-1:#050612;
+    --fondo-2:#0b0b20;
+    --fondo-3:#080719;
+    --surface:#15152f;
+    --raised:#211b3e;
+    --testo:#fff8fd;
+    --muted:#cbbbd7;
+    --bordo:rgba(255,184,220,.18);
+    --alone:rgba(255,79,163,.22);
+  }
+  html[data-theme="light"]{
+    background:#fff7fb;
+    --fondo-1:#fff7fb;
+    --fondo-2:#fdeef7;
+    --fondo-3:#f7e9fb;
+    --surface:#fffafd;
+    --raised:#f8eafa;
+    --testo:#241238;
+    --muted:#5f4a72;
+    --bordo:rgba(90,40,120,.16);
+    --alone:rgba(255,79,163,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(1.4rem,4vh,2.6rem);
+    padding:calc(2rem + env(safe-area-inset-top)) 1.25rem calc(2rem + env(safe-area-inset-bottom));
+    font-family:var(--sans);
+    color:var(--testo);
+    background:linear-gradient(160deg,var(--fondo-1),var(--fondo-2) 55%,var(--fondo-3));
+    -webkit-font-smoothing:antialiased;
+  }
+  .marchio{text-align:center;max-width:34rem}
+  .occhiello{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--pink-soft);
+    background:color-mix(in srgb,var(--pink) 12%,transparent);
+    border:1px solid var(--bordo);
+    border-radius:999px;
+    padding:.35rem .8rem;
+    margin-bottom:1.1rem;
+  }
+  .punto{
+    width:.42rem;height:.42rem;border-radius:50%;
+    background:var(--mint);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--mint) 22%,transparent);
+  }
+  h1{
+    margin:0 0 .7rem;
+    font-size:clamp(2rem,7vw,3.1rem);
+    line-height:1.02;
+    letter-spacing:-.02em;
+    font-weight:800;
+  }
+  h1 .diva{
+    background:linear-gradient(100deg,var(--pink-hot),var(--purple) 62%,var(--lavender));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .sottotitolo{
+    margin:0;
+    font-size:clamp(.95rem,2.6vw,1.08rem);
+    line-height:1.6;
+    color:var(--muted);
+  }
+  .porte{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,15.5rem),1fr));
+    gap:1rem;
+    width:100%;
+    max-width:38rem;
+  }
+  .porta{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:.45rem;
+    padding:1.35rem 1.3rem 1.25rem;
+    border-radius:1.15rem;
+    border:1px solid var(--bordo);
+    background:linear-gradient(165deg,var(--surface),var(--raised));
+    color:var(--testo);
+    text-decoration:none;
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 14px 30px -22px var(--alone);
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .porta::before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:3px;
+    border-radius:1.15rem 0 0 1.15rem;
+    background:linear-gradient(180deg,var(--pink-hot),var(--purple));
+    opacity:.85;
+  }
+  .porta:hover,.porta:focus-visible{
+    transform:translateY(-2px);
+    border-color:color-mix(in srgb,var(--pink) 45%,transparent);
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 22px 40px -24px var(--alone);
+    outline:none;
+  }
+  .porta-nome{
+    font-size:1.16rem;
+    font-weight:700;
+    letter-spacing:-.01em;
+  }
+  .porta-nota{
+    font-size:.86rem;
+    line-height:1.5;
+    color:var(--muted);
+  }
+  .porta-riga{
+    margin-top:.35rem;
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.06em;
+    color:var(--muted);
+  }
+  .porta-scelta{
+    position:absolute;
+    top:.9rem;
+    right:.9rem;
+    font-family:var(--mono);
+    font-size:.6rem;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--mint);
+    background:color-mix(in srgb,var(--mint) 14%,transparent);
+    border:1px solid color-mix(in srgb,var(--mint) 38%,transparent);
+    border-radius:999px;
+    padding:.2rem .5rem;
+    opacity:0;
+    transition:opacity .18s ease;
+  }
+  .porta[data-tuo="si"] .porta-scelta{opacity:1}
+  footer{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:.6rem .9rem;
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.04em;
+    color:var(--muted);
+    text-align:center;
+  }
+  .tasto-tema{
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.04em;
+    color:var(--testo);
+    background:color-mix(in srgb,#ffffff 7%,transparent);
+    border:1px solid color-mix(in srgb,var(--pink) 34%,transparent);
+    border-radius:999px;
+    padding:.42rem .85rem;
+    cursor:pointer;
+  }
+  html[data-theme="light"] .tasto-tema{
+    background:var(--surface);
+    border-color:color-mix(in srgb,#241238 18%,transparent);
+  }
+  .tasto-tema:hover{border-color:var(--pink)}
+  .sigla{opacity:.75}
+  @media (prefers-reduced-motion:reduce){
+    .porta,.porta-scelta{transition:none}
+  }
+</style>
+</head>
+<body>
+  <div class="marchio">
+    <div class="occhiello"><span class="punto"></span> sola lettura · fase 2</div>
+    <h1>Barbell <span class="diva">Diva B</span></h1>
+    <p class="sottotitolo">Gli stessi dati della tua app di allenamento, guardati da fuori.
+      B legge e non scrive: nessun numero inventato, ogni cifra porta la sua fonte.</p>
+  </div>
+
+  <nav class="porte" aria-label="Scegli la vista">
+    <a class="porta" href="desktop/" data-vista="desktop">
+      <span class="porta-scelta">questo schermo</span>
+      <span class="porta-nome">Dashboard PC</span>
+      <span class="porta-nota">Card larghe, due colonne, tutto sotto gli occhi in una schermata.</span>
+      <span class="porta-riga">desktop/</span>
+    </a>
+    <a class="porta" href="mobile/" data-vista="mobile">
+      <span class="porta-scelta">questo schermo</span>
+      <span class="porta-nome">Dashboard telefono</span>
+      <span class="porta-nota">La stessa vista in colonna, nel browser del telefono. Senza APK.</span>
+      <span class="porta-riga">mobile/</span>
+    </a>
+  </nav>
+
+  <footer>
+    <span class="sigla" id="sigla">Barbell Diva B</span>
+    <button class="tasto-tema" id="tastoTema" type="button">Tema chiaro</button>
+  </footer>
+
+<script>
+(function(){
+  var radice = document.documentElement;
+  var tasto = document.getElementById("tastoTema");
+
+  function dipingiTasto(){
+    var chiaro = radice.getAttribute("data-theme") === "light";
+    tasto.textContent = chiaro ? "Tema scuro" : "Tema chiaro";
+  }
+  tasto.addEventListener("click", function(){
+    var nuovo = radice.getAttribute("data-theme") === "light" ? "dark" : "light";
+    radice.setAttribute("data-theme", nuovo);
+    try { localStorage.setItem("bd-b-tema", nuovo); } catch (e) {}
+    dipingiTasto();
+  });
+  try {
+    var salvato = localStorage.getItem("bd-b-tema");
+    if (salvato === "light" || salvato === "dark") radice.setAttribute("data-theme", salvato);
+  } catch (e) {}
+  dipingiTasto();
+
+  var stretto = window.matchMedia("(max-width: 50rem)").matches;
+  var preferita = stretto ? "mobile" : "desktop";
+  var porte = document.querySelectorAll(".porta");
+  for (var i = 0; i < porte.length; i++) {
+    if (porte[i].getAttribute("data-vista") === preferita) {
+      porte[i].setAttribute("data-tuo", "si");
+    }
+  }
+
+  var sigla = document.getElementById("sigla");
+  var versione = document.createElement("script");
+  versione.src = "app-config-b.js";
+  versione.onload = function(){
+    if (window.BD_B && window.BD_B.build) {
+      sigla.textContent = "Barbell Diva B · " + window.BD_B.build;
+    }
+  };
+  document.head.appendChild(versione);
+})();
+</script>
+</body>
+</html>
