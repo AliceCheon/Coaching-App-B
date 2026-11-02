@@ -1,0 +1,363 @@
+/* Barbell Diva B — sistema visivo condiviso (fase 2: «Lift. Slay. Repeat.»)
+ *
+ * Regola dei colori: i token vivono INLINE nei due index.html, perché la
+ * guardia 07 li controlla nel file della pagina. Qui ci sono solo i componenti:
+ * cambiare una tinta = cambiare un token, non questo file.
+ *
+ * Regola dei font: impilamento di sistema (nessun CDN). B è una pagina di
+ * lettura: deve restare identica anche senza rete, e un font da scaricare
+ * sarebbe l'unica cosa a sparire quando il telefono è offline.
+ *
+ * Regola delle superfici: vetro traslucido sopra il gradiente di fondo. La
+ * trasparenza è dichiarata nel token (--surface/--raised al 78-92%), non qui.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--pink) 42%, transparent);
+  color: var(--text);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--gradiente) fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Due aloni: uno viola in alto a destra, uno rosa in basso a sinistra.
+   Servono a far leggere il vetro delle card e a togliere piattezza al fondo. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(680px 460px at 88% 2%, color-mix(in srgb, var(--purple) 24%, transparent), transparent 68%),
+    radial-gradient(560px 420px at 2% 98%, color-mix(in srgb, var(--pink) 18%, transparent), transparent 70%);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* ---------- la carta: il mattone di tutta l'interfaccia ---------- */
+
+.carta {
+  position: relative;
+  padding: 20px 20px 15px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      168deg,
+      color-mix(in srgb, var(--raised) 74%, transparent),
+      color-mix(in srgb, var(--surface) 92%, transparent)
+    );
+  box-shadow:
+    0 26px 52px -30px var(--ombra),
+    inset 0 1px 0 var(--line-soft);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  overflow: hidden;
+}
+
+/* Il filo di luce sul bordo alto: la firma del mockup. */
+.carta::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--pink), var(--purple), transparent);
+  opacity: 0.6;
+}
+
+.carta:hover {
+  border-color: color-mix(in srgb, var(--pink) 38%, var(--line));
+}
+
+.carta h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.carta h2::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+}
+
+/* Il numero: monospazio, cifre tabulari, gradiente rosa→lavanda.
+   Il colore di riserva resta --lav per i browser senza background-clip. */
+.valore {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  color: var(--lav);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(132deg, var(--pink-soft), var(--text) 46%, var(--lav));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  overflow-wrap: anywhere;
+}
+
+.riga {
+  margin-top: 7px;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted));
+}
+
+/* La controprova dichiarata: una pastiglia verde, non una frase qualunque. */
+.lemmacarta {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--verde);
+  background: color-mix(in srgb, var(--verde) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verde) 32%, transparent);
+}
+
+/* L'allarme: rosa acceso con barra a sinistra, mai un riquadro pieno. */
+.errore {
+  margin-top: 9px;
+  padding: 7px 0 7px 10px;
+  border-left: 2px solid var(--pink-hot);
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--pink-hot) 72%, var(--text));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pink-hot) 12%, transparent), transparent);
+}
+
+/* Il contenitore d'errore vuoto non deve disegnare la sua barretta rosa. */
+.errore:empty {
+  display: none;
+}
+
+.pre {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--campo) 72%, transparent);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre-line;
+  color: color-mix(in srgb, var(--text) 82%, var(--muted));
+}
+
+/* La provenienza: la parte più seria di B, quindi la più piccola e precisa.
+   Sta in fondo alla carta, sopra un tratteggio, come una nota di laboratorio. */
+.fonte {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--muted) 74%, var(--text));
+}
+
+/* ---------- comandi ---------- */
+
+.azione,
+.bottone-secondario {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.azione {
+  padding: 11px 20px;
+  border: none;
+  color: var(--testo-azione);
+  background: linear-gradient(132deg, var(--pink), var(--purple));
+  box-shadow: 0 12px 26px -12px color-mix(in srgb, var(--pink) 70%, transparent);
+}
+
+.bottone-secondario {
+  padding: 10px 16px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--raised) 72%, transparent);
+  border: 1px solid var(--line);
+}
+
+.azione:hover,
+.bottone-secondario:hover {
+  transform: translateY(-1px);
+}
+
+.azione:focus-visible,
+.bottone-secondario:focus-visible,
+.bd-diva:focus-visible {
+  outline: 2px solid var(--core);
+  outline-offset: 2px;
+}
+
+/* ---------- Diva Bot ---------- */
+
+.diva {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.bd-diva {
+  width: 50px;
+  height: 50px;
+  border: 1px solid color-mix(in srgb, var(--pink) 55%, var(--line));
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--purple) 70%, transparent);
+}
+
+.bd-bolla {
+  max-width: 280px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px 14px 4px 14px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 18px 38px -20px var(--ombra);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.bd-bolla-testo {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+}
+
+/* ---------- tipografia d'inquadratura ---------- */
+
+.occhiello {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pink) 82%, var(--muted));
+}
+
+.motto {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted) 86%, transparent);
+}
+
+.sotto {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Rispetto per chi ha chiesto meno movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none;
+  }
+  .azione:hover,
+  .bottone-secondario:hover {
+    transform: none;
+  }
+}
+
+/* ---------- correzioni del tema chiaro: contrasto misurato ----------
+   Su fondo latteo i toni pensati per lo scuro perdono corpo. Qui si
+   scuriscono SOLO le tinte che restano testo; i token non si toccano
+   (vivono negli index.html e sono fissati dalla guardia 07). */
+
+body[data-theme="light"] .valore {
+  background: linear-gradient(
+    132deg,
+    color-mix(in srgb, var(--pink-hot) 72%, var(--text)),
+    var(--text) 48%,
+    var(--lav)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+body[data-theme="light"] .occhiello {
+  color: color-mix(in srgb, var(--pink-hot) 58%, var(--text));
+}
+
+body[data-theme="light"] .fonte {
+  color: color-mix(in srgb, var(--muted) 82%, var(--text));
+}
+
+body[data-theme="light"] .fondo {
+  color: color-mix(in srgb, var(--muted) 88%, var(--text));
+}
+
+body[data-theme="light"] .bottone-secondario {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--text) 20%, transparent);
+  box-shadow: 0 8px 18px -14px var(--ombra);
+}
+
+body[data-theme="light"] .lemmacarta {
+  background: color-mix(in srgb, var(--verde) 18%, transparent);
+  border-color: color-mix(in srgb, var(--verde) 48%, transparent);
+}
+
+body[data-theme="light"] .carta::before {
+  opacity: 0.78;
+}
+
+/* La rotaia resta scura anche in chiaro: qui il pulsante deve tornare
+   bianco su vetro scuro, altrimenti diventa una pillola vuota. */
+body[data-theme="light"] .rail .bottone-secondario {
+  color: var(--testo-rail);
+  background: color-mix(in srgb, #ffffff 8%, transparent);
+  border-color: color-mix(in srgb, var(--pink) 34%, transparent);
+}

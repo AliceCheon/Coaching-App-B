@@ -104,20 +104,30 @@ leggeva 3 programmi e poteva scegliere come attivo il cancellato.
 - `docs/fase1-brief.md`: i segnaposto non sembrano più indirizzi veri
   (`<utente-github>.github.io`).
 
-## b0.2-fase1-programmi — chiusura della fase 1 (2 novembre 2026, sera)
+## b0.3-fase2-tema — fase 2, la pelle «Lift. Slay. Repeat.» (2 novembre 2026, notte)
 
-- Collaudo sul campo SUPERATO: la coach ha aperto la build `b0.2-fase1-programmi`
-  dal server locale (`http://localhost:8769/desktop/`, servito dalla cartella
-  della repo: nessun push, nessuna pubblicazione) e riferisce che torna tutto —
-  sedute, programma attivo e riga di controllo coerenti con i dati veri.
-  Nessun dato personale riportato in questo registro.
-- Commit della fase 1: `20953e7` «fase 1: dashboard B in sola lettura sui dati di
-  App A» — 13 file, +1401/−159, identico riga per riga alla patch verificata su
-  un clone pulito di `f8de7bc`.
-- Suite sulla repo della coach, con `jsdom` installato: 46 test, 46 pass, 0
-  falliti (`node --test tests/*.test.mjs`, Node 24.18.1). I test che importano
-  `jsdom` (03, 07, 10, 11, 12) richiedono `npm install` prima di girare.
-- Stato: `main`, HEAD `20953e7`, albero pulito, nessun push, Pages non ancora
-  aggiornato (aggiorna da solo dopo il push su `main`).
-- Prossimi passi: fase 2 — estetica e branding dal mockup Barbell Diva (file del
-  mockup da ricevere); push della fase 1 quando la coach dà il via.
+Fase 2 sul fronte estetico, senza toccare la logica: `comune/tema-b.css` è il
+sistema visivo condiviso (carte di vetro sopra il gradiente, numero in
+monospazio con cifre tabulari, pastiglia verde per la controprova, fonte in
+nota di laboratorio in fondo alla carta), e i due `index.html` portano i
+token, il marchio BD e la tipografia di sistema — nessun font da CDN, così B
+resta identica anche senza rete.
+
+Cosa NON è cambiato, di proposito: letture, controlli dei conteggi, guardie
+anti-scrittura, identificativi. Suite: 46/46.
+
+Difetti visti in anteprima e corretti: la barretta rosa del contenitore
+d'errore vuoto (ora `.errore:empty` non si disegna), il riquadro del check-in
+largo quanto la carta (ora si stringe sul contenuto), le fonti troppo spente,
+la barra del telefono che poteva coprire l'ultima carta (coda di 190px).
+
+Anteprime con dati di prova: desktop 1440px e telefono 390px, entrambe
+fotografate e controllate a occhio prima della consegna.
+
+## b0.3-fase2-tema — bump di rilascio e finiture del tema chiaro (2 novembre 2026, notte)
+
+- Build: `b0.2-fase1-programmi` → `b0.3-fase2-tema`, sempre e solo in `app-config-b.js`.
+- Tema chiaro, contrasto misurato: numero grande con gradiente scurito (72% rosa acceso + testo), occhiello, note di fonte, fondo pagina, pastiglia verde e pulsanti secondari con superficie piena e bordo visibile. Tutto scoped con `body[data-theme="light"]`: nessun token toccato, guardia 07 intatta.
+- La rotaia resta scura anche in chiaro: scelta editoriale, da confermare con Alice.
+- Suite: 46/46.
+- Aperto: push in attesa del sì esplicito; fase 2b (letture nuove: rischio strutturale, questionari, cosa fare questa settimana) non iniziata.

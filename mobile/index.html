@@ -6,44 +6,60 @@
 <title>Barbell Diva B · Lettura (telefono)</title>
 <link rel="icon" href="data:,">
 <link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="../comune/tema-b.css">
 <script src="../app-config-b.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <style>
-:root{--pink:#ff4fa3;--pink2:#ff80c1;--purple:#a855f7;--core:#ffe066;--testo-azione:#190c1c}
+:root{--pink:#ff4fa3;--pink-hot:#ff2d95;--pink2:#ff80c1;--pink-soft:#ffb8dc;--purple:#a855f7;--core:#ffe066;--testo-azione:#190c1c;--sans:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;--mono:"JetBrains Mono","Cascadia Mono","SF Mono",ui-monospace,Consolas,"Courier New",monospace}
 html[data-theme="dark"]{background:#090918;color-scheme:dark}
-body[data-theme="dark"]{--gradiente:linear-gradient(160deg,#050612 0%,#0b0b20 55%,#080719 100%);--surface:#15152f;--raised:#211b3e;--text:#fff8fd;--muted:#cbbbd7;--line:rgba(202,107,225,.24);--campo:#17111f;--lav:#c9a7ff;--verde:#7be0a8;--ombra:rgba(0,0,0,.5)}
+body[data-theme="dark"]{--gradiente:linear-gradient(160deg,#050612 0%,#0b0b20 55%,#080719 100%);--surface:#15152f;--raised:#211b3e;--text:#fff8fd;--muted:#cbbbd7;--line:rgba(202,107,225,.24);--line-soft:rgba(255,255,255,.085);--campo:#17111f;--lav:#c9a7ff;--verde:#7be0a8;--ombra:rgba(0,0,0,.55);--barra:#120a1e}
 html[data-theme="light"]{background:#fff7fb;color-scheme:light}
-body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 38%,#e7c9e8 72%,#b897db 100%);--surface:#fffafd;--raised:#f8eafa;--text:#241238;--muted:#705b82;--line:rgba(105,55,145,.18);--campo:#fffafd;--lav:#7c2bd1;--verde:#237350;--ombra:rgba(78,37,111,.16)}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--gradiente) fixed;color:var(--text);font-family:"Nunito Sans",system-ui,-apple-system,sans-serif}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(420px 320px at 90% 4%,color-mix(in srgb,var(--purple) 16%,transparent),transparent 70%),radial-gradient(360px 300px at 6% 96%,color-mix(in srgb,var(--pink) 12%,transparent),transparent 70%)}
-.testata{padding:calc(14px + env(safe-area-inset-top)) 16px 10px;position:relative}
-.testata h1{margin:0;font-size:19px}
-.sotto{color:var(--muted);font-size:12px}
-.colonna{padding:4px 14px 120px;display:flex;flex-direction:column;gap:12px;position:relative}
-.carta{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px var(--ombra)}
-.carta h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.valore{font-size:26px;font-weight:800;color:var(--lav)}
-.riga{margin-top:6px;font-size:14px}
-.pre{white-space:pre-line;font-size:13px;background:color-mix(in srgb,var(--campo) 70%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
-.fonte{margin-top:10px;font-size:11px;font-style:italic;color:var(--muted)}
-.lemmacarta{font-size:12px;color:var(--verde)}
-.barra-fondo{position:fixed;bottom:0;left:0;right:0;display:flex;gap:10px;align-items:center;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line)}
-.azione{flex:1;background:linear-gradient(135deg,var(--pink),var(--purple));color:var(--testo-azione);border:none;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;font-family:inherit}
-.bottone-secondario{background:color-mix(in srgb,var(--raised) 82%,transparent);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit}
-.errore{color:var(--pink);font-size:11px}
-.diva{position:fixed;right:16px;bottom:84px;display:flex;justify-content:flex-end;align-items:flex-end}
-.bd-diva{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--purple));border:none;font-size:21px;cursor:pointer;box-shadow:0 10px 24px var(--ombra)}
-.bd-bolla{position:absolute;right:0;bottom:56px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;max-width:240px;box-shadow:0 10px 30px var(--ombra)}
-.bd-bolla-testo{margin:0;font-size:13px}
+body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 38%,#e7c9e8 72%,#b897db 100%);--surface:#fffafd;--raised:#f8eafa;--text:#241238;--muted:#705b82;--line:rgba(105,55,145,.18);--line-soft:rgba(84,43,116,.10);--campo:#fffafd;--lav:#7c2bd1;--verde:#237350;--ombra:rgba(78,37,111,.18);--barra:#fffafd}
+body{margin:0;min-height:100vh}
+/* ---- impianto telefono: testata, colonna di carte, barra di vetro ---- */
+.testata{position:relative;z-index:1;padding:calc(16px + env(safe-area-inset-top)) 16px 14px}
+.marchio{display:flex;align-items:center;gap:10px}
+.monogramma{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--purple));font-family:var(--mono);font-size:13px;font-weight:700;color:#1b0a20;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--pink) 80%,transparent)}
+.marchio-nome{font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;line-height:1.3}
+.marchio-nome b{color:var(--pink)}
+.marchio-sub{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--muted) 82%,transparent)}
+.testata h1{margin:16px 0 4px;font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+.testata .motto{margin-bottom:10px}
+.testata .sotto{font-family:var(--mono);font-size:10.5px;line-height:1.5}
+main.colonna{position:relative;z-index:1;padding:2px 14px 190px}
+.colonna{display:flex;flex-direction:column;gap:13px}
+.carta{border-radius:20px;padding:16px 16px 13px}
+.carta h2{font-size:10px}
+#vistaLogin .riga{margin-top:10px}
+#vistaLogin .azione{width:100%;margin-top:16px}
+.errore{font-size:11.5px}
+.pre{font-size:10.5px}
+.fonte{font-size:10px}
+/* la barra in basso: vetro, non una striscia piena */
+.barra-fondo{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;gap:8px;align-items:center;padding:11px 14px;padding-bottom:calc(11px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--barra) 88%,transparent);border-top:1px solid color-mix(in srgb,var(--pink) 22%,transparent);box-shadow:0 -22px 44px -26px var(--ombra);backdrop-filter:blur(18px) saturate(130%);-webkit-backdrop-filter:blur(18px) saturate(130%)}
+.barra-fondo .azione{flex:1.6;padding:11px 14px}
+.barra-fondo .bottone-secondario{flex:1;padding:11px 10px;font-size:12.5px}
+.diva{bottom:88px;right:14px}
+.bd-diva{width:46px;height:46px;font-size:20px}
+.bd-bolla{max-width:236px}
+@media (min-width:760px){
+main.colonna{max-width:620px;margin:0 auto}
+}
 </style>
 </head>
 <body data-theme="dark">
 <header class="testata">
-  <h1>Barbell Diva B</h1>
-  <div><span data-build></span> · fase 0 · solo lettura</div>
+  <div class="marchio">
+    <span class="monogramma" aria-hidden="true">BD</span>
+    <div>
+      <div class="marchio-nome">Barbell <b>Diva</b></div>
+      <div class="marchio-sub"><span data-build></span></div>
+    </div>
+  </div>
+  <h1>Lettura di oggi</h1>
+  <p class="motto">Lift. Slay. Repeat.</p>
   <div id="statoUtente" class="sotto"></div>
 </header>
 <main class="colonna">
