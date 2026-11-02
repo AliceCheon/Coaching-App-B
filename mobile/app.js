@@ -11,6 +11,7 @@ import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comu
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot } from "../comune/diva-bot.js";
+import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
 const NON_REGISTRATO = "non registrato";
 const NON_REGISTRATA = "non registrata (in A si calcola dalle sedute; nessun numero indovinato)";
@@ -101,7 +102,8 @@ function righeProgramma(modello) {
 }
 
 /* Vista telefono: le stesse card del desktop, layout in colonna. */
-export function renderDashboard(doc, contenitore, modello) {
+export function renderDashboard(doc, contenitore, modello, opzioni) {
+  const opz = opzioni || {};
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const presente = modello.presente === true;
 
@@ -137,6 +139,14 @@ export function renderDashboard(doc, contenitore, modello) {
     contenitore.appendChild(carta(doc, "Documento di A", [
       { testo: "Non risulta un documento per questo account: mostro il vuoto, senza numeri inventati." }
     ], "barbellDivaAccounts/{uid} · A r.24 e r.6080"));
+  }
+  if (opz.quadro) {
+    contenitore.appendChild(carta(doc, "Quadro strutturale", righeQuadro(opz.quadro),
+      "sottoraccolta sessions — dateInput e sessionCode · 8 settimane ISO · soglie dichiarate in comune/struttura.js"));
+    contenitore.appendChild(carta(doc, "Semaforo strutturale", righeSemaforo(opz.quadro),
+      "conteggi di carico e continuita, non una diagnosi · nessun dato inventato"));
+    contenitore.appendChild(carta(doc, "Cosa manca per il semaforo completo", righeDatiMancanti(),
+      "DATI_SEMAFORO · comune/struttura.js — dati che in A non sono registrati"));
   }
   return contenitore;
 }
@@ -197,7 +207,7 @@ export async function avvia(doc, win) {
         sessionCount: radice.sessionCount,
         programCount: radice.programCount
       });
-      renderDashboard(doc, doc.querySelector("#griglia"), modello);
+      renderDashboard(doc, doc.querySelector("#griglia"), modello, { quadro: quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso }) });
       contenitoreDiva.textContent = "";
       montaDivaBot(contenitoreDiva, frasiPerDati({
         numeroSedute: modello.numeroSedute || 0,

@@ -12,6 +12,7 @@ import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comu
 import { entraConGoogle, esci, ascoltaStato } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot } from "../comune/diva-bot.js";
+import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
 const NON_REGISTRATO = "non registrato";
 const NON_REGISTRATA = "non registrata (in A si calcola dalle sedute; nessun numero indovinato)";
@@ -142,6 +143,14 @@ export function renderDashboard(doc, contenitore, modello, opzioni) {
       { testo: "Non risulta un documento per questo account: le schermate mostrano il vuoto, senza numeri inventati." }
     ], "barbellDivaAccounts/{uid} · A r.24 e r.6080"));
   }
+  if (opz.quadro) {
+    contenitore.appendChild(carta(doc, "Quadro strutturale", righeQuadro(opz.quadro),
+      "sottoraccolta sessions — dateInput e sessionCode · 8 settimane ISO · soglie dichiarate in comune/struttura.js"));
+    contenitore.appendChild(carta(doc, "Semaforo strutturale", righeSemaforo(opz.quadro),
+      "conteggi di carico e continuita, non una diagnosi · nessun dato inventato"));
+    contenitore.appendChild(carta(doc, "Cosa manca per il semaforo completo", righeDatiMancanti(),
+      "DATI_SEMAFORO · comune/struttura.js — dati che in A non sono registrati"));
+  }
   return contenitore;
 }
 
@@ -216,7 +225,7 @@ export async function avvia(doc, win) {
         sessionCount: radice.sessionCount,
         programCount: radice.programCount
       });
-      renderDashboard(doc, doc.querySelector("#griglia"), modello, { build: config.build });
+      renderDashboard(doc, doc.querySelector("#griglia"), modello, { build: config.build, quadro: quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso }) });
       oraLettura.textContent = "lettura una tantum · " + new Date().toLocaleTimeString("it-IT") + " · nessuna scrittura";
       contenitoreDiva.textContent = "";
       montaDivaBot(contenitoreDiva, frasiPerDati({

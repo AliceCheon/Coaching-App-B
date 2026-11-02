@@ -131,3 +131,21 @@ fotografate e controllate a occhio prima della consegna.
 - La rotaia resta scura anche in chiaro: scelta editoriale, da confermare con Alice.
 - Suite: 46/46.
 - Aperto: push in attesa del sì esplicito; fase 2b (letture nuove: rischio strutturale, questionari, cosa fare questa settimana) non iniziata.
+
+## b0.4-fase2b-struttura — quadro strutturale e semaforo onesto (3 novembre 2026, notte)
+
+Fase 2b, prima porta: il carico si conta, il rischio non si inventa.
+- nuovo `comune/struttura.js`: modello puro (nessuna rete, nessun DOM, nessuna scrittura).
+  Conteggi su 8 settimane ISO: media settimanale, ultimi 7 giorni, giorni dall'ultima
+  seduta, settimane vuote, pausa più lunga, distribuzione per scheda.
+- soglie DICHIARATE in `SOGLIE` (3 sedute/settimana, 8 giorni di attenzione, 15 di pausa
+  lunga, 2 settimane vuote di fila) e sbilanciamento > 35 punti percentuali.
+- `DATI_SEMAFORO`: elenco esplicito dei dati che un semaforo RED-S richiederebbe e che A
+  non registra (disponibilità energetica, ciclo, sonno, limitazioni, serie dei carichi).
+  La card «Cosa manca» li mostra invece di simulare un semaforo.
+- tre card nuove in PC e telefono (stesso modulo, nessuna duplicazione): Quadro
+  strutturale, Semaforo strutturale, Cosa manca per il semaforo completo.
+  Ogni riga del semaforo chiude con «non una diagnosi».
+- guardia `tests/13-struttura.test.mjs` (date impossibili, zero inventati, pausa lunga,
+  distribuzione, assenza di scritture/DOM/rete nel modulo).
+- build `b0.4-fase2b-struttura`; suite verde.
