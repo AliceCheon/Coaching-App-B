@@ -16,6 +16,7 @@ import { righeValoriCheckin } from "../comune/valori-checkin.js";
 import { creaVolto } from "../comune/diva-volto.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
+import { renderDashboardV31 } from "../comune/vista-dashboard.js";
 
 const NON_REGISTRATO = "non registrato";
 const NON_REGISTRATA = "non registrata (in A si calcola dalle sedute; nessun numero indovinato)";
@@ -240,7 +241,24 @@ export async function avvia(doc, win) {
       });
       const quadro = quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso });
       const carichi = carichiPerEsercizio(sedute.sedute, { oggi: new Date() });
-      renderDashboard(doc, doc.querySelector("#griglia"), modello, { build: config.build, quadro, carichi });
+      const rq = righeQuadro(quadro);
+      const rs = righeSemaforo(quadro);
+      const rm = righeDatiMancanti();
+      const conta = (v) => (v && v.valore != null ? v.valore : null);
+      const pausa = conta(rq.find((r) => /pausa|giorni/i.test(String(r.etichetta || ""))));
+      renderDashboardV31(doc, doc.querySelector("#griglia"), modello, {
+        build: config.build,
+        righeQuadro: rq,
+        righeSemaforo: rs,
+        righeMancanti: rm,
+        quadroNumeri: pausa == null ? null : "controllo · quadro: ultima pausa " + pausa
+      });
+      const nastro = doc.querySelector("#nastroSotto");
+      if (nastro) {
+        nastro.textContent = modello.programma && modello.programma.nome
+          ? modello.programma.nome + (modello.programma.settimana != null ? " · settimana " + modello.programma.settimana : "")
+          : "in lettura dai tuoi dati veri";
+      }
       oraLettura.textContent = "lettura una tantum · " + new Date().toLocaleTimeString("it-IT") + " · nessuna scrittura";
       contenitoreDiva.textContent = "";
       const voceQuadro = voceDelQuadro(quadro);

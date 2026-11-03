@@ -1,0 +1,33 @@
+/* Testata della Dashboard: la robottina del v31 e la sua bolla.
+ * Regole copiate dal mockup, senza il prefisso #pag-dashboard, così valgono
+ * anche qui. La Diva flottante ha le sue, in un altro foglio: qui non entra. */
+
+/* ---- Diva Bot di benvenuto con frase motivazionale (aggiunta 31/10/2026; banner rimosso su richiesta di Alice) ---- */ #pag-dashboard .db-hero{margin:0 0 16px}
+.db-diva{display:flex;align-items:center;gap:16px;background:var(--surface2); border:1px solid var(--linea);border-radius:14px;padding:12px 18px;cursor:pointer}
+.db-diva:hover{border-color:rgba(255,79,163,.45)}
+.db-robot{flex:none;width:86px}
+.db-robot svg{width:100%;display:block;overflow:visible;animation:dvBob 3.4s ease-in-out infinite;transform-origin:120px 236px}
+.db-robot .diva-bot-shell{fill:#fdfbff;stroke:#b9a6d0;stroke-width:3}
+.db-robot .diva-bot-joint{fill:#efe6f7;stroke:#b9a6d0;stroke-width:3}
+.db-robot .diva-bot-screen{fill:#241a2e}
+.db-robot .diva-bot-screen-glint{fill:#3a2a4a;opacity:.65}
+.db-robot .diva-bot-heart-shape{fill:#ff72c2}
+.db-robot .diva-bot-face{display:block}
+.db-robot .diva-bot-face>g{display:none}
+.db-robot .diva-bot-face>g.diva-bot-face-happy{display:block}
+.db-robot .diva-bot-face-fill{fill:#ff9ad5}
+.db-robot .diva-bot-face-stroke{fill:none;stroke:#ff9ad5;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.db-balloon{position:relative;flex:1 1 auto;min-width:0;background:var(--bg);border:1px solid var(--linea);border-radius:12px;padding:10px 16px}
+.db-balloon::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%); border:9px solid transparent;border-right-color:var(--linea)}
+.db-balloon::after{content:'';position:absolute;left:-7px;top:50%;transform:translateY(-50%); border:8px solid transparent;border-right-color:var(--bg)}
+.db-etich{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;font-weight:600; letter-spacing:.14em;text-transform:uppercase;color:var(--pink)}
+.db-dot{width:6px;height:6px;border-radius:50%;background:var(--pink)}
+.db-titolo{display:block;margin-top:4px;font-size:15px;font-weight:800;color:var(--testo)}
+.db-balloon p{margin-top:3px;font-size:12.5px;line-height:1.5;color:var(--muto)}
+.db-balloon p em{font-style:normal;color:var(--fioco)}
+
+@keyframes dvBob{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-5px) rotate(.6deg)}}
+
+@media (prefers-reduced-motion: reduce){
+  .db-robot svg{animation:none}
+}
