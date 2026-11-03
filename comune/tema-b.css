@@ -247,16 +247,98 @@ p {
 }
 
 .bd-diva {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid color-mix(in srgb, var(--pink) 55%, var(--line));
   border-radius: 50%;
-  font-size: 22px;
-  line-height: 1;
   cursor: pointer;
   background: linear-gradient(135deg, var(--pink), var(--purple));
   box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--purple) 70%, transparent);
+  transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
+
+.bd-diva:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+.bd-diva:active {
+  transform: scale(0.97);
+}
+
+/* Il volto: line art a inchiostro unico, leggibile su tema chiaro e scuro.
+ * Nessuna immagine, nessun font: se il telefono è offline la faccia resta. */
+.bd-volto {
+  width: 42px;
+  height: 42px;
+  display: block;
+  overflow: visible;
+}
+
+.bd-volto-parte {
+  fill: var(--text);
+  stroke: var(--text);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bd-volto-parte[fill-opacity="0"] {
+  fill: none;
+}
+
+.bd-volto-disco {
+  stroke: none;
+}
+
+/* Tono del personaggio: cambia occhi e bocca, non il giudizio. */
+.bd-diva[data-tono="neutro"] {
+  border-color: color-mix(in srgb, var(--pink) 48%, var(--line));
+}
+
+.bd-diva[data-tono="bene"] {
+  border-color: color-mix(in srgb, var(--verde) 70%, var(--line));
+  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--verde) 60%, transparent);
+}
+
+.bd-diva[data-tono="attenzione"] {
+  border-color: color-mix(in srgb, var(--pink) 85%, var(--line));
+  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--pink) 62%, transparent);
+}
+
+/* Un respiro, non un balletto: e solo per chi non ha chiesto di fermarlo. */
+@media (prefers-reduced-motion: no-preference) {
+  .bd-diva .bd-volto {
+    animation: bd-respira 6s ease-in-out infinite;
+  }
+
+  @keyframes bd-respira {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-1px) scale(1.03); }
+  }
+}
+
+/* La coda della bolla: dice da dove arriva la voce. */
+.bd-bolla {
+  position: relative;
+}
+
+.bd-bolla::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid color-mix(in srgb, var(--pink) 30%, var(--line));
+  border-bottom: 1px solid color-mix(in srgb, var(--pink) 30%, var(--line));
+  background: inherit;
+  transform: rotate(45deg);
+}
+
 
 .bd-bolla {
   max-width: 280px;

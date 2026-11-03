@@ -22,6 +22,7 @@
 
 import { SOGLIE } from "./struttura.js";
 import { SOGLIE_CARICHI, eserciziConStoria } from "./carichi.js";
+import { creaVolto, etichettaTono } from "./diva-volto.js";
 
 const FRASI_BASE = [
   "Sto guardando i numeri, non tocco nulla \ud83d\udc9c",
@@ -308,7 +309,10 @@ export function montaDivaBot(contenitore, frasi, tono) {
   pallino.type = "button";
   pallino.className = "bd-diva";
   pallino.setAttribute("aria-label", "Diva Bot");
-  pallino.textContent = "\ud83e\udd16";
+  const volto = creaVolto(contenitore.ownerDocument, tono || "neutro");
+  if (volto) pallino.appendChild(volto);
+  pallino.setAttribute("data-tono", tono || "neutro");
+  pallino.setAttribute("aria-label", "Diva Bot: " + etichettaTono(tono || "neutro"));
   contenitore.appendChild(bolla);
   contenitore.appendChild(pallino);
   let indice = 0;

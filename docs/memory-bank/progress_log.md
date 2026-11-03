@@ -193,3 +193,22 @@ Fase 2d: due voci nuove per la Diva Bot, entrambe in sola lettura.
   saluto, nessuna cifra nel saluto, estrazione tollerante ma dichiarata, nessun confronto
   tra esercizi, cifre della voce presenti nei dati.
 - build `b0.6-fase2d-giorno-carichi`.
+
+## b0.7-fase2e-volto — la Diva Bot ha una faccia (3 novembre 2026, mattina)
+
+Fase 2e: la robottina smette di essere un emoji dentro un cerchio.
+- nuovo `comune/diva-volto.js`: il personaggio è un DATO (`PARTI_VOLTO`, 15 parti
+  dentro un viewBox 48x48) disegnato con `createElementNS`. Nessuna immagine, nessun
+  font, nessun CDN: offline la faccia resta.
+- tre stati dichiarati (`TONI_VOLTO` = bene | attenzione | neutro), gli stessi della
+  bolla: il tono sceglie occhi (punti o archi che ridono) e bocca (linea, sorriso, "o").
+  Le parti di un altro tono non vengono nemmeno create: nessuna lotta di `display` in CSS.
+- inchiostro unico `var(--text)`: si legge sul gradiente rosa-viola in tema chiaro e
+  scuro senza token nuovi, e senza valori di colore fissi nel modulo.
+- CSS: bordo e alone del personaggio seguono il tono (verde / rosa / neutro), respiro
+  lento solo con `prefers-reduced-motion: no-preference`, coda sulla b bolla.
+- `montaDivaBot` passa il tono al personaggio e compone l'aria-label con
+  `etichettaTono`: accessibile e coerente con la bolla.
+- guardia `tests/17-volto.test.mjs` (9 test): niente emoji, geometria dentro il viewBox,
+  tre bocche e due famiglie di occhi, nessun token nuovo, tre stati CSS, tono applicato.
+- build `b0.7-fase2e-volto`.
