@@ -227,7 +227,8 @@ export async function avvia(doc, win) {
           pesoPresente: Boolean(modello.peso),
           checkinPresente: Boolean(modello.checkin)
         }, quadro, { giornata: saluto, carichi }),
-        tonoPeggiore(voceQuadro.tono, voceCarico.tono)
+        tonoPeggiore(voceQuadro.tono, voceCarico.tono),
+        { striscia: true }
       );
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");

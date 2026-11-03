@@ -308,3 +308,23 @@ del telefono prende la forma del mockup.
 - Guardia nuova: `tests/20-testata-telefono.test.mjs`, 20.01–20.06.
 - 18.11 e 19.07 ora controllano la forma della build, non il numero della fase.
 - Build: `b0.12-fase2g-telefono`.
+
+## 2026-11-03 14:40 — Fase 2h: la striscia (telefono)
+
+La frase e la figura smettono di stare una sopra l'altra: sul telefono si
+mettono in fila come `.strip` del mockup.
+
+- `montaDivaBot(contenitore, frasi, tono, opzioni)`: con `{ striscia: true }`
+  costruisce `.bd-striscia` (bolla a sinistra, figura a destra a 64 px); senza
+  opzioni resta il `.bd-bolla` sopra `.bd-diva` di prima. Il desktop 2f non
+  cambia una virgola.
+- Bolla e testo sono lo stesso nodo nella striscia: una `p.bd-striscia-bolla`,
+  così non serve un secondo paragrafo e la coda resta quella del CSS.
+- `mobile/index.html`: `.diva` prende `left/right:14px` e `align-items:stretch`
+  (la riga occupa la larghezza utile sopra la barra); `.bd-striscia-sbt .bd-diva`
+  va a `100%` per stare nei 64 px del mockup.
+- **Residuo chiuso**: via `.bd-diva{width:46px;height:46px}` che scavalcava i
+  78 px di `tema-b.css` e ingrandiva il font a 20 px: era l'ultimo avanzo
+  dell'epoca emoji.
+- Guardia nuova: `tests/21-striscia.test.mjs`, 21.01–21.06.
+- Build: `b0.13-fase2h-striscia`.

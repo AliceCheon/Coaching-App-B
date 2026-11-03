@@ -51,9 +51,12 @@ main.colonna{position:relative;z-index:1;padding:2px 14px 190px}
 .barra-fondo{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;gap:8px;align-items:center;padding:11px 14px;padding-bottom:calc(11px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--barra) 88%,transparent);border-top:1px solid color-mix(in srgb,var(--pink) 22%,transparent);box-shadow:0 -22px 44px -26px var(--ombra);backdrop-filter:blur(18px) saturate(130%);-webkit-backdrop-filter:blur(18px) saturate(130%)}
 .barra-fondo .azione{flex:1.6;padding:11px 14px}
 .barra-fondo .bottone-secondario{flex:1;padding:11px 10px;font-size:12.5px}
-.diva{bottom:88px;right:14px}
-.bd-diva{width:46px;height:46px;font-size:20px}
-.bd-bolla{max-width:236px}
+/* Fase 2h: la frase e la figura sulla stessa riga (`.strip` del mockup).
+   Il contenitore prende tutta la larghezza utile sopra la barra di vetro;
+   la figura resta 64 px e la bolla si allarga quanto serve. */
+.diva{left:14px;right:14px;bottom:88px;align-items:stretch}
+.bd-striscia-sbt .bd-diva{width:100%}
+.bd-striscia-bolla{font-size:12.5px}
 @media (min-width:760px){
 main.colonna{max-width:620px;margin:0 auto}
 }

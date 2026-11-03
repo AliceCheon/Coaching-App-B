@@ -298,13 +298,22 @@ export function frasiPerDati(riepilogo, quadro, extra) {
 /* Costruisce la robottina (bolla + pallino) dentro il contenitore dato.
  * Solo testo (textContent): i dati non diventano mai HTML. Il tono e' un
  * attributo, non una parola in piu': il colore dice quanto pesa la frase. */
-export function montaDivaBot(contenitore, frasi, tono) {
-  const bolla = contenitore.ownerDocument.createElement("div");
-  bolla.className = "bd-bolla";
+export function montaDivaBot(contenitore, frasi, tono, opzioni = {}) {
+  /* Fase 2h — «la striscia»: sul telefono la frase e la figura stanno sulla
+   * stessa riga, come `.strip` del mockup, invece che una sopra l'altra.
+   * Il desktop (2f) tiene il fumetto sopra la figura a 104 px: si sceglie con
+   * `{ striscia: true }`, e chi non passa niente resta com'era. */
+  const striscia = Boolean(opzioni && opzioni.striscia === true);
+  const doc = contenitore.ownerDocument;
+  const bolla = doc.createElement(striscia ? "p" : "div");
+  bolla.className = striscia ? "bd-striscia-bolla" : "bd-bolla";
   if (tono) bolla.setAttribute("data-tono", String(tono));
-  const testo = contenitore.ownerDocument.createElement("p");
-  testo.className = "bd-bolla-testo";
-  bolla.appendChild(testo);
+  let testo = bolla;
+  if (!striscia) {
+    testo = doc.createElement("p");
+    testo.className = "bd-bolla-testo";
+    bolla.appendChild(testo);
+  }
   const pallino = contenitore.ownerDocument.createElement("button");
   pallino.type = "button";
   /* Nel mockup il personaggio non sta dentro un cerchio: sta in piedi accanto
@@ -315,8 +324,19 @@ export function montaDivaBot(contenitore, frasi, tono) {
   if (volto) pallino.appendChild(volto);
   pallino.setAttribute("data-tono", tono || "neutro");
   pallino.setAttribute("aria-label", "Diva Bot: " + etichettaTono(tono || "neutro"));
-  contenitore.appendChild(bolla);
-  contenitore.appendChild(pallino);
+  if (striscia) {
+    const riga = doc.createElement("div");
+    riga.className = "bd-striscia";
+    const sbt = doc.createElement("div");
+    sbt.className = "bd-striscia-sbt";
+    sbt.appendChild(pallino);
+    riga.appendChild(bolla);
+    riga.appendChild(sbt);
+    contenitore.appendChild(riga);
+  } else {
+    contenitore.appendChild(bolla);
+    contenitore.appendChild(pallino);
+  }
   let indice = 0;
   const mostra = () => {
     testo.textContent = frasi[indice % frasi.length] || FRASI_BASE[0];
