@@ -284,7 +284,8 @@ p {
   flex: 1;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: color-mix(in srgb, var(--text) 92%, var(--muted));
-  border: 1px solid var(--line);
+  --bd-bordo: var(--line);
+  border: 1px solid var(--bd-bordo);
   border-radius: 16px 16px 4px 16px;
   padding: 9px 12px;
   font-size: 12px;
@@ -302,8 +303,10 @@ p {
   width: 11px;
   height: 11px;
   background: inherit;
-  border-right: 1px solid var(--line);
-  border-top: 1px solid var(--line);
+  /* La codina prende il bordo della bolla, tono compreso: prima restava
+   * sempre grigia e sul tema chiaro spariva. */
+  border-right: 1px solid var(--bd-bordo);
+  border-top: 1px solid var(--bd-bordo);
   transform: rotate(45deg);
 }
 
@@ -557,19 +560,52 @@ body[data-theme="light"] .rail .bottone-secondario {
    Il tono cambia il bordo della bolla, non il testo: la frase è la stessa
    cosa detta, il colore dice quanto pesa. Neutro resta com'era. */
 
-.bd-bolla[data-tono="bene"] {
-  border-color: color-mix(in srgb, var(--verde) 58%, var(--line));
+/* Fase 2j — un tono, due pelli. Il fumetto del desktop (`.bd-bolla`) e la
+ * bolla della striscia (`.bd-striscia-bolla`, dove la bolla È il testo) devono
+ * dire la stessa cosa allo stesso modo: il selettore è uno, non due copie da
+ * tenere allineate a mano — `.bd-striscia-bolla` non è più orfana. */
+:is(.bd-bolla, .bd-striscia-bolla)[data-tono="bene"] {
+  --bd-bordo: color-mix(in srgb, var(--verde) 58%, var(--line));
+  border-color: var(--bd-bordo);
 }
 
+:is(.bd-bolla, .bd-striscia-bolla)[data-tono="bene"],
 .bd-bolla[data-tono="bene"] .bd-bolla-testo {
   color: var(--text);
 }
 
-.bd-bolla[data-tono="attenzione"] {
-  border-color: color-mix(in srgb, var(--pink) 72%, var(--line));
+:is(.bd-bolla, .bd-striscia-bolla)[data-tono="attenzione"] {
+  --bd-bordo: color-mix(in srgb, var(--pink) 72%, var(--line));
+  border-color: var(--bd-bordo);
   box-shadow: 0 18px 38px -20px color-mix(in srgb, var(--pink) 45%, var(--ombra));
 }
 
+:is(.bd-bolla, .bd-striscia-bolla)[data-tono="attenzione"],
 .bd-bolla[data-tono="attenzione"] .bd-bolla-testo {
   color: var(--text);
 }
+
+/* ---------- fase 2j — i toni sul tema chiaro ----------
+   Sul pastello lilla un bordo al 58% di verde non si vede: misurato a occhio
+   sugli scatti, non ipotizzato. Qui i toni si accendono e la figura prende
+   un'ombra minima, altrimenti il bianco del robot si scioglie nello sfondo. */
+body[data-theme="light"] :is(.bd-bolla, .bd-striscia-bolla)[data-tono="bene"] {
+  --bd-bordo: color-mix(in srgb, var(--verde) 82%, var(--line));
+  border: 2px solid var(--bd-bordo);
+  background-color: color-mix(in srgb, var(--verde) 7%, var(--surface));
+  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--verde) 45%, var(--ombra));
+}
+
+body[data-theme="light"] :is(.bd-bolla, .bd-striscia-bolla)[data-tono="attenzione"] {
+  /* Sul chiaro lo sfondo È rosa: un bordo rosa su rosa non si vede, per
+   * quanta forza gli si dia. Qui il tono va verso il magenta profondo. */
+  --bd-bordo: color-mix(in srgb, var(--pink-hot) 58%, var(--text));
+  border: 2px solid var(--bd-bordo);
+  background-color: color-mix(in srgb, var(--pink) 9%, var(--surface));
+  box-shadow: 0 16px 34px -18px color-mix(in srgb, var(--pink) 52%, var(--ombra));
+}
+
+body[data-theme="light"] .bd-diva[data-tono] .bd-figura {
+  filter: drop-shadow(0 3px 7px color-mix(in srgb, var(--ombra) 88%, transparent));
+}
+

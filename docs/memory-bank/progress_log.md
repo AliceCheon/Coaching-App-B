@@ -350,3 +350,23 @@ mettono in fila come `.strip` del mockup.
 - Guardia nuova: `tests/22-voci-vista.test.mjs`, 22.01–22.13. La 22.01 legge i
   titoli delle carte dal codice vero: una carta senza voce fa cadere il test.
 - Build: `b0.14-fase2i-voci-di-vista`.
+
+## Fase 2j — «un tono, due pelli» (15:00)
+
+- **Pulizia dei selettori**: i toni valgono ora per il fumetto del desktop e per
+  la bolla della striscia con **un selettore solo**,
+  `:is(.bd-bolla, .bd-striscia-bolla)[data-tono=…]`. `.bd-striscia-bolla` non è
+  più orfana: due copie da tenere allineate a mano erano un debito, non una
+  scelta.
+- Il bordo del tono vive in una variabile `--bd-bordo`: **la codina lo eredita**
+  e prende il colore del tono, invece di restare grigia (`--line` fisso) com'era.
+- **Tema chiaro misurato a occhio, non ipotizzato**: due scatti statici (chiaro
+  e scuro, tono bene e attenzione) hanno mostrato che al 58% di verde il bordo
+  spariva sul pastello. Sul chiaro i toni si accendono: bordo a 2 px, velo di
+  colore nel fondo, ombra minima sulla figura perché il bianco del robot non si
+  sciolga nello sfondo.
+- Il tono «attenzione» sul chiaro va verso il **magenta profondo**
+  (`pink-hot` + `--text`): un bordo rosa su fondo rosa non si vede, per quanta
+  forza gli si dia. Spessore non era il problema, tinta sì.
+- Guardia nuova: `tests/23-toni-due-pelli.test.mjs`, 23.01–23.06.
+- Build: `b0.15-fase2j-toni-due-pelli`.
