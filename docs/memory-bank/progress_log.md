@@ -222,3 +222,33 @@ Fase 2e: la robottina smette di essere un emoji dentro un cerchio.
 - `tests/17-volto.test.mjs` riscritta: difende la **fedelta' al mockup** (viewBox, percorsi delle tre bocche, tavolozza #ff9ad5 / #ff72c2 / #241a2e / #b9a6d0 / #fdfbff), non piu' la geometria disegnata a mano.
 - Build: `b0.8-fase2e-volto-mockup`. Suite: **106/106**.
 - Resta da fare: push (dopo consenso di Alice).
+
+## 2026-11-03 12:44 — Fase 2e, seconda passata: «importa tutto» il Diva Bot del mockup
+
+Direttiva di Alice: il personaggio non si disegna, si importa — e va importato **tutto**,
+non solo la testina della bolla. La prima passata (commit `024635a`, `b0.8`) aveva preso
+solo l'inquadratura testa; questa prende l'inventario completo del mockup.
+
+Cosa entra in `comune/diva-volto.js` (sempre dal mockup `mockup-telefono.html`, funzione
+`bot()` verbatim, nessun percorso ritoccato):
+
+- `markupFigura` / `creaFigura`: figura intera, viewBox `0 18 240 256`, con scarpe, ombra
+  a terra e bilanciere-cuore sul petto;
+- `markupVolto` / `creaVolto`: la testa, viewBox `44 58 152 112` (invariata dalla `b0.8`);
+- `markupStriscia` / `montaStriscia`: la striscia dei suggerimenti del mockup (`sbot`),
+  bolla a sinistra e figura a destra, testo escapato;
+- `markupMarco` / `montaMarco`: il marchio della barra in alto (la testa);
+- `ETICHETTE_ESPRESSIONE`: le cinque etichette della tavola «DIVA BOT · ESPRESSIONI»;
+- `espressioneDelTono`: `bene` → `happy`, `attenzione` → `worried`, `neutro` → `idle`.
+
+Wiring: `montaDivaBot` ora monta la **figura intera** dentro `.bd-diva` (classe aggiunta
+`bd-sbot`). In `tema-b.css` il bottone non è più il cerchio rosa inventato in `b0.7`: 78 px,
+fondo trasparente, `drop-shadow`, oscillazione `bob` 3,2 s (quattro pixel, come il mockup),
+spenta con `prefers-reduced-motion`. Il cerchio era una mia aggiunta, non del mockup.
+
+Guardia: `tests/17-volto.test.mjs` riscritta, 16 test — inquadrature, sei espressioni
+distinte, percorsi delle bocche, goccia e Z, tavolozza, braccia dell'esultanza, striscia
+con testo escapato, marchio, etichette, assenza di documenti.
+
+Build: `b0.9-fase2e-volto-intero`. Suite in sandbox 112/112.
+Nessun push: si attende il «sì» di Alice.

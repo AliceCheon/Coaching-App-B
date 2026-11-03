@@ -7,7 +7,7 @@
  * - Nessun dato personale in questo file: solo identificativi di progetto.
  */
 window.BD_B = {
-  build: "b0.8-fase2e-volto-mockup",
+  build: "b0.9-fase2e-volto-intero",
   nomeAppAuth: "B",
   prefissoChiavi: "bd-b.v1.",
   // Nome IndexedDB riservato a B: NON viene aperto in fase 0 (nessuna scrittura).

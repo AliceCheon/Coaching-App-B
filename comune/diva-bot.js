@@ -22,7 +22,7 @@
 
 import { SOGLIE } from "./struttura.js";
 import { SOGLIE_CARICHI, eserciziConStoria } from "./carichi.js";
-import { creaVolto, etichettaTono } from "./diva-volto.js";
+import { creaFigura, etichettaTono } from "./diva-volto.js";
 
 const FRASI_BASE = [
   "Sto guardando i numeri, non tocco nulla \ud83d\udc9c",
@@ -307,9 +307,11 @@ export function montaDivaBot(contenitore, frasi, tono) {
   bolla.appendChild(testo);
   const pallino = contenitore.ownerDocument.createElement("button");
   pallino.type = "button";
-  pallino.className = "bd-diva";
+  /* Nel mockup il personaggio non sta dentro un cerchio: sta in piedi accanto
+   * alla bolla (`.sbot`, figura intera). È così che è importato qui. */
+  pallino.className = "bd-diva bd-sbot";
   pallino.setAttribute("aria-label", "Diva Bot");
-  const volto = creaVolto(contenitore.ownerDocument, tono || "neutro");
+  const volto = creaFigura(contenitore.ownerDocument, tono || "neutro");
   if (volto) pallino.appendChild(volto);
   pallino.setAttribute("data-tono", tono || "neutro");
   pallino.setAttribute("aria-label", "Diva Bot: " + etichettaTono(tono || "neutro"));

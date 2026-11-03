@@ -246,20 +246,88 @@ p {
   gap: 8px;
 }
 
+/* Il Diva Bot nella bolla: la figura intera del mockup (`.sbot`), 78 px, ombra
+ * e oscillazione con i valori dell'originale. Niente cerchio: nel mockup il
+ * personaggio sta in piedi, il cerchio era una mia invenzione. */
 .bd-diva {
-  width: 54px;
-  height: 54px;
+  width: 78px;
   flex: none;
   padding: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--pink) 55%, var(--line));
-  border-radius: 50%;
+  border: 0;
+  background: none;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--pink), var(--purple));
-  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--purple) 70%, transparent);
-  transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
+  transition: transform 180ms ease;
+}
+
+.bd-figura {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* La striscia dei suggerimenti del mockup (`sbot`): bolla a sinistra, figura a
+ * destra a 64 px. Struttura e misure identiche, colori sui toni di B. */
+.bd-striscia {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: -2px 0;
+}
+
+.bd-striscia-bolla {
+  position: relative;
+  flex: 1;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 4px 16px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 14px rgba(255, 79, 163, 0.18);
+}
+
+.bd-striscia-bolla::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  bottom: 10px;
+  width: 11px;
+  height: 11px;
+  background: inherit;
+  border-right: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+
+.bd-striscia-sbt {
+  width: 64px;
+  flex: none;
+}
+
+.bd-striscia-sbt .bd-figura {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Il marchio della barra in alto: la testa, inquadratura `44 58 152 112`. */
+.bd-marco {
+  width: 34px;
+  flex: none;
+  display: block;
+}
+
+.bd-marco .bd-figura {
+  animation: none;
 }
 
 .bd-diva:hover {
@@ -294,30 +362,21 @@ p {
   stroke: none;
 }
 
-/* Tono del personaggio: cambia occhi e bocca, non il giudizio. */
-.bd-diva[data-tono="neutro"] {
-  border-color: color-mix(in srgb, var(--pink) 48%, var(--line));
+/* Il tono del personaggio non si legge più nel bordo (non c'è bordo): cambia
+ * l'espressione della faccia, che è la cosa che il mockup racconta. */
+.bd-diva[data-tono="bene"] .bd-figura {
+  filter: none;
 }
 
-.bd-diva[data-tono="bene"] {
-  border-color: color-mix(in srgb, var(--verde) 70%, var(--line));
-  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--verde) 60%, transparent);
-}
-
-.bd-diva[data-tono="attenzione"] {
-  border-color: color-mix(in srgb, var(--pink) 85%, var(--line));
-  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--pink) 62%, transparent);
-}
-
-/* Un respiro, non un balletto: e solo per chi non ha chiesto di fermarlo. */
+/* L'oscillazione del mockup: `bob`, 3,2 s, quattro pixel. Solo per chi non ha
+ * chiesto di fermarla. */
 @media (prefers-reduced-motion: no-preference) {
-  .bd-diva .bd-volto {
-    animation: bd-respira 6s ease-in-out infinite;
+  .bd-figura {
+    animation: bd-oscilla 3.2s ease-in-out infinite;
   }
 
-  @keyframes bd-respira {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-1px) scale(1.03); }
+  @keyframes bd-oscilla {
+    50% { transform: translateY(-4px); }
   }
 }
 

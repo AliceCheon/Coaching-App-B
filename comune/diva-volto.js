@@ -1,6 +1,13 @@
 // comune/diva-volto.js — IL DIVA BOT DEL MOCKUP, IMPORTATO COSÌ COM'È.
-// Fonte: mockup/mockup-telefono.html, funzione bot() — tavola "DIVA BOT · ESPRESSIONI".
+// Fonte: mockup/mockup-telefono.html — funzione bot() e tavola "DIVA BOT · ESPRESSIONI".
 // Nessun ridisegno: cambiano solo i nomi dell'API (bot -> bot interno, o.head -> opzioni.testa).
+//
+// Fase 2e, seconda passata — «importa tutto»: non solo la testina della bolla, ma
+// tutto quello che il mockup sa disegnare del personaggio.
+//  - le due inquadrature (figura intera e testa);
+//  - le sei espressioni, compresa l'esultanza `cele`;
+//  - la striscia dei suggerimenti (`sbot`: bolla + figura a 64px);
+//  - il marchio della barra in alto (la testa, `44 58 152 112`).
 
 /** Le due inquadrature dell'originale: figura intera e testa (per i posti piccoli). */
 export const GEOMETRIA_VOLTO = Object.freeze({
@@ -14,12 +21,42 @@ export const TONI_VOLTO = Object.freeze(['bene', 'attenzione', 'neutro']);
 /** Le espressioni del mockup: quelle che ci sono, non una in più. */
 export const ESPRESSIONI_VOLTO = Object.freeze(['idle', 'happy', 'focus', 'tired', 'worried', 'cele']);
 
+/** Le etichette della tavola «DIVA BOT · ESPRESSIONI», parola per parola.
+ *  L'esultanza `cele` non ha una tavola sua: nel mockup è la faccia di `happy`
+ *  con le braccia alzate, e qui resta tale. */
+export const ETICHETTE_ESPRESSIONE = Object.freeze({
+  happy: Object.freeze({ nome: 'Felice', quando: 'record, festa' }),
+  focus: Object.freeze({ nome: 'Concentrata', quando: 'durante la serie' }),
+  tired: Object.freeze({ nome: 'Stanca', quando: 'poco sonno' }),
+  worried: Object.freeze({ nome: 'Preoccupata', quando: 'dolore articolare' }),
+  idle: Object.freeze({ nome: 'Tranquilla', quando: 'tutto ok' })
+});
+
 const ESPRESSIONE_DEL_TONO = Object.freeze({ bene: 'happy', attenzione: 'worried', neutro: 'idle' });
 
 export function etichettaTono(tono) {
   if (tono === 'bene') return 'tutto in ordine';
   if (tono === 'attenzione') return "c'è qualcosa da guardare";
   return 'nessun giudizio';
+}
+
+/** Il tono della bolla tradotto nell'espressione del personaggio. */
+export function espressioneDelTono(tono) {
+  return ESPRESSIONE_DEL_TONO[tono] || 'idle';
+}
+
+function espressioneValida(espressione) {
+  return ESPRESSIONI_VOLTO.indexOf(espressione) >= 0 ? espressione : 'idle';
+}
+
+/** I dati non diventano mai markup: la bolla della striscia è testo, non HTML. */
+function fuggi(testo) {
+  return String(testo === null || testo === undefined ? '' : testo)
+    .split('&').join('&amp;')
+    .split('<').join('&lt;')
+    .split('>').join('&gt;')
+    .split('"').join('&quot;')
+    .split("'").join('&#39;');
 }
 
 function bot(x, opzioni = {}) {
@@ -45,20 +82,63 @@ ${up?"":ARMS}
 
 /** L'SVG del mockup, così com'è: markup stringa, nessun ritocco ai percorsi. */
 export function markupVolto(espressione, opzioni = {}) {
-  const x = ESPRESSIONI_VOLTO.includes(espressione) ? espressione : 'idle';
-  return bot(x, { testa: opzioni.testa !== false });
+  return bot(espressioneValida(espressione), { testa: opzioni.testa !== false });
 }
 
-/** Il volto per la bolla: elemento pronto da appendere (predefinito: testa). */
-export function creaVolto(doc, tono, opzioni = {}) {
+/** La figura intera, senza testa mozzata: è il personaggio che sta in piedi. */
+export function markupFigura(espressione) {
+  return bot(espressioneValida(espressione), { testa: false });
+}
+
+/** Il marchio della barra in alto: il mockup ci mette la testa dentro `.mark`. */
+export function markupMarco(espressione) {
+  return '<div class="bd-marco">' + bot(espressioneValida(espressione), { testa: true }) + '</div>';
+}
+
+/** La striscia dei suggerimenti del mockup (`sbot`): bolla a sinistra, figura a
+ *  destra. Il testo è dato, quindi esce escapato: i dati non diventano HTML. */
+export function markupStriscia(espressione, testo) {
+  return '<div class="bd-striscia"><div class="bd-striscia-bolla">' + fuggi(testo) +
+    '</div><div class="bd-striscia-sbt">' + bot(espressioneValida(espressione), { testa: false }) +
+    '</div></div>';
+}
+
+function elemento(doc, markup, classe, espressione) {
   if (!doc || typeof doc.createElement !== 'function') return null;
-  const espressione = ESPRESSIONE_DEL_TONO[tono] || 'idle';
   const guscio = doc.createElement('span');
-  guscio.innerHTML = markupVolto(espressione, opzioni);
-  const svg = guscio.firstElementChild || null;
+  guscio.innerHTML = markup;
+  const svg = guscio.querySelector ? guscio.querySelector('svg') : guscio.firstElementChild;
   if (!svg) return null;
-  svg.setAttribute('class', 'bd-volto');
+  svg.setAttribute('class', classe);
   svg.setAttribute('data-espressione', espressione);
   svg.removeAttribute('aria-hidden');
   return svg;
+}
+
+/** Il volto per i posti piccoli: la testa (comportamento della prima passata). */
+export function creaVolto(doc, tono, opzioni = {}) {
+  const espressione = espressioneDelTono(tono);
+  return elemento(doc, markupVolto(espressione, opzioni), 'bd-volto', espressione);
+}
+
+/** La figura intera, pronta da appendere: è quella che sta accanto alla bolla. */
+export function creaFigura(doc, tono) {
+  const espressione = ESPRESSIONI_VOLTO.indexOf(tono) >= 0 ? tono : espressioneDelTono(tono);
+  return elemento(doc, markupFigura(espressione), 'bd-figura', espressione);
+}
+
+/** La striscia già montata: un elemento solo, bolla compresa. */
+export function montaStriscia(doc, espressione, testo) {
+  if (!doc || typeof doc.createElement !== 'function') return null;
+  const guscio = doc.createElement('span');
+  guscio.innerHTML = markupStriscia(espressione, testo);
+  return guscio.firstElementChild || null;
+}
+
+/** Il marchio già montato, per la barra in alto. */
+export function montaMarco(doc, espressione) {
+  if (!doc || typeof doc.createElement !== 'function') return null;
+  const guscio = doc.createElement('span');
+  guscio.innerHTML = markupMarco(espressione);
+  return guscio.firstElementChild || null;
 }
