@@ -12,6 +12,7 @@ import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comu
 import { entraConGoogle, esci, ascoltaStato } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore } from "../comune/diva-bot.js";
+import { creaVolto } from "../comune/diva-volto.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
@@ -166,6 +167,9 @@ export async function avvia(doc, win) {
   if (!config || !sdk) throw new Error("Configurazione o SDK mancanti");
 
   doc.querySelectorAll("[data-build]").forEach((n) => { n.textContent = "build " + config.build; });
+  doc.querySelectorAll("[data-versione]").forEach((n) => { n.textContent = config.build; });
+  const segnoMarco = doc.querySelector("[data-marco]");
+  if (segnoMarco) segnoMarco.appendChild(creaVolto(doc, "neutro"));
   applicaTema(doc, temaSalvato(win.localStorage));
 
   const app = inizializzaAppB(sdk, config);

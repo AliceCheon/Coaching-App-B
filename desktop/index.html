@@ -22,10 +22,13 @@ body{margin:0;min-height:100vh}
 .corpo{position:relative;z-index:1;display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
 .rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;padding:26px 22px;background:linear-gradient(185deg,var(--rail),color-mix(in srgb,var(--rail) 82%,var(--purple)));border-right:1px solid color-mix(in srgb,var(--pink) 18%,transparent);color:var(--testo-rail)}
 .marchio{display:flex;align-items:center;gap:12px}
-.monogramma{display:grid;place-items:center;width:44px;height:44px;flex:0 0 auto;border-radius:14px;background:linear-gradient(135deg,var(--pink),var(--purple));font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.02em;color:#1b0a20;box-shadow:0 12px 26px -12px color-mix(in srgb,var(--pink) 80%,transparent)}
-.marchio-nome{font-size:14px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;line-height:1.25}
-.marchio-nome b{color:var(--pink2);font-weight:800}
-.marchio-sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:color-mix(in srgb,var(--testo-rail) 58%,transparent)}
+/* Fase 2g: il marchio del mockup PC. La testa della Diva al posto del monogramma. */
+.marchio-segno{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto}
+.marchio-segno .bd-volto{width:46px;height:46px;display:block}
+.marchio-nome{font-size:19px;font-weight:800;letter-spacing:-.2px;line-height:1.1;text-transform:none}
+.marchio-nome i{font-style:italic;font-weight:600;color:var(--lav)}
+.marchio-chi{font-size:11.5px;line-height:1.2;margin-top:3px;color:color-mix(in srgb,var(--testo-rail) 68%,transparent)}
+.marchio-ver{display:inline-block;width:max-content;margin-top:7px;padding:3px 8px;border:1px solid color-mix(in srgb,var(--lav) 30%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lav) 10%,transparent);font-family:var(--mono);font-size:9px;line-height:1.4;letter-spacing:.09em;color:var(--lav);white-space:nowrap}
 .rail .motto{margin-top:2px;color:color-mix(in srgb,var(--testo-rail) 62%,transparent)}
 .stato-lettura{margin-top:6px;padding:14px 14px 12px;border:1px solid color-mix(in srgb,var(--pink) 26%,transparent);border-radius:16px;background:color-mix(in srgb,#ffffff 5%,transparent)}
 .stato-lettura .titoletto{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--pink-soft)}
@@ -71,10 +74,11 @@ body{margin:0;min-height:100vh}
 <div class="corpo">
   <aside class="rail">
     <div class="marchio">
-      <span class="monogramma" aria-hidden="true">BD</span>
+      <span class="marchio-segno" aria-hidden="true" data-marco></span>
       <div>
-        <div class="marchio-nome">Barbell <b>Diva</b></div>
-        <div class="marchio-sub"><span data-build></span></div>
+        <div class="marchio-nome">Barbell <i>Diva</i></div>
+        <div class="marchio-chi">Alice Clemente</div>
+        <span class="marchio-ver" data-versione></span>
       </div>
     </div>
     <p class="motto">Lift. Slay. Repeat.</p>

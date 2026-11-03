@@ -278,3 +278,18 @@ resta quello del mockup, parola per parola (guardia 17 ancora verde).
 - Fuori da questa porta, per scelta: il **marchio** nella testata (importato in
   2e, non montato: serve il via di Alice sul posto) e la **striscia** al posto
   della bolla.
+
+## 2026-11-03 14:28 — Fase 2g: il marchio della testata (desktop)
+
+Ordine di Alice: la testata desktop deve somigliare a quella del mockup PC, in cima
+alla barra laterale, sopra le sezioni. Sotto il nome NIENTE «coach».
+
+- `.monogramma` («BD») sostituito da `.marchio-segno` con la testa della Diva
+  (inquadratura `44 58 152 112`, 46 px) montata da `creaVolto(doc, "neutro")`.
+- Nome a 19 px `Barbell <i>Diva</i>`, corsivo lilla `--lav` (mockup: 21 px, peso 800).
+- Sotto il nome: solo «Alice Clemente». Nessuna etichetta commerciale.
+- Pastiglia `.marchio-ver` con `data-versione` = `config.build`, dalla fonte unica.
+- Desktop soltanto: il telefono (testina robot tonda del mockup di Codex) resta
+  fuori, in attesa del file.
+- Guardia nuova: `tests/19-testata.test.mjs`, 19.01–19.09.
+- Build: `b0.11-fase2g-testata`.
