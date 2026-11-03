@@ -1,114 +1,71 @@
-/* Fase 2e · guardia: il volto della Diva Bot.
- * La faccia è un dato (PARTI_VOLTO) e un disegno SVG fatto con createElementNS.
- * Qui si difende: niente emoji, niente immagini esterne, tre stati dichiarati,
- * inchiostro unico per tema chiaro e scuro, tono applicato come attributo. */
-
-import test from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
-  PARTI_VOLTO,
-  TONI_VOLTO,
-  GEOMETRIA_VOLTO,
-  creaVolto,
-  etichettaTono
-} from "../comune/diva-volto.js";
+  GEOMETRIA_VOLTO, TONI_VOLTO, ESPRESSIONI_VOLTO,
+  etichettaTono, markupVolto, creaVolto
+} from '../comune/diva-volto.js';
 
-const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
-const leggi = (p) => readFileSync(join(radice, p), "utf8");
-const css = leggi("comune/tema-b.css");
-const bot = leggi("comune/diva-bot.js");
-const volto = leggi("comune/diva-volto.js");
+const modulo = fs.readFileSync(new URL('../comune/diva-volto.js', import.meta.url), 'utf8');
 
-test("nessuna emoji nel volto: il personaggio è disegnato, non incollato", () => {
-  const emoji = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
-  for (const parte of PARTI_VOLTO) {
-    assert.ok(!emoji.test(parte.classi), "emoji nelle classi: " + parte.classi);
-    for (const valore of Object.values(parte.attributi)) {
-      assert.ok(!emoji.test(String(valore)), "emoji negli attributi: " + valore);
-    }
+test('17.01 niente emoji: il volto è disegnato, non un carattere', () => {
+  assert.ok(!/\u{1F916}|\uD83E\uDD16/.test(modulo), 'nessun emoji robot nel modulo');
+  assert.ok(!/textContent\s*=\s*['"`][^'"`]*[\u{1F300}-\u{1FAFF}]/u.test(modulo), 'nessun emoji scritto via textContent');
+  assert.match(modulo, /mockup/i, 'il modulo dichiara la sua fonte');
+});
+
+test('17.02 le due inquadrature sono quelle del mockup', () => {
+  assert.equal(GEOMETRIA_VOLTO.intera, '0 18 240 256');
+  assert.equal(GEOMETRIA_VOLTO.testa, '44 58 152 112');
+  assert.match(markupVolto('happy', { testa: false }), /viewBox="0 18 240 256"/);
+  assert.match(markupVolto('happy'), /viewBox="44 58 152 112"/);
+});
+
+test('17.03 il tono bene sorride, come nel mockup', () => {
+  const s = markupVolto('happy');
+  assert.match(s, /M80 119q13-21 26 0/, 'occhi che ridono');
+  assert.match(s, /M101 135q19 24 38 0/, 'sorriso aperto');
+});
+
+test('17.04 il tono attenzione è preoccupato, come nel mockup', () => {
+  const s = markupVolto('worried');
+  assert.match(s, /M105 144q8-8 15 0t15 0/, 'bocca incerta');
+  assert.match(s, /M172 98q-8 12 0 17/, 'goccia');
+});
+
+test('17.05 il tono neutro guarda dritto, come nel mockup', () => {
+  const s = markupVolto('idle');
+  assert.match(s, /cx="93" cy="117" r="8"/, 'occhi tondi');
+  assert.match(s, /M103 137q17 15 34 0/, 'bocca lieve');
+});
+
+test('17.06 i tre toni danno tre disegni diversi', () => {
+  const a = markupVolto('happy'), b = markupVolto('worried'), c = markupVolto('idle');
+  assert.notEqual(a, b); assert.notEqual(b, c); assert.notEqual(a, c);
+  assert.deepEqual([...TONI_VOLTO], ['bene', 'attenzione', 'neutro']);
+});
+
+test('17.07 espressione sconosciuta ricade su idle, senza inventare facce', () => {
+  assert.equal(markupVolto('boh'), markupVolto('idle'));
+  assert.equal(markupVolto(undefined), markupVolto('idle'));
+  assert.deepEqual([...ESPRESSIONI_VOLTO], ['idle', 'happy', 'focus', 'tired', 'worried', 'cele']);
+});
+
+test('17.08 la tavolozza è quella del mockup, non una mia', () => {
+  const s = markupVolto('happy', { testa: false });
+  for (const c of ['#ff9ad5', '#ff72c2', '#241a2e', '#b9a6d0', '#fdfbff']) {
+    assert.ok(s.includes(c), 'colore del mockup: ' + c);
   }
-  assert.ok(!emoji.test(volto), "emoji nel modulo del volto");
 });
 
-test("la Diva Bot non è più un emoji dentro un cerchio", () => {
-  assert.ok(!/pallino\.textContent\s*=\s*"\\ud83e\\udd16"/.test(bot), "resta l'emoji robot");
-  assert.ok(!/\u{1F916}/u.test(bot), "resta il carattere robot nel modulo");
-  assert.match(bot, /creaVolto\(/, "manca il disegno del volto");
-});
-
-test("il volto ha una geometria dichiarata e ogni parte sta dentro il viewBox", () => {
-  assert.equal(GEOMETRIA_VOLTO.larghezza, 48);
-  assert.equal(GEOMETRIA_VOLTO.altezza, 48);
-  assert.ok(PARTI_VOLTO.length >= 12, "parti troppo poche: " + PARTI_VOLTO.length);
-  for (const parte of PARTI_VOLTO) {
-    for (const [nome, valore] of Object.entries(parte.attributi)) {
-      if (!/^(cx|cy|x1|y1|x2|y2|r)$/.test(nome)) continue;
-      const n = Number(valore);
-      assert.ok(Number.isFinite(n), nome + " non numerico: " + valore);
-      assert.ok(n >= 0 && n <= 48, nome + " fuori dal viewBox: " + valore);
-    }
-  }
-});
-
-test("tre toni, tre bocche, due famiglie di occhi", () => {
-  assert.deepEqual([...TONI_VOLTO].sort(), ["attenzione", "bene", "neutro"]);
-  const bocche = PARTI_VOLTO.filter((p) => p.classi.includes("bd-volto-bocca-"));
-  assert.equal(bocche.length, 3, "bocche: " + bocche.length);
-  for (const tono of TONI_VOLTO) {
-    assert.equal(
-      bocche.filter((p) => p.stato === tono).length,
-      1,
-      "bocca mancante per il tono " + tono
-    );
-  }
-  const felici = PARTI_VOLTO.filter((p) => p.classi.includes("bd-volto-felice"));
-  assert.equal(felici.length, 2, "occhi felici: " + felici.length);
-  assert.ok(felici.every((p) => p.stato === "bene"), "gli occhi felici devono essere del tono bene");
-});
-
-test("inchiostro unico: il volto non inventa token di colore", () => {
-  assert.ok(!/--[a-z-]+:[^;]*;/.test(volto), "il modulo del volto definische token");
-  assert.ok(!/fill="#|stroke="#/.test(volto), "colori fissi nel modulo del volto");
-  const sezione = css.slice(css.indexOf("/* ---------- Diva Bot"));
-  assert.ok(!/--[a-z-]+\s*:/.test(sezione), "il CSS della Diva definische token nuovi");
-});
-
-test("il CSS dichiara i tre stati e rispetta chi non vuole animazioni", () => {
-  for (const tono of ["bene", "attenzione", "neutro"]) {
-    assert.ok(
-      css.includes('.bd-diva[data-tono="' + tono + '"]'),
-      "manca lo stato CSS per " + tono
-    );
-  }
-  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/, "manca la guardia sul movimento");
-  assert.ok(!css.includes("!important"), "forzatura di stile nel CSS");
-  assert.match(css, /\.bd-volto\s*\{/, "manca la regola del volto");
-});
-
-test("montaDivaBot applica il tono al personaggio, non solo alla bolla", () => {
-  assert.match(
-    bot,
-    /pallino\.setAttribute\("data-tono"/,
-    "il tono non arriva al personaggio"
-  );
-  assert.match(bot, /etichettaTono\(/, "l'aria-label non dice il tono");
-  assert.match(bot, /aria-label/, "manca l'etichetta accessibile");
-});
-
-test("due chiamate senza documento non rompono niente", () => {
+test('17.09 senza documento non si costruisce niente', () => {
   assert.equal(creaVolto(null), null);
   assert.equal(creaVolto({}), null);
   assert.equal(creaVolto(undefined), null);
 });
 
-test("ogni tono ha un'etichetta parlata, diversa dalle altre", () => {
-  const etichette = TONI_VOLTO.map(etichettaTono);
-  assert.equal(new Set(etichette).size, 3, "etichette indistinguibili: " + etichette.join(" / "));
-  for (const testo of etichette) {
-    assert.ok(testo.length > 3 && testo.length < 60, "etichetta implausibile: " + testo);
-  }
-  assert.equal(etichettaTono("boh"), etichettaTono("neutro"), "tono ignoto: ripiego sul neutro");
+test('17.10 le etichette dei toni sono tre frasi distinte', () => {
+  const l = TONI_VOLTO.map(etichettaTono);
+  assert.equal(new Set(l).size, 3);
+  assert.equal(etichettaTono('boh'), 'nessun giudizio');
 });

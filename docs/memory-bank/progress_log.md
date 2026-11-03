@@ -212,3 +212,13 @@ Fase 2e: la robottina smette di essere un emoji dentro un cerchio.
 - guardia `tests/17-volto.test.mjs` (9 test): niente emoji, geometria dentro il viewBox,
   tre bocche e due famiglie di occhi, nessun token nuovo, tre stati CSS, tono applicato.
 - build `b0.7-fase2e-volto`.
+
+## 2e — Il volto della Diva Bot (import dal mockup)
+
+- **Ordine di Alice**: "voglio la diva bot del mockup" — importare, non ridisegnare. Il primo tentativo (volto 48x48 disegnato a mano) e' stato scartato.
+- `comune/diva-volto.js` contiene ora la funzione `bot()` del mockup (`mockup/mockup-telefono.html`, tavola "DIVA BOT · ESPRESSIONI") **verbatim**: stessi percorsi, stessi colori, stesso viewBox. Unica modifica ai nomi: `o.head` -> `opzioni.testa`.
+- Le due inquadrature sono quelle dell'originale: `intera` = `0 18 240 256`, `testa` = `44 58 152 112` (la testa e' quella che il mockup usa nella barra in alto).
+- Mappatura toni -> espressioni del mockup: `bene` -> `happy`, `attenzione` -> `worried`, `neutro` -> `idle`. Le altre tre (`focus`, `tired`, `cele`) restano in `ESPRESSIONI_VOLTO`, non usate dalla bolla.
+- `tests/17-volto.test.mjs` riscritta: difende la **fedelta' al mockup** (viewBox, percorsi delle tre bocche, tavolozza #ff9ad5 / #ff72c2 / #241a2e / #b9a6d0 / #fdfbff), non piu' la geometria disegnata a mano.
+- Build: `b0.8-fase2e-volto-mockup`. Suite: **106/106**.
+- Resta da fare: push (dopo consenso di Alice).
