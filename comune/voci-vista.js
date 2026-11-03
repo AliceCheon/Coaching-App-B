@@ -34,6 +34,10 @@ export const VOCI_VISTA = Object.freeze({
     testo: "Il check-in è l'unica cosa che ti chiede come stai. Io lo leggo: il come stai non me lo invento.",
     tono: "neutro"
   }),
+  "Valori del check-in": Object.freeze({
+    testo: "Le cinque voci che hai compilato tu, con il giorno in cui le hai scritte. Quelle vuote restano vuote.",
+    tono: "neutro"
+  }),
   "Programma attivo": Object.freeze({
     testo: "Il programma attivo è quello marcato. Se non è marcato te lo dico, invece di scegliere per te.",
     tono: "neutro"

@@ -12,6 +12,7 @@ import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.j
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore } from "../comune/diva-bot.js";
 import { collegaVociDiVista } from "../comune/voci-vista.js";
+import { righeValoriCheckin } from "../comune/valori-checkin.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
@@ -133,6 +134,11 @@ export function renderDashboard(doc, contenitore, modello, opzioni) {
   }
   contenitore.appendChild(carta(doc, "Ultimo check-in", righeCheckin.length ? righeCheckin : [{ testo: NON_REGISTRATO, classe: "valore" }],
     "state.quiz.questionnaireHistory · A r.4777 e r.15021"));
+
+  /* Fase 2l: le cinque voci del check-in, una per riga, con la data di quel
+   * check-in. A le scrive in `wellness` (r.15021); dove manca, lo dice. */
+  contenitore.appendChild(carta(doc, "Valori del check-in", righeValoriCheckin(modello.checkin),
+    "state.quiz.questionnaireHistory · wellness (energy, sleep, doms, stress, hunger) · A r.15021 — state.metrics non è usato: A non lo scrive (r.7659-7683)"));
 
   contenitore.appendChild(carta(doc, "Programma attivo", righeProgramma(modello),
     "nutritionPhotos, soli documenti program-v1- e program-v2-meta- · filtro programIds r.5591/5600 · v1 scartato se già in v2 r.5636 · controllo programCount r.5633/5640 · regola attivo r.7019-7027 · settimana r.6882-6899"));

@@ -388,3 +388,27 @@ mettono in fila come `.strip` del mockup.
   alla fase e non vanno toccate. Nessuna pulizia da fare lì.
 - Guardia nuova: `tests/24-voce-che-si-sente.test.mjs`, 24.01–24.08.
 - Build: `b0.16-fase2k-voce-che-si-sente`.
+
+## Fase 2l — «valori del check-in» (15:10)
+
+- **Verifica in sola lettura, prima di scrivere codice.** Due scoperte, entrambe
+  scomode e per questo dette subito:
+  - `state.body.waist` e `state.body.hip` compaiono **solo** nella forma
+    iniziale dello stato (A r.1197-1198). Nessun input, nessun gestore, nessuna
+    lettura: **A non ha una schermata per le misure**. La pagina «Misure
+    corporee» sarebbe stata vuota per sempre, anche dopo l'APK.
+  - `state.metrics.sleep / stress / energy` sono **letti** con ripiego sul
+    questionario (A r.7659-7683) ma **mai scritti**: restano `""`. I valori che
+    A mostra sono calcolati al volo, non salvati.
+- Scelta di Alice: la 2l diventa **«Valori del check-in»**, che legge ciò che A
+  scrive davvero (`state.quiz.questionnaireHistory` → `wellness`, A r.15021).
+- Nuovo modulo `comune/valori-checkin.js`: `VOCI_CHECKIN` (cinque voci nell'ordine
+  del questionario), `valoriDelCheckin`, `dataDelCheckin`, `quanteRegistrate`,
+  `righeValoriCheckin`.
+- Regole: una voce vuota **resta al suo posto** con «non registrato» (non sparisce,
+  altrimenti sembrerebbe che il questionario non la chieda); la data è quella del
+  check-in, non quella di oggi; zero e `false` sono valori, non buchi.
+- Carta nuova sia sul telefono sia sul desktop, subito dopo «Ultimo check-in».
+- Guardia nuova: `tests/25-valori-checkin.test.mjs`, 25.01–25.10 — la 25.09 vieta
+  di leggere `metrics` in questo modulo: è la trappola appena verificata.
+- Build: `b0.17-fase2l-valori-checkin`.
