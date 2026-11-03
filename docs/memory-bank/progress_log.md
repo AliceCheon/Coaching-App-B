@@ -435,3 +435,12 @@ Tre difetti piccoli visti da Alice sul PC, chiusi in una fase sola.
   **215 px** sul telefono.
 - Guardia nuova: `tests/26-accenti-e-spazi.test.mjs`, 26.01–26.06.
 - Build: `b0.18-fase2m-accenti-e-spazi`.
+
+## Checkpoint — passo 1: conteggi e fotografia (4 novembre 2026, notte)
+
+- **Build**: `b0.19-passo1-conteggi` (fonte unica `app-config-b.js`).
+- **Cosa è cambiato**: nuova pagina `desktop/conteggi.html` (con `desktop/conteggi.js`) che legge il documento radice di A, i programmi (`program-v2-meta-`, `program-v1-`), le schede (`program-v2-sheet-`, `-exercise-`, `-archived-`) e tutte le sedute (`sessions`), conta le tre famiglie e prepara la fotografia da scaricare sul PC. Nuovi moduli puri `comune/lettura-grezza.js` e `comune/conteggi-copia.js`. La dashboard del PC ha il collegamento «Conteggi e backup».
+- **Guardie**: `tests/27-conteggi-passo1.test.mjs` (7 test). `tests/02` resta tesa: la pagina non scrive un byte. `.gitignore` esclude `barbell-diva-backup*.json`: la fotografia non entra mai nel repository.
+- **Test**: 194/194 verdi (suite completa).
+- **Blocchi aperti**: la colonna «zona nuova» della tabella è vuota per costruzione (arriva al passo 3); la fotografia non è ancora stata scaricata da Alice.
+- **Prossimo passo**: passo 2 — zona `bdB_` e regole, con `regole-attuali.txt` salvato prima di pubblicare.

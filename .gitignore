@@ -1,1 +1,4 @@
 node_modules/
+
+# Fotografia dei dati della coach: resta sul suo PC, mai nel repository.
+barbell-diva-backup*.json
