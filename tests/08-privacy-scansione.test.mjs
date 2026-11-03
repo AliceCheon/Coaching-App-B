@@ -13,7 +13,7 @@ const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function tuttiFile(dir = radice, elenco = []) {
   for (const nome of readdirSync(dir)) {
-    if (nome === "node_modules" || nome === ".git" || nome === "tests" || nome === "package-lock.json" || nome === "package.json") continue;
+    if (nome === "node_modules" || nome === ".git" || nome === "tests" || nome === "pc" || nome === "package-lock.json" || nome === "package.json") continue;
     const percorso = join(dir, nome);
     const info = statSync(percorso);
     if (info.isDirectory()) tuttiFile(percorso, elenco);

@@ -19,7 +19,7 @@ function fileSorgente(dir = radice, elenco = []) {
     if (info.isDirectory()) fileSorgente(percorso, elenco);
     else if (/\.(js|mjs|html|webmanifest|md|sh|json)$/.test(nome) && !nome.startsWith("package")) elenco.push(percorso);
   }
-  return elenco.filter((p) => !p.includes(join(radice, "tests")));
+  return elenco.filter((p) => !p.includes(join(radice, "tests")) && !p.includes(join(radice, "pc")));
 }
 
 const VIETATI = [
