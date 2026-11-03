@@ -416,6 +416,56 @@ p {
   color: color-mix(in srgb, var(--text) 92%, var(--muted));
 }
 
+/* ---------- Fase 2f: la Diva sul desktop (mockup-pc.html) ----------
+   Il personaggio del telefono, ma con le misure e il respiro dello schermo
+   grande: 104 px come `#bd-diva` del mockup PC, fumetto largo al massimo
+   310 px (o il 58% della finestra), come `#bd-diva .bub`. Valori presi dal
+   mockup, non scelti: misure, ombra e tempi sono i suoi. */
+
+@media (min-width: 900px) {
+  .diva {
+    right: 26px;
+    bottom: 26px;
+    gap: 10px;
+  }
+
+  .bd-diva {
+    width: 104px;
+    filter: drop-shadow(0 15px 24px rgba(8, 2, 18, 0.5));
+  }
+
+  .bd-bolla {
+    max-width: min(310px, 58vw);
+  }
+}
+
+/* Il movimento del mockup PC: `dvBob`, 3,4 s, cinque pixel e mezzo grado di
+   rotazione; `dvPop`, mezzo secondo, quando la frase cambia (la figura nasce
+   di nuovo a ogni frase, quindi lo scatto è il suo primo respiro). Solo su
+   schermi grandi, e solo per chi non ha chiesto di fermare le animazioni. */
+
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .bd-diva .bd-figura {
+    transform-origin: 50% 100%;
+    animation: bd-oscilla-pc 3.4s ease-in-out infinite;
+  }
+
+  @keyframes bd-oscilla-pc {
+    0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+    50% { transform: translateY(-5px) rotate(0.6deg); }
+  }
+
+  .bd-diva {
+    animation: bd-scatto-pc 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.3);
+  }
+
+  @keyframes bd-scatto-pc {
+    0% { transform: translateY(0) scale(1); }
+    45% { transform: translateY(-9px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+  }
+}
+
 /* ---------- tipografia d'inquadratura ---------- */
 
 .occhiello {

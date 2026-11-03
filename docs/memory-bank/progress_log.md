@@ -252,3 +252,29 @@ con testo escapato, marchio, etichette, assenza di documenti.
 
 Build: `b0.9-fase2e-volto-intero`. Suite in sandbox 112/112.
 Nessun push: si attende il «sì» di Alice.
+
+## 2026-11-03 14:20 — Fase 2f: la Diva sul desktop (mockup-pc.html)
+
+Fase 2f, prima porta: il personaggio smette di essere la stessa figurina su
+ogni schermo. Sul telefono resta com'è (78 px, oscillazione da 3,2 s e 4 px,
+quella del mockup telefono); da 900 px in su prende le misure e il respiro del
+mockup PC — 104 px di larghezza come `#bd-diva`, ombra `0 15px 24px
+rgba(8,2,18,.5)`, fumetto fino a `min(310px, 58vw)` come `#bd-diva .bub`.
+
+Il movimento è `dvBob`: 3,4 s, cinque pixel e mezzo grado di rotazione, con
+l'origine in basso perché il personaggio ruoti sui piedi e non sulla pancia.
+Alla comparsa di ogni frase nuova c'è `dvPop`: mezzo secondo, nove pixel,
+`cubic-bezier(.2,.9,.25,1.3)` — e siccome `montaDivaBot` ricostruisce la figura
+a ogni frase, lo scatto è il suo primo respiro senza una riga di JS in più.
+
+Tutto dentro `@media (min-width: 900px) and (prefers-reduced-motion:
+no-preference)`: chi ha chiesto meno movimento non vede né oscillazione né
+scatto, e il telefono non paga nulla di quello che non usa.
+
+Nessun percorso SVG toccato, nessuna classe aggiunta al markup: il disegno
+resta quello del mockup, parola per parola (guardia 17 ancora verde).
+
+- Build: `b0.10-fase2f-desktop`. Guardia nuova: `tests/18-desktop.test.mjs`.
+- Fuori da questa porta, per scelta: il **marchio** nella testata (importato in
+  2e, non montato: serve il via di Alice sul posto) e la **striscia** al posto
+  della bolla.
