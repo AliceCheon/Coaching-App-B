@@ -293,3 +293,18 @@ alla barra laterale, sopra le sezioni. Sotto il nome NIENTE «coach».
   fuori, in attesa del file.
 - Guardia nuova: `tests/19-testata.test.mjs`, 19.01–19.09.
 - Build: `b0.11-fase2g-testata`.
+
+## 2026-11-03 14:32 — Fase 2g: la testata del telefono
+
+Con il mockup di Codex in mano (`mockup-barbell-diva-apk cody.html`), la testata
+del telefono prende la forma del mockup.
+
+- `monogramma` «BD» → `.marchio-bot`: cerchio 36 px, gradiente viola→rosa,
+  dentro la testa del robot (`viewBox 38 28 164 148`), una sola faccia (idle).
+- Nome `Barbell <i>Diva</i>`, 16,6 px, corsivo lilla — lo stesso marchio del desktop.
+- Motto «Lift. Slay. Repeat.» dentro il marchio, con accanto la pastiglia della
+  versione: il vecchio `<p class="motto">` è stato tolto, non ripetuto.
+- Il logo è decorativo (`aria-hidden`): il nome resta leggibile dai lettori di schermo.
+- Guardia nuova: `tests/20-testata-telefono.test.mjs`, 20.01–20.06.
+- 18.11 e 19.07 ora controllano la forma della build, non il numero della fase.
+- Build: `b0.12-fase2g-telefono`.

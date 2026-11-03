@@ -162,6 +162,7 @@ export async function avvia(doc, win) {
   if (!config || !sdk) throw new Error("Configurazione o SDK mancanti");
 
   doc.querySelectorAll("[data-build]").forEach((n) => { n.textContent = "build " + config.build; });
+  doc.querySelectorAll("[data-versione]").forEach((n) => { n.textContent = config.build; });
   applicaTema(doc, temaSalvato(win.localStorage));
 
   const app = inizializzaAppB(sdk, config);

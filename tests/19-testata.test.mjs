@@ -44,7 +44,7 @@ test("19.06 la versione è una pastiglia, non una riga di build", () => {
 
 test("19.07 la pastiglia mostra la build, dalla fonte unica", () => {
   assert.match(app, /doc\.querySelectorAll\("\[data-versione\]"\)\.forEach\(\(n\) => \{ n\.textContent = config\.build; \}\)/);
-  assert.match(config, /build: "b0\.11-fase2g-testata"/);
+  assert.match(config, /build: "b0\.\d+-[a-z0-9-]+"/);
 });
 
 test("19.08 il marchio sta in cima alla barra, sopra le sezioni", () => {
