@@ -221,5 +221,15 @@ export async function avviaConteggi(doc, win) {
 }
 
 if (typeof document !== "undefined" && document.querySelector && document.querySelector("[data-avvio-conteggi]")) {
-  avviaConteggi(document, window);
+  /* Se l'avvio si rompe, lo deve dire in pagina: una pagina muta è un difetto,
+   * non un silenzio. */
+  Promise.resolve()
+    .then(() => avviaConteggi(document, window))
+    .catch((e) => {
+      const avviso = document.querySelector("#erroreAccesso");
+      if (avviso) {
+        avviso.dataset.vuoto = "no";
+        avviso.textContent = "La pagina non è partita: " + ((e && e.message) || e);
+      }
+    });
 }
