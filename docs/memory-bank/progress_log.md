@@ -370,3 +370,21 @@ mettono in fila come `.strip` del mockup.
   forza gli si dia. Spessore non era il problema, tinta sì.
 - Guardia nuova: `tests/23-toni-due-pelli.test.mjs`, 23.01–23.06.
 - Build: `b0.15-fase2j-toni-due-pelli`.
+
+## Fase 2k — «la voce che si sente» (15:05)
+
+- **Accessibilità, non cosmesi.** La frase della Diva cambia da sola (scorrimento
+  delle carte, tocco sulla figura): senza una regione viva, per un lettore di
+  schermo non cambia mai niente. La bolla ora è `role="status"`,
+  `aria-live="polite"`, `aria-atomic="true"` — annunciata intera, senza
+  interrompere chi sta leggendo.
+- La figura SVG è `aria-hidden="true"`: decorativa. Il tono lo dice a parole
+  l'`aria-label` del pulsante («Diva Bot: attenzione»), che segue il cambio di
+  tono. Senza, il lettore annuncerebbe i pezzi dell'SVG uno per uno.
+- Vale per tutte e due le pelli — striscia e fumetto — perché gli attributi
+  stanno nel montaggio, non nel CSS.
+- Nota di onestà: i riferimenti `b0.10`/`b0.11`/`b0.12` che restano nel registro
+  sono **storia**, non debito: le guardie 18.11 e 19.07 erano già agnostiche
+  alla fase e non vanno toccate. Nessuna pulizia da fare lì.
+- Guardia nuova: `tests/24-voce-che-si-sente.test.mjs`, 24.01–24.08.
+- Build: `b0.16-fase2k-voce-che-si-sente`.

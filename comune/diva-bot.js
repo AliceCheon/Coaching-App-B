@@ -308,6 +308,14 @@ export function montaDivaBot(contenitore, frasi, tono, opzioni = {}) {
   const bolla = doc.createElement(striscia ? "p" : "div");
   bolla.className = striscia ? "bd-striscia-bolla" : "bd-bolla";
   if (tono) bolla.setAttribute("data-tono", String(tono));
+  /* Fase 2k — «la voce che si sente». La frase cambia da sola (scorrimento,
+   * tocco): senza una regione viva un lettore di schermo non se ne accorge e
+   * la bolla resta muta per chi non la guarda. `polite` perché non deve
+   * interrompere chi sta leggendo; `atomic` perché la frase si annuncia
+   * intera, non a pezzi mentre si sostituisce. */
+  bolla.setAttribute("role", "status");
+  bolla.setAttribute("aria-live", "polite");
+  bolla.setAttribute("aria-atomic", "true");
   let testo = bolla;
   if (!striscia) {
     testo = doc.createElement("p");
@@ -321,7 +329,12 @@ export function montaDivaBot(contenitore, frasi, tono, opzioni = {}) {
   pallino.className = "bd-diva bd-sbot";
   pallino.setAttribute("aria-label", "Diva Bot");
   const volto = creaFigura(contenitore.ownerDocument, tono || "neutro");
-  if (volto) pallino.appendChild(volto);
+  /* La figura è decorativa: il tono lo dice già l'aria-label del pulsante.
+   * Senza questo, il lettore di schermo annuncerebbe i pezzi dell'SVG. */
+  if (volto) {
+    volto.setAttribute("aria-hidden", "true");
+    pallino.appendChild(volto);
+  }
   pallino.setAttribute("data-tono", tono || "neutro");
   pallino.setAttribute("aria-label", "Diva Bot: " + etichettaTono(tono || "neutro"));
   if (striscia) {
@@ -355,8 +368,14 @@ export function montaDivaBot(contenitore, frasi, tono, opzioni = {}) {
       tonoCorrente = nuovo;
       while (pallino.firstChild) pallino.removeChild(pallino.firstChild);
       const nuovaFigura = creaFigura(doc, nuovo);
-      if (nuovaFigura) pallino.appendChild(nuovaFigura);
+      if (nuovaFigura) {
+        nuovaFigura.setAttribute("aria-hidden", "true");
+        pallino.appendChild(nuovaFigura);
+      }
       pallino.setAttribute("data-tono", nuovo);
+      /* Il tono è cambiato: anche l'etichetta a parole deve seguirlo, o il
+       * lettore di schermo continua a dire il tono di prima. */
+      pallino.setAttribute("aria-label", "Diva Bot: " + etichettaTono(nuovo));
     }
     return nuovo;
   };
