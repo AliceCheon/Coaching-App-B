@@ -10,7 +10,8 @@ import { applicaTema, temaSalvato, alternaTema } from "../comune/tema.js";
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
-import { frasiPerDati, montaDivaBot, voceDelQuadro } from "../comune/diva-bot.js";
+import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore } from "../comune/diva-bot.js";
+import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
 const NON_REGISTRATO = "non registrato";
@@ -148,6 +149,10 @@ export function renderDashboard(doc, contenitore, modello, opzioni) {
     contenitore.appendChild(carta(doc, "Cosa manca per il semaforo completo", righeDatiMancanti(),
       "DATI_SEMAFORO · comune/struttura.js — dati che in A non sono registrati"));
   }
+  if (opz.carichi) {
+    contenitore.appendChild(carta(doc, "Carichi per esercizio", righeCarichi(opz.carichi),
+      "sottoraccolta sessions \u2014 esercizi e serie con peso \u00b7 finestra di 8 settimane \u00b7 campi accettati dichiarati in comune/carichi.js"));
+  }
   return contenitore;
 }
 
@@ -208,17 +213,20 @@ export async function avvia(doc, win) {
         programCount: radice.programCount
       });
       const quadro = quadroStrutturale(sedute.sedute, { oggi: new Date(), peso: modello.peso });
-      renderDashboard(doc, doc.querySelector("#griglia"), modello, { quadro });
+      const carichi = carichiPerEsercizio(sedute.sedute, { oggi: new Date() });
+      renderDashboard(doc, doc.querySelector("#griglia"), modello, { quadro, carichi });
       contenitoreDiva.textContent = "";
-      const voce = voceDelQuadro(quadro);
+      const voceQuadro = voceDelQuadro(quadro);
+      const voceCarico = voceDelCarico(carichi);
+      const saluto = voceDelGiorno(new Date());
       montaDivaBot(
         contenitoreDiva,
         frasiPerDati({
           numeroSedute: modello.numeroSedute || 0,
           pesoPresente: Boolean(modello.peso),
           checkinPresente: Boolean(modello.checkin)
-        }, quadro),
-        voce.tono
+        }, quadro, { giornata: saluto, carichi }),
+        tonoPeggiore(voceQuadro.tono, voceCarico.tono)
       );
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");

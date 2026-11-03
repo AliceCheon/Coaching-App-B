@@ -159,7 +159,7 @@ Fase 2c: il quadro strutturale smette di essere solo numeri e diventa una voce.
   Ogni numero pronunciato viene dal quadro; ogni assenza la dichiara.
 - tono `bene | attenzione | neutro` come attributo `data-tono` sulla bolla: il colore
   dice quanto pesa la frase, il testo non cambia di una parola. Stile in `tema-b.css`
-  con i token esistenti (`--verde`, `--pink`), nessun token nuovo, nessuna forzatura.
+  con i token esistenti (`--verde`, `--pink`), nessun token nuovo, nessuna forzatura di stile.
 - `frasiPerDati(riepilogo, quadro)` mette la voce per prima: una bolla si legge una
   volta, e la prima frase deve essere quella che conta. Telefono e PC passano lo
   stesso `quadro` già calcolato per le card: una sola verità per schermata.
@@ -167,3 +167,29 @@ Fase 2c: il quadro strutturale smette di essere solo numeri e diventa una voce.
   senza «1 giorni fa», nessuna cifra estranea al quadro, frase entro 220 caratteri,
   tono applicato come attributo e testo sempre `textContent`.
 - build `b0.5-fase2c-voce`; suite 70/70.
+
+## b0.6-fase2d-giorno-carichi — il saluto del giorno e la voce dei chili (3 novembre 2026, notte)
+
+Fase 2d: due voci nuove per la Diva Bot, entrambe in sola lettura.
+- `voceDelGiorno(data)` in `comune/diva-bot.js`: calendario di sette registri (uno per
+  giorno della settimana) con tre varianti ciascuno, scelte da settimana e anno.
+  Deterministico: la stessa data da' la stessa frase, nessun sorteggio a ogni ricarica.
+  Il saluto non pronuncia cifre e non giudica: il tono della bolla lo decidono i dati.
+- nuovo `comune/carichi.js`: estrae dalle sedute i pesi per esercizio, raggruppa per nome
+  normalizzato, confronta solo lo stesso esercizio con se stesso e calcola la variazione
+  tra la prima e l'ultima occorrenza in una finestra dichiarata di 8 settimane (soglie in
+  `SOGLIE_CARICHI`). I nomi di campo accettati sono elencati in `CAMPI_CARICHI`: se i campi
+  non combaciano, la card mostra quanti esercizi ha visto e quanti con peso, invece di uno
+  zero silenzioso. Niente stime, niente somme tra esercizi diversi, pesi fuori finestra
+  esclusi e contati.
+- `voceDelCarico(carichi)`: scala di priorita' (calo oltre il 5% > massimo in archivio >
+  progressione > stallo); senza pesi dice «non registrato»; con meno di tre sedute non
+  racconta un andamento.
+- `tonoPeggiore(...)`: il tono della bolla e' il piu' severo tra quadro e carico.
+- `frasiPerDati(riepilogo, quadro, extra)` ordina saluto, quadro, carico; senza `extra`
+  resta identica alla fase 2c (i test 14 valgono ancora).
+- card «Carichi per esercizio» su PC e telefono, dallo stesso modulo.
+- guardie `tests/15-carichi.test.mjs` e `tests/16-voce-giorno.test.mjs`: determinismo del
+  saluto, nessuna cifra nel saluto, estrazione tollerante ma dichiarata, nessun confronto
+  tra esercizi, cifre della voce presenti nei dati.
+- build `b0.6-fase2d-giorno-carichi`.
