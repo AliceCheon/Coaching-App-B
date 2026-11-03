@@ -338,11 +338,29 @@ export function montaDivaBot(contenitore, frasi, tono, opzioni = {}) {
     contenitore.appendChild(pallino);
   }
   let indice = 0;
-  const mostra = () => {
+  let tonoCorrente = tono || "neutro";
+  const ciclo = () => {
     testo.textContent = frasi[indice % frasi.length] || FRASI_BASE[0];
     indice += 1;
   };
-  mostra();
-  pallino.addEventListener("click", mostra);
-  return { aggiungi: (nuove) => nuove && nuove.length && mostra(), bolla, pallino };
+  /* Fase 2i — la frase imposta da fuori (la carta che stai guardando). Prende
+   * il posto del giro senza consumarlo: il tocco riparte da dove era. Il tono
+   * cambia la faccia della figura, non solo il colore: se cambia, si ridisegna. */
+  const mostra = (testoFrase, tonoFrase) => {
+    if (!testoFrase) return null;
+    testo.textContent = String(testoFrase);
+    const nuovo = tonoPeggiore(tonoCorrente, tonoFrase);
+    bolla.setAttribute("data-tono", nuovo);
+    if (nuovo !== tonoCorrente) {
+      tonoCorrente = nuovo;
+      while (pallino.firstChild) pallino.removeChild(pallino.firstChild);
+      const nuovaFigura = creaFigura(doc, nuovo);
+      if (nuovaFigura) pallino.appendChild(nuovaFigura);
+      pallino.setAttribute("data-tono", nuovo);
+    }
+    return nuovo;
+  };
+  ciclo();
+  pallino.addEventListener("click", ciclo);
+  return { aggiungi: (nuove) => nuove && nuove.length && ciclo(), mostra, bolla, pallino };
 }

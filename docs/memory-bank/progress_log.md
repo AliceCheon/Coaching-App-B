@@ -328,3 +328,25 @@ mettono in fila come `.strip` del mockup.
   dell'epoca emoji.
 - Guardia nuova: `tests/21-striscia.test.mjs`, 21.01–21.06.
 - Build: `b0.13-fase2h-striscia`.
+
+## Fase 2i — «le voci di vista» (14:52)
+
+- B non ha navigazione: «cambiare schermata» qui vuol dire **cambiare la carta
+  che stai guardando**. La Diva non parla più solo al tocco.
+- Nuovo modulo `comune/voci-vista.js`: la tabella `VOCI_VISTA` (una voce per
+  ogni carta del telefono) e `collegaVociDiVista`, che osserva le carte con
+  `IntersectionObserver` e affida la frase alla più visibile.
+- Regole dichiarate: nessuna cifra nelle voci (i numeri stanno nei dati, la
+  guardia 22.02 lo verifica); la frase cambia solo quando cambia la carta, così
+  una passata di pollice non fa balbettare la bolla; nessuna carta visibile =
+  frase ferma, mai vuota.
+- **Il tono non migliora mai quello del quadro**: scorrere su una carta serena
+  non fa verde una bolla che dice «attenzione». Può solo peggiorare.
+- `montaDivaBot` espone `mostra(testo, tono)`: cambia la frase, il tono e la
+  faccia della figura (la figura si ridisegna, non si moltiplica). Il giro del
+  tocco resta intatto e riparte da dove era.
+- L'app stacca l'osservatore vecchio a ogni lettura: una ricarica non lascia
+  osservatori orfani su nodi buttati via.
+- Guardia nuova: `tests/22-voci-vista.test.mjs`, 22.01–22.13. La 22.01 legge i
+  titoli delle carte dal codice vero: una carta senza voce fa cadere il test.
+- Build: `b0.14-fase2i-voci-di-vista`.

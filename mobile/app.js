@@ -11,6 +11,7 @@ import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comu
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore } from "../comune/diva-bot.js";
+import { collegaVociDiVista } from "../comune/voci-vista.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 
@@ -156,6 +157,10 @@ export function renderDashboard(doc, contenitore, modello, opzioni) {
   return contenitore;
 }
 
+/* Fase 2i: l'osservatore delle carte. Uno solo per volta — a ogni lettura il
+ * vecchio viene staccato, altrimenti si accumulano su nodi già buttati via. */
+let vociVista = null;
+
 export async function avvia(doc, win) {
   const config = win.BD_B;
   const sdk = win.firebase;
@@ -220,7 +225,7 @@ export async function avvia(doc, win) {
       const voceQuadro = voceDelQuadro(quadro);
       const voceCarico = voceDelCarico(carichi);
       const saluto = voceDelGiorno(new Date());
-      montaDivaBot(
+      const bot = montaDivaBot(
         contenitoreDiva,
         frasiPerDati({
           numeroSedute: modello.numeroSedute || 0,
@@ -230,6 +235,10 @@ export async function avvia(doc, win) {
         tonoPeggiore(voceQuadro.tono, voceCarico.tono),
         { striscia: true }
       );
+      /* La frase segue la carta che stai guardando; il tono non migliora mai
+       * quello del quadro: scorre, non assolve. */
+      if (vociVista) vociVista.stacca();
+      vociVista = collegaVociDiVista(doc, win, bot, tonoPeggiore(voceQuadro.tono, voceCarico.tono));
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");
     }
