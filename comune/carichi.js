@@ -5,15 +5,15 @@
  * tempo. Nessuna rete, nessun DOM, nessuna scrittura: solo aritmetica su
  * oggetti già in memoria.
  *
- * Perche' e' scritto cosi', e non come un lettore con un solo schema fisso:
- * il contratto delle sedute di A non e' documentato riga per riga per la parte
+ * Perché è scritto così, e non come un lettore con un solo schema fisso:
+ * il contratto delle sedute di A non è documentato riga per riga per la parte
  * esercizi. Allora qui i nomi di campo che B prova a leggere sono DICHIARATI in
  * CAMPI_CARICHI, e il modulo conta anche gli esercizi che ha visto senza
- * riuscire a leggerne il peso. La card mostra questi due numeri: cosi', se un
+ * riuscire a leggerne il peso. La card mostra questi due numeri: così, se un
  * giorno i campi hanno altri nomi, si vede subito dalla schermata invece di
  * ricevere un «zero» silenzioso.
  *
- * Regola di casa: un peso che non c'e' vale «non registrato». Mai 0, mai una
+ * Regola di casa: un peso che non c'è vale «non registrato». Mai 0, mai una
  * stima, mai un carico dedotto dal programma. E nessun confronto tra esercizi
  * diversi: due esercizi non si sommano, non si mediano, non si mettono in gara.
  */
@@ -42,7 +42,7 @@ export const CAMPI_CARICHI = Object.freeze({
 
 const NON_REGISTRATO = "non registrato";
 
-/* Primo campo presente tra quelli accettati. Non indovina: se nessuno c'e',
+/* Primo campo presente tra quelli accettati. Non indovina: se nessuno c'è,
  * torna undefined e chi chiama lo tratta come dato assente. */
 function primoCampo(oggetto, nomi) {
   if (!oggetto || typeof oggetto !== "object") return undefined;
@@ -54,9 +54,9 @@ function primoCampo(oggetto, nomi) {
 }
 
 /* Peso numerico o null. Accetta "40", "40 kg", "40,5", "40 kg x 8": il primo
- * numero della stringa e' il carico. Una virgola vale come separatore decimale
- * (si scrive cosi' in palestra). Zero e' un peso vero (corpo libero), un testo
- * senza cifre non lo e'. */
+ * numero della stringa è il carico. Una virgola vale come separatore decimale
+ * (si scrive così in palestra). Zero è un peso vero (corpo libero), un testo
+ * senza cifre non lo è. */
 export function numeroCarico(valore) {
   if (typeof valore === "number") return Number.isFinite(valore) ? valore : null;
   if (valore == null || valore === "") return null;
@@ -82,7 +82,7 @@ function percentuale(da, a) {
   return Math.round(((a - da) / da) * 1000) / 10;
 }
 
-/* Un oggetto-serie puo' essere una numero ("40"), una stringa ("40 kg x 8")
+/* Un oggetto-serie può essere una numero ("40"), una stringa ("40 kg x 8")
  * oppure un oggetto {weight, reps}. Qui si normalizza in {peso, ripetizioni}. */
 function serieNormalizzata(serie) {
   if (serie == null) return null;
@@ -97,7 +97,7 @@ function serieNormalizzata(serie) {
 }
 
 /* Esercizi di una seduta, normalizzati. Ritorna anche quanti esercizi sono
- * stati VISTI e quanti avevano un peso leggibile: la differenza e' il segnale
+ * stati VISTI e quanti avevano un peso leggibile: la differenza è il segnale
  * che i nomi di campo non combaciano. */
 export function eserciziDellaSeduta(seduta) {
   const elenco = primoCampo(seduta, CAMPI_CARICHI.esercizi);
@@ -147,7 +147,7 @@ function chiaveEsercizio(nome) {
  * Ritorna:
  *   { esercizi, visti, conPeso, seduteConCarichi, occorrenze, fuoriFinestra,
  *     finestraSettimane, oggi }
- * Ogni esercizio porta: nome, chiave, occorrenze (dalla piu' vecchia alla piu'
+ * Ogni esercizio porta: nome, chiave, occorrenze (dalla più vecchia alla più
  * recente), ultimoMassimo, massimoStorico, variazione (percentuale tra la prima
  * e l'ultima occorrenza della finestra), giorniDallUltima, serieUltima.
  */
@@ -230,7 +230,7 @@ export function carichiPerEsercizio(sedute, opzioni) {
   };
 }
 
-/* Un esercizio con abbastanza storia per dire qualcosa. La soglia e'
+/* Un esercizio con abbastanza storia per dire qualcosa. La soglia è
  * dichiarata: sotto minOccorrenze non si commenta l'andamento. */
 export function eserciziConStoria(carichi) {
   const elenco = carichi && Array.isArray(carichi.esercizi) ? carichi.esercizi : [];
@@ -279,7 +279,7 @@ export function righeCarichi(carichi) {
     });
   }
   if (carichi.fuoriFinestra > 0) {
-    righe.push({ testo: "pesi piu' vecchi della finestra: " + carichi.fuoriFinestra + " (fuori dai conti, non cancellati)", classe: "riga" });
+    righe.push({ testo: "pesi più vecchi della finestra: " + carichi.fuoriFinestra + " (fuori dai conti, non cancellati)", classe: "riga" });
   }
   return righe;
 }

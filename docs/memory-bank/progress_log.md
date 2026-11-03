@@ -412,3 +412,26 @@ mettono in fila come `.strip` del mockup.
 - Guardia nuova: `tests/25-valori-checkin.test.mjs`, 25.01–25.10 — la 25.09 vieta
   di leggere `metrics` in questo modulo: è la trappola appena verificata.
 - Build: `b0.17-fase2l-valori-checkin`.
+
+## Fase 2m — «accenti e spazi» (16:55)
+
+Tre difetti piccoli visti da Alice sul PC, chiusi in una fase sola.
+
+- **Accenti.** La Diva diceva «Martedi'.» con l'apostrofo al posto dell'accento.
+  Corretti **tutti** i giorni (Lunedì, Martedì, Mercoledì, Giovedì, Venerdì,
+  Sabato) e ogni altra parola accentata dei sorgenti: `e'`→`è` (43 casi),
+  `piu'`→`più` (10), `così`, `però`, `può`, `perché`, `già`, `priorità`,
+  `continuità`, `onestà`, `metà`, `sì`, `lì`, `dà`, `è` maiuscola. La guardia
+  26.01 scandaglia tutti i sorgenti di `comune/` più i due ingressi e cade se
+  ricompare un apostrofo al posto dell'accento.
+- **Pastiglia della versione.** Stava per toccare il bordo della barra con nomi
+  di build lunghi (`b0.17-fase2l-valori-checkin`). Ora `max-width:100%`,
+  `box-sizing:border-box`, troncamento con i puntini, e i contenitori
+  (`.marchio`, i suoi figli) possono restringersi (`min-width:0`).
+- **Fumetto che copre le carte.** Lo spazio in fondo non è più scelto a occhio:
+  è il conto dell'ingombro della Diva — 26 px dal bordo + 104 px di figura +
+  10 px di distacco + l'altezza del fumetto (fino a 310 px di larghezza). Da
+  60 px a **250 px** sul desktop (250 anche nella finestra stretta), da 190 a
+  **215 px** sul telefono.
+- Guardia nuova: `tests/26-accenti-e-spazi.test.mjs`, 26.01–26.06.
+- Build: `b0.18-fase2m-accenti-e-spazi`.
