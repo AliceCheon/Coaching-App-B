@@ -270,6 +270,36 @@
 .copia-dati{margin:0 0 6px}
 
 /* ============================================================
+   FASE 2.2 — IL COLORE CHE MANCAVA
+   Gli accenti rosa e viola sono gettoni di tema-b.css: qui si usano e basta,
+   la palette resta quella di B.
+   ============================================================ */
+.ck-sez{color:var(--pink)}
+.ck-sez .ck-ic{color:var(--pink)}
+
+/* Il filo sfumato sul bordo alto: la firma delle carte di B. */
+.ck-card,.ck-met,.ck-ready,.db-diva{position:relative;overflow:hidden}
+.ck-card::before,.ck-met::before,.ck-ready::before,.db-diva::before{
+  content:"";position:absolute;inset:0 0 auto;height:2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--pink) 28%,var(--purple) 72%,transparent);opacity:.82}
+
+/* L'anello del readiness ha il filo sfumato anche quando è vuoto. */
+.ck-anello-sfondo{stroke:#3A2749;stroke:url(#ckAnelloFilo)}
+
+/* Le pastiglie positive respirano verde, non grigio. */
+.ck-pill.ok{color:var(--verde);border-color:color-mix(in srgb,var(--verde) 42%,transparent);background:color-mix(in srgb,var(--verde) 12%,transparent)}
+.ck-ok{color:color-mix(in srgb,var(--verde) 70%,var(--text));border-color:color-mix(in srgb,var(--verde) 32%,transparent);background:color-mix(in srgb,var(--verde) 9%,transparent)}
+
+/* La voce attiva: barra rosa a sinistra e sfumatura leggera nel fondo. */
+.voce.attiva{background:linear-gradient(90deg,color-mix(in srgb,var(--pink) 20%,transparent),color-mix(in srgb,var(--purple) 10%,transparent) 62%,transparent)}
+.voce.attiva::before{background:linear-gradient(180deg,var(--pink),var(--purple));box-shadow:0 0 12px color-mix(in srgb,var(--pink) 55%,transparent)}
+
+/* Le voci non ancora fatte: più leggibili, ma chiaramente spente. */
+.voce.spenta{opacity:.72}
+.voce.spenta .tx{color:color-mix(in srgb,var(--text) 46%,var(--muted))}
+.voce.spenta .ic{color:color-mix(in srgb,var(--text) 34%,var(--muted))}
+
+/* ============================================================
    SCHERMO STRETTO — sotto i 980 px il menu passa in alto.
    Questa è l'unica media query dell'impianto: fuori di qui, menu a
    sinistra largo 262 px e pagina a destra, come nel v31.

@@ -161,6 +161,21 @@ function bloccoReadiness(doc, modello) {
   svg.setAttribute("width", "96");
   svg.setAttribute("height", "96");
   svg.setAttribute("aria-hidden", "true");
+  /* Il filo sfumato rosa-viola dell'anello: vale anche quando il valore non
+   * c'è, così l'anello vuoto non resta un cerchio grigio. */
+  const defs = doc.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const filo = doc.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+  filo.setAttribute("id", "ckAnelloFilo");
+  filo.setAttribute("x1", "0"); filo.setAttribute("y1", "0");
+  filo.setAttribute("x2", "1"); filo.setAttribute("y2", "1");
+  [["0%", "var(--pink)"], ["100%", "var(--purple)"]].forEach(([quota, colore]) => {
+    const stop = doc.createElementNS("http://www.w3.org/2000/svg", "stop");
+    stop.setAttribute("offset", quota);
+    stop.setAttribute("stop-color", colore);
+    filo.appendChild(stop);
+  });
+  defs.appendChild(filo);
+  svg.appendChild(defs);
   const sfondo = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
   sfondo.setAttribute("cx", "48"); sfondo.setAttribute("cy", "48"); sfondo.setAttribute("r", "34");
   sfondo.setAttribute("class", "ck-anello-sfondo");

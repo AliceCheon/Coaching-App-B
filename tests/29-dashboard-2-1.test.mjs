@@ -82,7 +82,7 @@ test("29.08 resta in sola lettura: nessuna scrittura nel modulo nuovo", () => {
 });
 
 test("29.09 la build è quella del passo 2.1", () => {
-  assert.match(config, /build:\s*"b0\.\d+-passo2-1-[a-z0-9-]+"/);
+  assert.match(config, /build:\s*"b0\.\d+-passo2-2-[a-z0-9-]+"/);
   assert.match(html, /data-versione/);
 });
 

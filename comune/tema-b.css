@@ -61,6 +61,15 @@
 
 :root{
   --sans:"Nunito Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  /* Gli accenti del mockup. Sul desktop mancavano: senza questi, rosa e viola
+     cadono nel vuoto e la pagina diventa grigia. Sono fissi, non cambiano con
+     la pelle. */
+  --pink:#ff4fa3;
+  --pink-hot:#ff2d95;
+  --pink-soft:#ffb8dc;
+  --purple:#a855f7;
+  --core:#ffe066;
+  --mono:"JetBrains Mono","Cascadia Mono",ui-monospace,Consolas,monospace;
 }
 
 body {
@@ -71,6 +80,13 @@ body {
   line-height: 1.55;
   color: var(--text);
   background: var(--gradiente) fixed;
+  /* I bagliori d'angolo del v31: viola in alto a destra, rosa in alto a
+     sinistra, viola in basso. Stanno nello sfondo, non sopra il testo. */
+  background-image:
+    radial-gradient(820px 620px at 96% -12%, color-mix(in srgb, var(--purple) 42%, transparent), transparent 62%),
+    radial-gradient(680px 520px at -8% 4%, color-mix(in srgb, var(--pink) 30%, transparent), transparent 64%),
+    radial-gradient(760px 560px at 52% 112%, color-mix(in srgb, var(--purple) 26%, transparent), transparent 70%),
+    var(--gradiente);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -85,8 +101,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(680px 460px at 88% 2%, color-mix(in srgb, var(--purple) 24%, transparent), transparent 68%),
-    radial-gradient(560px 420px at 2% 98%, color-mix(in srgb, var(--pink) 18%, transparent), transparent 70%);
+    radial-gradient(520px 380px at 92% 0%, color-mix(in srgb, var(--pink) 12%, transparent), transparent 70%),
+    radial-gradient(480px 360px at 4% 100%, color-mix(in srgb, var(--purple) 12%, transparent), transparent 70%);
 }
 
 h1,
@@ -451,6 +467,28 @@ p {
   box-shadow: 0 18px 38px -20px var(--ombra);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+/* Il fumetto si ritira dopo sei secondi: la Diva resta al suo posto, il testo
+   se ne va. Era lui a coprire la carta Readiness quando la finestra è bassa.
+   Torna appena ci si passa sopra col puntatore o col tasto di tabulazione. */
+.bd-bolla {
+  animation: bd-ritiro 0.5s ease 6s forwards;
+}
+
+.diva:hover .bd-bolla,
+.diva:focus-within .bd-bolla {
+  animation: none;
+  opacity: 1;
+  visibility: visible;
+}
+
+@keyframes bd-ritiro {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-bolla { animation-duration: 0.01s; }
 }
 
 .bd-bolla-testo {
