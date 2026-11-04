@@ -626,8 +626,29 @@ body[data-theme="light"] .carta::before {
   opacity: 0.78;
 }
 
-/* La rotaia resta scura anche in chiaro: qui il pulsante deve tornare
-   bianco su vetro scuro, altrimenti diventa una pillola vuota. */
+/* ---------- il menu è scuro in tutte e due le pelli ----------
+   Correzione del 4/11. In chiaro la rotaia restava scura ma le scritte
+   prendevano i gettoni del giorno — testo prugna su fondo prugna, illeggibile.
+   Qui la rotaia riprende i gettoni della notte: gli stessi colori del tema
+   scuro, come chiesto, e il resto della pagina resta chiaro. */
+body[data-theme="light"] .rail {
+  --text: #fff8fd;
+  --muted: #cbbbd7;
+  --lav: #c9a7ff;
+  --verde: #7be0a8;
+  --line: rgba(202, 107, 225, .24);
+  --line-soft: rgba(255, 255, 255, .085);
+  --surface: #15152f;
+  --raised: #211b3e;
+  --fioco: rgba(203, 187, 215, .66);
+  --testo-rail: #fff8fd;
+  color: #fff8fd;
+  background: linear-gradient(180deg, rgba(30, 20, 40, .97), rgba(23, 14, 33, .95));
+  border-right-color: rgba(202, 107, 225, .24);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 body[data-theme="light"] .rail .bottone-secondario {
   color: var(--testo-rail);
   background: color-mix(in srgb, #ffffff 8%, transparent);
