@@ -4,6 +4,11 @@
   "private": false,
   "description": "Barbell Diva B - dashboard lettura (fase 0)",
   "type": "module",
-  "scripts": { "test": "node --test tests/" },
-  "devDependencies": { "jsdom": "^24.0.0" }
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0",
+    "playwright": "^1.64.1"
+  }
 }
