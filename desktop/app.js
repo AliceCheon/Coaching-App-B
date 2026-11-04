@@ -17,8 +17,24 @@ import { creaVolto } from "../comune/diva-volto.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
 import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from "../comune/struttura.js";
 import { renderDashboardV31 } from "../comune/vista-dashboard.js";
+import { renderOverviewAtleta } from "../comune/vista-overview.js";
+import { riepilogoOverview } from "../comune/overview.js";
 
 const NON_REGISTRATO = "non registrato";
+
+/* Cambio di schermata: una voce viva accende la sua area e spegne le altre.
+ * Le voci spente non arrivano qui: sono disabilitate nel menu. */
+export function mostraVista(doc, id) {
+  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview") };
+  if (!Object.prototype.hasOwnProperty.call(pannelli, id)) return null;
+  Object.entries(pannelli).forEach(([chiave, el]) => { if (el) el.hidden = chiave !== id; });
+  doc.querySelectorAll(".voce[data-vista]").forEach((v) => {
+    const sua = v.getAttribute("data-vista") === id;
+    v.classList.toggle("attiva", sua);
+    if (sua) v.setAttribute("aria-current", "page"); else v.removeAttribute("aria-current");
+  });
+  return id;
+}
 const NON_REGISTRATA = "non registrata (in A si calcola dalle sedute; nessun numero indovinato)";
 
 function nodo(doc, tag, classe, contenuto) {
@@ -189,6 +205,7 @@ export async function avvia(doc, win) {
   const messaggioErrore = doc.querySelector("#messaggioErrore");
   const contenitoreDiva = doc.querySelector("#divaContenitore");
   let utenteCorrente = null;
+  let modelloScorso = null;
 
   const aggiornaVista = (utente) => {
     if (utente) {
@@ -246,6 +263,7 @@ export async function avvia(doc, win) {
       const rm = righeDatiMancanti();
       const conta = (v) => (v && v.valore != null ? v.valore : null);
       const pausa = conta(rq.find((r) => /pausa|giorni/i.test(String(r.etichetta || ""))));
+      modelloScorso = modello;
       renderDashboardV31(doc, doc.querySelector("#griglia"), modello, {
         build: config.build,
         righeQuadro: rq,
@@ -253,6 +271,10 @@ export async function avvia(doc, win) {
         righeMancanti: rm,
         quadroNumeri: pausa == null ? null : "controllo · quadro: ultima pausa " + pausa
       });
+      const grigliaOverview = doc.querySelector("#overviewGriglia");
+      if (grigliaOverview) {
+        renderOverviewAtleta(doc, grigliaOverview, modello, riepilogoOverview(sedute.sedute, { oggi: new Date(), settimane: 8, ultime: 8 }));
+      }
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
         nastro.textContent = modello.programma && modello.programma.nome
@@ -291,6 +313,14 @@ export async function avvia(doc, win) {
   });
   doc.querySelector("#bottoneRicarica").addEventListener("click", () => leggi(utenteCorrente));
   doc.querySelector("#bottoneEsci").addEventListener("click", () => esci(auth));
+  doc.querySelectorAll(".voce[data-vista]").forEach((voce) => {
+    if (voce.disabled) return;
+    voce.addEventListener("click", () => {
+      const id = mostraVista(doc, voce.getAttribute("data-vista"));
+      if (id === "overview-atleta" && nastro) nastro.textContent = "overview atleta · conti sulle sedute lette";
+      else if (id === "dashboard" && nastro && modelloScorso) nastro.textContent = modelloScorso.programma && modelloScorso.programma.nome ? modelloScorso.programma.nome : "in lettura dai tuoi dati veri";
+    });
+  });
   doc.querySelector("#bottoneTema").addEventListener("click", () => alternaTema(doc, win.localStorage));
   return { app, auth, db };
 }
