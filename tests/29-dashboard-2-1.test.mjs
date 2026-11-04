@@ -29,9 +29,9 @@ test("29.02 nel rail ci sono le ventidue voci del v31, una per una", () => {
   assert.deepEqual(voci.map((v) => v.id), attese, "ordine o nomi diversi dal v31");
 });
 
-test("29.03 in questo passo sono vive la Dashboard e la Overview atleta", () => {
+test("29.03 in questo passo sono vive la Dashboard, la Overview atleta e la Pianificazione", () => {
   const vive = voci.filter((v) => !v.spenta);
-  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta"]);
+  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione"]);
   assert.match(html, /class="voce attiva"[^>]*data-vista="dashboard"/);
 });
 
@@ -42,12 +42,12 @@ test("29.04 le sette rimandate dicono «al passo 5», le altre «prossima scherm
     assert.match(blocco.slice(0, 220), /<em>al passo 5<\/em>/, id + " non dichiara il passo 5");
   }
   const altre = voci.filter((v) => v.spenta && !passo5.includes(v.id));
-  assert.equal(altre.length, 13);
+  assert.equal(altre.length, 12);
   for (const v of altre) {
     const blocco = html.slice(html.indexOf('data-vista="' + v.id + '"'));
     assert.match(blocco.slice(0, 220), /<em>prossima schermata<\/em>/, v.id + " non dichiara la schermata successiva");
   }
-  assert.equal((html.match(/disabled/g) || []).length, 20, "le voci non fatte devono essere davvero disabilitate");
+  assert.equal((html.match(/disabled/g) || []).length, 19, "le voci non fatte devono essere davvero disabilitate");
 });
 
 test("29.05 l'aspetto è quello del v31, non una carta inventata", () => {
@@ -82,7 +82,7 @@ test("29.08 resta in sola lettura: nessuna scrittura nel modulo nuovo", () => {
 });
 
 test("29.09 la build è quella del passo 2.1", () => {
-  assert.match(config, /build:\s*"b0\.\d+-passo2-2-[a-z0-9-]+"/);
+  assert.match(config, /build:\s*"b0\.\d+-passo2-[0-9]-[a-z0-9-]+"/);
   assert.match(html, /data-versione/);
 });
 

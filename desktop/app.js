@@ -19,13 +19,15 @@ import { quadroStrutturale, righeQuadro, righeSemaforo, righeDatiMancanti } from
 import { renderDashboardV31 } from "../comune/vista-dashboard.js";
 import { renderOverviewAtleta } from "../comune/vista-overview.js";
 import { riepilogoOverview } from "../comune/overview.js";
+import { renderPianificazione } from "../comune/vista-pianificazione.js";
+import { riepilogoPianificazione } from "../comune/pianificazione.js";
 
 const NON_REGISTRATO = "non registrato";
 
 /* Cambio di schermata: una voce viva accende la sua area e spegne le altre.
  * Le voci spente non arrivano qui: sono disabilitate nel menu. */
 export function mostraVista(doc, id) {
-  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview") };
+  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview"), pianificazione: doc.querySelector("#vistaPianificazione") };
   if (!Object.prototype.hasOwnProperty.call(pannelli, id)) return null;
   Object.entries(pannelli).forEach(([chiave, el]) => { if (el) el.hidden = chiave !== id; });
   doc.querySelectorAll(".voce[data-vista]").forEach((v) => {
@@ -275,6 +277,10 @@ export async function avvia(doc, win) {
       if (grigliaOverview) {
         renderOverviewAtleta(doc, grigliaOverview, modello, riepilogoOverview(sedute.sedute, { oggi: new Date(), settimane: 8, ultime: 8 }));
       }
+      const grigliaPianificazione = doc.querySelector("#pianificazioneGriglia");
+      if (grigliaPianificazione) {
+        renderPianificazione(doc, grigliaPianificazione, modello, riepilogoPianificazione(sedute.sedute, { oggi: new Date(), settimane: 8 }));
+      }
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
         nastro.textContent = modello.programma && modello.programma.nome
@@ -318,6 +324,7 @@ export async function avvia(doc, win) {
     voce.addEventListener("click", () => {
       const id = mostraVista(doc, voce.getAttribute("data-vista"));
       if (id === "overview-atleta" && nastro) nastro.textContent = "overview atleta · conti sulle sedute lette";
+      else if (id === "pianificazione" && nastro) nastro.textContent = "pianificazione · il calendario che i logbook dimostrano";
       else if (id === "dashboard" && nastro && modelloScorso) nastro.textContent = modelloScorso.programma && modelloScorso.programma.nome ? modelloScorso.programma.nome : "in lettura dai tuoi dati veri";
     });
   });

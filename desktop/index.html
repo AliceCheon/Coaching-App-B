@@ -70,7 +70,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
       <button class="etichetta" type="button" aria-expanded="true">Programmi<span class="chev"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5l4-4"/></svg></span></button>
       <div class="voci">
         <button class="voce" data-vista="overview-atleta" type="button"><span class="ic emo">🧭</span><span class="tx">Overview atleta</span></button>
-        <button class="voce spenta" data-vista="pianificazione" type="button" disabled><span class="ic emo">🗓️</span><span class="tx">Pianificazione<em>prossima schermata</em></span></button>
+        <button class="voce" data-vista="pianificazione" type="button"><span class="ic emo">🗓️</span><span class="tx">Pianificazione</span></button>
         <button class="voce spenta" data-vista="database-esercizi" type="button" disabled><span class="ic emo">📚</span><span class="tx">Database esercizi<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="scheletri" type="button" disabled><span class="ic emo">🦴</span><span class="tx">Scheletri<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="progressioni" type="button" disabled><span class="ic emo">⚗️</span><span class="tx">Progressioni<em>prossima schermata</em></span></button>
@@ -133,6 +133,9 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
 
     <div id="vistaOverview" hidden>
       <div id="overviewGriglia" class="ck"></div>
+    </div>
+    <div id="vistaPianificazione" hidden>
+      <div id="pianificazioneGriglia" class="ck"></div>
     </div>
 
     <footer class="fondo">
