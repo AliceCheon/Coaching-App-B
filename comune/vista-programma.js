@@ -1,16 +1,15 @@
-/* Barbell Diva B — la schermata Programma 1/2/3 (fase 2.5).
+/* Barbell Diva B — la schermata Programma (fase 2.5, SOLA LETTURA).
  *
- * L'aspetto è quello delle altre schermate (ck-testa, ck-sez, ck-card,
- * ck-mets, ck-due): stesse carte, stesso filo, stessi due temi. Le classi
- * pg-* sono solo i pezzi che questa schermata ha in più: la scheda d'identità
- * del programma, le linguette delle schede e la tabella «previsto / visto».
+ * L'aspetto è quello della pagina Programma 1 del v31: la testa, le tre carte
+ * in fila (programma · rotazione · stato), le linguette delle schede e la
+ * tabella degli esercizi con serie, ripetizioni, recupero. Cambia una cosa
+ * sola, ed è la ragione per cui la schermata esiste: **i campi sono bloccati**.
+ * Le tendine sono chiuse, i campi non si scrivono, i pulsanti che salvano non
+ * ci sono. Quando la scrittura si aprirà, si sbloccano gli stessi campi: non
+ * si rifà il disegno.
  *
- * Nel v31 questa pagina è un modulo da compilare (campi, menu a tendina,
- * pulsanti «Attiva», «Salva in Libreria», prospetto modificabile). B non
- * scrive: quindi gli stessi campi si mostrano in sola lettura, e i pulsanti
- * del v31 non ci sono — non spenti, proprio assenti, perché non hanno niente
- * da fare qui. Se un campo non è nel documento, la casella dice «non
- * registrato» invece di mostrare il valore del mockup.
+ * Le classi ck-* sono quelle delle altre schermate; le pr-* e le pg-* sono i
+ * pezzi del v31 rifatti qui, con i gettoni dei due temi.
  */
 
 import { coseNonRegistrateProgramma, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
@@ -47,49 +46,152 @@ function sezione(doc, percorso, testo) {
   return d;
 }
 
+/* Un campo bloccato: etichetta sopra, valore dentro, nota sotto. È lo stesso
+ * campo del v31, con readOnly addosso. */
+function campo(doc, etichetta, valore, tipo, nota, scelte) {
+  const f = n(doc, "label", "pr-f");
+  f.appendChild(n(doc, "span", "pr-lab", etichetta));
+  let controllo;
+  if (tipo === "select") {
+    controllo = n(doc, "select", "pr-sel");
+    controllo.disabled = true;
+    const opzioni = Array.isArray(scelte) ? scelte : [];
+    if (!valore || opzioni.indexOf(valore) === -1) {
+      const vuota = n(doc, "option", "", valore || NON);
+      vuota.value = "";
+      controllo.appendChild(vuota);
+    }
+    opzioni.forEach((o) => {
+      const op = n(doc, "option", "", o);
+      op.value = o;
+      if (o === valore) op.selected = true;
+      controllo.appendChild(op);
+    });
+  } else if (tipo === "area") {
+    controllo = n(doc, "textarea", "pr-ta");
+    controllo.rows = 3;
+    controllo.readOnly = true;
+    controllo.value = valore || "";
+    if (!valore) controllo.placeholder = NON;
+  } else {
+    controllo = n(doc, "input", "pr-in");
+    controllo.type = tipo || "text";
+    controllo.readOnly = true;
+    controllo.value = valore == null ? "" : String(valore);
+    if (!valore) controllo.placeholder = NON;
+  }
+  controllo.setAttribute("tabindex", "-1");
+  controllo.setAttribute("aria-readonly", "true");
+  f.appendChild(controllo);
+  if (nota) f.appendChild(n(doc, "span", "pr-hint", nota));
+  return f;
+}
+
 function testa(doc, r) {
   const c = n(doc, "div", "ck-testa");
   const d = n(doc, "div");
-  d.appendChild(n(doc, "div", "pz-oc", "Programmi · Programma " + (r.indice + 1)));
+  d.appendChild(n(doc, "div", "r-oc", "Programmi · Programma " + (r.indice + 1)));
   const h = n(doc, "h2");
   h.appendChild(doc.createTextNode("Il programma "));
-  h.appendChild(n(doc, "i", "", "in chiaro"));
+  h.appendChild(n(doc, "i", "", "che c'è"));
   d.appendChild(h);
-  d.appendChild(n(doc, "p", "", "Quello che il documento del programma dice, campo per campo, e quello che i logbook dimostrano delle sue schede. Nel v31 questa pagina si compila: qui si legge e basta, e ciò che il documento non porta resta «" + NON + "» invece di essere riempito."));
+  d.appendChild(n(doc, "p", "", "La pagina del v31, con i campi bloccati: le schede e gli esercizi veri letti dai documenti v2 (program-v2-sheet-, -exercise-, -archived-), le tendine chiuse e i pulsanti che salvano lasciati fuori. Quando si apre la scrittura si sbloccano gli stessi campi, senza rifare il disegno."));
   c.appendChild(d);
-  const g = n(doc, "button", "ck-guida", "Guida Programma");
-  g.type = "button";
-  g.disabled = true;
-  g.title = "arriva con la schermata Impostazioni (2.15)";
-  c.appendChild(g);
+  const stato = n(doc, "span", "r-badge", "sola lettura · 0 scritture");
+  c.appendChild(stato);
   return c;
 }
 
-function sintesi(doc, r) {
-  const c = n(doc, "section", "ck-ready pg-sint");
-  const d = n(doc, "div", "pg-sint-testo");
-  const riga = n(doc, "div", "ck-ready-testa");
-  riga.appendChild(n(doc, "span", "", "Programma " + (r.indice + 1) + (r.totaleProgrammi ? " di " + r.totaleProgrammi : "")));
-  const pillola = n(doc, "span", "pg-stato", r.profilo.stato);
-  pillola.setAttribute("data-segno", r.profilo.segno || "vuoto");
-  riga.appendChild(pillola);
-  d.appendChild(riga);
-  d.appendChild(n(doc, "h3", "", r.profilo.presente ? r.profilo.nome : "Nessun documento-programma leggibile"));
-  d.appendChild(n(doc, "p", "ck-frase", r.profilo.presente
-    ? (r.profilo.fase ? r.profilo.fase + " · " : "")
-      + (r.profilo.durata != null ? r.profilo.durata + " settimane" : "durata " + NON)
-      + (r.profilo.giorni != null ? " · " + r.profilo.giorni + " giorni a settimana" : " · giorni " + NON)
-    : "La sottoraccolta non ha restituito il programma: nessun nome e nessun numero al posto suo."));
-  d.appendChild(n(doc, "p", "ck-ready-nota pg-sint-nota", r.profilo.presente
-    ? (r.profilo.inizio ? "Inizio registrato il " + r.profilo.inizio : "Data di inizio " + NON)
-      + (r.profilo.aggiornato ? " · ultimo salvataggio " + r.profilo.aggiornato.slice(0, 16).replace("T", " ") : " · ultimo salvataggio " + NON)
-      + " · sedute con un codice scheda nei logbook: " + r.osservato.conCodice
-    : "Niente da contare: la schermata resta vuota e lo dichiara."));
-  c.appendChild(d);
-  const sigillo = n(doc, "div", "pg-sigillo");
-  sigillo.appendChild(n(doc, "b", "", r.schede && r.schede.length ? String(r.schede.length) : "—"));
-  sigillo.appendChild(n(doc, "span", "pg-sigillo-lab", "schede lette"));
-  c.appendChild(sigillo);
+function cartaProgramma(doc, r) {
+  const c = n(doc, "section", "pr-card pr-c1");
+  const h = n(doc, "header", "pr-ch");
+  h.appendChild(n(doc, "h3", "", "Programma"));
+  h.appendChild(n(doc, "span", "pr-meta", (r.schede ? r.schede.length : 0) + " schede · " + (r.esercizi == null ? "—" : r.esercizi) + " esercizi"));
+  c.appendChild(h);
+
+  const campi = n(doc, "div", "pr-fields");
+  campi.appendChild(campo(doc, "Programma", r.profilo.nome, "text", null));
+  campi.appendChild(campo(doc, "Data inizio", r.profilo.inizio, "date", null));
+  campi.appendChild(campo(doc, "Fase", r.profilo.fase, "select", null, ["Bulk", "Cut", "Recomp", "Mantenimento"]));
+  campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
+  campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text", null));
+  c.appendChild(campi);
+
+  const due = n(doc, "div", "pr-two");
+  due.appendChild(campo(doc, "Descrizione programma", r.profilo.descrizione, "area", null));
+  due.appendChild(campo(doc, "Messaggio per l'atleta (all'apertura)", r.profilo.messaggio, "area", null));
+  c.appendChild(due);
+
+  const fine = n(doc, "div", "pr-row-end");
+  fine.appendChild(n(doc, "span", "pr-hint", "I campi si leggono dal documento del programma. Quelli che il documento non porta restano «" + NON + "», anche quando il v31 ci scriveva un valore."));
+  c.appendChild(fine);
+  return c;
+}
+
+function cartaRotazione(doc, r) {
+  const c = n(doc, "section", "pr-card pr-c2");
+  const h = n(doc, "header", "pr-ch");
+  h.appendChild(n(doc, "h3", "", "Rotazione schede"));
+  const interruttore = n(doc, "span", "pr-sw");
+  interruttore.setAttribute("role", "switch");
+  interruttore.setAttribute("aria-checked", "false");
+  interruttore.setAttribute("aria-disabled", "true");
+  interruttore.setAttribute("title", "la rotazione si accende quando B potrà scrivere");
+  interruttore.appendChild(n(doc, "b", "", "OFF"));
+  h.appendChild(interruttore);
+  c.appendChild(h);
+
+  const codici = r.rotazione && r.rotazione.registrata ? r.rotazione.codici : (r.codiciVisti || []);
+  c.appendChild(n(doc, "div", "pr-meta pr-meta-sotto", codici.length
+    ? codici.length + (r.rotazione && r.rotazione.registrata ? " in rotazione · dal campo del programma" : " codici visti nei logbook · rotazione prevista " + NON)
+    : "nessun codice: né nel programma, né nei logbook"));
+  if (r.rotazione && !r.rotazione.registrata) {
+    c.appendChild(n(doc, "p", "pr-warn", "La rotazione prevista non è nel documento: sotto c'è il calendario delle sedute fatte, non un piano inventato."));
+  }
+
+  const chips = n(doc, "div", "pr-chips");
+  codici.forEach((cod, i) => {
+    const chip = n(doc, "span", "pr-rotchip" + (i > 4 ? " jolly" : ""), cod);
+    chip.title = "sola lettura";
+    chips.appendChild(chip);
+  });
+  c.appendChild(chips);
+  c.appendChild(n(doc, "p", "pr-guide", "Nel v31 questi sono pulsanti che accendono e spengono le schede della rotazione: qui sono etichette, perché B non scrive."));
+
+  const prosp = n(doc, "div", "pr-prosp");
+  prosp.appendChild(n(doc, "div", "pr-prosp-h", "Prospetto · ultime 8 settimane, quello che i logbook dimostrano"));
+  const corpo = n(doc, "div", "pr-prosp-b");
+  (r.settimane || []).forEach((s) => {
+    const riga = n(doc, "div", "pr-prow");
+    riga.appendChild(n(doc, "span", "", "Sett " + s.numero));
+    const caselle = s.codici && s.codici.length ? s.codici : [];
+    for (let i = 0; i < 4; i += 1) {
+      const cella = n(doc, "span", "pr-psel" + (caselle[i] ? "" : " vuota"), caselle[i] || "—");
+      if (caselle[i] && caselle[i + 4]) cella.title = "altre sedute: " + caselle.slice(4).join(", ");
+      riga.appendChild(cella);
+    }
+    corpo.appendChild(riga);
+  });
+  prosp.appendChild(corpo);
+  c.appendChild(prosp);
+  return c;
+}
+
+function cartaStato(doc, r) {
+  const c = n(doc, "section", "pr-card pr-c3");
+  const stato = n(doc, "div", "pr-stato");
+  const punto = n(doc, "span", "pr-dot");
+  punto.setAttribute("data-segno", r.profilo.segno || "vuoto");
+  stato.appendChild(punto);
+  stato.appendChild(n(doc, "b", "", (r.profilo.stato || NON) + " — B non scrive: nessun pulsante «Attiva»"));
+  c.appendChild(stato);
+  const vis = n(doc, "div", "pr-vis");
+  vis.appendChild(campo(doc, "Visibile all'atleta dal", "", "date", "il campo del v31 non è tra quelli che B legge"));
+  c.appendChild(vis);
+  const atti = n(doc, "p", "pr-hint pr-acts-vuoto", "Nel v31 qui ci sono «Confronta», «Copia da Prog…» e «Salva in Libreria». Non ci sono, e non sono spenti: sono azioni che scrivono.");
+  c.appendChild(atti);
+  const meta = n(doc, "p", "pr-hint", "Ultimo salvataggio " + (r.profilo.aggiornato ? r.profilo.aggiornato.slice(0, 16).replace("T", " ") : NON) + " · id " + (r.profilo.id || NON));
+  c.appendChild(meta);
   return c;
 }
 
@@ -104,171 +206,144 @@ function kpi(doc, r) {
     a.appendChild(u);
     return a;
   };
-  griglia.appendChild(voce("Durata", r.profilo.durata == null ? "—" : String(r.profilo.durata), "settimane", "dal campo del programma"));
-  griglia.appendChild(voce("Giorni a settimana", r.profilo.giorni == null ? "—" : String(r.profilo.giorni), "giorni", "quanti, non quali"));
-  griglia.appendChild(voce("Schede lette", r.schede == null ? "—" : String(r.schede.length), "schede", r.schede == null ? "fuori dal documento v2" : "dal documento"));
-  griglia.appendChild(voce("Esercizi", r.esercizi == null ? "—" : String(r.esercizi), "esercizi", r.esercizi == null ? "nelle schede non lette" : "sommando le schede lette"));
-  griglia.appendChild(voce("Sedute viste", String(r.osservato.dentro), "sedute", "con un codice del programma"));
+  griglia.appendChild(voce("Schede", r.schede ? String(r.schede.length) : "—", "schede", "documenti program-v2-sheet-"));
+  griglia.appendChild(voce("Esercizi", r.esercizi == null ? "—" : String(r.esercizi), "esercizi", "schede intere + esercizi sciolti"));
+  griglia.appendChild(voce("Archiviate", String(r.archiviate ? r.archiviate.length : 0), "schede", "tenute a parte, non mescolate"));
+  griglia.appendChild(voce("Codici scheda", String(r.codiciVisti ? r.codiciVisti.length : 0), "codici", "quelli dei logbook"));
+  griglia.appendChild(voce("Sedute viste", String(r.osservato ? r.osservato.dentro : 0), "sedute", "con un codice di questo programma"));
   return griglia;
 }
 
-function identita(doc, r) {
-  const c = n(doc, "article", "ck-card pg-ident");
-  const h = n(doc, "header", "ck-h");
-  const d = n(doc, "div");
-  d.appendChild(n(doc, "h4", "", "Identità del programma"));
-  d.appendChild(n(doc, "p", "", "i campi del documento, in sola lettura · quello che manca è scritto, non riempito"));
-  h.appendChild(d);
-  c.appendChild(h);
-  const griglia = n(doc, "div", "pg-campi");
-  const campo = (etichetta, valore, nota) => {
-    const f = n(doc, "div", "pg-f");
-    f.appendChild(n(doc, "span", "pg-lab", etichetta));
-    const v = n(doc, "span", "pg-val" + (valore ? "" : " vuoto"), valore || NON);
-    f.appendChild(v);
-    if (nota) f.appendChild(n(doc, "span", "pg-nota", nota));
-    return f;
-  };
-  griglia.appendChild(campo("Nome", r.profilo.nome, r.profilo.presente ? null : "nessun documento letto"));
-  griglia.appendChild(campo("Stato", null, "stato come lo scrive A: " + (r.profilo.segno === "vuoto" ? NON : r.profilo.stato)));
-  griglia.appendChild(campo("Fase", r.profilo.fase, "periodizzazione: " + NON));
-  griglia.appendChild(campo("Data di inizio", r.profilo.inizio, "AAAA-MM-GG come nel documento"));
-  griglia.appendChild(campo("Durata", r.profilo.durata == null ? "" : r.profilo.durata + " settimane", "dal campo durationWeeks"));
-  griglia.appendChild(campo("Giorni a settimana", r.profilo.giorni == null ? "" : String(r.profilo.giorni), "quanti giorni, non quali"));
-  griglia.appendChild(campo("Identificativo", r.profilo.id, "l'id del documento, per ritrovarlo"));
-  griglia.appendChild(campo("Ultimo salvataggio", r.profilo.aggiornato ? r.profilo.aggiornato.slice(0, 16).replace("T", " ") : "", "updatedAt del documento"));
-  c.appendChild(griglia);
-  // Lo stato si mostra una volta sola come parola: qui la casella resta
-  // vuota di proposito, perché il valore vero è nella pillola in testa.
-  const stato = griglia.children[1];
-  if (stato && r.profilo.presente) {
-    stato.querySelector(".pg-val").textContent = r.profilo.stato;
-    stato.querySelector(".pg-val").className = "pg-val";
+/* La tabella degli esercizi di una scheda, come nel v31: numero, nome, gruppo,
+ * serie, ripetizioni, recupero, nota. */
+function tabellaEsercizi(doc, scheda) {
+  const t = n(doc, "div", "pg-tabella pr-tb");
+  const testata = n(doc, "div", "pg-tr pg-th pr-tb-row");
+  ["#", "esercizio", "gruppo", "serie", "rip.", "rec.", "sett.", "nota"].forEach((x) => testata.appendChild(n(doc, "span", "", x)));
+  t.appendChild(testata);
+  if (!scheda.esercizi.length) {
+    t.appendChild(n(doc, "p", "pg-vuoto", "Questa scheda non ha esercizi leggibili: il documento non li porta, e qui non si inventano."));
+    return t;
   }
-  return c;
+  scheda.esercizi.forEach((e, i) => {
+    const riga = n(doc, "div", "pg-tr pr-tb-row");
+    riga.appendChild(n(doc, "span", "pg-num", String(i + 1)));
+    riga.appendChild(n(doc, "span", "pr-ex-nome", e.nome));
+    riga.appendChild(n(doc, "span", "", e.muscolo || NON));
+    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.serie || "—"));
+    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.ripetizioni || "—"));
+    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.recupero || "—"));
+    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.settimane ? String(e.prescrizione.settimane) : "—"));
+    riga.appendChild(n(doc, "span", "pr-ex-nota", e.nota || ""));
+    t.appendChild(riga);
+  });
+  return t;
 }
 
-function testi(doc, r) {
-  const c = n(doc, "article", "ck-card pg-testi");
-  const h = n(doc, "header", "ck-h");
-  const d = n(doc, "div");
-  d.appendChild(n(doc, "h4", "", "Descrizione e messaggio per l'atleta"));
-  d.appendChild(n(doc, "p", "", "le due note che la coach scrive nel programma, come le ha scritte"));
-  h.appendChild(d);
-  c.appendChild(h);
-  const blocco = (titolo, testo) => {
-    const b = n(doc, "div", "pg-mess");
-    b.appendChild(n(doc, "span", "pg-lab", titolo));
-    b.appendChild(n(doc, "p", testo ? "" : "pg-val vuoto", testo || NON + ": il campo non è nel documento"));
-    return b;
-  };
-  c.appendChild(blocco("Descrizione del programma", r.profilo.descrizione));
-  c.appendChild(blocco("Messaggio per l'atleta", r.profilo.messaggio));
-  return c;
-}
-
+/* Linguette e pannelli: la scheda si sceglie cliccando, come nel v31. Nessun
+ * dato esce dalla pagina, nessuna scrittura: si mostra una scheda alla volta. */
 function schede(doc, r) {
-  const c = n(doc, "article", "ck-card pg-schede");
-  const h = n(doc, "header", "ck-h");
-  const d = n(doc, "div");
-  d.appendChild(n(doc, "h4", "", "Le schede del programma"));
-  d.appendChild(n(doc, "p", "", r.schede == null
-    ? "il documento non porta le schede: qui non si inventano"
-    : "una linguetta per scheda, con gli esercizi contati e le sedute che i logbook dimostrano"));
-  h.appendChild(d);
-  if (r.schede != null) {
-    const t = n(doc, "span", "pr-cont", (r.schede.length ? r.schede.length : 0) + " schede");
-    h.appendChild(t);
-  }
-  c.appendChild(h);
+  const c = n(doc, "article", "ck-card pg-schede pr-shell");
+  const elenco = r.schede || [];
+  const linguette = n(doc, "nav", "pr-tabs");
+  linguette.setAttribute("role", "tablist");
+  const pannelli = n(doc, "div", "pr-pannelli");
+  const bottoni = [];
 
-  if (r.schede == null) {
-    c.appendChild(n(doc, "p", "ck-piede-card pg-vuoto", "Schede fuori dal documento — " + r.schedeMotivo + "."));
-    if (r.viste.length) {
-      const riga = n(doc, "div", "pg-chips");
-      r.viste.forEach((v) => {
-        const p = n(doc, "span", "pg-chip");
-        p.appendChild(n(doc, "b", "", v.codice));
-        p.appendChild(n(doc, "span", "", v.numero === 1 ? "1 seduta" : v.numero + " sedute"));
-        riga.appendChild(p);
-      });
-      c.appendChild(n(doc, "p", "pg-lab pg-chips-lab", "I codici scheda che compaiono nei logbook (non le schede del programma)"));
-      c.appendChild(riga);
+  const accendi = (indice) => {
+    bottoni.forEach((b, i) => {
+      const suo = i === indice;
+      b.classList.toggle("on", suo);
+      b.setAttribute("aria-selected", suo ? "true" : "false");
+    });
+    Array.prototype.forEach.call(pannelli.children, (p, i) => { p.hidden = i !== indice; });
+  };
+
+  if (!elenco.length) {
+    c.appendChild(n(doc, "p", "pg-vuoto", r.schede === null
+      ? "Nessuna scheda per questo programma nei documenti letti" + (r.schedeMotivo ? " — " + r.schedeMotivo : "") + "."
+      : "Il programma non ha schede attive: nessun pannello da mostrare."));
+    if (r.archiviate && r.archiviate.length) {
+      c.appendChild(n(doc, "p", "pr-hint", "Schede archiviate di questo programma: " + r.archiviate.length + " — si vedono nella tabella qui sotto."));
     }
     return c;
   }
 
-  if (!r.schede.length) {
-    c.appendChild(n(doc, "p", "ck-piede-card pg-vuoto", "Il documento porta un elenco di schede vuoto: nessuna scheda da mostrare, e nessuna aggiunta per finta."));
-    return c;
-  }
-
-  const linguette = n(doc, "div", "pg-tabs");
-  r.schede.forEach((s) => {
-    const t = n(doc, "span", "pg-tab");
-    t.appendChild(doc.createTextNode("Scheda " + s.codice));
-    t.appendChild(n(doc, "i", "", s.esercizi == null ? "—" : String(s.esercizi)));
-    linguette.appendChild(t);
+  elenco.forEach((s, i) => {
+    const b = n(doc, "button", "pr-ntab", "Scheda " + s.codice);
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.appendChild(n(doc, "i", "", String(s.numeroEsercizi)));
+    b.addEventListener("click", () => accendi(i));
+    bottoni.push(b);
+    linguette.appendChild(b);
   });
+  if (r.archiviate && r.archiviate.length) {
+    const sep = n(doc, "span", "pr-tabs-sep");
+    linguette.appendChild(sep);
+    linguette.appendChild(n(doc, "span", "pr-ntab spenta", "Archiviate " + r.archiviate.length));
+  }
   c.appendChild(linguette);
 
-  const tabella = n(doc, "div", "pg-tabella");
-  const testata = n(doc, "div", "pg-tr pg-th");
-  ["scheda", "nome", "settimana", "esercizi", "sedute viste"].forEach((t) => testata.appendChild(n(doc, "span", "", t)));
-  tabella.appendChild(testata);
-  r.schede.forEach((s) => {
-    const riga = n(doc, "div", "pg-tr");
-    riga.appendChild(n(doc, "span", "pg-td-cod", s.codice));
-    riga.appendChild(n(doc, "span", "", s.nome || NON));
-    riga.appendChild(n(doc, "span", "pg-num", s.settimana == null ? "—" : String(s.settimana)));
-    riga.appendChild(n(doc, "span", "pg-num", s.esercizi == null ? "—" : String(s.esercizi)));
-    const vista = r.viste.find((v) => v.codice === s.codice);
-    riga.appendChild(n(doc, "span", "pg-num", vista ? String(vista.numero) : "0"));
-    tabella.appendChild(riga);
+  elenco.forEach((s, i) => {
+    const p = n(doc, "div", "pr-pannello");
+    p.hidden = i !== 0;
+    const testata = n(doc, "div", "pr-shd");
+    const t = n(doc, "div", "pr-shd-t");
+    t.appendChild(n(doc, "h3", "", "Scheda " + s.codice + (s.nome ? " — " + s.nome : "")));
+    t.appendChild(n(doc, "span", "pr-shd-c", s.numeroEsercizi + (s.numeroEsercizi === 1 ? " esercizio" : " esercizi") + (s.focus ? " · " + s.focus : "")));
+    testata.appendChild(t);
+    const f = n(doc, "div", "pr-shd-f");
+    f.appendChild(campo(doc, "Settimana", s.settimana == null ? "" : String(s.settimana), "text", null));
+    f.appendChild(campo(doc, "Giorno", s.giorno == null ? "" : String(s.giorno), "text", null));
+    f.appendChild(campo(doc, "Aggiornata", s.aggiornata ? s.aggiornata.slice(0, 10) : "", "text", null));
+    testata.appendChild(f);
+    p.appendChild(testata);
+    if (s.note) p.appendChild(n(doc, "p", "pr-nota-ex", s.note));
+    p.appendChild(tabellaEsercizi(doc, s));
+    pannelli.appendChild(p);
   });
-  c.appendChild(tabella);
-  c.appendChild(n(doc, "p", "ck-piede-card", "Nome e settimana delle schede non sono nel contratto di lettura di questa fase: quando ci sono si mostrano, quando mancano resta il trattino. Le «sedute viste» sono quelle dei logbook con lo stesso codice scheda — l'unico legame che A registra, perché la seduta non porta il programId."));
+  c.appendChild(pannelli);
+
+  if (r.archiviate && r.archiviate.length) {
+    const arch = n(doc, "div", "pr-archiviate");
+    arch.appendChild(n(doc, "div", "pr-lab", "Schede archiviate · " + r.archiviate.length + ", in sola lettura"));
+    const riga = n(doc, "div", "pr-chips");
+    r.archiviate.forEach((s) => {
+      const chip = n(doc, "span", "pr-chip-arch", "Scheda " + s.codice + " · " + s.numeroEsercizi);
+      arch.appendChild(chip);
+      riga.appendChild(n(doc, "span", "", ""));
+    });
+    c.appendChild(arch);
+  }
   return c;
 }
 
-function rotazione(doc, r) {
-  const c = n(doc, "article", "ck-card pg-rot");
+function osservato(doc, r) {
+  const c = n(doc, "article", "ck-card pg-osservato");
   const h = n(doc, "header", "ck-h");
   const d = n(doc, "div");
-  d.appendChild(n(doc, "h4", "", "Rotazione: previsto contro visto"));
-  d.appendChild(n(doc, "p", "", r.rotazione.registrata
-    ? "la sequenza scritta nel programma (" + r.rotazione.fonte + ") e quante volte ciascuna scheda compare nei logbook"
-    : "la sequenza scritta non è nel documento: resta non registrata, e sotto c'è solo quello che i logbook dimostrano"));
+  d.appendChild(n(doc, "h4", "", "Quello che i logbook dicono"));
+  d.appendChild(n(doc, "p", "", "tutte le sedute con un codice, comprese quelle di altri programmi"));
   h.appendChild(d);
   c.appendChild(h);
-
-  if (r.rotazione.registrata) {
-    const catena = n(doc, "div", "pg-catena");
-    r.rotazione.codici.forEach((c2, i) => {
-      if (i) catena.appendChild(n(doc, "span", "pg-freccia", "→"));
-      catena.appendChild(n(doc, "span", "pg-passo", c2));
-    });
-    c.appendChild(catena);
-
-    const tabella = n(doc, "div", "pg-tabella");
-    const testata = n(doc, "div", "pg-tr pg-th");
-    ["codice", "osservate", "ultima volta"].forEach((t) => testata.appendChild(n(doc, "span", "", t)));
-    tabella.appendChild(testata);
-    r.viste.forEach((v) => {
-      const riga = n(doc, "div", "pg-tr" + (v.numero ? "" : " pg-mai"));
-      riga.appendChild(n(doc, "span", "pg-td-cod", v.codice));
-      riga.appendChild(n(doc, "span", "pg-num", String(v.numero)));
-      riga.appendChild(n(doc, "span", "", v.ultima || NON));
-      tabella.appendChild(riga);
-    });
-    c.appendChild(tabella);
-  } else {
-    c.appendChild(n(doc, "p", "ck-piede-card pg-vuoto", "Rotazione prevista: " + NON + ". Nel v31 è un prospetto da compilare settimana per settimana; qui non esiste un previsto da confrontare, e un previsto inventato sarebbe peggio del vuoto."));
+  if (!r.osservato || !r.osservato.righe.length) {
+    c.appendChild(n(doc, "p", "pg-vuoto", "Nessuna seduta porta un codice scheda: non c'è niente da contare."));
+    return c;
   }
-
-  if (r.osservato.fuori) {
-    c.appendChild(n(doc, "p", "ck-piede-card", r.osservato.fuori + (r.osservato.fuori === 1 ? " seduta porta" : " sedute portano") + " un codice che non è tra quelli del programma: sono fuori da questo confronto, non cancellate."));
-  }
+  const t = n(doc, "div", "pg-tabella");
+  const testata = n(doc, "div", "pg-tr pg-th");
+  ["codice", "sedute", "del programma", "ultima"].forEach((x) => testata.appendChild(n(doc, "span", "", x)));
+  t.appendChild(testata);
+  r.osservato.righe.forEach((x) => {
+    const riga = n(doc, "div", "pg-tr");
+    riga.appendChild(n(doc, "span", "pg-td-cod", x.codice));
+    riga.appendChild(n(doc, "span", "pg-num", String(x.numero)));
+    riga.appendChild(n(doc, "span", "pg-num", x.dentro ? "sì" : "no"));
+    riga.appendChild(n(doc, "span", "", x.ultima ? String(x.ultima.getUTCDate()).padStart(2, "0") + "/" + String(x.ultima.getUTCMonth() + 1).padStart(2, "0") + "/" + x.ultima.getUTCFullYear() : NON));
+    t.appendChild(riga);
+  });
+  c.appendChild(t);
   return c;
 }
 
@@ -291,63 +366,39 @@ function cosaManca(doc) {
   return c;
 }
 
-function osservato(doc, r) {
-  const c = n(doc, "article", "ck-card pg-osservato");
-  const h = n(doc, "header", "ck-h");
-  const d = n(doc, "div");
-  d.appendChild(n(doc, "h4", "", "Quello che i logbook dicono"));
-  d.appendChild(n(doc, "p", "", "tutte le sedute con un codice, comprese quelle di altri programmi"));
-  h.appendChild(d);
-  c.appendChild(h);
-  if (!r.osservato.righe.length) {
-    c.appendChild(n(doc, "p", "ck-piede-card pg-vuoto", "Nessuna seduta porta un codice scheda: non c'è niente da contare."));
-    return c;
-  }
-  const tabella = n(doc, "div", "pg-tabella");
-  const testata = n(doc, "div", "pg-tr pg-th");
-  ["codice", "sedute", "del programma", "ultima"].forEach((t) => testata.appendChild(n(doc, "span", "", t)));
-  tabella.appendChild(testata);
-  r.osservato.righe.forEach((x) => {
-    const riga = n(doc, "div", "pg-tr");
-    riga.appendChild(n(doc, "span", "pg-td-cod", x.codice));
-    riga.appendChild(n(doc, "span", "pg-num", String(x.numero)));
-    riga.appendChild(n(doc, "span", "pg-num", x.dentro ? "sì" : "no"));
-    riga.appendChild(n(doc, "span", "", x.ultima ? String(x.ultima.getUTCDate()).padStart(2, "0") + "/" + String(x.ultima.getUTCMonth() + 1).padStart(2, "0") + "/" + x.ultima.getUTCFullYear() : NON));
-    tabella.appendChild(riga);
-  });
-  c.appendChild(tabella);
-  if (r.osservato.senzaData) {
-    c.appendChild(n(doc, "p", "ck-piede-card", r.osservato.senzaData + (r.osservato.senzaData === 1 ? " seduta senza data" : " sedute senza data") + ": contate nel numero, senza giorno nella colonna «ultima»."));
-  }
-  return c;
-}
-
-/* La vista riceve il riepilogo già calcolato da comune/programma.js. */
+/* La vista riceve il riepilogo già calcolato da comune/programma.js: schede ed
+ * esercizi arrivano dai documenti v2, i numeri dai logbook. */
 export function renderProgramma(doc, contenitore, modello, calcoli) {
   while (contenitore.firstChild) contenitore.firstChild.remove();
-  const r = calcoli || {
-    indice: 0, totaleProgrammi: null,
-    profilo: { presente: false, nome: NON, stato: NON, segno: "vuoto", fase: "", inizio: "", durata: null, giorni: null, descrizione: "", messaggio: "", aggiornato: "", id: "", archiviato: false },
-    schede: null, schedeMotivo: null, rotazione: { codici: [], registrata: false, fonte: NON },
-    osservato: { righe: [], conCodice: 0, dentro: 0, fuori: 0, senzaData: 0, totale: 0 },
-    viste: [], esercizi: null, senzaData: 0
+  const r = calcoli || {};
+  const pieno = {
+    indice: Number.isFinite(Number(r.indice)) ? Number(r.indice) : 0,
+    totaleProgrammi: r.totaleProgrammi == null ? null : Number(r.totaleProgrammi),
+    profilo: r.profilo || { presente: false, nome: NON, stato: NON, segno: "vuoto", fase: "", inizio: "", durata: null, giorni: null, descrizione: "", messaggio: "", aggiornato: "", id: "" },
+    schede: r.schede === undefined ? null : r.schede,
+    archiviate: r.archiviate || [],
+    schedeMotivo: r.schedeMotivo || null,
+    rotazione: r.rotazione || { codici: [], registrata: false, fonte: NON },
+    codiciVisti: r.codiciVisti || [],
+    osservato: r.osservato || { righe: [], conCodice: 0, dentro: 0, fuori: 0, senzaData: 0, totale: 0 },
+    settimane: r.settimane || [],
+    esercizi: r.esercizi == null ? null : r.esercizi,
+    fonteSchede: r.fonteSchede || null
   };
-  contenitore.appendChild(testa(doc, r));
-  contenitore.appendChild(sintesi(doc, r));
-  contenitore.appendChild(sezione(doc, "M2 6.5L8 2l6 4.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z", "I numeri del programma"));
-  contenitore.appendChild(kpi(doc, r));
-  contenitore.appendChild(sezione(doc, "M3 4h10v9H3zM3 7h10M6.5 2.5v3M9.5 2.5v3", "Com'è fatto, e cosa dice"));
-  const due = n(doc, "div", "ck-due pg-due-uno");
-  due.appendChild(identita(doc, r));
-  due.appendChild(testi(doc, r));
+  contenitore.appendChild(testa(doc, pieno));
+  contenitore.appendChild(sezione(doc, "M2 6.5L8 2l6 4.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z", "Il programma, con i campi bloccati"));
+  const tre = n(doc, "div", "pr-grid");
+  tre.appendChild(cartaProgramma(doc, pieno));
+  tre.appendChild(cartaRotazione(doc, pieno));
+  tre.appendChild(cartaStato(doc, pieno));
+  contenitore.appendChild(tre);
+  contenitore.appendChild(sezione(doc, "M4 12V6m4 6V3m4 9V8", "I conti delle schede"));
+  contenitore.appendChild(kpi(doc, pieno));
+  contenitore.appendChild(sezione(doc, "M3 4h10v9H3zM3 7h10M6.5 2.5v3M9.5 2.5v3", "Le schede e i loro esercizi · una linguetta alla volta"));
+  contenitore.appendChild(schede(doc, pieno));
+  const due = n(doc, "div", "ck-due");
+  due.appendChild(osservato(doc, pieno));
+  due.appendChild(cosaManca(doc));
   contenitore.appendChild(due);
-  contenitore.appendChild(sezione(doc, "M4 12V6m4 6V3m4 9V8", "Le schede e la rotazione"));
-  contenitore.appendChild(schede(doc, r));
-  const dueB = n(doc, "div", "ck-due");
-  dueB.appendChild(rotazione(doc, r));
-  dueB.appendChild(osservato(doc, r));
-  contenitore.appendChild(dueB);
-  contenitore.appendChild(sezione(doc, "M8 2v12M2 8h12", "Il vuoto dichiarato"));
-  contenitore.appendChild(cosaManca(doc));
   return contenitore;
 }

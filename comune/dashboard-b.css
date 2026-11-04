@@ -409,6 +409,68 @@
 .pg-freccia{font-size:10px;color:var(--muted)}
 .pr-cont{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--muted)}
 
+/* ---------- La pagina Programma del v31, con i campi bloccati (2.5) ---------- */
+.r-oc{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--pink)}
+.r-badge{align-self:flex-start;font-family:var(--mono);font-size:8.8px;letter-spacing:.08em;text-transform:uppercase;color:var(--verde);padding:4px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--verde) 38%,transparent);background:color-mix(in srgb,var(--verde) 9%,transparent);white-space:nowrap}
+.pr-grid{display:grid;grid-template-columns:1.35fr 1fr .8fr;gap:14px;margin-top:14px}
+.pr-card{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--raised) 62%,transparent);padding:14px 15px;min-width:0}
+.pr-ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+.pr-ch h3{margin:0;font-size:13px;letter-spacing:-.1px;color:var(--testo)}
+.pr-meta{font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--muted);text-align:right}
+.pr-meta-sotto{display:block;margin-bottom:8px;text-align:left}
+.pr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 11px}
+.pr-f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pr-lab{font-size:8.6px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.pr-in,.pr-sel,.pr-ta{width:100%;box-sizing:border-box;font-family:inherit;font-size:11px;color:var(--testo);background:var(--campo);border:1px solid var(--line-soft);border-radius:9px;padding:6px 8px;line-height:1.35}
+.pr-ta{resize:none;font-size:10.6px;line-height:1.5}
+.pr-in[readonly],.pr-ta[readonly]{cursor:default}
+.pr-sel:disabled{opacity:1;color:var(--muted);background:color-mix(in srgb,var(--campo) 70%,var(--raised));-webkit-text-fill-color:var(--muted)}
+.pr-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.pr-row-end{display:flex;align-items:center;gap:8px;margin-top:10px}
+.pr-hint{font-size:9px;line-height:1.45;color:var(--muted)}
+.pr-sw{display:inline-grid;place-items:center;min-width:38px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,#ffffff 5%,transparent)}
+.pr-sw b{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em}
+.pr-warn{margin:0 0 9px;font-size:9.4px;line-height:1.45;color:var(--pink-soft)}
+.pr-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.pr-rotchip{display:inline-grid;place-items:center;min-width:28px;height:26px;padding:0 8px;border-radius:8px;border:1px solid color-mix(in srgb,var(--pink) 40%,transparent);background:color-mix(in srgb,var(--pink) 10%,transparent);font-family:var(--mono);font-size:10px;color:var(--pink)}
+.pr-rotchip.jolly{border-style:dashed;color:var(--lav);border-color:color-mix(in srgb,var(--lav) 45%,transparent);background:color-mix(in srgb,var(--lav) 8%,transparent)}
+.pr-guide{margin:0 0 10px;font-size:9.2px;line-height:1.5;color:var(--muted)}
+.pr-prosp{border:1px solid var(--line-soft);border-radius:12px;overflow:hidden}
+.pr-prosp-h{font-size:8.6px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:7px 9px;background:color-mix(in srgb,var(--raised) 75%,transparent)}
+.pr-prosp-b{display:flex;flex-direction:column}
+.pr-prow{display:grid;grid-template-columns:56px repeat(4,minmax(0,1fr));gap:4px;align-items:center;padding:4px 9px}
+.pr-prow:nth-child(even){background:color-mix(in srgb,var(--raised) 45%,transparent)}
+.pr-prow>span:first-child{font-family:var(--mono);font-size:8.6px;color:var(--muted)}
+.pr-psel{display:grid;place-items:center;height:20px;border-radius:6px;border:1px solid color-mix(in srgb,var(--pink) 34%,transparent);background:color-mix(in srgb,var(--pink) 8%,transparent);font-family:var(--mono);font-size:9px;color:var(--pink)}
+.pr-psel.vuota{border-style:dashed;border-color:var(--line-soft);background:none;color:var(--muted)}
+.pr-stato{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.pr-stato b{font-size:10px;line-height:1.35;color:var(--testo)}
+.pr-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.pr-dot[data-segno="vivo"]{background:var(--verde);box-shadow:0 0 0 3px color-mix(in srgb,var(--verde) 18%,transparent)}
+.pr-dot[data-segno="bozza"]{background:var(--core)}
+.pr-vis{margin-bottom:6px}
+.pr-acts-vuoto{margin-top:4px}
+.pr-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:12px;padding-bottom:9px;border-bottom:1px solid var(--line-soft)}
+.pr-ntab{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:9px 9px 5px 5px;border:1px solid var(--line-soft);background:none;font-family:inherit;font-size:10.4px;color:var(--muted);cursor:pointer}
+.pr-ntab i{font-family:var(--mono);font-size:8.6px;font-style:normal;color:var(--pink)}
+.pr-ntab.on{border-color:color-mix(in srgb,var(--pink) 45%,transparent);background:color-mix(in srgb,var(--pink) 10%,transparent);color:var(--testo)}
+.pr-ntab.spenta{cursor:default;opacity:.75}
+.pr-tabs-sep{flex:1 1 8px}
+.pr-pannello{padding-top:11px}
+.pr-shd{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px}
+.pr-shd-t h3{margin:0;font-size:12.4px;color:var(--testo)}
+.pr-shd-c{display:block;margin-top:2px;font-family:var(--mono);font-size:8.8px;color:var(--muted)}
+.pr-shd-f{display:flex;gap:8px;flex-wrap:wrap}
+.pr-shd-f .pr-f{min-width:86px}
+.pr-nota-ex{margin:9px 0 0;font-size:10px;line-height:1.5;color:var(--muted);padding-left:10px;border-left:2px solid color-mix(in srgb,var(--purple) 45%,transparent)}
+.pr-tb{margin-top:11px}
+.pr-tb .pg-tr{grid-template-columns:26px minmax(0,1.7fr) minmax(0,.85fr) 40px 40px 40px 40px minmax(0,1.1fr);gap:6px}
+.pr-ex-nome{font-size:10.6px;color:var(--testo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-ex-nota{font-size:9.2px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-archiviate{margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
+.pr-chip-arch{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px dashed var(--line);font-family:var(--mono);font-size:8.8px;color:var(--muted)}
+.pg-kpi{grid-template-columns:repeat(5,minmax(0,1fr))}
+
 /* ============================================================
    SCHERMO STRETTO — sotto i 980 px il menu passa in alto.
    Questa è l'unica media query dell'impianto: fuori di qui, menu a

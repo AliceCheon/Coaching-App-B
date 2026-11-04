@@ -117,7 +117,7 @@ test("36.06 il riepilogo somma gli esercizi, conta le visite per scheda e dichia
 
   const meta = riepilogoProgramma(v2, sedute, { indice: 1 });
   assert.equal(meta.schede, null);
-  assert.ok(meta.schedeMotivo.includes("passo 4"), "il vuoto dice dove arriva il dato");
+  assert.ok(meta.schedeMotivo.includes("program-v2-sheet-"), "il vuoto dice quale documento manca");
   assert.equal(meta.esercizi, null);
   assert.equal(meta.rotazione.registrata, false);
   assert.ok(meta.viste.length === 0);
@@ -140,7 +140,7 @@ test("36.08 la voce è accesa, il pannello c'è e la build è la 2.5", () => {
   assert.ok(html.includes('id="vistaProgramma1"'));
   assert.ok(html.includes('id="programma1Griglia"'));
   const config = readFileSync(new URL("../app-config-b.js", import.meta.url), "utf8");
-  assert.match(config, /b0\.30-passo2-5-programma-1/);
+  assert.match(config, /b0\.31-passo2-5-schede-vere/);
 });
 
 test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa HTML grezzo", () => {
@@ -150,10 +150,10 @@ test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa 
   assert.ok(!/innerHTML/.test(src));
   const vista = readFileSync(new URL("../comune/vista-programma.js", import.meta.url), "utf8");
   assert.ok(!/innerHTML/.test(vista), "la vista costruisce nodi, non HTML");
-  for (const classe of ["ck-testa", "ck-card", "ck-mets", "pg-tabella", "pg-campi"]) {
+  for (const classe of ["ck-testa", "ck-card", "ck-mets", "pg-tabella", "pr-card"]) {
     assert.ok(vista.includes(classe), "manca " + classe + " nella vista");
   }
   const cose = coseNonRegistrateProgramma();
   assert.ok(cose.length >= 4);
-  assert.ok(cose.map((c) => c[0] + " " + c[1]).join(" | ").includes("passo 4"));
+  assert.ok(cose.map((c) => c[0] + " " + c[1]).join(" | ").includes("Progressione settimana per settimana"));
 });

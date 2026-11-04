@@ -21,7 +21,7 @@
  * i valori del mockup.
  */
 
-import { codiceScheda } from "./pianificazione.js";
+import { codiceScheda, settimaneOsservate } from "./pianificazione.js";
 import { dataDiSeduta } from "./overview.js";
 
 const NON = "non registrato";
@@ -190,35 +190,60 @@ function dataItaliana(d) {
   return String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0") + "/" + d.getUTCFullYear();
 }
 
-/* Riepilogo pronto per la schermata. `indice` è 0 per Programma 1. */
+/* Riepilogo pronto per la schermata.
+ * `o.schedeV2` è la ricostruzione dei documenti v2 (comune/schede-v2.js): quando
+ * il documento-programma non porta le schede — succede sempre, nel formato v2 —
+ * si usano quelle, lette in sola lettura. `o.oggi` e `o.quante` servono al
+ * prospetto delle settimane. */
 export function riepilogoProgramma(programma, sedute, opzioni) {
   const o = opzioni || {};
   const profilo = profiloProgramma(programma);
-  const schede = profilo.presente ? schedeDelProgramma(programma) : null;
+  const dalDocumento = profilo.presente ? schedeDelProgramma(programma) : null;
+  const v2 = o.schedeV2 && o.schedeV2.perProgramma ? (o.schedeV2.perProgramma[profilo.id] || null) : null;
+  let schede = dalDocumento;
+  let archiviate = [];
+  let fonteSchede = dalDocumento ? "documento del programma (v1)" : null;
+  if ((!schede || !schede.length) && v2) {
+    schede = v2.schede;
+    archiviate = v2.archiviate || [];
+    fonteSchede = "documenti v2 · program-v2-sheet- / -exercise-";
+  }
+  let schedeMotivo = null;
+  if (schede === null) {
+    schedeMotivo = "nessun documento program-v2-sheet- per questo programma";
+  } else if (!schede.length) {
+    schedeMotivo = "i documenti delle schede ci sono ma non ne resta nessuna attiva";
+  }
   const rotazione = rotazionePrevista(programma, schede);
   const osservato = seduteOsservate(sedute, rotazione.codici);
+  const codiciVisti = osservato.righe.map((x) => x.codice);
   const esercizi = schede && schede.length
-    ? schede.reduce((a, s) => a + (s.esercizi == null ? 0 : s.esercizi), 0)
-    : null;
+    ? schede.reduce((a, s) => a + (s.numeroEsercizi != null ? s.numeroEsercizi : (s.esercizi == null ? 0 : s.esercizi)), 0)
+    : (schede ? 0 : null);
   const viste = rotazione.codici.map((c) => {
     const riga = osservato.righe.find((r) => r.codice === c) || null;
-    return {
-      codice: c,
-      numero: riga ? riga.numero : 0,
-      ultima: riga ? dataItaliana(riga.ultima) : null
-    };
+    return { codice: c, numero: riga ? riga.numero : 0, ultima: riga && riga.ultima ? dataItaliana(riga.ultima) : null };
   });
+  const settimaneGrezze = Array.isArray(o.settimane) ? o.settimane : settimaneOsservate(sedute, o.quante || 8, o.oggi || new Date());
+  const settimane = settimaneGrezze.map((s, i) => ({
+    numero: i + 1,
+    etichetta: s.etichetta,
+    codici: s.giorni ? s.giorni.filter((g) => g.codice).map((g) => g.codice) : [],
+    sedute: s.sedute == null ? 0 : s.sedute
+  }));
   return {
     indice: Number.isFinite(Number(o.indice)) ? Number(o.indice) : 0,
     totaleProgrammi: Number.isFinite(Number(o.totaleProgrammi)) ? Number(o.totaleProgrammi) : null,
     profilo,
     schede,
-    schedeMotivo: schede === null
-      ? "le schede di un programma v2 stanno in documenti separati, che questa fase non legge (la lettura è al passo 4)"
-      : null,
+    archiviate,
+    schedeMotivo,
+    fonteSchede,
     rotazione,
+    codiciVisti,
     osservato,
     viste,
+    settimane,
     esercizi,
     senzaData: osservato.senzaData
   };
@@ -227,7 +252,7 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
 /* Le cose che la schermata del programma non può dire, e perché. */
 export function coseNonRegistrateProgramma() {
   return [
-    ["Schede ed esercizi (formato v2)", "in un documento v2 le schede stanno in documenti a parte: qui si leggono solo i metadati del programma, il resto arriva al passo 4"],
+    ["Progressione settimana per settimana", "le settimane di progressione di un esercizio stanno in un campo che B non legge ancora: qui si mostra quante sono, non i carichi di ognuna"],
     ["Settimane rimaste", "la data di inizio e la durata ci sono, ma lo scarico e il test non sono nel documento: qui non si contano le settimane «di piano»"],
     ["Giorni della settimana", "il programma dice quanti giorni a settimana, non quali: la rotazione sui giorni la mostra la Pianificazione, e solo per le sedute fatte"],
     ["Visibilità all'atleta", "il campo della data «visibile dal» del v31 non è tra i campi che B legge: resta non registrato"],

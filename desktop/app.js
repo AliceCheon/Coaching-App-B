@@ -23,6 +23,7 @@ import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { riepilogoProgramma, elencoProgrammiOrdinato } from "../comune/programma.js";
+import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
 
 const NON_REGISTRATO = "non registrato";
 
@@ -244,6 +245,15 @@ export async function avvia(doc, win) {
       } catch (e) {
         programmiNonLetti = true;
       }
+      let schedeV2 = null;
+      try {
+        // Le schede dei programmi v2: stessa lettura della pagina Conteggi
+        // (tre famiglie di id, sola lettura). Se fallisce, la schermata dice
+        // che non ha potuto leggerle e non mostra un elenco vuoto per finta.
+        schedeV2 = await leggiSchedeProgrammi(db, utente.uid);
+      } catch (e) {
+        schedeV2 = null;
+      }
       const modello = riepilogoDati({
         stato: radice.stato,
         sedute: sedute.sedute,
@@ -286,7 +296,7 @@ export async function avvia(doc, win) {
       const grigliaProgramma1 = doc.querySelector("#programma1Griglia");
       if (grigliaProgramma1) {
         const ordinati = elencoProgrammiOrdinato(programmi.programmi || []);
-        renderProgramma(doc, grigliaProgramma1, modello, riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length }));
+        renderProgramma(doc, grigliaProgramma1, modello, riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length, schedeV2, oggi: new Date(), quante: 8 }));
       }
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
