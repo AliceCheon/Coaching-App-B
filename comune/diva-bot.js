@@ -39,6 +39,22 @@ function frasePeso(presente) {
   return presente ? "Il peso arriva dalla tua app, io me lo guardo." : "Peso non registrato: nessun numero di riempimento, mai.";
 }
 
+/* La voce del programma: gli stessi numeri della pagina, presi dallo stesso
+ * riepilogo che disegna le carte. Se la fonte è una sola, fumetto e carte non
+ * possono dire due cose diverse. */
+export function voceDelProgramma(riepilogo) {
+  const r = riepilogo || {};
+  const schede = Array.isArray(r.schede) ? r.schede.length : 0;
+  if (!schede) return "Per questo programma non ho schede da leggere: lo dico, non le invento.";
+  const testa = schede === 1 ? "Una scheda" : schede + " schede";
+  if (r.esercizi == null) return testa + " lette dal tuo programma: gli esercizi il documento non li porta.";
+  const esercizi = Number(r.esercizi) || 0;
+  const conta = esercizi === 1 ? "un esercizio" : esercizi + " esercizi";
+  const archiviate = Array.isArray(r.archiviate) ? r.archiviate.length : 0;
+  const coda = archiviate === 0 ? "." : archiviate === 1 ? ", più una archiviata messa da parte." : ", più " + archiviate + " archiviate messe da parte.";
+  return testa + ", " + conta + " in tutto" + coda;
+}
+
 /* ---------- la voce del giorno: un saluto, sette registri ---------- */
 
 /* Sette registri, tre varianti ciascuno. Il lunedì è quello che accende la

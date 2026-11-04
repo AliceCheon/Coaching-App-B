@@ -32,7 +32,7 @@ test("29.02 nel rail ci sono le ventidue voci del v31, una per una", () => {
 test("29.03 in questo passo sono vive la Dashboard, la Overview, la Pianificazione e Programma 1", () => {
   const vive = voci.filter((v) => !v.spenta);
   assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione", "programma-1"]);
-  assert.match(html, /class="voce attiva"[^>]*data-vista="dashboard"/);
+  assert.match(html, /class="voce attiva"[^>]*data-vista="programma-1"/);
 });
 
 test("29.04 le sette rimandate dicono «al passo 5», le altre «prossima schermata»", () => {

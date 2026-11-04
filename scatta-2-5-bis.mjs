@@ -5,7 +5,8 @@ import { chromium } from "playwright";
 const { renderProgramma } = await import("./comune/vista-programma.js");
 const { riepilogoProgramma } = await import("./comune/programma.js");
 const { ricostruisciSchede } = await import("./comune/schede-v2.js");
-const { montaDivaBot } = await import("./comune/diva-bot.js");
+const { montaDivaBot, voceDelProgramma } = await import("./comune/diva-bot.js");
+const { creaVolto } = await import("./comune/diva-volto.js");
 
 const OGGI = new Date(Date.UTC(2026, 10, 4));
 const meta = {
@@ -81,22 +82,32 @@ const dom = new JSDOM(h, { runScripts: "outside-only" });
 const doc = dom.window.document;
 ["#vistaLogin", "#vistaDash", "#vistaOverview", "#vistaPianificazione"].forEach((s) => { doc.querySelector(s).hidden = true; });
 doc.querySelector("#vistaProgramma1").hidden = false;
+/* La testina robot e la pastiglia della versione: le mette app.js all'avvio,
+ * qui si mettono con le stesse funzioni, altrimenti nella schermata non ci sono. */
+doc.querySelectorAll("[data-versione]").forEach((n) => { n.textContent = "b0.33-passo2-5-programma-1"; });
+const marco = doc.querySelector("[data-marco]");
+if (marco) marco.appendChild(creaVolto(doc, "neutro"));
 const r = riepilogoProgramma(meta, sedute, { schedeV2: ric, indice: 0, totaleProgrammi: 5, oggi: OGGI, quante: 8 });
 renderProgramma(doc, doc.querySelector("#programma1Griglia"), { presente: true, numeroSedute: sedute.length }, r);
-montaDivaBot(doc.querySelector("#divaContenitore"), ["Quattro schede, trentaquattro esercizi, e i logbook che dicono quali hai davvero fatto. Il resto lo scrive il documento, e quello che non c'è resta vuoto."], "neutro");
-fs.writeFileSync("scatta-2-6.html", dom.serialize().replace("</head>", `<style>\n${cssText}\n</style>\n</head>`));
+/* Il fumetto prende i numeri dallo stesso riepilogo che disegna le carte. */
+montaDivaBot(doc.querySelector("#divaContenitore"), [voceDelProgramma(r)], "neutro");
+doc.querySelector("#nastroSotto").textContent = meta.name;
+fs.writeFileSync("scatta-2-5-bis.html", dom.serialize().replace("</head>", `<style>\n${cssText}\n</style>\n</head>`));
 
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1440, height: 1000 } });
-await p.goto("file://" + path.resolve("scatta-2-6.html"));
-await p.waitForTimeout(1500);
-await p.screenshot({ path: "/tmp/pg2-full.png", fullPage: true });
+await p.goto("file://" + path.resolve("scatta-2-5-bis.html"));
+await p.waitForTimeout(1200);
+await p.screenshot({ path: "/tmp/pg3-full.png", fullPage: true });
 const m = await p.evaluate(() => ({
-  schede: document.querySelectorAll(".pr-ntab").length,
-  esercizi: document.querySelectorAll(".pr-tb-row").length - 1,
-  bloccati: document.querySelectorAll(".pr-in[readonly],.pr-sel:disabled,.pr-ta[readonly]").length,
-  prospetto: document.querySelectorAll(".pr-prow").length,
-  chips: document.querySelectorAll(".pr-rotchip").length,
+  schede: document.querySelectorAll(".pr-ntab:not(.spenta)").length,
+  eserciziTabella: document.querySelectorAll(".pr-pannello .pr-tb-row").length - document.querySelectorAll(".pr-pannello .pr-tb-row.pg-th").length,
+  fumetto: (document.querySelector(".bd-bolla-testo") || {}).textContent,
+  marchio: Boolean(document.querySelector(".marchio-segno svg")),
+  versione: (document.querySelector(".marchio-ver") || {}).textContent,
+  voceAttiva: (document.querySelector(".voce.attiva") || {}).textContent,
+  nastro: document.querySelector(".nastro b").textContent,
+  divaStatic: getComputedStyle(document.querySelector(".diva")).position,
   altezza: document.body.scrollHeight
 }));
 await b.close();

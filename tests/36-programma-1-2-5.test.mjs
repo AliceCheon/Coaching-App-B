@@ -117,7 +117,7 @@ test("36.06 il riepilogo somma gli esercizi, conta le visite per scheda e dichia
 
   const meta = riepilogoProgramma(v2, sedute, { indice: 1 });
   assert.equal(meta.schede, null);
-  assert.ok(meta.schedeMotivo.includes("program-v2-sheet-"), "il vuoto dice quale documento manca");
+  assert.ok(meta.schedeMotivo.includes("scheda"), "il vuoto dice che non ha trovato schede");
   assert.equal(meta.esercizi, null);
   assert.equal(meta.rotazione.registrata, false);
   assert.ok(meta.viste.length === 0);
@@ -134,13 +134,13 @@ test("36.07 l'ordine dei programmi è dichiarato: creati prima, poi id", () => {
 
 test("36.08 la voce è accesa, il pannello c'è e la build è la 2.5", () => {
   const html = readFileSync(new URL("../desktop/index.html", import.meta.url), "utf8");
-  const inizio = html.indexOf('<button class="voce" data-vista="programma-1"');
+  const inizio = html.indexOf('data-vista="programma-1"');
   assert.ok(inizio > 0, "la voce di Programma 1 deve essere un pulsante vivo");
   assert.ok(!html.slice(inizio, inizio + 160).includes("disabled"));
   assert.ok(html.includes('id="vistaProgramma1"'));
   assert.ok(html.includes('id="programma1Griglia"'));
   const config = readFileSync(new URL("../app-config-b.js", import.meta.url), "utf8");
-  assert.match(config, /b0\.31-passo2-5-schede-vere/);
+  assert.match(config, /b0\.33-passo2-5-programma-1/);
 });
 
 test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa HTML grezzo", () => {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Barbell Diva B · Dashboard (PC)</title>
+<title>Barbell Diva B · Programma 1 (PC)</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="../comune/tema-b.css">
 <link rel="stylesheet" href="../comune/dashboard-b.css">
@@ -55,7 +55,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
     <div class="gruppo apribile" data-gruppo="alimentazione">
       <button class="etichetta" type="button" aria-expanded="true">Alimentazione<span class="chev"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5l4-4"/></svg></span></button>
       <div class="voci">
-        <button class="voce attiva" data-vista="dashboard" type="button" aria-current="page"><span class="ic emo">🏠</span><span class="tx">Dashboard</span></button>
+        <button class="voce" data-vista="dashboard" type="button"><span class="ic emo">🏠</span><span class="tx">Dashboard</span></button>
         <button class="voce spenta" data-vista="dati-cliente" type="button" disabled><span class="ic emo">🪪</span><span class="tx">Dati cliente<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="salute-recupero" type="button" disabled><span class="ic emo">🩺</span><span class="tx">Salute e recupero<em>al passo 5</em></span></button>
         <button class="voce spenta" data-vista="misure" type="button" disabled><span class="ic emo">📏</span><span class="tx">Misure &amp; plicometria<em>al passo 5</em></span></button>
@@ -74,7 +74,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
         <button class="voce spenta" data-vista="database-esercizi" type="button" disabled><span class="ic emo">📚</span><span class="tx">Database esercizi<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="scheletri" type="button" disabled><span class="ic emo">🦴</span><span class="tx">Scheletri<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="progressioni" type="button" disabled><span class="ic emo">⚗️</span><span class="tx">Progressioni<em>prossima schermata</em></span></button>
-        <button class="voce" data-vista="programma-1" type="button"><span class="ic emo">🗂️</span><span class="tx">Programma 1</span></button>
+        <button class="voce attiva" data-vista="programma-1" type="button" aria-current="page"><span class="ic emo">🗂️</span><span class="tx">Programma 1</span></button>
         <button class="voce spenta" data-vista="programma-2" type="button" disabled><span class="ic emo">🗂️</span><span class="tx">Programma 2<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="programma-3" type="button" disabled><span class="ic emo">🗂️</span><span class="tx">Programma 3<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="riepilogo-volume" type="button" disabled><span class="ic emo">📊</span><span class="tx">Riepilogo volume<em>prossima schermata</em></span></button>
@@ -106,7 +106,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
 
   <main class="area maino">
     <div class="nastro">
-      <b>Dashboard</b><span class="sep">/</span>
+      <b>Programma 1</b><span class="sep">/</span>
       <span id="nastroSotto">in lettura dai tuoi dati veri</span>
       <span class="sep">/</span><span class="ok">nessun numero inventato</span>
       <span class="fr" id="oraLettura"></span>
@@ -137,7 +137,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
     <div id="vistaPianificazione" hidden>
       <div id="pianificazioneGriglia" class="ck"></div>
     </div>
-    <div id="vistaProgramma1" hidden>
+    <div id="vistaProgramma1">
       <div id="programma1Griglia" class="ck"></div>
     </div>
 

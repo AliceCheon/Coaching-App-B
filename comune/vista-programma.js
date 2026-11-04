@@ -46,6 +46,23 @@ function sezione(doc, percorso, testo) {
   return d;
 }
 
+/* Le date si leggono all'italiana: giorno/mese/anno. Arrivano dai documenti
+ * in forma ISO (2026-01-05) o già come Date; qui diventano 05/01/2026. Una
+ * data che non si capisce resta com'era: non si inventa niente. */
+function dataItaliana(valore) {
+  if (valore instanceof Date && !Number.isNaN(valore.getTime())) {
+    return String(valore.getUTCDate()).padStart(2, "0") + "/" +
+      String(valore.getUTCMonth() + 1).padStart(2, "0") + "/" + valore.getUTCFullYear();
+  }
+  const testo = valore == null ? "" : String(valore).trim();
+  if (!testo) return "";
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(testo);
+  if (iso) return iso[3] + "/" + iso[2] + "/" + iso[1];
+  const ita = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(testo);
+  if (ita) return ita[1].padStart(2, "0") + "/" + ita[2].padStart(2, "0") + "/" + ita[3];
+  return testo;
+}
+
 /* Un campo bloccato: etichetta sopra, valore dentro, nota sotto. È lo stesso
  * campo del v31, con readOnly addosso. */
 function campo(doc, etichetta, valore, tipo, nota, scelte) {
@@ -73,6 +90,15 @@ function campo(doc, etichetta, valore, tipo, nota, scelte) {
     controllo.readOnly = true;
     controllo.value = valore || "";
     if (!valore) controllo.placeholder = NON;
+  } else if (tipo === "data") {
+    /* Niente `type="date"`: il browser mostra le date come vuole lui, e in
+     * inglese diventano mese/giorno/anno. Qui il formato è scritto da noi. */
+    controllo = n(doc, "input", "pr-in pr-data");
+    controllo.type = "text";
+    controllo.readOnly = true;
+    controllo.setAttribute("inputmode", "numeric");
+    controllo.value = dataItaliana(valore);
+    controllo.placeholder = "gg/mm/aaaa";
   } else {
     controllo = n(doc, "input", "pr-in");
     controllo.type = tipo || "text";
@@ -95,7 +121,7 @@ function testa(doc, r) {
   h.appendChild(doc.createTextNode("Il programma "));
   h.appendChild(n(doc, "i", "", "che c'è"));
   d.appendChild(h);
-  d.appendChild(n(doc, "p", "", "La pagina del v31, con i campi bloccati: le schede e gli esercizi veri letti dai documenti v2 (program-v2-sheet-, -exercise-, -archived-), le tendine chiuse e i pulsanti che salvano lasciati fuori. Quando si apre la scrittura si sbloccano gli stessi campi, senza rifare il disegno."));
+  d.appendChild(n(doc, "p", "", "Il tuo programma con le schede e gli esercizi veri, in sola lettura: le tendine sono chiuse e i pulsanti che salvano non ci sono. Quando la scrittura si aprirà, questi stessi campi si sbloccheranno."));
   c.appendChild(d);
   const stato = n(doc, "span", "r-badge", "sola lettura · 0 scritture");
   c.appendChild(stato);
@@ -111,7 +137,7 @@ function cartaProgramma(doc, r) {
 
   const campi = n(doc, "div", "pr-fields");
   campi.appendChild(campo(doc, "Programma", r.profilo.nome, "text", null));
-  campi.appendChild(campo(doc, "Data inizio", r.profilo.inizio, "date", null));
+  campi.appendChild(campo(doc, "Data inizio", r.profilo.inizio, "data", null));
   campi.appendChild(campo(doc, "Fase", r.profilo.fase, "select", null, ["Bulk", "Cut", "Recomp", "Mantenimento"]));
   campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
   campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text", null));
@@ -123,7 +149,7 @@ function cartaProgramma(doc, r) {
   c.appendChild(due);
 
   const fine = n(doc, "div", "pr-row-end");
-  fine.appendChild(n(doc, "span", "pr-hint", "I campi si leggono dal documento del programma. Quelli che il documento non porta restano «" + NON + "», anche quando il v31 ci scriveva un valore."));
+  fine.appendChild(n(doc, "span", "pr-hint", "Quello che il tuo programma non riporta resta «" + NON + "»: qui non si riempie."));
   c.appendChild(fine);
   return c;
 }
@@ -156,7 +182,7 @@ function cartaRotazione(doc, r) {
     chips.appendChild(chip);
   });
   c.appendChild(chips);
-  c.appendChild(n(doc, "p", "pr-guide", "Nel v31 questi sono pulsanti che accendono e spengono le schede della rotazione: qui sono etichette, perché B non scrive."));
+  c.appendChild(n(doc, "p", "pr-guide", "Le schede della rotazione qui sono etichette: non si accende e non si spegne niente."));
 
   const prosp = n(doc, "div", "pr-prosp");
   prosp.appendChild(n(doc, "div", "pr-prosp-h", "Prospetto · ultime 8 settimane, quello che i logbook dimostrano"));
@@ -183,14 +209,14 @@ function cartaStato(doc, r) {
   const punto = n(doc, "span", "pr-dot");
   punto.setAttribute("data-segno", r.profilo.segno || "vuoto");
   stato.appendChild(punto);
-  stato.appendChild(n(doc, "b", "", (r.profilo.stato || NON) + " — B non scrive: nessun pulsante «Attiva»"));
+  stato.appendChild(n(doc, "b", "", (r.profilo.stato || NON) + " · sola lettura: nessun pulsante che salva"));
   c.appendChild(stato);
   const vis = n(doc, "div", "pr-vis");
-  vis.appendChild(campo(doc, "Visibile all'atleta dal", "", "date", "il campo del v31 non è tra quelli che B legge"));
+  vis.appendChild(campo(doc, "Visibile all'atleta dal", "", "data", "questo dato non è ancora letto: resta vuoto"));
   c.appendChild(vis);
-  const atti = n(doc, "p", "pr-hint pr-acts-vuoto", "Nel v31 qui ci sono «Confronta», «Copia da Prog…» e «Salva in Libreria». Non ci sono, e non sono spenti: sono azioni che scrivono.");
+  const atti = n(doc, "p", "pr-hint pr-acts-vuoto", "I pulsanti che salvano — confronta, copia, salva in libreria — non ci sono: questa pagina non scrive.");
   c.appendChild(atti);
-  const meta = n(doc, "p", "pr-hint", "Ultimo salvataggio " + (r.profilo.aggiornato ? r.profilo.aggiornato.slice(0, 16).replace("T", " ") : NON) + " · id " + (r.profilo.id || NON));
+  const meta = n(doc, "p", "pr-hint", "Ultimo salvataggio " + (r.profilo.aggiornato ? r.profilo.aggiornato.slice(0, 16).replace("T", " ") : NON) + "");
   c.appendChild(meta);
   return c;
 }
@@ -206,10 +232,10 @@ function kpi(doc, r) {
     a.appendChild(u);
     return a;
   };
-  griglia.appendChild(voce("Schede", r.schede ? String(r.schede.length) : "—", "schede", "documenti program-v2-sheet-"));
-  griglia.appendChild(voce("Esercizi", r.esercizi == null ? "—" : String(r.esercizi), "esercizi", "schede intere + esercizi sciolti"));
-  griglia.appendChild(voce("Archiviate", String(r.archiviate ? r.archiviate.length : 0), "schede", "tenute a parte, non mescolate"));
-  griglia.appendChild(voce("Codici scheda", String(r.codiciVisti ? r.codiciVisti.length : 0), "codici", "quelli dei logbook"));
+  griglia.appendChild(voce("Schede", r.schede ? String(r.schede.length) : "—", "schede", "lette dal tuo programma"));
+  griglia.appendChild(voce("Esercizi", r.esercizi == null ? "—" : String(r.esercizi), "esercizi", "dentro le schede attive"));
+  griglia.appendChild(voce("Archiviate", String(r.archiviate ? r.archiviate.length : 0), "schede", "messe da parte"));
+  griglia.appendChild(voce("Codici scheda", String(r.codiciVisti ? r.codiciVisti.length : 0), "codici", "visti nei tuoi logbook"));
   griglia.appendChild(voce("Sedute viste", String(r.osservato ? r.osservato.dentro : 0), "sedute", "con un codice di questo programma"));
   return griglia;
 }
@@ -261,7 +287,7 @@ function schede(doc, r) {
 
   if (!elenco.length) {
     c.appendChild(n(doc, "p", "pg-vuoto", r.schede === null
-      ? "Nessuna scheda per questo programma nei documenti letti" + (r.schedeMotivo ? " — " + r.schedeMotivo : "") + "."
+      ? "Nessuna scheda per questo programma nei dati letti" + (r.schedeMotivo ? " — " + r.schedeMotivo : "") + "."
       : "Il programma non ha schede attive: nessun pannello da mostrare."));
     if (r.archiviate && r.archiviate.length) {
       c.appendChild(n(doc, "p", "pr-hint", "Schede archiviate di questo programma: " + r.archiviate.length + " — si vedono nella tabella qui sotto."));
@@ -386,7 +412,7 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
     fonteSchede: r.fonteSchede || null
   };
   contenitore.appendChild(testa(doc, pieno));
-  contenitore.appendChild(sezione(doc, "M2 6.5L8 2l6 4.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z", "Il programma, con i campi bloccati"));
+  contenitore.appendChild(sezione(doc, "M2 6.5L8 2l6 4.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z", "Il programma"));
   const tre = n(doc, "div", "pr-grid");
   tre.appendChild(cartaProgramma(doc, pieno));
   tre.appendChild(cartaRotazione(doc, pieno));

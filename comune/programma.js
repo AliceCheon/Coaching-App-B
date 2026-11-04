@@ -210,7 +210,7 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
   }
   let schedeMotivo = null;
   if (schede === null) {
-    schedeMotivo = "nessun documento program-v2-sheet- per questo programma";
+    schedeMotivo = "nessuna scheda letta per questo programma";
   } else if (!schede.length) {
     schedeMotivo = "i documenti delle schede ci sono ma non ne resta nessuna attiva";
   }
@@ -255,7 +255,7 @@ export function coseNonRegistrateProgramma() {
     ["Progressione settimana per settimana", "le settimane di progressione di un esercizio stanno in un campo che B non legge ancora: qui si mostra quante sono, non i carichi di ognuna"],
     ["Settimane rimaste", "la data di inizio e la durata ci sono, ma lo scarico e il test non sono nel documento: qui non si contano le settimane «di piano»"],
     ["Giorni della settimana", "il programma dice quanti giorni a settimana, non quali: la rotazione sui giorni la mostra la Pianificazione, e solo per le sedute fatte"],
-    ["Visibilità all'atleta", "il campo della data «visibile dal» del v31 non è tra i campi che B legge: resta non registrato"],
+    ["Visibilità all'atleta", "la data «visibile all'atleta dal» non è tra i campi che leggo: resta non registrata"],
     ["Ordine dei programmi", "il numero 1, 2, 3 non è un campo: qui l'ordine è per data di creazione, poi per id — dichiarato, non indovinato"]
   ];
 }

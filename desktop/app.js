@@ -11,7 +11,7 @@ import { applicaTema, temaSalvato, alternaTema } from "../comune/tema.js";
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { entraConGoogle, esci, ascoltaStato } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
-import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore } from "../comune/diva-bot.js";
+import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore, voceDelProgramma } from "../comune/diva-bot.js";
 import { righeValoriCheckin } from "../comune/valori-checkin.js";
 import { creaVolto } from "../comune/diva-volto.js";
 import { carichiPerEsercizio, righeCarichi } from "../comune/carichi.js";
@@ -211,6 +211,18 @@ export async function avvia(doc, win) {
   const contenitoreDiva = doc.querySelector("#divaContenitore");
   let utenteCorrente = null;
   let modelloScorso = null;
+  /* La voce del programma e le frasi della Diva: la prima nasce dallo stesso
+   * riepilogo che disegna le carte, così fumetto e numeri non divergono. */
+  let voceProgramma1 = null;
+  let frasiDiva = null;
+  let tonoDiva = null;
+  const vistaProgrammaAperta = () => {
+    const v = doc.querySelector("#vistaProgramma1");
+    return Boolean(v) && !v.hidden;
+  };
+  const frasiConProgramma = () => (voceProgramma1 && vistaProgrammaAperta() && frasiDiva
+    ? [voceProgramma1].concat(frasiDiva)
+    : (frasiDiva || []));
 
   const aggiornaVista = (utente) => {
     if (utente) {
@@ -296,7 +308,9 @@ export async function avvia(doc, win) {
       const grigliaProgramma1 = doc.querySelector("#programma1Griglia");
       if (grigliaProgramma1) {
         const ordinati = elencoProgrammiOrdinato(programmi.programmi || []);
-        renderProgramma(doc, grigliaProgramma1, modello, riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length, schedeV2, oggi: new Date(), quante: 8 }));
+        const rp = riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length, schedeV2, oggi: new Date(), quante: 8 });
+        voceProgramma1 = voceDelProgramma(rp);
+        renderProgramma(doc, grigliaProgramma1, modello, rp);
       }
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
@@ -309,15 +323,13 @@ export async function avvia(doc, win) {
       const voceQuadro = voceDelQuadro(quadro);
       const voceCarico = voceDelCarico(carichi);
       const saluto = voceDelGiorno(new Date());
-      montaDivaBot(
-        contenitoreDiva,
-        frasiPerDati({
-          numeroSedute: modello.numeroSedute || 0,
-          pesoPresente: Boolean(modello.peso),
-          checkinPresente: Boolean(modello.checkin)
-        }, quadro, { giornata: saluto, carichi }),
-        tonoPeggiore(voceQuadro.tono, voceCarico.tono)
-      );
+      frasiDiva = frasiPerDati({
+        numeroSedute: modello.numeroSedute || 0,
+        pesoPresente: Boolean(modello.peso),
+        checkinPresente: Boolean(modello.checkin)
+      }, quadro, { giornata: saluto, carichi });
+      tonoDiva = tonoPeggiore(voceQuadro.tono, voceCarico.tono);
+      montaDivaBot(contenitoreDiva, frasiConProgramma(), tonoDiva);
     } catch (errore) {
       messaggioErrore.textContent = "Errore di lettura: " + (errore && errore.code ? errore.code : (errore && errore.message) || "sconosciuto");
     }
@@ -344,6 +356,10 @@ export async function avvia(doc, win) {
       else if (id === "pianificazione" && nastro) nastro.textContent = "pianificazione · il calendario che i logbook dimostrano";
       else if (id === "programma-1" && nastro) nastro.textContent = "programma 1 · il documento del programma e i logbook";
       else if (id === "dashboard" && nastro && modelloScorso) nastro.textContent = modelloScorso.programma && modelloScorso.programma.nome ? modelloScorso.programma.nome : "in lettura dai tuoi dati veri";
+      if (id === "programma-1" && frasiDiva) {
+        contenitoreDiva.textContent = "";
+        montaDivaBot(contenitoreDiva, frasiConProgramma(), tonoDiva || "neutro");
+      }
     });
   });
   doc.querySelector("#bottoneTema").addEventListener("click", () => alternaTema(doc, win.localStorage));
