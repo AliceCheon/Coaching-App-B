@@ -21,13 +21,15 @@ import { renderOverviewAtleta } from "../comune/vista-overview.js";
 import { riepilogoOverview } from "../comune/overview.js";
 import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
+import { renderProgramma } from "../comune/vista-programma.js";
+import { riepilogoProgramma, elencoProgrammiOrdinato } from "../comune/programma.js";
 
 const NON_REGISTRATO = "non registrato";
 
 /* Cambio di schermata: una voce viva accende la sua area e spegne le altre.
  * Le voci spente non arrivano qui: sono disabilitate nel menu. */
 export function mostraVista(doc, id) {
-  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview"), pianificazione: doc.querySelector("#vistaPianificazione") };
+  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview"), pianificazione: doc.querySelector("#vistaPianificazione"), "programma-1": doc.querySelector("#vistaProgramma1") };
   if (!Object.prototype.hasOwnProperty.call(pannelli, id)) return null;
   Object.entries(pannelli).forEach(([chiave, el]) => { if (el) el.hidden = chiave !== id; });
   doc.querySelectorAll(".voce[data-vista]").forEach((v) => {
@@ -281,6 +283,11 @@ export async function avvia(doc, win) {
       if (grigliaPianificazione) {
         renderPianificazione(doc, grigliaPianificazione, modello, riepilogoPianificazione(sedute.sedute, { oggi: new Date(), settimane: 8 }));
       }
+      const grigliaProgramma1 = doc.querySelector("#programma1Griglia");
+      if (grigliaProgramma1) {
+        const ordinati = elencoProgrammiOrdinato(programmi.programmi || []);
+        renderProgramma(doc, grigliaProgramma1, modello, riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length }));
+      }
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
         nastro.textContent = modello.programma && modello.programma.nome
@@ -325,6 +332,7 @@ export async function avvia(doc, win) {
       const id = mostraVista(doc, voce.getAttribute("data-vista"));
       if (id === "overview-atleta" && nastro) nastro.textContent = "overview atleta · conti sulle sedute lette";
       else if (id === "pianificazione" && nastro) nastro.textContent = "pianificazione · il calendario che i logbook dimostrano";
+      else if (id === "programma-1" && nastro) nastro.textContent = "programma 1 · il documento del programma e i logbook";
       else if (id === "dashboard" && nastro && modelloScorso) nastro.textContent = modelloScorso.programma && modelloScorso.programma.nome ? modelloScorso.programma.nome : "in lettura dai tuoi dati veri";
     });
   });

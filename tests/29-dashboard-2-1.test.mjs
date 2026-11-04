@@ -29,9 +29,9 @@ test("29.02 nel rail ci sono le ventidue voci del v31, una per una", () => {
   assert.deepEqual(voci.map((v) => v.id), attese, "ordine o nomi diversi dal v31");
 });
 
-test("29.03 in questo passo sono vive la Dashboard, la Overview atleta e la Pianificazione", () => {
+test("29.03 in questo passo sono vive la Dashboard, la Overview, la Pianificazione e Programma 1", () => {
   const vive = voci.filter((v) => !v.spenta);
-  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione"]);
+  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione", "programma-1"]);
   assert.match(html, /class="voce attiva"[^>]*data-vista="dashboard"/);
 });
 
@@ -42,12 +42,12 @@ test("29.04 le sette rimandate dicono «al passo 5», le altre «prossima scherm
     assert.match(blocco.slice(0, 220), /<em>al passo 5<\/em>/, id + " non dichiara il passo 5");
   }
   const altre = voci.filter((v) => v.spenta && !passo5.includes(v.id));
-  assert.equal(altre.length, 12);
+  assert.equal(altre.length, 11);
   for (const v of altre) {
     const blocco = html.slice(html.indexOf('data-vista="' + v.id + '"'));
     assert.match(blocco.slice(0, 220), /<em>prossima schermata<\/em>/, v.id + " non dichiara la schermata successiva");
   }
-  assert.equal((html.match(/disabled/g) || []).length, 19, "le voci non fatte devono essere davvero disabilitate");
+  assert.equal((html.match(/disabled/g) || []).length, 18, "le voci non fatte devono essere davvero disabilitate");
 });
 
 test("29.05 l'aspetto è quello del v31, non una carta inventata", () => {
