@@ -116,7 +116,7 @@ function campo(doc, etichetta, valore, tipo, nota, scelte) {
 function testa(doc, r) {
   const c = n(doc, "div", "ck-testa");
   const d = n(doc, "div");
-  d.appendChild(n(doc, "div", "r-oc", "Programmi · Programma " + (r.indice + 1)));
+  d.appendChild(n(doc, "div", "r-oc", "Programmi · " + (r.profilo && r.profilo.nome ? r.profilo.nome : "non registrato")));
   const h = n(doc, "h2");
   h.appendChild(doc.createTextNode("Il programma "));
   h.appendChild(n(doc, "i", "", "che c'è"));

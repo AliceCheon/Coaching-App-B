@@ -19,19 +19,19 @@ test("29.01 il rail ha i tre gruppi del mockup", () => {
   }
 });
 
-test("29.02 nel rail ci sono le ventidue voci del v31, una per una", () => {
+test("29.02 nel rail restano le venti voci del v31: Programma 1/2/3 sono una voce sola", () => {
   const attese = [
     "dashboard", "dati-cliente", "salute-recupero", "misure", "reset-bulk-cut", "monitor-annuale", "monitor-peso", "integratori",
-    "overview-atleta", "pianificazione", "database-esercizi", "scheletri", "progressioni", "programma-1", "programma-2", "programma-3",
+    "overview-atleta", "pianificazione", "database-esercizi", "scheletri", "progressioni", "programma-1",
     "riepilogo-volume", "specializzazione", "curve-forza", "archivio", "study-time", "impostazioni"
   ];
-  assert.equal(voci.length, 22, "le voci sono " + voci.length);
+  assert.equal(voci.length, 20, "le voci sono " + voci.length);
   assert.deepEqual(voci.map((v) => v.id), attese, "ordine o nomi diversi dal v31");
 });
 
-test("29.03 in questo passo sono vive la Dashboard, la Overview, la Pianificazione e Programma 1", () => {
+test("29.03 in questo passo sono vive la Dashboard, la Overview, la Pianificazione, il Programma attivo e l'Archivio programmi", () => {
   const vive = voci.filter((v) => !v.spenta);
-  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione", "programma-1"]);
+  assert.deepEqual(vive.map((v) => v.id), ["dashboard", "overview-atleta", "pianificazione", "programma-1", "archivio"]);
   assert.match(html, /class="voce attiva"[^>]*data-vista="programma-1"/);
 });
 
@@ -42,12 +42,12 @@ test("29.04 le sette rimandate dicono «al passo 5», le altre «prossima scherm
     assert.match(blocco.slice(0, 220), /<em>al passo 5<\/em>/, id + " non dichiara il passo 5");
   }
   const altre = voci.filter((v) => v.spenta && !passo5.includes(v.id));
-  assert.equal(altre.length, 11);
+  assert.equal(altre.length, 8);
   for (const v of altre) {
     const blocco = html.slice(html.indexOf('data-vista="' + v.id + '"'));
     assert.match(blocco.slice(0, 220), /<em>prossima schermata<\/em>/, v.id + " non dichiara la schermata successiva");
   }
-  assert.equal((html.match(/disabled/g) || []).length, 18, "le voci non fatte devono essere davvero disabilitate");
+  assert.equal((html.match(/disabled/g) || []).length, 15, "le voci non fatte devono essere davvero disabilitate");
 });
 
 test("29.05 l'aspetto è quello del v31, non una carta inventata", () => {

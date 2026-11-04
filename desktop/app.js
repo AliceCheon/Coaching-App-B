@@ -10,7 +10,7 @@
 import { applicaTema, temaSalvato, alternaTema } from "../comune/tema.js";
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { entraConGoogle, esci, ascoltaStato } from "../comune/accesso.js";
-import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati } from "../comune/lettura-dati.js";
+import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, riepilogoDati, programmaAttivo } from "../comune/lettura-dati.js";
 import { frasiPerDati, montaDivaBot, voceDelQuadro, voceDelGiorno, voceDelCarico, tonoPeggiore, voceDelProgramma } from "../comune/diva-bot.js";
 import { righeValoriCheckin } from "../comune/valori-checkin.js";
 import { creaVolto } from "../comune/diva-volto.js";
@@ -22,7 +22,9 @@ import { riepilogoOverview } from "../comune/overview.js";
 import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
 import { renderProgramma } from "../comune/vista-programma.js";
-import { riepilogoProgramma, elencoProgrammiOrdinato } from "../comune/programma.js";
+import { riepilogoProgramma, elencoProgrammiOrdinato, profiloProgramma } from "../comune/programma.js";
+import { renderArchivio, elencoArchivio } from "../comune/vista-archivio.js";
+import { gruppiApribili } from "../comune/gruppi-menu.js";
 import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
 
 const NON_REGISTRATO = "non registrato";
@@ -30,7 +32,7 @@ const NON_REGISTRATO = "non registrato";
 /* Cambio di schermata: una voce viva accende la sua area e spegne le altre.
  * Le voci spente non arrivano qui: sono disabilitate nel menu. */
 export function mostraVista(doc, id) {
-  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview"), pianificazione: doc.querySelector("#vistaPianificazione"), "programma-1": doc.querySelector("#vistaProgramma1") };
+  const pannelli = { dashboard: doc.querySelector("#vistaDash"), "overview-atleta": doc.querySelector("#vistaOverview"), pianificazione: doc.querySelector("#vistaPianificazione"), "programma-1": doc.querySelector("#vistaProgramma1"), archivio: doc.querySelector("#vistaArchivio") };
   if (!Object.prototype.hasOwnProperty.call(pannelli, id)) return null;
   Object.entries(pannelli).forEach(([chiave, el]) => { if (el) el.hidden = chiave !== id; });
   doc.querySelectorAll(".voce[data-vista]").forEach((v) => {
@@ -211,6 +213,9 @@ export async function avvia(doc, win) {
   const contenitoreDiva = doc.querySelector("#divaContenitore");
   let utenteCorrente = null;
   let modelloScorso = null;
+  /* L'ultima lettura, messa da parte: l'Archivio riapre la scheda di un
+   * programma da qui, senza rileggere Firestore. */
+  let statoLettura = { sedute: [], programmi: [], schedeV2: null, attivo: null, ordinati: [] };
   /* La voce del programma e le frasi della Diva: la prima nasce dallo stesso
    * riepilogo che disegna le carte, così fumetto e numeri non divergono. */
   let voceProgramma1 = null;
@@ -234,6 +239,45 @@ export async function avvia(doc, win) {
       vistaDash.hidden = true;
       statoUtente.textContent = "";
     }
+  };
+
+  /* L'Archivio: elenco dei programmi che non sono l'attivo, e la stessa vista
+   * del programma aperta per scelta. Nessuna scrittura: si legge e si disegna. */
+  const mostraElencoArchivio = () => {
+    const elenco = doc.querySelector("#archivioElenco");
+    const scheda = doc.querySelector("#archivioScheda");
+    if (elenco) elenco.hidden = false;
+    if (scheda) scheda.hidden = true;
+  };
+
+  const montaArchivio = (prop, modello, schedeV2, seduteLette, ordinatiP, attivo) => {
+    const elenco = doc.querySelector("#archivioElenco");
+    const dettaglio = doc.querySelector("#archivioDettaglio");
+    const scheda = doc.querySelector("#archivioScheda");
+    if (!elenco) return;
+    const righe = elencoArchivio(prop.programmi || [], { attivoId: attivo ? attivo.id : "", schedeV2 });
+    renderArchivio(doc, elenco, {
+      righe,
+      cancellati: modello.programmiScartatiFiltro,
+      schedeNonLette: schedeV2 == null,
+      letturaFallita: Boolean(modello.programmiNonLetti)
+    });
+    if (scheda) scheda.hidden = true;
+    elenco.hidden = false;
+    elenco.querySelectorAll(".pr-arch-riga").forEach((bottone) => {
+      bottone.addEventListener("click", () => {
+        const id = bottone.getAttribute("data-programma");
+        const programma = (prop.programmi || []).find((x) => String(x.id || "") === id) || null;
+        if (!programma || !dettaglio) return;
+        const indice = Math.max(0, ordinatiP.indexOf(programma));
+        const rp = riepilogoProgramma(programma, seduteLette, { indice, totaleProgrammi: ordinatiP.length, schedeV2, oggi: new Date(), quante: 8 });
+        renderProgramma(doc, dettaglio, modello, rp);
+        elenco.hidden = true;
+        if (scheda) scheda.hidden = false;
+        const nastroArch = doc.querySelector("#nastroSotto");
+        if (nastroArch) nastroArch.textContent = "archivio · " + (rp.profilo.nome || "programma") + " · sola lettura";
+      });
+    });
   };
 
   const leggi = async (utente) => {
@@ -305,17 +349,42 @@ export async function avvia(doc, win) {
       if (grigliaPianificazione) {
         renderPianificazione(doc, grigliaPianificazione, modello, riepilogoPianificazione(sedute.sedute, { oggi: new Date(), settimane: 8 }));
       }
-      const grigliaProgramma1 = doc.querySelector("#programma1Griglia");
-      if (grigliaProgramma1) {
-        const ordinati = elencoProgrammiOrdinato(programmi.programmi || []);
-        const rp = riepilogoProgramma(ordinati[0] || null, sedute.sedute, { indice: 0, totaleProgrammi: ordinati.length, schedeV2, oggi: new Date(), quante: 8 });
+      /* Un solo programma in scena: quello attivo, con la regola di A
+       * (status "active", poi il flag active, poi il più aggiornato — e in quel
+       * caso lo dichiaro). Tutti gli altri vanno in Archivio programmi, con la
+       * stessa vista aperta per scelta. Un programma che non c'è resta vuoto e
+       * lo dice: non si riempie con un altro. */
+      const ordinatiP = elencoProgrammiOrdinato(programmi.programmi || []);
+      const scelto = programmaAttivo(programmi.programmi || []);
+      const attivo = scelto ? scelto.programma : null;
+      const profiloAttivo = attivo ? profiloProgramma(attivo) : null;
+      const indiceAttivo = attivo ? Math.max(0, ordinatiP.indexOf(attivo)) : 0;
+      const grigliaAttiva = doc.querySelector("#programma1Griglia");
+      if (grigliaAttiva) {
+        const rp = riepilogoProgramma(attivo, sedute.sedute, { indice: indiceAttivo, totaleProgrammi: ordinatiP.length, schedeV2, oggi: new Date(), quante: 8 });
         voceProgramma1 = voceDelProgramma(rp);
-        renderProgramma(doc, grigliaProgramma1, modello, rp);
+        renderProgramma(doc, grigliaAttiva, modello, rp);
       }
+      statoLettura = { sedute: sedute.sedute, programmi: programmi.programmi || [], schedeV2, attivo, ordinati: ordinatiP };
+      /* Il nome del programma attivo va sotto la voce del menu: è quello letto,
+       * non quello scritto nell'HTML. Se il programma non è marcato attivo, il
+       * suggerimento dice che sto mostrando il più aggiornato. */
+      const nomeAttivo = doc.querySelector("#nomeProgrammaAttivo");
+      if (nomeAttivo) {
+        nomeAttivo.textContent = profiloAttivo ? profiloAttivo.nome : "nessun programma letto";
+        nomeAttivo.setAttribute("title", !scelto
+          ? "nessun documento-programma letto"
+          : scelto.esplicito
+            ? "marcato attivo nel programma"
+            : "nessun programma è marcato attivo: mostro il più aggiornato, e lo dichiaro");
+      }
+      montaArchivio(programmi, modello, schedeV2, sedute.sedute, ordinatiP, attivo);
       const nastro = doc.querySelector("#nastroSotto");
       if (nastro) {
-        nastro.textContent = modello.programma && modello.programma.nome
-          ? modello.programma.nome + (modello.programma.settimana != null ? " · settimana " + modello.programma.settimana : "")
+        nastro.textContent = profiloAttivo
+          ? profiloAttivo.nome
+            + (modello.programma && modello.programma.settimana != null ? " · settimana " + modello.programma.settimana : "")
+            + (scelto && scelto.esplicito ? "" : " · nessun attivo segnato: il più aggiornato")
           : "in lettura dai tuoi dati veri";
       }
       oraLettura.textContent = "lettura una tantum · " + new Date().toLocaleTimeString("it-IT") + " · nessuna scrittura";
@@ -354,8 +423,10 @@ export async function avvia(doc, win) {
       const id = mostraVista(doc, voce.getAttribute("data-vista"));
       if (id === "overview-atleta" && nastro) nastro.textContent = "overview atleta · conti sulle sedute lette";
       else if (id === "pianificazione" && nastro) nastro.textContent = "pianificazione · il calendario che i logbook dimostrano";
-      else if (id === "programma-1" && nastro) nastro.textContent = "programma 1 · il documento del programma e i logbook";
+      else if (id === "programma-1" && nastro) nastro.textContent = "programma attivo · il documento del programma e i logbook";
+      else if (id === "archivio" && nastro) nastro.textContent = "archivio programmi · la stessa scheda, aperta per scelta";
       else if (id === "dashboard" && nastro && modelloScorso) nastro.textContent = modelloScorso.programma && modelloScorso.programma.nome ? modelloScorso.programma.nome : "in lettura dai tuoi dati veri";
+      if (id === "archivio") mostraElencoArchivio();
       if (id === "programma-1" && frasiDiva) {
         contenitoreDiva.textContent = "";
         montaDivaBot(contenitoreDiva, frasiConProgramma(), tonoDiva || "neutro");
@@ -363,6 +434,9 @@ export async function avvia(doc, win) {
     });
   });
   doc.querySelector("#bottoneTema").addEventListener("click", () => alternaTema(doc, win.localStorage));
+  const archivioIndietro = doc.querySelector("#archivioIndietro");
+  if (archivioIndietro) archivioIndietro.addEventListener("click", mostraElencoArchivio);
+  gruppiApribili(doc, win.localStorage);
   return { app, auth, db };
 }
 

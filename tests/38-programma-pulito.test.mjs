@@ -54,12 +54,15 @@ test("la pagina non nomina il v31 né i nomi tecnici dei documenti", () => {
   assert.doesNotMatch(testo, /documenti v2/i);
 });
 
-test("menu e nastro dicono Programma 1, non Dashboard", () => {
+test("menu e nastro dicono Programma attivo, non Dashboard e non un numero", () => {
   const dom = new JSDOM(html);
   const attive = Array.from(dom.window.document.querySelectorAll(".voce.attiva")).map((v) => v.getAttribute("data-vista"));
   assert.deepEqual(attive, ["programma-1"]);
-  assert.equal(dom.window.document.querySelector(".nastro b").textContent, "Programma 1");
+  assert.equal(dom.window.document.querySelector(".nastro b").textContent, "Programma attivo");
   assert.equal(dom.window.document.querySelector("#vistaProgramma1").hidden, false);
+  // il nome vero del programma arriva dalla lettura, sotto la voce
+  assert.ok(dom.window.document.querySelector("#nomeProgrammaAttivo"), "manca lo spazio per il nome del programma attivo");
+  assert.match(dom.window.document.querySelector('[data-vista="programma-1"]').textContent, /Programma attivo · in corso/);
 });
 
 test("la Diva sta in fondo alla pagina, non copre le carte", () => {

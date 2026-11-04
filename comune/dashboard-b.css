@@ -469,6 +469,28 @@
 .pr-ex-nota{font-size:9.2px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pr-archiviate{margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
 .pr-chip-arch{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px dashed var(--line);font-family:var(--mono);font-size:8.8px;color:var(--muted)}
+
+/* ---------- archivio programmi (b0.35) ---------- */
+.pr-arch{display:flex;flex-direction:column;gap:14px}
+.pr-arch-testa{padding:20px 22px;border:1px solid var(--line);border-radius:18px;background:var(--card-2)}
+.pr-arch-testa h2{margin:0 0 6px;font-size:16px;font-weight:800;color:var(--testo)}
+.pr-arch-testa p{margin:0;max-width:62ch;font-size:11px;line-height:1.65;color:var(--muto)}
+.pr-arch-conta{margin-top:10px;font-family:var(--mono);font-size:9.4px;letter-spacing:.04em;color:var(--lav)}
+.pr-arch-lista{display:flex;flex-direction:column;gap:8px}
+.pr-arch-riga{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;width:100%;padding:13px 16px;text-align:left;
+  border:1px solid var(--line-soft);border-radius:14px;background:var(--card);font-family:inherit;color:var(--testo);
+  cursor:pointer;transition:border-color .15s,transform .15s}
+.pr-arch-riga:hover{border-color:var(--line);transform:translateY(-1px)}
+.pr-arch-riga:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.pr-arch-nome{font-size:13px;font-weight:700}
+.pr-arch-stato{justify-self:end;align-self:center;padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+  font-family:var(--mono);font-size:8.8px;letter-spacing:.04em;color:var(--muto)}
+.pr-arch-stato[data-segno="vivo"]{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.pr-arch-stato[data-segno="archivio"]{border-style:dashed}
+.pr-arch-meta{grid-column:1/-1;font-size:10px;color:var(--muto)}
+.pr-arch-piede{margin:2px 0 0;font-size:9.6px;line-height:1.6;color:var(--fioco)}
+.pr-arch-vuoto{padding:18px 20px;border:1px dashed var(--line);border-radius:14px;font-size:11px;line-height:1.6;color:var(--muto)}
+.pr-arch-indietro{margin:0 0 14px}
 .pg-kpi{grid-template-columns:repeat(5,minmax(0,1fr))}
 
 /* ============================================================

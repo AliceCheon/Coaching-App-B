@@ -74,13 +74,11 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
         <button class="voce spenta" data-vista="database-esercizi" type="button" disabled><span class="ic emo">📚</span><span class="tx">Database esercizi<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="scheletri" type="button" disabled><span class="ic emo">🦴</span><span class="tx">Scheletri<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="progressioni" type="button" disabled><span class="ic emo">⚗️</span><span class="tx">Progressioni<em>prossima schermata</em></span></button>
-        <button class="voce attiva" data-vista="programma-1" type="button" aria-current="page"><span class="ic emo">🗂️</span><span class="tx">Programma 1</span></button>
-        <button class="voce spenta" data-vista="programma-2" type="button" disabled><span class="ic emo">🗂️</span><span class="tx">Programma 2<em>prossima schermata</em></span></button>
-        <button class="voce spenta" data-vista="programma-3" type="button" disabled><span class="ic emo">🗂️</span><span class="tx">Programma 3<em>prossima schermata</em></span></button>
+        <button class="voce attiva" data-vista="programma-1" type="button" aria-current="page"><span class="ic emo">🗂️</span><span class="tx">Programma attivo · in corso<em id="nomeProgrammaAttivo">in lettura dai tuoi dati</em></span></button>
         <button class="voce spenta" data-vista="riepilogo-volume" type="button" disabled><span class="ic emo">📊</span><span class="tx">Riepilogo volume<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="specializzazione" type="button" disabled><span class="ic emo">🎯</span><span class="tx">Specializzazione<em>prossima schermata</em></span></button>
         <button class="voce spenta" data-vista="curve-forza" type="button" disabled><span class="ic emo">📈</span><span class="tx">Curve di forza<em>prossima schermata</em></span></button>
-        <button class="voce spenta" data-vista="archivio" type="button" disabled><span class="ic emo">🗂️</span><span class="tx">Archivio programmi<em>prossima schermata</em></span></button>
+        <button class="voce" data-vista="archivio" type="button"><span class="ic emo">🗂️</span><span class="tx">Archivio programmi</span></button>
       </div>
     </div>
 
@@ -106,7 +104,7 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
 
   <main class="area maino">
     <div class="nastro">
-      <b>Programma 1</b><span class="sep">/</span>
+      <b id="nastroProgramma">Programma attivo</b><span class="sep">/</span>
       <span id="nastroSotto">in lettura dai tuoi dati veri</span>
       <span class="sep">/</span><span class="ok">nessun numero inventato</span>
       <span class="fr" id="oraLettura"></span>
@@ -139,6 +137,13 @@ body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 3
     </div>
     <div id="vistaProgramma1">
       <div id="programma1Griglia" class="ck"></div>
+    </div>
+    <div id="vistaArchivio" hidden>
+      <div id="archivioElenco"></div>
+      <div id="archivioScheda" hidden>
+        <button id="archivioIndietro" class="bottone-secondario pr-arch-indietro" type="button">← Tutti i programmi</button>
+        <div id="archivioDettaglio" class="ck"></div>
+      </div>
     </div>
 
     <footer class="fondo">
