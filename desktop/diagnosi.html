@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diagnosi campi · Barbell Diva B (temporanea)</title>
+<style>
+  :root{--bg:#101018;--card:#181822;--card2:#20202c;--line:#2a2a38;--text:#eee;--mut:#9a9ab0;--lav:#8b8bf5;--pink:#f06292}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;padding:26px 18px 60px}
+  .involucro{max-width:860px;margin:0 auto}
+  h1{font-size:21px;font-weight:800;letter-spacing:.02em;margin:0 0 6px}
+  .temp{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);border:1px solid var(--pink);border-radius:999px;padding:2px 9px;vertical-align:3px;margin-left:8px}
+  .nota{color:var(--mut);font-size:12.5px;margin:0 0 20px}
+  .carta{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;text-align:center;max-width:380px;margin:40px auto}
+  .carta h2{font-size:17px;margin:0 0 4px}
+  .carta .sotto{font-size:12px;color:var(--mut);margin-bottom:18px}
+  .carta button{font:700 14px/1 inherit;color:var(--text);background:var(--card2);border:1px solid var(--lav);border-radius:12px;padding:12px 22px;cursor:pointer}
+  .carta .errore{display:none;color:var(--pink);font-size:12px;margin-top:12px}
+  .carta .nota2{font-size:11px;color:var(--mut);margin-top:14px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:0 0 16px}
+  section h2{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--lav)}
+  ul{margin:0;padding-left:18px}
+  li{font:12.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  li ul{margin:2px 0 6px}
+  .id{color:#c9a7ff}
+  .conto{color:var(--mut)}
+  .avviso{color:var(--pink);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="involucro">
+  <h1>Diagnosi campi<span class="temp">temporanea</span></h1>
+  <p class="nota">Questa pagina legge i tuoi documenti e mostra <b>solo i nomi dei campi</b>, il loro tipo e la lunghezza — <b>mai i valori</b>. Mostra anche gli id dei documenti, che servono a capire come le schede si agganciano al programma. Serve a capire quali nomi di campo cercare; si toglierà dal sito appena abbiamo finito.</p>
+  <div class="carta" id="cartaAccesso">
+    <h2>Barbell Diva B — diagnosi</h2>
+    <div class="sotto">sola lettura · niente viene salvato</div>
+    <button type="button" id="entra">Entra con Google</button>
+    <div class="errore" id="erroreAccesso"></div>
+    <div class="nota2">stessa identità del sito: leggi solo i tuoi dati</div>
+  </div>
+  <div id="uscita"></div>
+</div>
+
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script type="module">
+"use strict";
+
+import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
+import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
+
+/* Descrizione di un valore SENZA mostrarlo: solo tipo, lunghezza, nomi delle
+ * chiavi interne. Nessun contenuto arriva a schermo. */
+function tipoDi(v) {
+  if (v === null) return "null";
+  if (v === undefined) return "assente";
+  if (typeof v === "string") return "testo · " + v.length + " caratteri";
+  if (typeof v === "number") return "numero · " + (Number.isInteger(v) ? "intero" : "decimale");
+  if (typeof v === "boolean") return "vero/falso";
+  if (Array.isArray(v)) {
+    const primo = v.length ? v[0] : null;
+    return "elenco di " + v.length + (v.length ? " · primo elemento: " + tipoDi(primo) : "");
+  }
+  if (v && typeof v.toDate === "function") return "data-orario Firestore";
+  if (v && typeof v.seconds === "number" && typeof v.nanoseconds === "number") return "data-orario (oggetto seconds/nanoseconds)";
+  if (v && typeof v === "object") {
+    const k = Object.keys(v);
+    return "oggetto · campi: " + (k.length ? k.join(", ") : "(nessuno)");
+  }
+  return typeof v;
+}
+
+function riga(doc, nome, tipo) {
+  const li = doc.createElement("li");
+  li.textContent = nome + " — " + tipo;
+  return li;
+}
+
+function elencoChiavi(doc, oggetto, profondita) {
+  const ul = doc.createElement("ul");
+  const chiavi = Object.keys(oggetto || {}).sort();
+  if (!chiavi.length) {
+    const li = doc.createElement("li");
+    li.textContent = "(nessun campo)";
+    ul.appendChild(li);
+    return ul;
+  }
+  chiavi.forEach((k) => {
+    const v = oggetto[k];
+    const li = riga(doc, k, tipoDi(v));
+    if (profondita > 0 && v && typeof v === "object" && !Array.isArray(v) && typeof v.toDate !== "function" && typeof v.seconds !== "number" && Object.keys(v).length) {
+      li.appendChild(elencoChiavi(doc, v, profondita - 1));
+    }
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+function sezione(doc, contenitore, titolo) {
+  const s = doc.createElement("section");
+  const h = doc.createElement("h2");
+  h.textContent = titolo;
+  s.appendChild(h);
+  contenitore.appendChild(s);
+  return s;
+}
+
+function paragrafo(doc, contenitore, testo, classe) {
+  const p = doc.createElement("p");
+  p.textContent = testo;
+  if (classe) p.className = classe;
+  contenitore.appendChild(p);
+  return p;
+}
+
+function prefissoDi(id) {
+  const ordine = [
+    ["program-v2-meta-", "META programma"],
+    ["program-v2-sheet-", "SCHEDA"],
+    ["program-v2-exercise-", "ESERCIZIO separato"],
+    ["program-v2-archived-", "SCHEDA ARCHIVIATA"],
+    ["program-v1-", "programma formato v1"]
+  ];
+  for (let i = 0; i < ordine.length; i += 1) {
+    if (id.indexOf(ordine[i][0]) === 0) return ordine[i];
+  }
+  return ["", "ALTRO (nessun prefisso conosciuto)"];
+}
+
+/* La scelta del programma attivo, interna: legge i valori per DECIDERE ma non
+ * li mostra. Stesse regole di comune/lettura-dati.js (programmaAttivo). */
+function scegliAttivo(meta) {
+  const liberi = meta.filter((m) => !m.dati.archivedAt && String(m.dati.status || "") !== "archived");
+  const esplicito = liberi.find((m) => String(m.dati.status || "") === "active") || liberi.find((m) => m.dati.active === true) || null;
+  if (esplicito) return esplicito;
+  const ordinati = liberi.slice().sort((a, b) => String(b.dati.updatedAt || "").localeCompare(String(a.dati.updatedAt || "")));
+  return ordinati[0] || meta[0] || null;
+}
+
+async function leggiTutto(doc, db, utente, uscita) {
+  const radiceRef = db.collection("barbellDivaAccounts").doc(utente.uid);
+
+  const radiceSnap = await radiceRef.get();
+  if (!radiceSnap.exists) {
+    paragrafo(doc, uscita, "Il documento radice barbellDivaAccounts non esiste per questo account: qui si ferma tutto.", "avviso");
+    return;
+  }
+  const radice = radiceSnap.data() || {};
+
+  const s1 = sezione(doc, uscita, "1 · Documento radice (barbellDivaAccounts) — chiavi di primo livello");
+  s1.appendChild(elencoChiavi(doc, radice, 0));
+
+  if (radice.state && typeof radice.state === "object" && !Array.isArray(radice.state)) {
+    const s1a = sezione(doc, uscita, "1a · Dentro il campo state — chiavi di primo livello");
+    s1a.appendChild(elencoChiavi(doc, radice.state, 0));
+    const programmiInStato = radice.state.programs;
+    const sottoraccolta = radice.programStorage === "subcollection-v1" || radice.programStorage === "subcollection-v2";
+    if (Array.isArray(programmiInStato) && programmiInStato.length && !sottoraccolta) {
+      const s1b = sezione(doc, uscita, "1b · Il formato porta i programmi DENTRO state.programs (non in una sottoraccolta) — chiavi del primo elemento");
+      s1b.appendChild(elencoChiavi(doc, programmiInStato[0] || {}, 1));
+    }
+  }
+
+  try {
+    const elenco = await radiceRef.listCollections();
+    const nomi = (elenco || []).map((c) => c.id).sort();
+    const s2 = sezione(doc, uscita, "2 · Sottoraccolte della radice (nomi)");
+    const ul = doc.createElement("ul");
+    const li = doc.createElement("li");
+    li.textContent = nomi.length ? nomi.join(" · ") : "(nessuna)";
+    ul.appendChild(li);
+    s2.appendChild(ul);
+  } catch (e) {
+    paragrafo(doc, uscita, "Elenco sottoraccolte non letto: " + (e && e.code ? e.code : "errore"), "avviso");
+  }
+
+  const collezioneProgrammi = radiceRef.collection("nutritionPhotos");
+  const istantanea = await collezioneProgrammi.get();
+  const documenti = (istantanea.docs || []).map((d) => ({ id: String(d.id || ""), dati: d.data() || {} }));
+
+  const gruppi = Object.create(null);
+  documenti.forEach((d) => {
+    const p = prefissoDi(d.id);
+    (gruppi[p[1]] = gruppi[p[1]] || []).push(d);
+  });
+
+  const s3 = sezione(doc, uscita, "3 · Documenti programma (collezione nutritionPhotos) — raggruppati per prefisso dell'id");
+  const ul3 = doc.createElement("ul");
+  Object.keys(gruppi).sort().forEach((nome) => {
+    const li = doc.createElement("li");
+    li.textContent = nome + " — " + gruppi[nome].length + " documento/i · primo id: " + gruppi[nome][0].id;
+    li.className = "id";
+    ul3.appendChild(li);
+  });
+  if (!documenti.length) {
+    const li = doc.createElement("li");
+    li.textContent = "(nessun documento nella collezione nutritionPhotos)";
+    ul3.appendChild(li);
+  }
+  s3.appendChild(ul3);
+
+  const metas = gruppi["META programma"] || [];
+  if (!metas.length) {
+    paragrafo(doc, uscita, "Nessun documento con prefisso program-v2-meta-: il programma attivo oggi arriva da un'altra fonte (formato vecchio dentro state.programs, o prefisso diverso). Guarda i gruppi qui sopra.", "avviso");
+  }
+
+  const attivo = scegliAttivo(metas);
+  if (attivo) {
+    const s4 = sezione(doc, uscita, "4 · Programma attivo scelto (" + attivo.id + ") — chiavi e tipi, nessun valore");
+    s4.appendChild(elencoChiavi(doc, attivo.dati, 1));
+
+    try {
+      const sotto = await radiceRef.collection("nutritionPhotos").doc(attivo.id).listCollections();
+      const nomi = (sotto || []).map((c) => c.id).sort();
+      const s4a = sezione(doc, uscita, "4a · Sottoraccolte del documento del programma attivo (nomi)");
+      const ul = doc.createElement("ul");
+      const li = doc.createElement("li");
+      li.textContent = nomi.length ? nomi.join(" · ") : "(nessuna)";
+      ul.appendChild(li);
+      s4a.appendChild(ul);
+    } catch (e) {
+      paragrafo(doc, uscita, "Sottoraccolte del programma non lette: " + (e && e.code ? e.code : "errore"), "avviso");
+    }
+  } else {
+    paragrafo(doc, uscita, "Nessun programma scelto: manca il documento meta.", "avviso");
+  }
+
+  const schede = gruppi["SCHEDA"] || [];
+  const eserciziLiberi = gruppi["ESERCIZIO separato"] || [];
+  const archiviate = gruppi["SCHEDA ARCHIVIATA"] || [];
+
+  if (schede.length) {
+    const s5 = sezione(doc, uscita, "5 · Prima scheda (" + schede[0].id + ") — chiavi e tipi");
+    s5.appendChild(elencoChiavi(doc, schede[0].dati, 1));
+    const esercizi = Array.isArray(schede[0].dati.exercises) ? schede[0].dati.exercises : (Array.isArray(schede[0].dati.esercizi) ? schede[0].dati.esercizi : null);
+    if (esercizi && esercizi.length && esercizi[0] && typeof esercizi[0] === "object") {
+      const s5a = sezione(doc, uscita, "5a · Primo esercizio DENTRO la scheda (campo exercises/esercizi) — chiavi e tipi");
+      s5a.appendChild(elencoChiavi(doc, esercizi[0], 1));
+    } else {
+      paragrafo(doc, uscita, "La scheda non porta un elenco exercises/esercizi di primo livello: guarda le chiavi qui sopra (i nomi veri stanno lì).", "avviso");
+    }
+  } else {
+    paragrafo(doc, uscita, "Nessun documento con prefisso program-v2-sheet-: se le linguette delle schede non ci sono o resta l'elenco delle archiviate, la causa è questa — le schede hanno un prefisso o una collocazione diversi.", "avviso");
+  }
+
+  if (eserciziLiberi.length) {
+    const s6 = sezione(doc, uscita, "6 · Primo esercizio separato (" + eserciziLiberi[0].id + ") — chiavi e tipi");
+    s6.appendChild(elencoChiavi(doc, eserciziLiberi[0].dati, 1));
+  }
+
+  if (archiviate.length) {
+    const s7 = sezione(doc, uscita, "7 · Prima scheda archiviata (" + archiviate[0].id + ") — chiavi e tipi");
+    s7.appendChild(elencoChiavi(doc, archiviate[0].dati, 1));
+  }
+
+  paragrafo(doc, uscita, "Fine diagnosi · sola lettura · nessun valore mostrato", "conto");
+}
+
+const doc = document;
+const config = window.BD_B;
+const sdk = window.firebase;
+const uscita = doc.getElementById("uscita");
+const errore = doc.getElementById("erroreAccesso");
+
+if (!config || !sdk) {
+  errore.textContent = "configurazione o SDK mancanti: ricarica la pagina";
+  errore.style.display = "block";
+} else {
+  const app = inizializzaAppB(sdk, config);
+  const auth = authDi(app);
+  persistenzaLocale(auth, sdk).catch(() => {});
+  const db = firestoreDi(app);
+
+  doc.getElementById("entra").addEventListener("click", async () => {
+    errore.style.display = "none";
+    try {
+      await entraConGoogle(sdk, auth, { mobile: false });
+    } catch (e) {
+      errore.textContent = "accesso non riuscito: " + (e && e.code ? e.code : "errore sconosciuto");
+      errore.style.display = "block";
+    }
+  });
+
+  ascoltaStato(auth, async (utente) => {
+    if (!utente) return;
+    doc.getElementById("cartaAccesso").style.display = "none";
+    uscita.textContent = "";
+    paragrafo(doc, uscita, "Lettura in corso…", "conto");
+    try {
+      await leggiTutto(doc, db, utente, uscita);
+    } catch (e) {
+      uscita.textContent = "";
+      paragrafo(doc, uscita, "Lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")), "avviso");
+    }
+  });
+}
+</script>
+</body>
+</html>

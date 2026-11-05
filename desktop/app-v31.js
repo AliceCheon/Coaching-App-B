@@ -1,11 +1,16 @@
 /* Barbell Diva B — passo 3a: Programma attivo con i dati veri, in sola lettura.
+ * Passo 3b: striscia in alto per pagina, ripulita dal markup, e guardia sulla Fase.
  *
- * Il file è il v31: qui si collegano solo tre cose, nient'altro.
- *  1. il login Google, con la card di accesso (sola quando non c'è sessione);
+ * Il file index.html è il v31: qui si collegano solo queste cose, nient'altro.
+ *  1. il login Google, con la card di accesso (solo quando non c'è sessione);
  *  2. la lettura una tantum di documento radice, sedute, programmi e schede,
  *     con i moduli che già esistono in comune/ (niente riscritture);
  *  3. il render del Programma attivo dentro #programma-attivo, con i
- *     controlli che scrivono spenti (la vista li mostra ma non li attiva).
+ *     controlli che scrivono spenti (la vista li mostra ma non li attiva);
+ *  4. il nastro in alto aggiornato al cambio pagina (nel file è scritto fisso
+ *     per la Dashboard) e ripulito dal markup che il v31 stampa come testo;
+ *  5. la Fase: se il campo del documento ripete il nome del programma, non è
+ *     una fase — resta a «non registrato» invece di mostrare un valore sbagliato.
  *
  * Dove un dato non c'è: "non registrato". Mai inventato.
  */
@@ -56,10 +61,66 @@ function montaCartaAccesso(doc) {
   };
 }
 
+/* ---------- il nastro in alto (la striscia) ----------
+ * Nel file il nastro è scritto fisso per la Dashboard («Dashboard /
+ * readiness, carico, questionari…») e nessun codice del v31 lo aggiorna al
+ * cambio pagina; il pezzo destro (#fr-nastro) viene scritto con textContent
+ * su una stringa che contiene un tag, e il browser lo stampa come testo.
+ * Il vecchio B teneva il nastro con il suo app.js, per pagina: qui si rifà
+ * quello. Il titolo è il testo della voce di menu del v31 (quella stessa che
+ * la voce di menu mostra); il sottotitolo per le pagine previste è il testo
+ * che usava il vecchio B; per le altre pagine il sottotitolo della Dashboard
+ * sparisce invece di restare appiccicato. Nessun testo inventato. */
+const SOTTOTITOLI_NASTRO = {
+  "overview-atleta": "overview atleta · conti sulle sedute lette",
+  "pianificazione": "pianificazione · il calendario che i logbook dimostrano",
+  "programma-1": "programma attivo · il documento del programma e i logbook",
+  "archivio": "archivio programmi · la stessa scheda, aperta per scelta"
+};
+
+function aggiornaStriscia(doc, id) {
+  const nastro = doc.querySelector(".nastro");
+  if (!nastro) return;
+  const titolo = nastro.querySelector("b");
+  const sotto = nastro.querySelector("span:not([class])");
+  if (id === "dashboard") {
+    if (titolo) titolo.textContent = "Dashboard";
+    if (sotto) { sotto.textContent = "readiness, carico, questionari, quadro atleta"; sotto.style.display = ""; }
+    return;
+  }
+  const voce = doc.querySelector('.voce[data-vista="' + id + '"] .tx');
+  if (titolo && voce) {
+    const prima = voce.childNodes[0] && voce.childNodes[0].textContent ? voce.childNodes[0].textContent : voce.textContent;
+    titolo.textContent = String(prima).trim();
+  }
+  if (sotto) {
+    const s = SOTTOTITOLI_NASTRO[id];
+    if (s) { sotto.textContent = s; sotto.style.display = ""; }
+    else { sotto.textContent = ""; sotto.style.display = "none"; }
+  }
+}
+
+/* Il pezzo destro del nastro: il v31 lo scrive con textContent su una stringa
+ * che contiene un tag <span>; qui si toglie solo il markup, il contenuto
+ * (conteggio esercizi e ultima seduta, o il puntino) resta quello calcolato
+ * dal v31. */
+function ripulisciNastroDestro(doc) {
+  const fr = doc.getElementById("fr-nastro");
+  if (!fr) return;
+  const t = fr.textContent;
+  if (t.indexOf('<span data-lb-kpi="ultima">') === -1) return;
+  fr.textContent = t.replace('<span data-lb-kpi="ultima">', "").replace("</span>", "");
+}
+
 export async function avvia(doc, win) {
   const config = win.BD_B;
   const sdk = win.firebase;
   const carta = montaCartaAccesso(doc);
+  ripulisciNastroDestro(doc);
+  doc.addEventListener("click", (e) => {
+    const v = e.target && e.target.closest ? e.target.closest(".voce[data-vista]") : null;
+    if (v) aggiornaStriscia(doc, v.getAttribute("data-vista"));
+  }, true);
   if (!config || !sdk) {
     carta.segnala("configurazione o SDK mancanti: ricarica la pagina");
     return;
@@ -93,6 +154,11 @@ export async function avvia(doc, win) {
       oggi: new Date(),
       quante: 8
     });
+    /* La Fase: se il campo del documento ripete il nome del programma, non è
+     * una fase. Non lo mostro: il campo resta a «non registrato». La pagina
+     * desktop/diagnosi.html (temporanea) dice quali nomi usa davvero il
+     * documento; quando li sapremo si collega il campo giusto. */
+    if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, rp);
     if (nomeVoce) nomeVoce.textContent = attivo ? rp.profilo.nome : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
