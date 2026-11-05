@@ -46,3 +46,14 @@ export function etichettaSpostata(colonna, valore) {
 }
 
 export const TUT_REC_NON_REGISTRATO = NON;
+
+/* La colonna REC è stretta: quando il valore vero non ci sta, i bottoni −/+ li
+ * finiscono addosso. Lo si mostra tagliato con i puntini e il valore completo
+ * sta nel Title (il palloncino che esce al passaggio del mouse). */
+export const REC_LIMITE = 8;
+
+export function recuperoVisibile(valore) {
+  const t = String(valore == null ? "" : valore).trim();
+  if (t.length <= REC_LIMITE) return { testo: t, intero: t };
+  return { testo: t.slice(0, REC_LIMITE).replace(/\s+$/, "") + "\u2026", intero: t };
+}

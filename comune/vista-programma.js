@@ -18,6 +18,8 @@
 
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
+import { recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile } from "./tut-rec.js";
+import { nomeEsercizioASchermo } from "./nomi-esercizi.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -444,7 +446,7 @@ function tabellaEsercizi(doc, scheda, r) {
     const ese = n(doc, "td", "c-ese");
     const nome = n(doc, "div", "ese-name");
     const p8ese = n(doc, "span", "p8-ese");
-    p8ese.appendChild(n(doc, "span", "p8-t", e.nome));
+    p8ese.appendChild(n(doc, "span", "p8-t", nomeEsercizioASchermo(e.nome)));
     nome.appendChild(p8ese);
     ese.appendChild(nome);
 
@@ -474,20 +476,35 @@ function tabellaEsercizi(doc, scheda, r) {
     ese.appendChild(prog);
     tr.appendChild(ese);
 
+        /* La regola di colonna (solo a schermo, i dati non si toccano): REC resta
+     * in colonna se e’ un recupero vero (cifre, intervalli, min/sec), TUT se e’
+     * uno schema di cifre. Una frase di coach si sposta in Descr./Setup con
+     * l’etichetta davanti ("REC: ..." / "TUT: ...") e in colonna va il trattino.
+     * Il recupero lungo si mostra tagliato con … e il valore completo nel Title:
+     * così i bottoni −/+ non gli finiscono sopra. */
+    const recTesto = String((e.prescrizione && e.prescrizione.recupero) || "").trim();
+    const tutTesto = String((e.prescrizione && e.prescrizione.tempo) || "").trim();
+    const recInColonna = recuperoInColonna(recTesto);
+    const tutInColonna = tempoInColonna(tutTesto);
+
     const nota = n(doc, "td", "c-note");
     const pn = n(doc, "span", "p8-note", e.nota || "");
-    pn.setAttribute("data-ph", "nota coach\u2026");
+    pn.setAttribute("data-ph", "nota coach…");
     nota.appendChild(pn);
+    if (!recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", recTesto)));
+    if (!tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", tutTesto)));
     tr.appendChild(nota);
 
     const rec = n(doc, "td", "c-rec");
-    rec.appendChild(pulsanteSpento(doc, "stp", "\u2212", "meno 15 secondi"));
-    rec.appendChild(n(doc, "span", "rec", e.prescrizione.recupero || "\u2014"));
+    rec.appendChild(pulsanteSpento(doc, "stp", "−", "meno 15 secondi"));
+    const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recTesto).testo : "—");
+    if (recInColonna && recTesto) recSpan.title = recTesto;
+    rec.appendChild(recSpan);
     rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 15 secondi"));
     tr.appendChild(rec);
 
     const tut = n(doc, "td", "c-tut");
-    tut.appendChild(n(doc, "span", "tut", e.prescrizione.tempo || "\u2014"));
+    tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutTesto : "—"));
     tr.appendChild(tut);
 
     perRiga[indice].forEach((s, k) => {
