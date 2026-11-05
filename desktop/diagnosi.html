@@ -44,15 +44,11 @@
   <div id="uscita"></div>
 </div>
 
-<script src="../app-config-b.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
 "use strict";
-/* Registro degli incidenti: QUALUNQUE errore della pagina finisce a schermo,
- * dentro la carta di accesso. Nessun silenzio: se qualcosa si rompe prima che
- * il modulo parta, il pulsante lo dice invece di non fare nulla. */
+/* Registro degli incidenti: QUALUNQUE errore della pagina finisce a schermo.
+ * Questo script sta PRIMA degli script esterni (config e SDK Google), così
+ * anche i loro errori vengono visti: prima l'ascoltatore, poi i sospetti. */
 (function () {
   function mostra(testo) {
     var el = document.getElementById("erroreAccesso");
@@ -64,6 +60,19 @@
   }
   window.__diagMostra = mostra;
   window.__diagStato = stato;
+
+  /* Fotografía dei pezzi dell'avvio, leggibile a colpo d'occhio. */
+  function diagnosiAdesso() {
+    var pezzi = [];
+    pezzi.push(window.BD_B ? "config ok" : "config MANCA");
+    var f = window.firebase || null;
+    pezzi.push(f ? "SDK app ok" : "SDK app MANCA");
+    pezzi.push(f && f.auth ? "auth ok" : "auth MANCA");
+    pezzi.push(f && f.firestore ? "firestore ok" : "firestore MANCA");
+    pezzi.push(typeof window.__diagEntra === "function" ? "modulo ok" : "modulo in attesa");
+    return pezzi.join(" · ");
+  }
+  window.__diagPezzi = diagnosiAdesso;
 
   window.addEventListener("error", function (e) {
     if (e && e.target && e.target.tagName) {
@@ -80,15 +89,40 @@
     mostra("errore non gestito: " + (r.code || r.message || "sconosciuto"));
   });
 
-  /* Il pulsante risponde SEMPRE, anche se il modulo sotto non è partito. */
+  /* Il pulsante risponde SEMPRE, anche se il modulo sotto non è partito,
+   * e al clic dice ESATTAMENTE quali pezzi mancano in quel momento. */
   document.getElementById("entra").addEventListener("click", function () {
     if (typeof window.__diagEntra === "function") { window.__diagEntra(); return; }
     stato("clic ricevuto, ma la pagina non ha finito di avviarsi");
-    mostra("il modulo della pagina non è partito: guarda il messaggio qui sotto (e Ricarica dopo aver letto)");
+    mostra("al momento del clic: " + diagnosiAdesso() + " · attendi la scritta «pagina pronta» e riprova: la prima apertura può volerci una decina di secondi");
   });
+
+  /* Orologio di avvio: ogni 4 secondi dice se sta ancora caricando e cosa
+   * manca; dopo 30 secondi lo dichiara apertamente invece di tacere. */
+  var avviatoDa = Date.now();
+  var timer = setInterval(function () {
+    if (typeof window.__diagEntra === "function") { clearInterval(timer); return; }
+    var secondi = Math.round((Date.now() - avviatoDa) / 1000);
+    if (secondi <= 24) {
+      stato("avvio in corso (" + secondi + "s)… " + diagnosiAdesso());
+    } else {
+      clearInterval(timer);
+      mostra("dopo " + secondi + "s il modulo non è ancora partito · stato: " + diagnosiAdesso() + " — causa più comune: connessione lenta o un blocco (adblock) sugli script di Google");
+    }
+  }, 4000);
   stato("attendo l'avvio dei moduli…");
+
+  window.addEventListener("load", function () {
+    if (typeof window.__diagEntra !== "function") {
+      mostra("pagina caricata ma il modulo non è partito · stato: " + diagnosiAdesso());
+    }
+  });
 })();
 </script>
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script type="module">
 "use strict";
 
@@ -306,6 +340,7 @@ const doc = document;
 const config = window.BD_B;
 const sdk = window.firebase;
 const errore = doc.getElementById("erroreAccesso");
+const uscita = doc.getElementById("uscita");
 const stato = window.__diagStato || function () {};
 const mostra = window.__diagMostra || function () {};
 

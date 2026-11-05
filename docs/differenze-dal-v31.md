@@ -55,3 +55,4 @@ di un esercizio dentro la scheda, di un eventuale esercizio separato e di una
 scheda archiviata, più i nomi delle sottoraccolte della radice e del programma.
 Serve a leggere i nomi veri dei campi del documento di Alice (fase, data inizio,
 durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
+- diagnosi v2 (clic muto): script di controllo spostato PRIMA degli SDK (cosi' anche i loro errori si vedono); il clic quando il modulo non e' pronto dice esattamente quali pezzi mancano (config/SDK/auth/firestore); orologio di avvio ogni 4s e avviso dopo 30s; corretta la variabile uscita mai dichiarata nel modulo.
