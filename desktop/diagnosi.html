@@ -16,7 +16,8 @@
   .carta h2{font-size:17px;margin:0 0 4px}
   .carta .sotto{font-size:12px;color:var(--mut);margin-bottom:18px}
   .carta button{font:700 14px/1 inherit;color:var(--text);background:var(--card2);border:1px solid var(--lav);border-radius:12px;padding:12px 22px;cursor:pointer}
-  .carta .errore{display:none;color:var(--pink);font-size:12px;margin-top:12px}
+  .carta .stato{font-size:12px;color:var(--lav);margin-top:12px;min-height:18px}
+  .carta .errore{display:none;color:var(--pink);font-size:12px;margin-top:8px}
   .carta .nota2{font-size:11px;color:var(--mut);margin-top:14px}
   section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:0 0 16px}
   section h2{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--lav)}
@@ -36,6 +37,7 @@
     <h2>Barbell Diva B — diagnosi</h2>
     <div class="sotto">sola lettura · niente viene salvato</div>
     <button type="button" id="entra">Entra con Google</button>
+    <div class="stato" id="statoAccesso"></div>
     <div class="errore" id="erroreAccesso"></div>
     <div class="nota2">stessa identità del sito: leggi solo i tuoi dati</div>
   </div>
@@ -46,6 +48,47 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+/* Registro degli incidenti: QUALUNQUE errore della pagina finisce a schermo,
+ * dentro la carta di accesso. Nessun silenzio: se qualcosa si rompe prima che
+ * il modulo parta, il pulsante lo dice invece di non fare nulla. */
+(function () {
+  function mostra(testo) {
+    var el = document.getElementById("erroreAccesso");
+    if (el) { el.textContent = String(testo); el.style.display = "block"; }
+  }
+  function stato(testo) {
+    var el = document.getElementById("statoAccesso");
+    if (el) el.textContent = String(testo);
+  }
+  window.__diagMostra = mostra;
+  window.__diagStato = stato;
+
+  window.addEventListener("error", function (e) {
+    if (e && e.target && e.target.tagName) {
+      var nome = e.target.tagName.toLowerCase();
+      var sorgente = e.target.src ? String(e.target.src).split("/").pop() : "";
+      mostra("risorsa non caricata: " + nome + (sorgente ? " · " + sorgente : ""));
+      return;
+    }
+    mostra("errore pagina: " + ((e && e.message) || "sconosciuto"));
+  }, true);
+
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e && e.reason ? e.reason : {};
+    mostra("errore non gestito: " + (r.code || r.message || "sconosciuto"));
+  });
+
+  /* Il pulsante risponde SEMPRE, anche se il modulo sotto non è partito. */
+  document.getElementById("entra").addEventListener("click", function () {
+    if (typeof window.__diagEntra === "function") { window.__diagEntra(); return; }
+    stato("clic ricevuto, ma la pagina non ha finito di avviarsi");
+    mostra("il modulo della pagina non è partito: guarda il messaggio qui sotto (e Ricarica dopo aver letto)");
+  });
+  stato("attendo l'avvio dei moduli…");
+})();
+</script>
 <script type="module">
 "use strict";
 
@@ -262,26 +305,35 @@ async function leggiTutto(doc, db, utente, uscita) {
 const doc = document;
 const config = window.BD_B;
 const sdk = window.firebase;
-const uscita = doc.getElementById("uscita");
 const errore = doc.getElementById("erroreAccesso");
+const stato = window.__diagStato || function () {};
+const mostra = window.__diagMostra || function () {};
 
-if (!config || !sdk) {
-  errore.textContent = "configurazione o SDK mancanti: ricarica la pagina";
-  errore.style.display = "block";
-} else {
+try {
+  if (!config) throw new Error("configurazione non trovata (app-config-b.js)");
+  if (!sdk) throw new Error("SDK Firebase non caricato (script gstatic)");
+
   const app = inizializzaAppB(sdk, config);
   const auth = authDi(app);
   persistenzaLocale(auth, sdk).catch(() => {});
   const db = firestoreDi(app);
 
-  doc.getElementById("entra").addEventListener("click", async () => {
+  window.__diagEntra = async function () {
     errore.style.display = "none";
+    stato("apro l'accesso con Google…");
     try {
-      await entraConGoogle(sdk, auth, { mobile: false });
+      const esito = await entraConGoogle(sdk, auth, { mobile: false });
+      stato("accesso aperto via " + esito.via + ": se non vedi finestre, controlla i blocchi popup");
     } catch (e) {
-      errore.textContent = "accesso non riuscito: " + (e && e.code ? e.code : "errore sconosciuto");
-      errore.style.display = "block";
+      stato("accesso non partito");
+      mostra("accesso non riuscito: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")));
     }
+  };
+
+  /* Se un redirect precedente è tornato con un errore, lo mostro invece di
+   * lasciare la pagina muta. */
+  auth.getRedirectResult().catch((e) => {
+    mostra("ritorno dal redirect con errore: " + (e && e.code ? e.code : "sconosciuto"));
   });
 
   ascoltaStato(auth, async (utente) => {
@@ -296,6 +348,11 @@ if (!config || !sdk) {
       paragrafo(doc, uscita, "Lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")), "avviso");
     }
   });
+
+  stato("pagina pronta · tocca «Entra con Google»");
+} catch (e) {
+  stato("avvio interrotto");
+  mostra("avvio interrotto: " + (e && (e.code || e.message) ? (e.code || e.message) : "errore sconosciuto"));
 }
 </script>
 </body>
