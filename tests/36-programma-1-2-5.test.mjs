@@ -140,7 +140,7 @@ test("36.08 la voce è accesa, il pannello c'è e la build è la 2.5", () => {
   assert.ok(html.includes('id="vistaProgramma1"'));
   assert.ok(html.includes('id="programma1Griglia"'));
   const config = readFileSync(new URL("../app-config-b.js", import.meta.url), "utf8");
-  assert.match(config, /b0\.38-passo2-9-tabella-v31/);
+  assert.match(config, /b0\.39-passo2-11-uno/);
 });
 
 test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa HTML grezzo", () => {
@@ -150,7 +150,7 @@ test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa 
   assert.ok(!/innerHTML/.test(src));
   const vista = readFileSync(new URL("../comune/vista-programma.js", import.meta.url), "utf8");
   assert.ok(!/innerHTML/.test(vista), "la vista costruisce nodi, non HTML");
-  for (const classe of ["ck-testa", "ck-card", "ck-mets", "pg-tabella", "pr-card"]) {
+  for (const classe of ["pg-top", "pr-grid", "pr-card", "pr-bar", "pr-filtri", "p8-tab"]) {
     assert.ok(vista.includes(classe), "manca " + classe + " nella vista");
   }
   const cose = coseNonRegistrateProgramma();

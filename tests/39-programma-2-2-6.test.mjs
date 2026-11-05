@@ -65,8 +65,15 @@ test("39.05 la scheda aperta dall'archivio è la stessa vista, in sola lettura",
   const g = doc.querySelector("#g");
   const rp = riepilogoProgramma(programmi[1], [], { indice: 1, totaleProgrammi: 3, oggi: new Date(Date.UTC(2026, 10, 4)) });
   renderProgramma(doc, g, {}, rp);
-  assert.match(g.textContent, /Forza novembre/);
-  assert.match(g.textContent, /sola lettura · 0 scritture/);
+  assert.match(g.querySelector(".pr-in").value, /Forza novembre/);
+  const controlli = Array.from(g.querySelectorAll("input, select, textarea"));
+  assert.ok(controlli.length > 0, "i campi del v31 ci sono tutti");
+  for (const c of controlli) {
+    const spento = c.disabled || c.readOnly || c.getAttribute("aria-readonly") === "true";
+    assert.ok(spento, "campo acceso: " + (c.className || c.tagName));
+  }
+  const bottoni = Array.from(g.querySelectorAll("button")).filter((b) => !b.classList.contains("pr-ntab"));
+  for (const b of bottoni) assert.ok(b.disabled, "pulsante acceso: " + b.textContent.trim());
   assert.doesNotMatch(g.textContent, /NaN|undefined/);
 });
 
