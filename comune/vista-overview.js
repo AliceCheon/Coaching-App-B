@@ -1,3 +1,4 @@
+import { nomePulito } from "./nome-pulito.js";
 /* Barbell Diva B — la schermata Overview atleta (fase 2.3).
  *
  * Le classi sono quelle del v31 (ck-testa, ck-sez, ck-card, ck-met): l'aspetto
@@ -86,7 +87,7 @@ function sintesi(doc, modello, r) {
       : "Nessuna seduta con una data leggibile: la sintesi resta vuota invece di mostrare zeri."));
   const pr = modello.programma;
   d.appendChild(n(doc, "p", "ck-ready-nota ov-sint-prog",
-    pr && pr.nome ? "Programma attivo: " + pr.nome + (pr.settimana != null ? " · settimana " + pr.settimana : "") : "Programma attivo: " + NON));
+    pr && pr.nome ? "Programma attivo: " + nomePulito(pr.nome) + (pr.settimana != null ? " · settimana " + pr.settimana : "") : "Programma attivo: " + NON));
   c.appendChild(d);
   c.appendChild(donut(doc, r.settimaneAttive, r.settimaneTotali, "settimane attive"));
   const ottoSettimane = (r.blocchi || []).reduce((a, b) => a + b.numero, 0);
@@ -187,7 +188,7 @@ function ultime(doc, r) {
     const g = s.data;
     riga.appendChild(n(doc, "span", "ov-sed-d", String(g.getUTCDate()).padStart(2, "0") + "/" + String(g.getUTCMonth() + 1).padStart(2, "0") + "/" + g.getUTCFullYear()));
     riga.appendChild(n(doc, "span", "ov-sed-c", s.codice || "senza codice"));
-    riga.appendChild(n(doc, "span", "ov-sed-n", s.nome || "nome non registrato"));
+    riga.appendChild(n(doc, "span", "ov-sed-n", nomePulito(s.nome) || "nome non registrato"));
     lista.appendChild(riga);
   });
   c.appendChild(lista);

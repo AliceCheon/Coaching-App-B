@@ -11,6 +11,7 @@
  */
 
 import { profiloProgramma } from "./programma.js";
+import { nomePulito } from "./nome-pulito.js";
 
 const NON = "non registrato";
 
@@ -43,8 +44,8 @@ export function elencoArchivio(programmi, opzioni) {
       const suo = perProgramma ? (perProgramma[profilo.id] || null) : null;
       return {
         id: profilo.id,
-        nome: profilo.nome,
-        stato: profilo.stato,
+        nome: nomePulito(profilo.nome),
+        stato: nomePulito(profilo.stato),
         segno: profilo.segno,
         creato: dataItaliana(p.createdAt || p.created),
         creatoGrezzo: String(p.createdAt || p.created || ""),
@@ -104,8 +105,8 @@ export function renderArchivio(doc, contenitore, opzioni) {
       bottone.setAttribute("type", "button");
       bottone.setAttribute("data-programma", riga.id);
       bottone.setAttribute("role", "listitem");
-      bottone.appendChild(nodo(doc, "span", "pr-arch-nome", riga.nome));
-      const stato = nodo(doc, "span", "pr-arch-stato", riga.stato);
+      bottone.appendChild(nodo(doc, "span", "pr-arch-nome", nomePulito(riga.nome)));
+      const stato = nodo(doc, "span", "pr-arch-stato", nomePulito(riga.stato));
       stato.setAttribute("data-segno", riga.segno || "vuoto");
       bottone.appendChild(stato);
       bottone.appendChild(nodo(doc, "span", "pr-arch-meta",

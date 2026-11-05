@@ -16,6 +16,7 @@
  */
 
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
+import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
@@ -160,7 +161,7 @@ export async function avvia(doc, win) {
      * documento; quando li sapremo si collega il campo giusto. */
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, rp);
-    if (nomeVoce) nomeVoce.textContent = attivo ? rp.profilo.nome : "nessun programma letto";
+    if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
   };
 

@@ -19,7 +19,7 @@
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import { recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile } from "./tut-rec.js";
-import { nomeEsercizioASchermo } from "./nomi-esercizi.js";
+import { nomePulito } from "./nome-pulito.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -81,7 +81,7 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
     controllo.disabled = true;
     const opzioni = Array.isArray(scelte) ? scelte : [];
     if (!valore || opzioni.indexOf(valore) === -1) {
-      const vuota = n(doc, "option", "", valore || NON);
+      const vuota = n(doc, "option", "", nomePulito(valore) || NON);
       vuota.value = "";
       controllo.appendChild(vuota);
     }
@@ -95,8 +95,8 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
     controllo = n(doc, "textarea", "pr-ta");
     controllo.rows = 2;
     controllo.readOnly = true;
-    controllo.value = valore || "";
-    controllo.textContent = valore || "";
+    controllo.value = nomePulito(valore) || "";
+    controllo.textContent = nomePulito(valore) || "";
     if (!valore) controllo.placeholder = NON;
   } else if (tipo === "data") {
     /* Niente `type="date"`: il browser mostra le date come vuole lui, e in
@@ -105,16 +105,16 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
     controllo.type = "text";
     controllo.readOnly = true;
     controllo.setAttribute("inputmode", "numeric");
-    controllo.value = dataItaliana(valore);
-    controllo.setAttribute("value", dataItaliana(valore));
+    controllo.value = nomePulito(dataItaliana(valore));
+    controllo.setAttribute("value", nomePulito(dataItaliana(valore)));
     /* Data vuota = dato che non c'e': lo dice, come fanno gli altri campi. */
     controllo.placeholder = valore ? "gg/mm/aaaa" : NON;
   } else {
     controllo = n(doc, "input", "pr-in");
     controllo.type = tipo || "text";
     controllo.readOnly = true;
-    controllo.value = valore == null ? "" : String(valore);
-    controllo.setAttribute("value", valore == null ? "" : String(valore));
+    controllo.value = nomePulito(valore);
+    controllo.setAttribute("value", nomePulito(valore));
     if (!valore) controllo.placeholder = NON;
   }
   controllo.setAttribute("tabindex", "-1");
@@ -178,16 +178,16 @@ function cartaProgramma(doc, r) {
   c.appendChild(h);
 
   const campi = n(doc, "div", "pr-fields");
-  campi.appendChild(campo(doc, "Programma", r.profilo.nome, "text", null, null, "pr-f-full"));
+  campi.appendChild(campo(doc, "Programma", nomePulito(r.profilo.nome), "text", null, null, "pr-f-full"));
   campi.appendChild(campo(doc, "Data inizio", r.profilo.inizio, "data"));
-  campi.appendChild(campo(doc, "Fase", r.profilo.fase, "select", null, ["Bulk", "Cut", "Recomp", "Mantenimento"]));
+  campi.appendChild(campo(doc, "Fase", nomePulito(r.profilo.fase), "select", null, ["Bulk", "Cut", "Recomp", "Mantenimento"]));
   campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
   campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text"));
   c.appendChild(campi);
 
   const due = n(doc, "div", "pr-two");
-  due.appendChild(campo(doc, "Descrizione programma", r.profilo.descrizione, "area"));
-  due.appendChild(campo(doc, "Messaggio per l'atleta (all'apertura)", r.profilo.messaggio, "area"));
+  due.appendChild(campo(doc, "Descrizione programma", nomePulito(r.profilo.descrizione), "area"));
+  due.appendChild(campo(doc, "Messaggio per l'atleta (all'apertura)", nomePulito(r.profilo.messaggio), "area"));
   c.appendChild(due);
 
   const fine = n(doc, "div", "pr-row-end");
@@ -295,7 +295,7 @@ function cartaStato(doc, r) {
   const punto = n(doc, "span", "pr-dot");
   punto.setAttribute("data-segno", r.profilo.segno || "vuoto");
   stato.appendChild(punto);
-  stato.appendChild(n(doc, "b", "", r.profilo.stato || NON));
+  stato.appendChild(n(doc, "b", "", nomePulito(r.profilo.stato) || NON));
   c.appendChild(stato);
 
   const vis = n(doc, "div", "pr-vis");
@@ -446,7 +446,7 @@ function tabellaEsercizi(doc, scheda, r) {
     const ese = n(doc, "td", "c-ese");
     const nome = n(doc, "div", "ese-name");
     const p8ese = n(doc, "span", "p8-ese");
-    p8ese.appendChild(n(doc, "span", "p8-t", nomeEsercizioASchermo(e.nome)));
+    p8ese.appendChild(n(doc, "span", "p8-t", nomePulito(e.nome)));
     nome.appendChild(p8ese);
     ese.appendChild(nome);
 
@@ -486,34 +486,36 @@ function tabellaEsercizi(doc, scheda, r) {
     const tutTesto = String((e.prescrizione && e.prescrizione.tempo) || "").trim();
     const recInColonna = recuperoInColonna(recTesto);
     const tutInColonna = tempoInColonna(tutTesto);
+    const recMostrato = nomePulito(recTesto);
+    const tutMostrato = nomePulito(tutTesto);
 
     const nota = n(doc, "td", "c-note");
-    const pn = n(doc, "span", "p8-note", e.nota || "");
+    const pn = n(doc, "span", "p8-note", nomePulito(e.nota) || "");
     pn.setAttribute("data-ph", "nota coach…");
     nota.appendChild(pn);
-    if (!recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", recTesto)));
-    if (!tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", tutTesto)));
+    if (!recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", nomePulito(recTesto))));
+    if (!tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", nomePulito(tutTesto))));
     tr.appendChild(nota);
 
     const rec = n(doc, "td", "c-rec");
     rec.appendChild(pulsanteSpento(doc, "stp", "−", "meno 15 secondi"));
-    const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recTesto).testo : "—");
-    if (recInColonna && recTesto) recSpan.title = recTesto;
+    const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recMostrato).testo : "—");
+    if (recInColonna && recTesto) recSpan.title = recMostrato;
     rec.appendChild(recSpan);
     rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 15 secondi"));
     tr.appendChild(rec);
 
     const tut = n(doc, "td", "c-tut");
-    tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutTesto : "—"));
+    tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutMostrato : "—"));
     tr.appendChild(tut);
 
     perRiga[indice].forEach((s, k) => {
       const sc = inScarico(k) ? " sc-col" : "";
       const ser = n(doc, "td", "c-ser" + sc);
-      ser.appendChild(n(doc, "span", "", s.serie || "\u2014"));
+      ser.appendChild(n(doc, "span", "", nomePulito(s.serie) || "—"));
       tr.appendChild(ser);
       const rip = n(doc, "td", "c-reps" + sc);
-      rip.appendChild(n(doc, "span", "", s.ripetizioni || "\u2014"));
+      rip.appendChild(n(doc, "span", "", nomePulito(s.ripetizioni) || "—"));
       tr.appendChild(rip);
     });
 
@@ -576,8 +578,8 @@ function pannelloScheda(doc, scheda, r) {
 
   const testata2 = n(doc, "div", "pr-shd");
   const t = n(doc, "div", "pr-shd-t");
-  t.appendChild(n(doc, "h3", "", "Scheda " + scheda.codice + (scheda.nome ? " — " + scheda.nome : "")));
-  t.appendChild(n(doc, "span", "pr-shd-c", scheda.numeroEsercizi + (scheda.numeroEsercizi === 1 ? " esercizio" : " esercizi") + (scheda.focus ? " · " + scheda.focus : "")));
+  t.appendChild(n(doc, "h3", "", "Scheda " + scheda.codice + (scheda.nome ? " — " + nomePulito(scheda.nome) : "")));
+  t.appendChild(n(doc, "span", "pr-shd-c", scheda.numeroEsercizi + (scheda.numeroEsercizi === 1 ? " esercizio" : " esercizi") + (scheda.focus ? " · " + nomePulito(scheda.focus) : "")));
   testata2.appendChild(t);
 
   /* Lo scarico si legge dalle settimane scritte nella scheda: è la settimana
@@ -607,9 +609,9 @@ function pannelloScheda(doc, scheda, r) {
   const ta = n(doc, "textarea", "pr-ta pr-ta-note");
   ta.rows = 3;
   ta.readOnly = true;
-  ta.value = scheda.note || "";
+  ta.value = nomePulito(scheda.note) || "";
   ta.setAttribute("placeholder", "Riscaldamento, prehab, note generali per l'atleta…");
-  if (scheda.note) ta.textContent = scheda.note;
+  if (scheda.note) ta.textContent = nomePulito(scheda.note);
   note.appendChild(ta);
   p.appendChild(note);
   p.appendChild(rigaTempo(doc, scheda));

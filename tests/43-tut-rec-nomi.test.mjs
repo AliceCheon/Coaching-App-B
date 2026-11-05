@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import { recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile } from "../comune/tut-rec.js";
-import { nomeEsercizioASchermo } from "../comune/nomi-esercizi.js";
+import { nomePulito } from "../comune/nome-pulito.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { renderProgramma } from "../comune/vista-programma.js";
@@ -75,11 +75,11 @@ test("43.02 il recupero lungo si taglia con i puntini e il valore intero sta nel
 });
 
 test("43.03 i nomi degli esercizi si mostrano senza trattino basso, con l'iniziale maiuscola", () => {
-  assert.equal(nomeEsercizioASchermo("lat_machine_triangolo"), "Lat machine triangolo");
-  assert.equal(nomeEsercizioASchermo("rematore_bilanciere"), "Rematore bilanciere");
-  assert.equal(nomeEsercizioASchermo("Trazioni assistite"), "Trazioni assistite");
-  assert.equal(nomeEsercizioASchermo("  "), "");
-  assert.equal(nomeEsercizioASchermo(null), "");
+  assert.equal(nomePulito("lat_machine_triangolo"), "Lat machine triangolo");
+  assert.equal(nomePulito("rematore_bilanciere"), "Rematore bilanciere");
+  assert.equal(nomePulito("Trazioni assistite"), "Trazioni assistite");
+  assert.equal(nomePulito("  "), "");
+  assert.equal(nomePulito(null), "");
 });
 
 test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il nome \u00e8 pulito, l'Ultima resta legata al nome vero", () => {
@@ -95,7 +95,7 @@ test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il n
   assert.equal(tut(0).textContent, "\u2014");
 
   assert.equal(rec(1).textContent, "\u2014");
-  assert.equal(nota(1).textContent.indexOf("punta i piedi"), 0);
+  assert.equal(nota(1).textContent.indexOf("Punta i piedi"), 0);
   assert.ok(nota(1).textContent.includes("REC: No recupero tra le braccia e poi 1,30'"));
   assert.equal(tut(1).textContent, "\u2014");
 

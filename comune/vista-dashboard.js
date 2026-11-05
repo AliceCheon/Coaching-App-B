@@ -1,3 +1,4 @@
+import { nomePulito } from "./nome-pulito.js";
 /* Barbell Diva B — la Dashboard (fase 2.1, passo 2).
  *
  * Costruisce la schermata con le classi del mockup v31 (ck-testa, ck-ready,
@@ -96,7 +97,7 @@ function testataDiva(doc, modello) {
   et.appendChild(n(doc, "span", "db-dot"));
   et.appendChild(doc.createTextNode("Coach AI"));
   bolla.appendChild(et);
-  const nome = (modello.atleta && modello.atleta.nome) || "Alice";
+  const nome = nomePulito((modello.atleta && modello.atleta.nome) || "Alice");
   let titolo, frase, coda;
   if (!r) {
     titolo = "Ciao, " + nome + "!";
@@ -138,7 +139,7 @@ function testa(doc, modello) {
   p.appendChild(doc.createTextNode("Dashboard principale"));
   p.appendChild(n(doc, "span", "sep", "/"));
   const pr = modello.programma;
-  p.appendChild(doc.createTextNode(pr && pr.nome ? pr.nome : "programma non registrato"));
+  p.appendChild(doc.createTextNode(pr && pr.nome ? nomePulito(pr.nome) : "programma non registrato"));
   p.appendChild(n(doc, "span", "sep", "/"));
   p.appendChild(doc.createTextNode(pr && pr.settimana != null ? "settimana " + pr.settimana : "settimana non registrata"));
   d.appendChild(p);
@@ -319,7 +320,7 @@ function seduteEProgrammi(doc, modello, opzioni) {
     c2.appendChild(n(doc, "div", "ck-met-v", "lettura non riuscita"));
     c2.appendChild(n(doc, "p", "ck-piede-card", "La sottoraccolta dei programmi non ha risposto: nessun nome inventato."));
   } else if (modello.programma) {
-    c2.appendChild(n(doc, "div", "ck-met-v", modello.programma.nome));
+    c2.appendChild(n(doc, "div", "ck-met-v", nomePulito(modello.programma.nome)));
     c2.appendChild(n(doc, "p", "ck-piede-card",
       (modello.programma.esplicito ? "attivo (marcato esplicitamente)" : "aggiornato più di recente (ripiego di A, non marcato attivo)") +
       " · settimana " + (modello.programma.settimana == null ? NON : modello.programma.settimana)));

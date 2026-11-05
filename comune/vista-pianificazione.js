@@ -11,6 +11,7 @@
  */
 
 import { coseNonRegistrate, PIANIFICAZIONE_NON_REGISTRATO as NON } from "./pianificazione.js";
+import { nomePulito } from "./nome-pulito.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -67,7 +68,7 @@ function sintesi(doc, modello, r) {
   const d = n(doc, "div", "pz-sint-testo");
   d.appendChild(n(doc, "div", "ck-ready-testa", "Blocco attivo"));
   const pr = modello.programma;
-  d.appendChild(n(doc, "h3", "", pr && pr.nome ? pr.nome : "Programma attivo: " + NON));
+  d.appendChild(n(doc, "h3", "", pr && pr.nome ? nomePulito(pr.nome) : "Programma attivo: " + NON));
   d.appendChild(n(doc, "p", "ck-frase", pr && pr.nome
     ? (pr.esplicito ? "marcato come attivo nel programma · " : "aggiornato più di recente, ripiego di A · ")
       + (pr.settimana != null ? "settimana " + pr.settimana + " secondo i logbook" : "settimana " + NON)
@@ -133,7 +134,7 @@ function prospetto(doc, r) {
       if (g.codice) {
         cella.appendChild(n(doc, "b", "", g.codice));
         if (g.numero > 1) cella.appendChild(n(doc, "i", "", "×" + g.numero));
-        cella.title = (g.nome ? g.nome + " · " : "") + g.codice + (g.numero > 1 ? " · " + g.numero + " sedute" : "");
+        cella.title = (g.nome ? nomePulito(g.nome) + " · " : "") + g.codice + (g.numero > 1 ? " · " + g.numero + " sedute" : "");
       } else {
         cella.textContent = "—";
       }
