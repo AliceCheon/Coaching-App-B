@@ -15,7 +15,8 @@ test("la build è dichiarata una sola volta, in app-config-b.js", () => {
 });
 
 test("gli ingressi HTML non contengono versioni hardcoded e caricano la config", () => {
-  for (const ingresso of ["desktop/index.html", "mobile/index.html"]) {
+  /* desktop/index.html ora e' il v31: non carica app-config-b.js, le sue forme le guarda il test 42. */
+  for (const ingresso of ["mobile/index.html"]) {
     const html = readFileSync(join(radice, ingresso), "utf8");
     assert.ok(html.includes('src="../app-config-b.js"'), ingresso + " non carica app-config-b.js");
     assert.ok(!/b\d+\.\d+-[a-z0-9-]+/.test(html.replace('b0.1-fase0', "").replace(/build \+ config/g, "")), ingresso + " contiene una versione hardcoded");

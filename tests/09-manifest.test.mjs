@@ -21,7 +21,8 @@ test("manifest: standalone, senza orientamento, senza fullscreen, in proprio amb
 });
 
 test("nessun file di B registra un service worker e nessuno apre IndexedDB", () => {
-  for (const file of ["desktop/index.html", "desktop/app.js", "mobile/index.html", "mobile/app.js", "comune/firebase-client.js"]) {
+  /* desktop/app.js non c'e' piu': il desktop ora e' il v31, copia identica di pc/index.html (guardia 42). */
+  for (const file of ["desktop/index.html", "mobile/index.html", "mobile/app.js", "comune/firebase-client.js"]) {
     const testo = readFileSync(join(radice, file), "utf8");
     assert.ok(!/serviceWorker|navigator\.serviceWorker/i.test(testo), file + " menziona la registrazione di un service worker");
     assert.ok(!/indexedDB\.open/i.test(testo), file + " apre un database IndexedDB");

@@ -13,13 +13,14 @@ const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function tuttiFile(dir = radice, elenco = []) {
   for (const nome of readdirSync(dir)) {
-    if (nome === "node_modules" || nome === ".git" || nome === "tests" || nome === "pc" || nome === "package-lock.json" || nome === "package.json") continue;
+    if (nome === "node_modules" || nome === ".git" || nome === "tests" || nome === "tests-vecchio-b0.39" || nome === "pc" || nome === "package-lock.json" || nome === "package.json") continue;
     const percorso = join(dir, nome);
     const info = statSync(percorso);
     if (info.isDirectory()) tuttiFile(percorso, elenco);
     else if (/\.(js|mjs|html|webmanifest|md|sh)$/.test(nome)) elenco.push(percorso);
   }
-  return elenco;
+  /* desktop/index.html e' la copia identica di pc/index.html (guardia 42). */
+  return elenco.filter((p) => p !== join(radice, "desktop", "index.html"));
 }
 
 const VIETATI = [

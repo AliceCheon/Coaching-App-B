@@ -19,7 +19,8 @@ function fileSorgente(dir = radice, elenco = []) {
     if (info.isDirectory()) fileSorgente(percorso, elenco);
     else if (/\.(js|mjs|html|webmanifest|md|sh|json)$/.test(nome) && !nome.startsWith("package")) elenco.push(percorso);
   }
-  return elenco.filter((p) => !p.includes(join(radice, "tests")) && !p.includes(join(radice, "pc")));
+  /* desktop/index.html e' la copia identica di pc/index.html (guardia 42); il parcheggio non e' sorgente attivo. */
+  return elenco.filter((p) => !p.includes(join(radice, "tests")) && !p.includes(join(radice, "pc")) && !p.includes(join(radice, "tests-vecchio-b0.39")) && p !== join(radice, "desktop", "index.html"));
 }
 
 const VIETATI = [
