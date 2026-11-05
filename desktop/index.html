@@ -1484,7 +1484,7 @@ window.BDVAI=function(id,el){
         <button class="voce" data-vista="database-esercizi" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">📚</span><span class="tx">Database esercizi</span></button>
         <button class="voce" data-vista="scheletri" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">🦴</span><span class="tx">Scheletri</span></button>
         <button class="voce" data-vista="progressioni" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">⚗️</span><span class="tx">Progressioni</span></button>
-        <button class="voce" data-vista="programma-1" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">🗂️</span><span class="tx">Programma 1<em>in corso · Intensità ottobre-dicembre</em></span></button>
+        <button class="voce" data-vista="programma-1" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">🗂️</span><span class="tx">Programma attivo · in corso<em id="nomeProgrammaAttivo">lettura in corso…</em></span></button>
         <button class="voce" data-vista="programma-2" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic"><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="3.4" width="14.4" height="11.4" rx="2.2"/><path d="M6 7.6h8M6 10.4h5"/><circle cx="7" cy="15.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="13" cy="15.2" r="1.05" fill="currentColor" stroke="none"/></svg></span><span class="tx">Programma 2</span></button>
         <button class="voce" data-vista="programma-3" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">🗂️</span><span class="tx">Programma 3</span></button>
         <button class="voce" data-vista="riepilogo-volume" onclick="BDVAI(this.getAttribute('data-vista'),this)"><span class="ic emo">📊</span><span class="tx">Riepilogo volume</span></button>
@@ -3681,7 +3681,7 @@ L&#x27;ultima boh provo ad aumentare prox volta</li><li>A tutte e 3 le serie  de
       </div>
     </section>
 
-    <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div class="pr-head">
+    <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div id="programma-attivo"></div><div id="programma-strumenti" hidden><div class="pr-head">
   <div class="pg-top"><div><h2 class="pg-tit">Programmi</h2><p class="pg-sub">Una scheda alla volta con le linguette: rotazione, stato e libreria del programma stanno qui sopra, la tabella sotto.</p></div><button class="pg-undo spento" id="pg-undo-p" type="button" title="Annulla l'ultima modifica">↶ Annulla <b>ctrl z</b></button><button class="pg-lib" id="pg-db-btn" type="button">🗄 Database esercizi</button><button class="pg-lib" id="pg-libprog" type="button">📚 Libreria Coach</button></div>
 
   <div class="pr-grid">
@@ -3943,7 +3943,7 @@ L&#x27;ultima boh provo ad aumentare prox volta</li><li>A tutte e 3 le serie  de
   </div>
 </div>
 <div id="pr-toast" role="status" aria-live="polite"><span id="pr-toast-t"></span></div>
-</div></section><section class="voce-pag" id="pag-programma-2">
+</div></div></section><section class="voce-pag" id="pag-programma-2">
       <div class="v">
         <div class="v-occhiello">Programmi · il secondo posto</div>
         <h2>Programma 2</h2>
@@ -6532,7 +6532,7 @@ setTimeout(function(){
   "pag-archivio":[["L'archivio è memoria.","Quando un blocco funziona, rileggilo prima di scriverne un altro: la ricetta era già lì."]]
  };
   var GEN=[["Ci sono.","Questa parte è ancora da riempire: i numeri arriveranno dai tuoi dati, non dalla mia fantasia."],["Sezione vuota, coscienza pulita.","Preferisco un trattino a un numero inventato."]];
- var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salute & recupero","pag-misure":"Misure & plicometria","pag-reset-bulk-cut":"Reset / Bulk / Cut","pag-monitor-annuale":"Monitor annuale","pag-monitor-peso":"Monitor peso","pag-integratori":"Integratori","pag-overview-atleta":"Overview atleta","pag-pianificazione":"Pianificazione","pag-database-esercizi":"Database esercizi","pag-scheletri":"Scheletri","pag-progressioni":"Progressioni","pag-programma-1":"Programma 1","pag-programma-2":"Programma 2","pag-programma-3":"Programma 3","pag-riepilogo-volume":"Riepilogo volume","pag-specializzazione":"Specializzazione","pag-curve-forza":"Curve di forza","pag-programma-corsa":"Programma corsa","pag-archivio":"Archivio programmi","pag-study-time":"Study time"};
+ var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salute & recupero","pag-misure":"Misure & plicometria","pag-reset-bulk-cut":"Reset / Bulk / Cut","pag-monitor-annuale":"Monitor annuale","pag-monitor-peso":"Monitor peso","pag-integratori":"Integratori","pag-overview-atleta":"Overview atleta","pag-pianificazione":"Pianificazione","pag-database-esercizi":"Database esercizi","pag-scheletri":"Scheletri","pag-progressioni":"Progressioni","pag-programma-1":"Programma attivo · in corso","pag-programma-2":"Programma 2","pag-programma-3":"Programma 3","pag-riepilogo-volume":"Riepilogo volume","pag-specializzazione":"Specializzazione","pag-curve-forza":"Curve di forza","pag-programma-corsa":"Programma corsa","pag-archivio":"Archivio programmi","pag-study-time":"Study time"};
  var SVG='<svg class="diva-bot" viewBox="0 0 240 260" aria-hidden="true" focusable="false">'+
  '<g class="diva-bot-antenna"><path d="M120 49V31" fill="none" stroke="#c7b8d8" stroke-width="7" stroke-linecap="round"/><path d="M120 29c-13-15-30 4 0 23 30-19 13-38 0-23Z" fill="#ff72c2" stroke="#ffe1f4" stroke-width="3"/></g>'+
  '<g class="diva-bot-arm diva-bot-arm-left"><circle class="diva-bot-joint" cx="68" cy="177" r="13"/><path class="diva-bot-shell" d="M64 171c-17 1-27 13-28 29-1 12 7 20 17 17 9-3 13-15 16-30Z"/><circle class="diva-bot-joint" cx="47" cy="211" r="10"/></g>'+
@@ -7933,6 +7933,7 @@ html body #pag-programma-1 .p8-tab thead .p8h.c-note{border-left:1px solid var(-
 
 /* ---- recupero: − valore + compatti ---- */
 html body #pag-programma-1 .p8-r td.c-rec{white-space:nowrap;padding:0 2px}
+html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 html body #pag-programma-1 .p8-r td.c-rec .stp{width:14px;height:15px;line-height:1;padding:0;margin:0 2px;font-size:10px;
   border-radius:3px;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer}
 html body #pag-programma-1 .p8-r td.c-rec .stp:hover{border-color:var(--lav);color:var(--lav)}
@@ -10773,5 +10774,10 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 })();
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script type="module" src="./app-v31.js"></script>
 </body>
 </html>
