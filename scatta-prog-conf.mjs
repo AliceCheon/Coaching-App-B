@@ -85,6 +85,9 @@ await p31.evaluate(() => {
   let e = pag; while (e && e !== document.body) { e.hidden = false; e.style.display = ""; e = e.parentElement; }
   pag.hidden = false; pag.style.display = "block";
   document.querySelectorAll("body *").forEach((el) => { const st = getComputedStyle(el); if (st.position === "fixed" && el.offsetHeight > 40) el.style.display = "none"; });
+  /* la scheda flottante della Diva nel v31 copre la tabella: nello scatto si toglie */
+  const eccoci = [...document.querySelectorAll("body *")].filter((el) => el.children.length === 0 && /Eccoci/i.test(el.textContent || ""));
+  eccoci.forEach((el) => { let c = el; for (let i = 0; i < 6 && c; i += 1) { const st = getComputedStyle(c); if (st.position === "fixed" || st.position === "absolute") { c.style.display = "none"; break; } c = c.parentElement; } });
   window.scrollTo(0, 0);
 });
 await p31.waitForTimeout(700);

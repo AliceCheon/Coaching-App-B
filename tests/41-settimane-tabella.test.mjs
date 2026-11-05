@@ -134,8 +134,8 @@ test("41.06 font e larghezza: JetBrains Mono in casa e la tabella larga come il 
   assert.ok(/JetBrains Mono/.test(css));
   [400, 500, 600].forEach((w) => assert.ok(fs.existsSync("comune/font/jetbrains-mono-" + w + ".woff2")));
   const tab = fs.readFileSync("comune/dashboard-b.css", "utf8");
-  assert.ok(/min-width:1504px/.test(tab));
-  ["w-js{width:48px}", "w-reps{width:63px}", "w-ult{width:82px}"].forEach((f) => assert.ok(tab.indexOf(f) !== -1, f));
+  assert.ok(/min-width:1242px/.test(tab));
+  ["w-js{width:40px}", "w-reps{width:52px}", "w-ult{width:68px}", "w-note{width:178px}"].forEach((f) => assert.ok(tab.indexOf(f) !== -1, f));
 });
 
 test("41.07 la voce «Cosa non c'è» sulle settimane è sparita", () => {

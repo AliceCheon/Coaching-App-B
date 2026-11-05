@@ -94,5 +94,5 @@ test("30.10 la bolla non inventa numeri quando il check-in manca", () => {
 
 test("30.11 la build racconta cosa c'è dentro", () => {
   const t = leggi("app-config-b.js");
-  assert.ok(/b0\.39-passo2-11-uno/.test(t), "build attesa b0.39-passo2-11-uno");
+  assert.ok(/b0\.39-passo2-12-due/.test(t), "build attesa b0.39-passo2-12-due");
 });

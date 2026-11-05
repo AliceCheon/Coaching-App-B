@@ -147,20 +147,19 @@ function testata(doc) {
   const c = n(doc, "div", "pr-head");
   const top = n(doc, "div", "pg-top");
 
-  /* L'ordine è quello che si vede: Annulla in alto a sinistra, il pulsante
-   * del Database esercizi grande in alto a destra, il titolo «Programmi» con
-   * il suo sottotitolo sotto, la Libreria Coach sotto il Database. */
-  const annulla = pulsanteSpento(doc, "pg-undo spento", "\u21b6 Annulla", "annulla l'ultima modifica");
-  annulla.appendChild(n(doc, "b", "", "ctrl z"));
-  top.appendChild(annulla);
-
-  top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi"));
-
+  /* L'ordine è quello del v31: il titolo con la frase di presentazione a
+   * sinistra, «Annulla ctrl z» accanto al Database esercizi in alto a destra,
+   * Libreria Coach che va a capo a sinistra sotto la presentazione. */
   const d = n(doc, "div", "pg-testa");
   d.appendChild(n(doc, "h2", "pg-tit", "Programmi"));
   d.appendChild(n(doc, "p", "pg-sub", "Una scheda alla volta con le linguette: rotazione, stato e libreria del programma stanno qui sopra, la tabella sotto."));
   top.appendChild(d);
 
+  const annulla = pulsanteSpento(doc, "pg-undo spento", "\u21b6 Annulla", "annulla l'ultima modifica");
+  annulla.appendChild(n(doc, "b", "", "ctrl z"));
+  top.appendChild(annulla);
+
+  top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi"));
   top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-c", "\ud83d\udcda Libreria Coach", "apre la Libreria Coach"));
   c.appendChild(top);
   return c;
@@ -230,6 +229,13 @@ function cartaRotazione(doc, r) {
   if (r.profilo.durata != null) parti.push(r.profilo.durata + " settimane");
   c.appendChild(n(doc, "div", "pr-meta", parti.join(" · ")));
 
+  /* La riga del v31 «8 sett di progressione = 10 settimane reali»: il conto
+   * delle settimane reali non sta nel documento, quindi si scrive il dato che
+   * c'è e si dichiara quello che manca, senza calcolarlo a caso. */
+  c.appendChild(n(doc, "p", "pr-warn",
+    (r.profilo.durata == null ? "Settimane di progressione " + NON : r.profilo.durata + " sett di progressione") +
+    " = settimane reali " + NON));
+
   if (mancanti.length) {
     c.appendChild(n(doc, "p", "pr-warn", "La rotazione dichiara " + dichiarate.join(", ") + ", ma le schede presenti sono " + presenti.join(", ") + ": le lettere senza scheda restano fuori, non si inventano schede."));
   } else if (!registrata) {
@@ -237,12 +243,26 @@ function cartaRotazione(doc, r) {
   }
 
   const chips = n(doc, "div", "pr-chips");
-  codici.forEach((cod, i) => {
-    const chip = n(doc, "span", "pr-rotchip" + (i > 4 ? " jolly" : ""), cod);
+  codici.forEach((cod) => {
+    const chip = n(doc, "span", "pr-rotchip", cod);
     chip.title = "sola lettura";
     chips.appendChild(chip);
   });
+  /* La lettera E del v31 è la scheda jolly: tratteggiata, non ruota da sola. */
+  if (codici.indexOf("E") === -1) {
+    const jolly = n(doc, "span", "pr-rotchip jolly", "E");
+    jolly.title = "scheda jolly: non ruota da sola";
+    chips.appendChild(jolly);
+  }
   c.appendChild(chips);
+
+  const guida = n(doc, "p", "pr-guide");
+  guida.appendChild(n(doc, "span", "", "Le schede "));
+  guida.appendChild(n(doc, "b", "", "jolly"));
+  guida.appendChild(n(doc, "span", "", " non ruotano da sole: le inserisci a mano nel giorno che vuoi qui sotto. Metti uno slot su "));
+  guida.appendChild(n(doc, "b", "", "Riposo"));
+  guida.appendChild(n(doc, "span", "", " per fare meno allenamenti quella settimana (es. 4 invece di 5)."));
+  c.appendChild(guida);
 
   const prosp = n(doc, "div", "pr-prosp");
   prosp.appendChild(n(doc, "div", "pr-prosp-h", "Prospetto · " + (r.profilo.durata || slot) + " sett" + (codici.length ? " (ciclo base " + codici.length + ")" : "") + " — spento"));
@@ -252,18 +272,9 @@ function cartaRotazione(doc, r) {
     const riga = n(doc, "div", "pr-prow");
     riga.appendChild(n(doc, "span", "", "Sett " + (w + 1)));
     for (let s = 0; s < slot; s += 1) {
-      const cella = n(doc, "select", "pr-psel");
-      cella.disabled = true;
+      const valore = codici.length ? codici[(w + s) % codici.length] : "—";
+      const cella = n(doc, "span", "pr-psel" + (codici.length ? "" : " vuota"), valore);
       cella.setAttribute("aria-label", "Sett " + (w + 1) + " slot " + (s + 1));
-      const vuota = n(doc, "option", "", "—");
-      vuota.value = "";
-      cella.appendChild(vuota);
-      codici.forEach((cod) => {
-        const op = n(doc, "option", "", cod);
-        op.value = cod;
-        if (codici[(w + s) % codici.length] === cod) op.selected = true;
-        cella.appendChild(op);
-      });
       riga.appendChild(cella);
     }
     corpo.appendChild(riga);
@@ -575,11 +586,12 @@ function pannelloScheda(doc, scheda, r) {
 
   const note = n(doc, "div", "pr-note");
   note.appendChild(n(doc, "div", "pr-note-h", "📌 NOTE SCHEDA " + scheda.codice + " — visibili nell'export/stampa"));
-  const ta = n(doc, "textarea", "pr-ta");
-  ta.rows = 2;
+  const ta = n(doc, "textarea", "pr-ta pr-ta-note");
+  ta.rows = 3;
   ta.readOnly = true;
   ta.value = scheda.note || "";
-  if (!scheda.note) ta.placeholder = NON;
+  ta.setAttribute("placeholder", "Riscaldamento, prehab, note generali per l'atleta…");
+  if (scheda.note) ta.textContent = scheda.note;
   note.appendChild(ta);
   p.appendChild(note);
   p.appendChild(rigaTempo(doc, scheda));
