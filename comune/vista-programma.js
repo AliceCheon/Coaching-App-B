@@ -105,7 +105,8 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
     controllo.setAttribute("inputmode", "numeric");
     controllo.value = dataItaliana(valore);
     controllo.setAttribute("value", dataItaliana(valore));
-    controllo.placeholder = "gg/mm/aaaa";
+    /* Data vuota = dato che non c'e': lo dice, come fanno gli altri campi. */
+    controllo.placeholder = valore ? "gg/mm/aaaa" : NON;
   } else {
     controllo = n(doc, "input", "pr-in");
     controllo.type = tipo || "text";
@@ -743,7 +744,13 @@ function schede(doc, r) {
         b.setAttribute("aria-selected", suo ? "true" : "false");
       }
     });
-    Array.prototype.forEach.call(pannelli.children, (p, i) => { p.hidden = i !== indice; });
+    /* Il v31 accende i pannelli con la classe .on (il CSS di .pr-pannello e'
+     * display:none finche' non arriva .on): con solo hidden il pannello resta
+     * invisibile e le linguette sembrano morte. */
+    Array.prototype.forEach.call(pannelli.children, (p, i) => {
+      p.hidden = i !== indice;
+      p.classList.toggle("on", i === indice);
+    });
   };
 
   elenco.forEach((s, i) => {
