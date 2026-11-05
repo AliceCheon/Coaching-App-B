@@ -2,3 +2,8 @@ node_modules/
 
 # Fotografia dei dati della coach: resta sul suo PC, mai nel repository.
 barbell-diva-backup*.json
+
+# spazzatura di lavoro: patch, log di suite e push, e il file nul di Windows
+*.patch
+*.log
+nul
