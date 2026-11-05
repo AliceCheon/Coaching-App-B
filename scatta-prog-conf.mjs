@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
 import { chromium } from "playwright";
+import { montaDivaBot } from "./comune/diva-bot.js";
 
 const OGGI = new Date(Date.UTC(2026, 10, 4));
 const meta = {
@@ -61,6 +62,8 @@ doc.querySelector("#vistaProgramma1").hidden = false;
 doc.querySelectorAll("[data-versione]").forEach((x) => { x.textContent = "b0.39"; });
 const r = riepilogoProgramma(meta, sedute, { schedeV2: ricostruisciSchede(docs), indice: 0, totaleProgrammi: 5, oggi: OGGI, quante: 8 });
 renderProgramma(doc, doc.querySelector("#programma1Griglia"), { presente: true, numeroSedute: sedute.length }, r);
+/* la robottina flottante, uguale a quella dell'app: qui serve per lo scatto del suo angolo */
+montaDivaBot(doc.querySelector("#divaContenitore"), ["Programma attivo. La scheda dice nove esercizi; la rotazione arriva dal documento, non da me."], "neutro");
 doc.querySelectorAll("input, textarea, select").forEach((el) => {
   if (el.tagName === "SELECT") {
     Array.prototype.forEach.call(el.options, (o) => { if (o.selected) o.setAttribute("selected", ""); else o.removeAttribute("selected"); });
@@ -74,6 +77,7 @@ const pB = await b.newPage({ viewport: { width: 2098, height: 1200 }, deviceScal
 await pB.goto("file://" + path.resolve("scatta-prog-conf.html"));
 await pB.evaluate(() => document.fonts.ready);
 await pB.waitForTimeout(400);
+await pB.evaluate(() => { document.querySelectorAll("#divaContenitore, #divaContenitore *").forEach((e) => { e.style.display = "none"; }); });
 const area = await pB.$("#vistaProgramma1");
 await area.screenshot({ path: "/tmp/prog-b.png" });
 
@@ -85,11 +89,14 @@ await p31.evaluate(() => {
   let e = pag; while (e && e !== document.body) { e.hidden = false; e.style.display = ""; e = e.parentElement; }
   pag.hidden = false; pag.style.display = "block";
   document.querySelectorAll("body *").forEach((el) => { const st = getComputedStyle(el); if (st.position === "fixed" && el.offsetHeight > 40) el.style.display = "none"; });
+  /* il fumetto della Diva copre la tabella: nello scatto non c'entra */
+  const diva = document.querySelector("#bd-diva"); if (diva) diva.style.display = "none";
   /* la scheda flottante della Diva nel v31 copre la tabella: nello scatto si toglie */
   const eccoci = [...document.querySelectorAll("body *")].filter((el) => el.children.length === 0 && /Eccoci/i.test(el.textContent || ""));
   eccoci.forEach((el) => { let c = el; for (let i = 0; i < 6 && c; i += 1) { const st = getComputedStyle(c); if (st.position === "fixed" || st.position === "absolute") { c.style.display = "none"; break; } c = c.parentElement; } });
   window.scrollTo(0, 0);
 });
+await p31.evaluate(() => { document.querySelectorAll("#bd-diva, .bub, #dv-fumetto").forEach((e) => { e.style.display = "none"; }); });
 await p31.waitForTimeout(700);
 await p31.evaluate(() => document.fonts.ready);
 const area31 = await p31.$("#pag-programma-1");

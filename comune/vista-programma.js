@@ -759,6 +759,9 @@ function schede(doc, r) {
   /* Le linguette che nel v31 stanno accanto alle schede. «Analisi
    * programmazione» mostra le due carte che stanno qui sotto (sono letture);
    * Stress, Scheletri e Periodizzazione si vedono e non si aprono. */
+  /* La barretta del v31: separa le schede dai pannelli di lettura. */
+  linguette.appendChild(n(doc, "span", "pr-tabs-sep"));
+
   const extra = [];
   ["Stress", "Scheletri", "Analisi programmazione", "Periodizzazione"].forEach((titolo) => {
     const spenta = titolo !== "Analisi programmazione";
