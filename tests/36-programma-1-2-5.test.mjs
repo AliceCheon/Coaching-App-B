@@ -140,7 +140,7 @@ test("36.08 la voce è accesa, il pannello c'è e la build è la 2.5", () => {
   assert.ok(html.includes('id="vistaProgramma1"'));
   assert.ok(html.includes('id="programma1Griglia"'));
   const config = readFileSync(new URL("../app-config-b.js", import.meta.url), "utf8");
-  assert.match(config, /b0\.35-passo2-7-attivo-archivio/);
+  assert.match(config, /b0\.38-passo2-9-tabella-v31/);
 });
 
 test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa HTML grezzo", () => {
@@ -155,5 +155,5 @@ test("36.09 il modulo dei conti non scrive e non tocca il DOM; la vista non usa 
   }
   const cose = coseNonRegistrateProgramma();
   assert.ok(cose.length >= 4);
-  assert.ok(cose.map((c) => c[0] + " " + c[1]).join(" | ").includes("Progressione settimana per settimana"));
+  assert.ok(!cose.map((c) => c[0] + " " + c[1]).join(" | ").includes("Progressione settimana per settimana"));
 });

@@ -12,7 +12,8 @@
  * pezzi del v31 rifatti qui, con i gettoni dei due temi.
  */
 
-import { coseNonRegistrateProgramma, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
+import { coseNonRegistrateProgramma, chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
+import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -240,30 +241,207 @@ function kpi(doc, r) {
   return griglia;
 }
 
-/* La tabella degli esercizi di una scheda, come nel v31: numero, nome, gruppo,
- * serie, ripetizioni, recupero, nota. */
-function tabellaEsercizi(doc, scheda) {
-  const t = n(doc, "div", "pg-tabella pr-tb");
-  const testata = n(doc, "div", "pg-tr pg-th pr-tb-row");
-  ["#", "esercizio", "gruppo", "serie", "rip.", "rec.", "sett.", "nota"].forEach((x) => testata.appendChild(n(doc, "span", "", x)));
-  t.appendChild(testata);
-  if (!scheda.esercizi.length) {
-    t.appendChild(n(doc, "p", "pg-vuoto", "Questa scheda non ha esercizi leggibili: il documento non li porta, e qui non si inventano."));
-    return t;
+/* I codici del distretto sono quelli del Database esercizi del v31:
+ * D Dorsali · CS Centro schiena · S Spalle · G Glutei · E Femorali ·
+ * B Bicipiti · T Tricipiti · P Petto · Q Quadricipiti · C Polpacci ·
+ * A Addominali · CA Cardio. Il documento di B porta il nome del gruppo, non la
+ * lettera: si traduce con questa tabella, e quello che non si riconosce resta
+ * un trattino invece di una lettera inventata. */
+const DISTRETTI = [
+  [["femorali", "femorale", "bicipiti femorali", "hamstring"], "E"],
+  [["centro schiena", "schiena"], "CS"],
+  [["dorsali", "dorsale", "dorso", "lat "], "D"],
+  [["spalle", "spalla", "deltoidi", "deltoide"], "S"],
+  [["glutei", "gluteo"], "G"],
+  [["bicipiti", "bicipite", "brachiali", "brachiale"], "B"],
+  [["tricipiti", "tricipite"], "T"],
+  [["pettorali", "pettorale", "petto"], "P"],
+  [["quadricipiti", "quadricipite", "gambe"], "Q"],
+  [["polpacci", "polpaccio", "calf"], "C"],
+  [["addominali", "addominale", "addome", "core"], "A"],
+  [["cardio"], "CA"]
+];
+
+export function codiceDistretto(muscolo) {
+  const t = " " + String(muscolo || "").toLowerCase().trim() + " ";
+  if (t.trim() === "") return "\u2014";
+  for (let i = 0; i < DISTRETTI.length; i += 1) {
+    const chiavi = DISTRETTI[i][0];
+    for (let k = 0; k < chiavi.length; k += 1) if (t.indexOf(chiavi[k]) !== -1) return DISTRETTI[i][1];
   }
-  scheda.esercizi.forEach((e, i) => {
-    const riga = n(doc, "div", "pg-tr pr-tb-row");
-    riga.appendChild(n(doc, "span", "pg-num", String(i + 1)));
-    riga.appendChild(n(doc, "span", "pr-ex-nome", e.nome));
-    riga.appendChild(n(doc, "span", "", e.muscolo || NON));
-    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.serie || "—"));
-    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.ripetizioni || "—"));
-    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.recupero || "—"));
-    riga.appendChild(n(doc, "span", "pg-num", e.prescrizione.settimane ? String(e.prescrizione.settimane) : "—"));
-    riga.appendChild(n(doc, "span", "pr-ex-nota", e.nota || ""));
-    t.appendChild(riga);
+  return "\u2014";
+}
+
+function pulsanteSpento(doc, classe, testo, titolo) {
+  const b = n(doc, "button", classe, testo);
+  b.type = "button";
+  b.disabled = true;
+  b.setAttribute("aria-disabled", "true");
+  b.title = (titolo ? titolo + " · " : "") + "spento: questa pagina non scrive";
+  return b;
+}
+
+function cerchioPiu(doc) {
+  const s = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 16 16");
+  s.setAttribute("aria-hidden", "true");
+  const c = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
+  c.setAttribute("cx", "8");
+  c.setAttribute("cy", "8");
+  c.setAttribute("r", "6.6");
+  const p = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", "M8 4.8v6.4M4.8 8h6.4");
+  s.appendChild(c);
+  s.appendChild(p);
+  return s;
+}
+
+/* L'ultima volta che quell'esercizio è stato fatto, nella scheda giusta:
+ * «26/10/2026 · 50 kg», come nel v31. Se il logbook non ha quella seduta resta
+ * il trattino. */
+function ultimaVolta(r, scheda, nome) {
+  const mappa = (r && r.prestazioni) || {};
+  const p = mappa[chiavePrestazione(scheda.codice, nome)];
+  if (!p) return "\u2014";
+  if (!p.data) return p.kg == null ? "\u2014" : p.kg + " kg";
+  return p.kg == null ? p.data : p.data + " \u00b7 " + p.kg + " kg";
+}
+
+/* La tabella degli esercizi di una scheda: è quella del v31, riga per riga.
+ * Stesse colonne e stesso ordine — JS · Dist. · Esercizio · Descr./Setup · Rec. ·
+ * TUT · S1…S8 con le sotto-colonne ser e reps · Ultima — stesse classi, stesse
+ * due righe di testa, stessi testi. Cambiano solo i dati, che sono quelli di B.
+ *
+ * I controlli che scrivono (×, ⇄, +, le tecniche T F R P, il +, i due −/+ del
+ * recupero, «Applica progressione») stanno al loro posto ma spenti: questa
+ * pagina non salva. Sotto la tabella non c'è nessuna frase: nel v31 non c'è.
+ * Dove un dato manca si scrive il trattino, come fa il v31. */
+function tabellaEsercizi(doc, scheda, r) {
+  const elenco = scheda.esercizi || [];
+  const quante = (r && r.profilo && r.profilo.durata) || 8;
+  const scritte = elenco.map((e) => (e.prescrizione && e.prescrizione.elencoSettimane) || []);
+  const numero = Math.max(Number(quante) || 8, ...scritte.map((x) => x.length), 8);
+  const perRiga = scritte.map((x) => settimanePerTabella(x, numero));
+  const scarico = [];
+  perRiga.forEach((sett) => {
+    const i = indiceScarico(sett);
+    if (i >= 0 && scarico.indexOf(i) === -1) scarico.push(i);
   });
-  return t;
+  const inScarico = (k) => scarico.indexOf(k) !== -1;
+
+  const box = n(doc, "div", "p8-scroll");
+  const t = n(doc, "table", "p8-tab");
+
+  const cg = n(doc, "colgroup");
+  ["w-js", "w-dist", "w-ese", "w-note", "w-rec", "w-tut"].forEach((cl) => cg.appendChild(n(doc, "col", cl)));
+  for (let i = 0; i < numero; i += 1) {
+    cg.appendChild(n(doc, "col", "w-ser"));
+    cg.appendChild(n(doc, "col", "w-reps"));
+  }
+  cg.appendChild(n(doc, "col", "w-ult"));
+  t.appendChild(cg);
+
+  const thead = n(doc, "thead");
+  const r1 = n(doc, "tr");
+  [["c-js", "JS"], ["c-dist", "Dist."], ["c-ese", "Esercizio"], ["c-note", "Descr. / Setup"], ["c-rec", "Rec."], ["c-tut", "TUT"]]
+    .forEach(([classe, testo]) => {
+      const th = n(doc, "th", "p8h " + classe, testo);
+      th.rowSpan = 2;
+      r1.appendChild(th);
+    });
+  for (let i = 0; i < numero; i += 1) {
+    const th = n(doc, "th", "p8h wk" + (inScarico(i) ? " ph-scar" : ""), "S" + (i + 1));
+    th.colSpan = 2;
+    r1.appendChild(th);
+  }
+  const ult = n(doc, "th", "p8h c-ult", "Ultima");
+  ult.rowSpan = 2;
+  r1.appendChild(ult);
+  thead.appendChild(r1);
+
+  const r2 = n(doc, "tr");
+  for (let i = 0; i < numero; i += 1) {
+    r2.appendChild(n(doc, "th", "p8h sub w-ser", "ser"));
+    r2.appendChild(n(doc, "th", "p8h sub w-reps", "reps"));
+  }
+  thead.appendChild(r2);
+  t.appendChild(thead);
+
+  const corpo = n(doc, "tbody");
+  elenco.forEach((e, indice) => {
+    const tr = n(doc, "tr", "p8-r");
+    tr.setAttribute("data-js", String(indice + 1));
+    tr.appendChild(n(doc, "td", "c-js", (scheda.codice || "") + (indice + 1)));
+
+    const dist = n(doc, "td", "c-dist");
+    dist.appendChild(n(doc, "span", "dist", codiceDistretto(e.muscolo)));
+    tr.appendChild(dist);
+
+    const ese = n(doc, "td", "c-ese");
+    const nome = n(doc, "div", "ese-name");
+    const p8ese = n(doc, "span", "p8-ese");
+    p8ese.appendChild(n(doc, "span", "p8-t", e.nome));
+    nome.appendChild(p8ese);
+    ese.appendChild(nome);
+
+    const chips = n(doc, "div", "ese-chips");
+    ["T", "F", "R", "P"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
+    const piu = pulsanteSpento(doc, "chplus", "", "tecniche di intensità");
+    piu.appendChild(cerchioPiu(doc));
+    chips.appendChild(piu);
+    const gruppo = n(doc, "span", "abgroup");
+    gruppo.appendChild(pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
+    gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
+    gruppo.appendChild(pulsanteSpento(doc, "ab", "\uff0b", "inserisci progressione sotto"));
+    chips.appendChild(gruppo);
+    ese.appendChild(chips);
+
+    const chips2 = n(doc, "div", "ese-chips2");
+    chips2.appendChild(n(doc, "span", "chlat", "\u21c4 DX/SX"));
+    const test = n(doc, "span", "tb-test");
+    test.appendChild(n(doc, "i"));
+    test.appendChild(n(doc, "span", "", "Test"));
+    chips2.appendChild(test);
+    ese.appendChild(chips2);
+
+    const prog = pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
+    prog.appendChild(n(doc, "span", "bp-ic", "\u25a4"));
+    prog.appendChild(n(doc, "span", "", "Applica progressione"));
+    ese.appendChild(prog);
+    tr.appendChild(ese);
+
+    const nota = n(doc, "td", "c-note");
+    const pn = n(doc, "span", "p8-note", e.nota || "");
+    pn.setAttribute("data-ph", "nota coach\u2026");
+    nota.appendChild(pn);
+    tr.appendChild(nota);
+
+    const rec = n(doc, "td", "c-rec");
+    rec.appendChild(pulsanteSpento(doc, "stp", "\u2212", "meno 15 secondi"));
+    rec.appendChild(n(doc, "span", "rec", e.prescrizione.recupero || "\u2014"));
+    rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 15 secondi"));
+    tr.appendChild(rec);
+
+    const tut = n(doc, "td", "c-tut");
+    tut.appendChild(n(doc, "span", "tut", e.prescrizione.tempo || "\u2014"));
+    tr.appendChild(tut);
+
+    perRiga[indice].forEach((s, k) => {
+      const sc = inScarico(k) ? " sc-col" : "";
+      const ser = n(doc, "td", "c-ser" + sc);
+      ser.appendChild(n(doc, "span", "", s.serie || "\u2014"));
+      tr.appendChild(ser);
+      const rip = n(doc, "td", "c-reps" + sc);
+      rip.appendChild(n(doc, "span", "", s.ripetizioni || "\u2014"));
+      tr.appendChild(rip);
+    });
+
+    tr.appendChild(n(doc, "td", "c-ult", ultimaVolta(r, scheda, e.nome)));
+    corpo.appendChild(tr);
+  });
+  t.appendChild(corpo);
+  box.appendChild(t);
+  return box;
 }
 
 /* Linguette e pannelli: la scheda si sceglie cliccando, come nel v31. Nessun
@@ -326,7 +504,7 @@ function schede(doc, r) {
     testata.appendChild(f);
     p.appendChild(testata);
     if (s.note) p.appendChild(n(doc, "p", "pr-nota-ex", s.note));
-    p.appendChild(tabellaEsercizi(doc, s));
+    p.appendChild(tabellaEsercizi(doc, s, r));
     pannelli.appendChild(p);
   });
   c.appendChild(pannelli);
@@ -421,7 +599,7 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
   contenitore.appendChild(sezione(doc, "M4 12V6m4 6V3m4 9V8", "I conti delle schede"));
   contenitore.appendChild(kpi(doc, pieno));
   contenitore.appendChild(sezione(doc, "M3 4h10v9H3zM3 7h10M6.5 2.5v3M9.5 2.5v3", "Le schede e i loro esercizi · una linguetta alla volta"));
-  contenitore.appendChild(schede(doc, pieno));
+  contenitore.appendChild(schede(doc, Object.assign({}, pieno, { prestazioni: r.prestazioni })));
   const due = n(doc, "div", "ck-due");
   due.appendChild(osservato(doc, pieno));
   due.appendChild(cosaManca(doc));

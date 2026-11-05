@@ -84,7 +84,7 @@ const doc = dom.window.document;
 doc.querySelector("#vistaProgramma1").hidden = false;
 /* La testina robot e la pastiglia della versione: le mette app.js all'avvio,
  * qui si mettono con le stesse funzioni, altrimenti nella schermata non ci sono. */
-doc.querySelectorAll("[data-versione]").forEach((n) => { n.textContent = "b0.35-passo2-7-attivo-archivio"; });
+doc.querySelectorAll("[data-versione]").forEach((n) => { n.textContent = "b0.36-passo2-8-settimane"; });
 const marco = doc.querySelector("[data-marco]");
 if (marco) marco.appendChild(creaVolto(doc, "neutro"));
 const r = riepilogoProgramma(meta, sedute, { schedeV2: ric, indice: 0, totaleProgrammi: 5, oggi: OGGI, quante: 8 });

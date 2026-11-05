@@ -112,6 +112,173 @@ export function decodificaId(id) {
   return null;
 }
 
+
+/* --- Il testo leggibile di serie, ripetizioni, recupero (b0.36) -------------
+ * Perché serve: A non salva questi campi come stringhe. `normalizePrescription`
+ * li converte in oggetti — {min:8, max:10} per le ripetizioni, {seconds:90} per
+ * il recupero, {cleared:true} quando il campo è stato svuotato. Stampare
+ * l'oggetto dava «[object Object]» nella tabella. Qui si legge la stessa forma
+ * che legge A (formatReps, formatRest, r.1867-1889) e si scrive il testo.
+ */
+
+export const TIPI_SETTIMANA = Object.freeze({
+  normal: "",
+  accumulation: "accumulo",
+  intensification: "intensificazione",
+  deload: "scarico",
+  test: "test",
+  recovery: "recupero",
+  custom: "personalizzata"
+});
+
+function numeroFinito(valore) {
+  const x = Number(valore);
+  return Number.isFinite(x) ? x : null;
+}
+
+/* Quante serie: numero, stringa, oppure {label} / {value} / {sets}. */
+export function testoSerie(valore) {
+  if (valore == null) return "";
+  if (typeof valore === "number") return Number.isFinite(valore) ? String(valore) : "";
+  if (typeof valore === "string") return valore.trim();
+  if (typeof valore !== "object") return "";
+  if (valore.cleared) return "";
+  const diretti = ["label", "testo", "text", "value", "sets", "serie"];
+  for (let i = 0; i < diretti.length; i += 1) {
+    const v = valore[diretti[i]];
+    if (v != null && typeof v !== "object") {
+      const t = testoSerie(v);
+      if (t) return t;
+    }
+  }
+  return "";
+}
+
+/* Quante ripetizioni: {min,max} diventa «8-10», la sequenza diventa «12-10-8». */
+export function testoRipetizioni(valore) {
+  if (valore == null) return "";
+  if (typeof valore === "number") return Number.isFinite(valore) ? String(valore) : "";
+  if (typeof valore === "string") return valore.trim();
+  if (typeof valore !== "object") return "";
+  if (valore.cleared) return "";
+  const etichetta = testo(valore.label);
+  if (etichetta) return etichetta;
+  const sequenza = Array.isArray(valore.sequence)
+    ? valore.sequence.filter((x) => x != null && x !== "")
+    : [];
+  if (sequenza.length) return sequenza.join("-");
+  const min = numeroFinito(valore.min);
+  const max = numeroFinito(valore.max);
+  if (min != null && max != null) return min === max ? String(min) : min + "-" + max;
+  if (min != null) return String(min);
+  const diretti = ["value", "text", "testo", "reps", "ripetizioni"];
+  for (let i = 0; i < diretti.length; i += 1) {
+    const v = valore[diretti[i]];
+    if (v != null && typeof v !== "object") {
+      const t = testoRipetizioni(v);
+      if (t) return t;
+    }
+  }
+  return "";
+}
+
+/* Quanto recupero: {seconds:90} diventa «90s»; «2'» resta com'è scritto. */
+export function formattaSecondi(secondi) {
+  const n = Number(secondi);
+  if (!Number.isFinite(n) || n < 0) return "";
+  return n % 60 === 0 ? n / 60 + "'" : n + " sec";
+}
+
+/* Il recupero come lo scrive il v31: i minuti interi diventano «2'», i secondi
+ * «90 sec». Un'etichetta già scritta vince su tutto. */
+export function testoRecupero(valore) {
+  if (valore && typeof valore === "object") {
+    if (typeof valore.label === "string" && valore.label.trim()) return valore.label.trim();
+    const secondi = Number.isFinite(Number(valore.seconds)) ? Number(valore.seconds)
+      : (Number.isFinite(Number(valore.minSeconds)) ? Number(valore.minSeconds) : null);
+    return secondi == null ? "" : formattaSecondi(secondi);
+  }
+  const testo = valore == null ? "" : String(valore).trim();
+  if (!testo) return "";
+  if (/^\d+$/.test(testo)) return formattaSecondi(Number(testo));
+  return testo;
+}
+
+/* Una settimana come la mostra la tabella: numero, serie, ripetizioni,
+ * recupero, tipo (con la sua etichetta) e nota. `registrata: false` vuol dire
+ * che il documento non porta quella settimana: la tabella scrive «non
+ * registrato» e non riempie niente. */
+function settimanaNormalizzata(grezza, indice) {
+  const s = grezza && typeof grezza === "object" ? grezza : null;
+  const base = {
+    numero: indice + 1, serie: "", ripetizioni: "", recupero: "",
+    tipo: "", etichettaTipo: "", nota: "", registrata: false
+  };
+  if (s == null) {
+    const etichetta = typeof grezza === "string" ? grezza.trim() : "";
+    if (!etichetta) return base;
+    const m = /(\d+)\s*[x×]\s*(\d+)(?:\s*-\s*(\d+))?/i.exec(etichetta);
+    base.registrata = true;
+    base.serie = m ? m[1] : "";
+    base.ripetizioni = m ? (m[3] ? m[2] + "-" + m[3] : m[2]) : etichetta;
+    base.tipo = /scarico/i.test(etichetta) ? "deload" : (/test|rm/i.test(etichetta) ? "test" : "normal");
+    base.etichettaTipo = TIPI_SETTIMANA[base.tipo] || "";
+    return base;
+  }
+  base.registrata = true;
+  const numero = numeroFinito(s.weekNumber) != null ? numeroFinito(s.weekNumber) : numeroFinito(s.week);
+  base.numero = numero == null ? indice + 1 : numero;
+  base.serie = testoSerie(s.sets);
+  base.ripetizioni = testoRipetizioni(s.reps);
+  base.recupero = testoRecupero(s.rest) || testoRecupero(s.restSeconds);
+  base.nota = testo(s.note != null ? s.note : s.notes);
+  base.tipo = Object.prototype.hasOwnProperty.call(TIPI_SETTIMANA, testo(s.type)) ? testo(s.type) : "normal";
+  if (!base.tipo) base.tipo = "normal";
+  base.etichettaTipo = TIPI_SETTIMANA[base.tipo] || "";
+  /* legacyLabel («1x8», «test 12rm») vale solo per le settimane mai toccate,
+   * come in A (formatWeekPrescription, r.1922): se i campi dicono qualcosa,
+   * l'etichetta vecchia non li sovrascrive. */
+  const legacy = testo(s.legacyLabel);
+  if (legacy && !base.serie && !base.ripetizioni) {
+    const m = /(\d+)\s*[x×]\s*(\d+)(?:\s*-\s*(\d+))?/i.exec(legacy);
+    if (m) {
+      base.serie = m[1];
+      base.ripetizioni = m[3] ? m[2] + "-" + m[3] : m[2];
+    } else {
+      base.ripetizioni = legacy;
+    }
+  }
+  if (base.tipo === "deload" || /scarico/i.test(legacy)) {
+    base.tipo = "deload";
+    base.etichettaTipo = "scarico";
+  }
+  return base;
+}
+
+/* Le settimane scritte nell'esercizio, già leggibili. */
+export function settimaneNormalizzate(grezze) {
+  const elenco = Array.isArray(grezze) ? grezze : [];
+  return elenco.map((w, i) => settimanaNormalizzata(w, i));
+}
+
+/* La tabella vuole sempre la stessa lunghezza: le settimane del programma, la
+ * più lunga scritta negli esercizi, e mai meno di 8 (come il v31). Quelle che
+ * il documento non porta restano vuote e dichiarate. */
+export function settimanePerTabella(elenco, quante) {
+  const scritte = Array.isArray(elenco) ? elenco : [];
+  const richieste = Math.max(numeroFinito(quante) || 8, scritte.length, 8);
+  const out = [];
+  for (let i = 0; i < richieste; i += 1) out.push(scritte[i] || settimanaNormalizzata(null, i));
+  return out;
+}
+
+/* L'indice (0-based) della settimana di scarico, se il documento la segna. */
+export function indiceScarico(settimane) {
+  const elenco = Array.isArray(settimane) ? settimane : [];
+  for (let i = 0; i < elenco.length; i += 1) if (elenco[i] && elenco[i].tipo === "deload") return i;
+  return -1;
+}
+
 /* Una prescrizione può arrivare in tre modi: dentro `prescription`, come
  * campi sciolti sull'esercizio, oppure in una stringa («4x8 @ 90"»). Qui si
  * legge quello che c'è, senza convertirne il senso: si mostrano i numeri come
@@ -123,14 +290,17 @@ export function prescrizione(esercizio) {
   const rip = primoCampo(dentro, CAMPI_ESERCIZIO.ripetizioni) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.ripetizioni) : primoCampo(p, CAMPI_ESERCIZIO.ripetizioni);
   const rec = primoCampo(dentro, CAMPI_ESERCIZIO.recupero) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.recupero) : primoCampo(p, CAMPI_ESERCIZIO.recupero);
   const tempo = primoCampo(dentro, CAMPI_ESERCIZIO.tempo) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.tempo) : primoCampo(p, CAMPI_ESERCIZIO.tempo);
-  const settimane = primoCampo(p.progression || {}, ["weeks"]) || primoCampo(p, CAMPI_ESERCIZIO.settimane);
-  const q = (v) => (v == null || v === "" ? "" : String(v));
+  const dentroProgressione = primoCampo(p.progression || {}, ["weeks"]);
+  const settimane = Array.isArray(dentroProgressione) ? dentroProgressione
+    : (Array.isArray(primoCampo(p, CAMPI_ESERCIZIO.settimane)) ? primoCampo(p, CAMPI_ESERCIZIO.settimane) : []);
+  const elenco = settimaneNormalizzate(settimane);
   return {
-    serie: q(serie),
-    ripetizioni: q(rip),
-    recupero: q(rec),
-    tempo: q(tempo),
-    settimane: Array.isArray(settimane) ? settimane.length : 0
+    serie: testoSerie(serie),
+    ripetizioni: testoRipetizioni(rip),
+    recupero: testoRecupero(rec),
+    tempo: testoRipetizioni(tempo),
+    settimane: elenco.length,
+    elencoSettimane: elenco
   };
 }
 

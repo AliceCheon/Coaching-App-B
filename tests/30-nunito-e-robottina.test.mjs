@@ -29,7 +29,8 @@ test("30.02 niente CDN: nessun indirizzo di font esterni in tutta l'app", () => 
 
 test("30.03 il foglio dichiara i quattro volti e li prende da comune/font", () => {
   const t = leggi("comune/tema-b.css");
-  assert.equal((t.match(/@font-face/g) || []).length, 4, "i volti devono essere quattro");
+  assert.equal((t.match(/@font-face/g) || []).length, 7, "quattro volti di Nunito più tre pesi di JetBrains Mono");
+  assert.ok(/url\("font\/jetbrains-mono-600\.woff2"\)/.test(t), "JetBrains Mono in casa, non da CDN");
   assert.ok(/font-family:"Nunito Sans"/.test(t), "nome della famiglia");
   assert.ok(/url\("font\/nunito-sans-latin\.woff2"\)/.test(t), "percorso relativo, non remoto");
   assert.ok(/font-weight:300 900/.test(t), "file variabile, tutti i pesi");
@@ -93,5 +94,5 @@ test("30.10 la bolla non inventa numeri quando il check-in manca", () => {
 
 test("30.11 la build racconta cosa c'è dentro", () => {
   const t = leggi("app-config-b.js");
-  assert.ok(/b0\.35-passo2-7-attivo-archivio/.test(t), "build attesa b0.35-passo2-7-attivo-archivio");
+  assert.ok(/b0\.38-passo2-9-tabella-v31/.test(t), "build attesa b0.38-passo2-9-tabella-v31");
 });

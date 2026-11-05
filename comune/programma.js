@@ -195,6 +195,64 @@ function dataItaliana(d) {
  * il documento-programma non porta le schede — succede sempre, nel formato v2 —
  * si usano quelle, lette in sola lettura. `o.oggi` e `o.quante` servono al
  * prospetto delle settimane. */
+/* L'ultima volta che un esercizio è stato fatto. Si guardano le sedute con il
+ * codice di una scheda del programma, si prende quella con la data più recente
+ * e il kg scritto su quell'esercizio. Se il kg manca resta la data; se la
+ * seduta non c'è la riga resta vuota: qui non si inventa niente. */
+export function chiavePrestazione(codice, nome) {
+  const c = testo(codice).toUpperCase();
+  const n = testo(nome).toLowerCase().replace(/\s+/g, " ").trim();
+  return c + "|" + n;
+}
+
+function dataDaTesto(valore) {
+  const t = testo(valore);
+  const ita = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t);
+  if (ita) return new Date(Date.UTC(Number(ita[3]), Number(ita[2]) - 1, Number(ita[1])));
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (iso) return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+  return null;
+}
+
+function kgInTesto(valore) {
+  if (valore == null) return null;
+  const n = Number(valore);
+  if (!Number.isFinite(n)) return null;
+  return String(Math.round(n * 100) / 100).replace(".", ",");
+}
+
+export function prestazioniUltime(sedute, codici) {
+  const elenco = Array.isArray(sedute) ? sedute : [];
+  const delProgramma = Array.isArray(codici) && codici.length ? codici.map((c) => String(c).toUpperCase()) : null;
+  const mappa = Object.create(null);
+  elenco.forEach((s) => {
+    if (!s || typeof s !== "object") return;
+    const codice = String(codiceScheda(s) || "").toUpperCase();
+    if (!codice) return;
+    if (delProgramma && delProgramma.indexOf(codice) === -1) return;
+    const dataSeduta = dataDiSeduta(s) || dataDaTesto(s.dateInput || s.date);
+    const esercizi = Array.isArray(s.exercises) ? s.exercises : [];
+    esercizi.forEach((e) => {
+      if (!e || typeof e !== "object") return;
+      const nome = testo(e.name || e.nome || e.exercise);
+      if (!nome) return;
+      const kg = kgInTesto(e.kg != null ? e.kg : e.maxKg);
+      const sua = dataDaTesto(e.date) || dataSeduta;
+      const chiave = chiavePrestazione(codice, nome);
+      const prima = mappa[chiave];
+      if (!prima) { mappa[chiave] = { data: sua, kg }; return; }
+      if (sua && (!prima.data || sua > prima.data)) { prima.data = sua; prima.kg = kg; return; }
+      if (!prima.data && !sua && prima.kg == null && kg != null) prima.kg = kg;
+    });
+  });
+  const out = Object.create(null);
+  Object.keys(mappa).forEach((k) => {
+    const p = mappa[k];
+    out[k] = { data: p.data ? dataItaliana(p.data) : null, kg: p.kg };
+  });
+  return out;
+}
+
 export function riepilogoProgramma(programma, sedute, opzioni) {
   const o = opzioni || {};
   const profilo = profiloProgramma(programma);
@@ -242,6 +300,7 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
     rotazione,
     codiciVisti,
     osservato,
+    prestazioni: prestazioniUltime(sedute, rotazione.codici),
     viste,
     settimane,
     esercizi,
@@ -252,7 +311,6 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
 /* Le cose che la schermata del programma non può dire, e perché. */
 export function coseNonRegistrateProgramma() {
   return [
-    ["Progressione settimana per settimana", "le settimane di progressione di un esercizio stanno in un campo che B non legge ancora: qui si mostra quante sono, non i carichi di ognuna"],
     ["Settimane rimaste", "la data di inizio e la durata ci sono, ma lo scarico e il test non sono nel documento: qui non si contano le settimane «di piano»"],
     ["Giorni della settimana", "il programma dice quanti giorni a settimana, non quali: la rotazione sui giorni la mostra la Pianificazione, e solo per le sedute fatte"],
     ["Visibilità all'atleta", "la data «visibile all'atleta dal» non è tra i campi che leggo: resta non registrata"],

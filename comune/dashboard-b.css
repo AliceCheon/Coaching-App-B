@@ -512,3 +512,111 @@
   .ov-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ck-ready-nota{grid-column:1/-1;border-left:0;border-top:1px solid var(--linea);padding:9px 0 0}
 }
+
+/* --- tabella delle schede (b0.38) ----------------------------------------
+ * Struttura, larghezze e colori sono quelli del v31 (#pag-programma-1 .p8-tab),
+ * letti con getComputedStyle sulla sua pagina Programma. Qui il colore va per
+ * ruolo, come là:
+ *
+ *   ruolo                 v31 (calcolato)          gettone di B
+ *   intestazioni          rgb(203,187,215)         --muto
+ *   sigla S1…S8           rgb(255,248,253)         --testo
+ *   codice scheda         rgb(255,248,253)         --testo   (mono)
+ *   DIST.                 rgb(255,248,253)         --testo   (sans)
+ *   nome esercizio        rgb(255,248,253)         --testo   (sans, 700)
+ *   nota (Descr./Setup)   rgb(201,167,255)         --lav
+ *   REC.                  rgb(255,248,253)         --testo   (mono)
+ *   TUT                   rgb(255,248,253)         --testo   (mono)
+ *   SER                   rgb(255,248,253)         --testo   (sans, 700)
+ *   REPS                  rgb(201,167,255)         --lav     (mono, 500)
+ *   Ultima                rgb(203,187,215)         --muto    (mono)
+ *   fondo celle           rgb(21,21,47)            --surface
+ *   fondo testata         rgb(33,27,62)            --raised
+ *
+ * Le larghezze sono i pixel misurati nel v31: in tutto 1504 px, così ci stanno
+ * tutte e otto le settimane e la colonna Ultima.
+ */
+.p8-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface, var(--card, var(--raised)))}
+.p8-tab{width:100%;min-width:1504px;table-layout:fixed;border-collapse:separate;border-spacing:0;
+  font:400 11px/1.2 var(--sans, "Nunito Sans", sans-serif)}
+.p8-tab col.w-js{width:48px}
+.p8-tab col.w-dist{width:41px}
+.p8-tab col.w-ese{width:237px}
+.p8-tab col.w-note{width:216px}
+.p8-tab col.w-rec{width:68px}
+.p8-tab col.w-tut{width:56px}
+.p8-tab col.w-ser{width:31px}
+.p8-tab col.w-reps{width:63px}
+.p8-tab col.w-ult{width:82px}
+
+.p8h{font:800 9px/1.1 var(--mono, "JetBrains Mono", monospace);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muto);background:var(--raised, var(--card-2));padding:7px 4px;text-align:center;
+  border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+.p8h.c-ese{text-align:left;padding-left:9px}
+.p8h.wk{font:700 11px/1.1 var(--mono, "JetBrains Mono", monospace);letter-spacing:.14em;color:var(--testo);
+  border-left:1px solid var(--line)}
+.p8h.c-note{border-left:1px solid var(--line)}
+.p8h.sub{font:800 6.5px/1.1 var(--mono, "JetBrains Mono", monospace);color:var(--muto);padding:2px 1px;letter-spacing:.05em}
+
+.p8-tab tbody td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:2px 3px;
+  vertical-align:middle;line-height:1.15;text-align:center;color:var(--testo);background:var(--surface, var(--card))}
+.p8-tab tbody td:last-child{border-right:0}
+.p8-tab tbody tr.p8-r:nth-child(even) td{background:var(--raised, var(--card-2))}
+
+.p8-tab tbody td.c-js{font:800 11px/1.1 var(--mono, "JetBrains Mono", monospace);color:var(--testo)}
+.p8-tab tbody td.c-dist .dist{display:inline-block;font:800 9px/1 var(--sans, "Nunito Sans", sans-serif);
+  letter-spacing:.04em;color:var(--testo);border:1px solid var(--line);border-radius:6px;padding:3px 5px}
+
+.p8-tab tbody td.c-ese{padding:5px 6px 5px 7px;text-align:left;position:relative}
+.p8-r .ese-name{line-height:1.15}
+.p8-r .p8-ese{padding:0;font:700 12px/1.15 var(--sans, "Nunito Sans", sans-serif);color:var(--testo)}
+.p8-r .ese-chips{display:flex;align-items:center;gap:3px;margin:5px 0 0}
+.p8-r .chchip{width:17px;height:17px;padding:0;border-radius:4px;display:inline-flex;align-items:center;
+  justify-content:center;font:700 9px/1 var(--sans, "Nunito Sans", sans-serif);letter-spacing:.02em;
+  background:var(--raised, var(--card-2));border:1px solid var(--line);color:var(--testo)}
+.p8-r .chchip.ch-T{background:var(--purple);border-color:var(--purple);color:#fff}
+.p8-r .chchip.ch-P{border-color:var(--purple);color:var(--lav)}
+.p8-r .chplus{width:17px;height:17px;padding:0;border:0;background:transparent;color:var(--testo);
+  display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.p8-r .chplus svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.6}
+.p8-r .abgroup{display:inline-flex;gap:3px;margin-left:2px}
+.p8-r .ab{width:15px;height:15px;font-size:8px;line-height:1;border-radius:4px;padding:0;
+  background:transparent;border:1px solid var(--line);color:var(--muto)}
+.p8-r .ese-chips2{display:flex;align-items:center;gap:4px;margin-top:4px}
+.p8-r .chlat{font:700 7.5px/1 var(--sans, "Nunito Sans", sans-serif);letter-spacing:.04em;
+  color:var(--muto);border:1px solid var(--line);border-radius:4px;padding:2px 4px;white-space:nowrap}
+.p8-r .tb-test{display:inline-flex;align-items:center;gap:3px;font:600 8.5px/1 var(--sans, "Nunito Sans", sans-serif);
+  padding:3px 5px;border-radius:4px;border:1px solid var(--line);color:var(--muto)}
+.p8-r .tb-test i{width:6px;height:6px;border-radius:50%;border:1px solid var(--muto);display:inline-block}
+.p8-r .btn-prog{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;margin-top:5px;
+  padding:4px 4px;border-radius:5px;background:transparent;border:1px solid var(--purple);
+  color:var(--testo);font:600 8.5px/1 var(--sans, "Nunito Sans", sans-serif);letter-spacing:.02em;white-space:nowrap}
+.p8-r .btn-prog .bp-ic{font-size:8px;color:var(--purple)}
+
+.p8-tab tbody td.c-note{padding:6px 8px 6px 6px;vertical-align:top;border-left:1px solid var(--line);text-align:left}
+.p8-r .p8-note{display:block;width:100%;min-height:34px;padding:0;font:600 10px/1.45 var(--sans, "Nunito Sans", sans-serif);
+  color:var(--lav);white-space:pre-wrap}
+.p8-r .p8-note:empty::before{content:attr(data-ph);color:var(--muto);opacity:.55;font-style:italic}
+
+.p8-tab tbody td.c-rec{white-space:nowrap;padding:0 2px;text-align:center}
+.p8-r .c-rec .rec{display:inline-block;min-width:16px;text-align:center;
+  font:800 11px/1.2 var(--mono, "JetBrains Mono", monospace);color:var(--testo)}
+.p8-r .c-rec .stp{width:14px;height:15px;line-height:1;padding:0;margin:0 2px;font-size:10px;border-radius:3px;
+  background:transparent;border:1px solid var(--line);color:var(--muto)}
+.p8-tab tbody td.c-tut{text-align:center}
+.p8-r .c-tut .tut{font:700 10px/1.2 var(--mono, "JetBrains Mono", monospace);color:var(--testo)}
+
+.p8-tab tbody td.c-ser span{font:700 12px/1.1 var(--sans, "Nunito Sans", sans-serif);color:var(--testo)}
+.p8-tab tbody td.c-reps span{font:500 10px/1.2 var(--mono, "JetBrains Mono", monospace);color:var(--lav)}
+.p8-tab tbody td.c-ult{font:600 9px/1.25 var(--mono, "JetBrains Mono", monospace);color:var(--muto);padding:4px 3px}
+
+/* scarico: velo sulla colonna e cella segnata, come nel v31 (lì è giallo) */
+.p8h.ph-scar{background:color-mix(in srgb, var(--pink) 22%, var(--raised, var(--card-2)));
+  box-shadow:inset 0 -3px 0 var(--pink);color:var(--testo)}
+.p8-tab tbody tr.p8-r td.sc-col{background:color-mix(in srgb, var(--pink) 16%, transparent);
+  box-shadow:inset 1px 0 0 color-mix(in srgb, var(--pink) 45%, transparent),
+             inset -1px 0 0 color-mix(in srgb, var(--pink) 45%, transparent)}
+
+/* controlli spenti: si vedono, non si premono */
+.p8-r .chchip:disabled,.p8-r .chplus:disabled,.p8-r .ab:disabled,
+.p8-r .stp:disabled,.p8-r .btn-prog:disabled{cursor:default;opacity:.62}
