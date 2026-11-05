@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barbell Diva B · Programma 1 (PC)</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../comune/tema-b.css">
+<link rel="stylesheet" href="../comune/dashboard-b.css">
+<link rel="stylesheet" href="../comune/testata-diva.css">
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<style>
+html[data-theme="dark"]{background:#090918;color-scheme:dark}
+html[data-theme="light"]{background:#fff7fb;color-scheme:light}
+body{margin:0;min-height:100vh}
+body[data-theme="dark"]{--gradiente:linear-gradient(160deg,#050612 0%,#0b0b20 55%,#080719 100%);--surface:#15152f;--raised:#211b3e;--text:#fff8fd;--muted:#cbbbd7;--line:rgba(202,107,225,.24);--line-soft:rgba(255,255,255,.085);--campo:#17111f;--lav:#c9a7ff;--verde:#7be0a8;--ombra:rgba(0,0,0,.55);--rail:#0b0614}
+body[data-theme="light"]{--gradiente:linear-gradient(160deg,#a985d4 0%,#cfafe8 38%,#e7c9e8 72%,#b897db 100%);--surface:#fffafd;--raised:#f8eafa;--text:#241238;--muted:#705b82;--line:rgba(105,55,145,.18);--line-soft:rgba(84,43,116,.10);--campo:#fffafd;--lav:#7c2bd1;--verde:#237350;--ombra:rgba(78,37,111,.18);--rail:#2a1540}
+/* I gettoni dei due temi stanno qui, interi: superficie, rilievo, testo, muto,
+   linee, campo, lavanda, verde, ombra e rotaia. La 2.1 li aveva persi e la
+   pelle del v31 restava senza fondo: da lì il nero piatto. */
+/* Lo spazio in fondo è quello misurato per la Diva: 26 + 104 + 10 + fumetto. */
+.maino{min-width:0;padding:34px 40px 250px;max-width:1120px}
+@media (max-width:980px){.maino{padding:24px 18px 250px}}
+/* Fase 2.1 — solo l'aggancio del marchio dentro il rail del v31.
+   Tutto il resto (rail, nastro, carte) sta in comune/dashboard-b.css,
+   preso dal mockup: qui non si reinventa niente. */
+.marchio{display:flex;align-items:center;gap:12px;min-width:0;margin-bottom:2px}
+.marchio>*{min-width:0}
+.marchio{min-width:0}
+.marchio-segno{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto}
+.marchio-segno .bd-volto{width:46px;height:46px;display:block}
+.marchio-nome{font-size:19px;font-weight:800;letter-spacing:-.2px;line-height:1.1}
+.marchio-nome i{font-style:italic;font-weight:600;color:var(--lav)}
+.marchio-chi{font-size:11.5px;line-height:1.2;margin-top:3px;color:var(--muto)}
+.marchio-ver{display:block;width:max-content;max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;margin-top:7px;padding:3px 8px;border:1px solid color-mix(in srgb,var(--lav) 30%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lav) 10%,transparent);font-family:var(--mono);font-size:9px;line-height:1.4;letter-spacing:.09em;color:var(--lav);white-space:nowrap}
+.rail .bottone-secondario{color:var(--testo);background:color-mix(in srgb,#ffffff 7%,transparent);border:1px solid color-mix(in srgb,var(--pink) 26%,transparent);width:100%;margin-top:10px}
+.lettura{font-family:var(--mono);font-size:9.5px;line-height:1.7;letter-spacing:.04em;color:var(--fioco);margin-top:auto}
+</style>
+</head>
+<body data-theme="dark">
+<div class="guscio">
+  <aside class="rail">
+    <div class="marchio">
+      <span class="marchio-segno" aria-hidden="true" data-marco></span>
+      <div>
+        <div class="marchio-nome">Barbell <i>Diva</i></div>
+        <div class="marchio-chi">Alice Clemente</div>
+        <span class="marchio-ver" data-versione></span>
+      </div>
+    </div>
+
+    <div class="gruppo apribile" data-gruppo="alimentazione">
+      <button class="etichetta" type="button" aria-expanded="true">Alimentazione<span class="chev"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5l4-4"/></svg></span></button>
+      <div class="voci">
+        <button class="voce" data-vista="dashboard" type="button"><span class="ic emo">🏠</span><span class="tx">Dashboard</span></button>
+        <button class="voce spenta" data-vista="dati-cliente" type="button" disabled><span class="ic emo">🪪</span><span class="tx">Dati cliente<em>prossima schermata</em></span></button>
+        <button class="voce spenta" data-vista="salute-recupero" type="button" disabled><span class="ic emo">🩺</span><span class="tx">Salute e recupero<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="misure" type="button" disabled><span class="ic emo">📏</span><span class="tx">Misure &amp; plicometria<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="reset-bulk-cut" type="button" disabled><span class="ic emo">🔄</span><span class="tx">Reset / Bulk / Cut<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="monitor-annuale" type="button" disabled><span class="ic emo">📡</span><span class="tx">Monitor annuale<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="monitor-peso" type="button" disabled><span class="ic emo">📡</span><span class="tx">Monitor peso<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="integratori" type="button" disabled><span class="ic emo">💊</span><span class="tx">Integratori<em>al passo 5</em></span></button>
+      </div>
+    </div>
+
+    <div class="gruppo apribile" data-gruppo="programmi">
+      <button class="etichetta" type="button" aria-expanded="true">Programmi<span class="chev"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5l4-4"/></svg></span></button>
+      <div class="voci">
+        <button class="voce" data-vista="overview-atleta" type="button"><span class="ic emo">🧭</span><span class="tx">Overview atleta</span></button>
+        <button class="voce" data-vista="pianificazione" type="button"><span class="ic emo">🗓️</span><span class="tx">Pianificazione</span></button>
+        <button class="voce spenta" data-vista="database-esercizi" type="button" disabled><span class="ic emo">📚</span><span class="tx">Database esercizi<em>prossima schermata</em></span></button>
+        <button class="voce spenta" data-vista="scheletri" type="button" disabled><span class="ic emo">🦴</span><span class="tx">Scheletri<em>prossima schermata</em></span></button>
+        <button class="voce spenta" data-vista="progressioni" type="button" disabled><span class="ic emo">⚗️</span><span class="tx">Progressioni<em>prossima schermata</em></span></button>
+        <button class="voce attiva" data-vista="programma-1" type="button" aria-current="page"><span class="ic emo">🗂️</span><span class="tx">Programma attivo · in corso<em id="nomeProgrammaAttivo">in lettura dai tuoi dati</em></span></button>
+        <button class="voce spenta" data-vista="riepilogo-volume" type="button" disabled><span class="ic emo">📊</span><span class="tx">Riepilogo volume<em>prossima schermata</em></span></button>
+        <button class="voce spenta" data-vista="specializzazione" type="button" disabled><span class="ic emo">🎯</span><span class="tx">Specializzazione<em>prossima schermata</em></span></button>
+        <button class="voce spenta" data-vista="curve-forza" type="button" disabled><span class="ic emo">📈</span><span class="tx">Curve di forza<em>prossima schermata</em></span></button>
+        <button class="voce" data-vista="archivio" type="button"><span class="ic emo">🗂️</span><span class="tx">Archivio programmi</span></button>
+      </div>
+    </div>
+
+    <div class="gruppo apribile" data-gruppo="studio">
+      <button class="etichetta" type="button" aria-expanded="true">Studio<span class="chev"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5l4-4"/></svg></span></button>
+      <div class="voci">
+        <button class="voce spenta" data-vista="study-time" type="button" disabled><span class="ic emo">🎓</span><span class="tx">Study time<em>al passo 5</em></span></button>
+        <button class="voce spenta" data-vista="impostazioni" type="button" disabled><span class="ic emo">⚙️</span><span class="tx">Impostazioni<em>prossima schermata</em></span></button>
+      </div>
+    </div>
+
+    <button id="bottoneTema" class="bottone-secondario" type="button">Tema chiaro / scuro</button>
+    <div class="lettura">sola lettura · nessun byte scritto<br>B legge i dati di A, e li dichiara</div>
+    <div class="stato-lettura">
+      <div class="titoletto"><span class="spia" aria-hidden="true"></span>sola lettura</div>
+      <ul>
+        <li><span aria-hidden="true">01</span><span>legge i dati di A</span></li>
+        <li><span aria-hidden="true">02</span><span>confronta i conteggi</span></li>
+        <li><span aria-hidden="true">03</span><span>non scrive un byte</span></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="area maino">
+    <div class="nastro">
+      <b id="nastroProgramma">Programma attivo</b><span class="sep">/</span>
+      <span id="nastroSotto">in lettura dai tuoi dati veri</span>
+      <span class="sep">/</span><span class="ok">nessun numero inventato</span>
+      <span class="fr" id="oraLettura"></span>
+    </div>
+
+    <div class="azioni">
+      <button id="bottoneRicarica" class="azione" type="button">Ricarica</button>
+      <button id="bottoneEsci" class="bottone-secondario" type="button">Esci</button>
+      <a class="bottone-secondario" href="./conteggi.html">Conteggi e backup</a>
+      <span id="messaggioErrore" class="errore"></span>
+    </div>
+
+    <div id="vistaLogin" class="carta accesso" hidden>
+      <h2>Accesso</h2>
+      <p class="riga">Entra con Google, come nell'app A. B legge soltanto.</p>
+      <button id="bottoneEntra" class="azione" type="button">Entra con Google</button>
+      <p class="fonte">Stesso progetto Firebase, stesso dominio: nessun dato passa dai file.</p>
+    </div>
+
+    <div id="vistaDash" hidden>
+      <p id="statoUtente" class="lettura copia-dati"></p>
+      <div id="griglia" class="ck"></div>
+    </div>
+
+    <div id="vistaOverview" hidden>
+      <div id="overviewGriglia" class="ck"></div>
+    </div>
+    <div id="vistaPianificazione" hidden>
+      <div id="pianificazioneGriglia" class="ck"></div>
+    </div>
+    <div id="vistaProgramma1">
+      <div id="programma1Griglia" class="ck"></div>
+    </div>
+    <div id="vistaArchivio" hidden>
+      <div id="archivioElenco"></div>
+      <div id="archivioScheda" hidden>
+        <button id="archivioIndietro" class="bottone-secondario pr-arch-indietro" type="button">← Tutti i programmi</button>
+        <div id="archivioDettaglio" class="ck"></div>
+      </div>
+    </div>
+
+    <footer class="fondo">
+      <span>B legge A</span><span class="punto" aria-hidden="true"></span>
+      <span>nessuna scrittura, mai</span><span class="punto" aria-hidden="true"></span>
+      <span>dato mancante = «non registrato»</span>
+    </footer>
+  </main>
+</div>
+<div id="divaContenitore" class="diva" data-avvio-b></div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
