@@ -23,6 +23,7 @@ import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
+import { seduteLogbook } from "../comune/logbook.js";
 
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
@@ -114,11 +115,64 @@ function ripulisciNastroDestro(doc) {
   fr.textContent = t.replace('<span data-lb-kpi="ultima">', "").replace("</span>", "");
 }
 
+/* Passo 3c — i filtri del Logbook: accesi dove il campo vero c'è, spenti con
+ * «non registrato» dove non c'è; la dichiarazione finisce nella carta. */
+function notaLogbook(doc, lb) {
+  const d = lb.dichiarazioni || {};
+  const righe = [];
+  const fprog = doc.getElementById("lb-fprog");
+  if (fprog) {
+    if (d.conProgramma > 0) {
+      righe.push("Programma: derivato dal codice della scheda, e solo quando quel codice appartiene a un programma solo (" + d.conProgramma + " sedute su " + d.tenute + "); per le altre " + d.senzaProgramma + " il codice manca o ricorre in più programmi e restano \u00ab\u2014\u00bb");
+    } else {
+      fprog.disabled = true;
+      const o0 = fprog.options && fprog.options[0];
+      if (o0) o0.textContent = "Programma: non registrato";
+      righe.push("Programma: non registrato \u2014 le sedute non portano il programma e il codice della scheda ricorre in più programmi: attribuirlo sarebbe inventare");
+    }
+  }
+  const fmostra = doc.getElementById("lb-fmostra");
+  if (fmostra) {
+    if (d.haStato) {
+      righe.push("Stato: acceso sul campo vero (" + (d.statiValori || []).join(", ") + ")");
+    } else {
+      fmostra.disabled = true;
+      const o0 = fmostra.options && fmostra.options[0];
+      if (o0) o0.textContent = "Stato: non registrato";
+      righe.push("Stato: non registrato \u2014 le sedute lette non portano né status né done");
+    }
+  }
+  const ffonte = doc.getElementById("lb-ffonte");
+  if (ffonte) {
+    if (d.haFonte) {
+      righe.push("Provenienza: acceso sul campo source (" + (d.fontiValori || []).join(", ") + "); le altre voci del tendine del v31 restano ma non trovano sedute");
+    } else {
+      ffonte.disabled = true;
+      const o0 = ffonte.options && ffonte.options[0];
+      if (o0) o0.textContent = "Fonte: non registrato";
+      righe.push("Provenienza: non registrato \u2014 le sedute lette non portano source");
+    }
+  }
+  if (d.conJournal === 0) righe.push("Journal: non collegato \u2014 il diario non è nella sottoraccolta sedute letta da B");
+  const info = d.documenti != null && (d.senzaId || d.duplicati) ? " Letti " + d.tenute + " documenti validi su " + d.documenti + " (" + d.senzaId + " senza id, " + d.duplicati + " doppioni): come A, gli scartati non contano." : "";
+  const nota = doc.getElementById("lb-nota-b");
+  if (nota && righe.length) {
+    nota.textContent = "Passo 3c \u2014 " + d.tenute + " sedute lette dal cloud in sola lettura (il seme di esempio del v31 ne aveva 120). " + righe.join(". ") + "." + info;
+    nota.hidden = false;
+  }
+}
+
 export async function avvia(doc, win) {
   const config = win.BD_B;
   const sdk = win.firebase;
   const carta = montaCartaAccesso(doc);
   ripulisciNastroDestro(doc);
+  /* Passo 3c: «Importa backup» e «Dimentica» restano visibili ma spenti:
+   * il logbook della coach è in sola lettura. */
+  const btnImportaLb = doc.getElementById("lb-importa");
+  const btnDimenticaLb = doc.getElementById("lb-dimentica");
+  if (btnImportaLb) btnImportaLb.disabled = true;
+  if (btnDimenticaLb) btnDimenticaLb.disabled = true;
   doc.addEventListener("click", (e) => {
     const v = e.target && e.target.closest ? e.target.closest(".voce[data-vista]") : null;
     if (v) aggiornaStriscia(doc, v.getAttribute("data-vista"));
@@ -167,6 +221,17 @@ export async function avvia(doc, win) {
     /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri. */
     const corpoArchivio = doc.getElementById("archivio-corpo");
     if (corpoArchivio) renderArchivio(doc, corpoArchivio, { righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }) });
+    /* Il Logbook (passo 3c): le sedute vere dentro la carta del v31, nella
+     * stessa forma del seme tolto; niente scritture, controlli spenti. */
+    const lb = seduteLogbook(sedute.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });
+    if (win.BD_LB) {
+      win.BD_LB_SEED = { fonte: lb.fonte, sedute: lb.sedute };
+      win.BD_LB._prende(win.BD_LB_SEED);
+      win.BD_LB.tutto();
+      const ovSed = doc.getElementById("ov-sed");
+      if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
+    }
+    notaLogbook(doc, lb);
   };
 
   ascoltaStato(auth, (utente) => {
