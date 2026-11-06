@@ -9,12 +9,12 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 
 ## Le righe cambiate (numeri del file attuale, desktop/index.html)
 
-- righe 1487: La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
-- righe 3684: La sezione Programma 1 apre il contenitore dinamico #programma-attivo e nasconde l'editor statico dentro #programma-strumenti (hidden): i dati di esempio non si vedono più; il resto del blocco resta nel file, intatto.
-- righe 3946: Chiusura di #programma-strumenti prima della sezione Programma 2 (la seconda </div> è la nuova).
-- righe 6535: La mappa delle etichette del menu allinea la voce del programma al nuovo nome.
-- righe 7936: Regola di a-capo solo per la cella Recupero (.rec) e il nome esercizio (.ese-name) dentro la tabella del Programma 1: overflow-wrap:anywhere per le stringhe senza spazi (es. eccentrica_controllata_e_poi_esplosiva).
-- righe 10777-10781: Prima di </body>: carico di app-config-b.js, dell'SDK Firebase compat 10.12.5 (app, auth, firestore) e del modulo desktop/app-v31.js (login + lettura in sola lettura).
+: La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
+: La sezione Programma 1 apre il contenitore dinamico #programma-attivo e nasconde l'editor statico dentro #programma-strumenti (hidden): i dati di esempio non si vedono più; il resto del blocco resta nel file, intatto.
+: Chiusura di #programma-strumenti prima della sezione Programma 2 (la seconda </div> è la nuova).
+: La mappa delle etichette del menu allinea la voce del programma al nuovo nome.
+: Regola di a-capo solo per la cella Recupero (.rec) e il nome esercizio (.ese-name) dentro la tabella del Programma 1: overflow-wrap:anywhere per le stringhe senza spazi (es. eccentrica_controllata_e_poi_esplosiva).
+: Prima di </body>: carico di app-config-b.js, dell'SDK Firebase compat 10.12.5 (app, auth, firestore) e del modulo desktop/app-v31.js (login + lettura in sola lettura).
 
 Ultimo aggiornamento: passo 3a (5 novembre 2026).
 
@@ -28,22 +28,22 @@ dal diff vero). Le correzioni stanno nei due file che il v31 non ha.
 
 ### desktop/app-v31.js — tre aggiunte
 1. **Striscia in alto (il nastro).** Nel file la striscia è scritta fissa per
-   la Dashboard («Dashboard / readiness, carico, questionari…») e nessun codice
-   del v31 la aggiorna al cambio pagina; il pezzo destro (`#fr-nastro`) viene
-   scritto con `textContent` su una stringa che contiene un tag `<span>`, che
-   il browser stampa come testo. Il vecchio B teneva il nastro con il suo
-   app.js, per pagina: per questo prima sembrava giusta. Ora il nastro si
-   aggiorna al cambio pagina: titolo = testo della voce di menu del v31 (per i
-   Programmi: «Programma attivo · in corso»), sottotitolo per le pagine previste
-   = il testo che usava il vecchio B (per i Programmi: «programma attivo · il
-   documento del programma e i logbook»), per le altre pagine il sottotitolo
-   della Dashboard sparisce invece di restare appiccicato; la voce «dati veri ·
-   nessun numero inventato» resta. Il pezzo destro perde il markup e resta testo
-   semplice, con lo stesso contenuto calcolato dal v31.
+ la Dashboard («Dashboard / readiness, carico, questionari…») e nessun codice
+ del v31 la aggiorna al cambio pagina; il pezzo destro (`#fr-nastro`) viene
+ scritto con `textContent` su una stringa che contiene un tag `<span>`, che
+ il browser stampa come testo. Il vecchio B teneva il nastro con il suo
+ app.js, per pagina: per questo prima sembrava giusta. Ora il nastro si
+ aggiorna al cambio pagina: titolo = testo della voce di menu del v31 (per i
+ Programmi: «Programma attivo · in corso»), sottotitolo per le pagine previste
+ = il testo che usava il vecchio B (per i Programmi: «programma attivo · il
+ documento del programma e i logbook»), per le altre pagine il sottotitolo
+ della Dashboard sparisce invece di restare appiccicato; la voce «dati veri ·
+ nessun numero inventato» resta. Il pezzo destro perde il markup e resta testo
+ semplice, con lo stesso contenuto calcolato dal v31.
 2. **Fase.** Se il campo del documento ripete il nome del programma non è una
-   fase: non viene mostrato e il campo resta a «non registrato». La pagina di
-   diagnosi (sotto) dice quali nomi usa davvero il documento; quando li
-   sapremo si collega il campo giusto.
+ fase: non viene mostrato e il campo resta a «non registrato». La pagina di
+ diagnosi (sotto) dice quali nomi usa davvero il documento; quando li
+ sapremo si collega il campo giusto.
 3. Niente altro: login, lettura e render restano quelli del passo 3a.
 
 ### desktop/diagnosi.html — TEMPORANEA, da togliere
@@ -60,3 +60,5 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - Elenco TUT/REC (pagine temporanee, come diagnosi): nuovo modulo comune/tut-rec.js con la regola dichiarata (REC in colonna solo se recupero vero: cifre, intervalli, min/sec; TUT solo se vuoto o schema di cifre con separatori) e nuova pagina desktop/elenco-tut-rec.html che elenca le celle da spostare col pulsante Copia elenco. La pagina elenco va tolta dal sito appena Alice approva; poi la stessa regola entra nella vista, solo a schermo.
 - Regola TUT/REC nella vista (06/11, cambio d'istruzioni di Alice: niente elenco da approvare, la regola entra in codice per tutte le schede; solo a schermo, i dati non si toccano). Regola esatta, in comune/tut-rec.js e usata da comune/vista-programma.js: REC resta in colonna se è vuoto, «—», o fatto solo di cifre con virgole/punti, trattini, apostrofi/primi, barre, due punti, spazi e opzionali sec/secondi/min/minuti — serve almeno una cifra (es. «2», «2-3'», «3-4'», «90 sec», «120-180 sec», «1,30'»); TUT resta se è vuoto, «—», o uno schema di cifre con i separatori - / x (es. «3-1-1-0», «2/0/1/0», «30X1», «3010»). Tutto il resto (le frasi di coach) si mostra in Descr./Setup su una riga nuova con «REC: » / «TUT: » davanti e in colonna resta «—». Il recupero lungo si mostra tagliato a 8 caratteri con «…» e il valore completo nel Title del mouse, così i bottoni −/+ non gli finiscono sopra. I nomi degli esercizi si mostrano senza trattino basso e con l'iniziale maiuscola («lat_machine_triangolo» → «Lat machine triangolo»): solo a schermo, documento e chiavi del logbook restano com'erano (comune/nomi-esercizi.js). La pagina elenco-tut-rec.html non serve più per l'approvazione: si toglierà dal sito al prossimo push, se Alice è d'accordo.
 - Regola nomePulito dappertutto (06/11, Alice): il trattino basso non si vede in NESSUN punto dell'app (esercizi, schede, programmi, logbook, archivio, tendine). Una sola funzione, nomePulito in comune/nome-pulito.js (al posto di nomi-esercizi.js, tolto): sostituisce «_» con uno spazio, taglia gli spazi alle estremità e mette la maiuscola alla prima lettera. Usata in tutte le schermate dove si disegna un nome o un testo preso dai dati: vista-programma (nome esercizio, nota, nome scheda, focus, note scheda, programma, descrizione, messaggio, Fase nel tendina, stato, serie/reps, testi spostati REC:/TUT:, Title del recupero), vista-archivio, vista-dashboard, vista-overview, vista-pianificazione e la voce di menu in app-v31; dentro campo() la pulizia vale per ogni valore mostrato. Regola ferma: solo il testo mostrato — il valore vero resta intatto nei dati e nei confronti col logbook (chiavePrestazione e ultimaVolta usano l'originale). Guardia in suite (tests/44): scansione di tutte le vista-*.js più app-v31.js che fallisce se una riga usa .nome/.nota/.note/.descrizione/.messaggio/.focus/.fase/.stato senza nomePulito (valgono le sole condizioni, le chiavi di ricerca e i confronti), più la prova su schermo: la scheda renderizzata con trattini bassi in ogni testo non ne mostra nessuno e l'Ultima resta legata al nome vero. Ogni schermata nuova vista-* entra nella guardia da sola; il suo test deve portare testi con «_».
+- Passo 3b, Archivio programmi come il v31 (06/11, Alice: dati veri in sola lettura, controlli spenti, tabella del v31). Righe cambiate: nella sezione pag-archivio di desktop/index.html il corpo statico della tabella pg-tab (le cinque righe di esempio del backup) e’ sostituito da <tbody id="archivio-corpo">, e la frase del v-testo che rimandava al backup del 30/10 ora dice «calcolati dai dati veri letti in sola lettura»; nel blocco Fase B2 (che resta per le Curve di forza) tolti la chiave «prog» di DATI, la variabile SCHEDE, la variabile Pr e il ciclo che riempiva i data-lb-pg: l’Archivio non prende più numeri dal backup. comune/vista-archivio.js riscritto: elencoArchivio comprende TUTTI i programmi letti, attivo compreso (più recente in cima), con attivo/schede/esercizi/serie; renderArchivio disegna le righe della tabella pg-tab nel corpo #archivio-corpo, attivo evidenziato «(attiva)» accanto al nome, e i data-lb-pg rimasti nella Nota del v31 diventano «non registrato» invece di restare con i puntini; senza programmi letti una riga sola lo dice. desktop/app-v31.js: import di elencoArchivio/renderArchivio e, nel leggi(), render dell’archivio in #archivio-corpo con attivoId e schedeV2. Definizioni dichiarate: Schede = tutte le schede del programma lette (archiviate comprese); Esercizi = somma degli esercizi di quelle schede; Serie = somma delle serie della settimana 1 di quegli esercizi, e se anche una sola non si legge la colonna è «non registrato»; Sedute e Ultima = «non registrato» per tutti, perché le sedute lette portano data, codice ed esercizi ma non il programma a cui appartenevano: il collegamento non è nei dati e non si deduce dai codici. Nomi sempre con nomePulito, valori veri intatti nei documenti. Test 45 nuovo.
+- Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo 3b: - righe 1487 · - righe 3684 · - righe 3946 · - righe 4655 · - righe 4659 · - righe 6509 · - righe 7910 · - righe 10671 · - righe 10673 · - righe 10675-10674 · - righe 10743-10747

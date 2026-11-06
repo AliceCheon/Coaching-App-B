@@ -22,6 +22,7 @@ import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, programmaAttivo } fr
 import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
+import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
@@ -163,6 +164,9 @@ export async function avvia(doc, win) {
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, rp);
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
+    /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri. */
+    const corpoArchivio = doc.getElementById("archivio-corpo");
+    if (corpoArchivio) renderArchivio(doc, corpoArchivio, { righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }) });
   };
 
   ascoltaStato(auth, (utente) => {
