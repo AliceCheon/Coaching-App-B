@@ -81,3 +81,20 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - La copia e' una **fotografia**, non una sincronizzazione: dopo aver scritto, la pagina rilegge B, confronta id per id e contenuto, scrive il documento `fotografia` nella radice della zona B con la data in chiaro («Fotografia del 7 novembre 2026 alle 12:39») e una voce nel registro; la nota dentro il documento dice che le sedute registrate dopo non arrivano da sole.
 - Guardie nuove: `tests/47` (la zona B, 8 controlli) e `tests/48` (il piano di copia e i due pulsanti, 8 controlli, compreso quello che vuole gli esercizi nel piano e la copia `disabled` nell'HTML). `tests/02` e' stata modificata: l'esenzione dai verbi di scrittura vale per **un solo file**, e le due forzature che la guardia vieta (il flag CSS di priorita massima e la chiave del seme di dati) restano vietate anche li'.
 - Rischio residuo, dichiarato e non nascosto: le regole Firestore del progetto sono ancora `allow read, write: if request.auth != null` per ogni documento. Le regole non distinguono app A e app B: il «no» a B sta nel codice e nella suite, non nel server. Il passo «regole sicure» (elenco di TUTTI i percorsi di A e di B, poi regole «solo il proprietario» con default negato) viene dopo, come concordato.
+
+## Passo 8 — le schermate leggono dalla zona B (7/11/2026)
+
+Fonte di Programma attivo, Archivio e Logbook: `bdB_atleti/{uid}`
+(`programmi`, `schede`, `sedute`, `esclusioni`). Nessuna di queste schermate
+legge piu' `barbellDivaAccounts`; la sola pagina che continua a leggere A e' la
+pagina Copia, che serve a copiare.
+
+- `comune/lettura-b.js` (nuovo): `programmiDaDocumenti`, `seduteDaDocumenti`,
+  `schedeDaDocumenti`, `statoZonaB`, `leggiZonaBCompleta`. Non scrive niente:
+  legge passando da `scritture-b.js`.
+- `desktop/app-v31.js`: `leggi()` chiede una sola cosa a `leggiZonaBCompleta` e
+  si ferma se `stato.completa` e' falso. `mostraZonaBIncompleta` scrive il
+  messaggio in `#programma-attivo`, `#archivio-corpo` e `#lb-nota-b`, e svuota
+  il Logbook invece di lasciargli il seme di esempio. Nessun ripiego su A.
+- I numeri non cambiano: 126 sedute senza esclusioni, 121 con le cinque
+  esclusioni di Alice (`tests/54-fonte-b.test.mjs`, su dati di prova).

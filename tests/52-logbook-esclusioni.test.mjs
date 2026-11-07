@@ -116,7 +116,7 @@ test("52.6 la data di esclusione non c'entra: conta l'id, cosi' una data sbaglia
 
 test("52.7 la pagina dell app legge le esclusioni dalla zona B e le applica prima del Logbook", () => {
   const pagina = readFileSync(join(radice, "desktop", "app-v31.js"), "utf8");
-  assert.ok(pagina.indexOf("leggiEsclusioni(db, utente.uid)") >= 0, "app-v31 non legge le esclusioni della zona B");
+  assert.ok(pagina.indexOf("zona.esclusioni") >= 0, "app-v31 non prende le esclusioni dalla zona B");
   assert.ok(pagina.indexOf("applicaEsclusioni(") >= 0, "app-v31 non applica le esclusioni");
   assert.ok(pagina.indexOf("seduteLogbook(sedutePulite.sedute") >= 0, "il Logbook non riceve le sedute filtrate");
 });

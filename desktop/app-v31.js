@@ -18,13 +18,12 @@
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
-import { leggiDocumentoAtleta, leggiSedute, leggiProgrammi, programmaAttivo } from "../comune/lettura-dati.js";
-import { leggiSchedeProgrammi } from "../comune/schede-v2.js";
+import { programmaAttivo } from "../comune/lettura-dati.js";
+import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
-import { leggiEsclusioni } from "../comune/scritture-b.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
@@ -166,6 +165,44 @@ function notaLogbook(doc, lb) {
   }
 }
 
+/* La zona B vuota o incompleta si dice a parole, nei tre posti che mostrano
+ * programmi, archivio e sedute. Il Logbook viene azzerato davvero (non
+ * lasciato al seme di esempio del v31): un numero inventato sarebbe peggio di
+ * un numero assente. L'aspetto delle schermate non cambia: questo riquadro si
+ * vede solo quando non c'e' niente da mostrare. */
+function mostraZonaBIncompleta(doc, win, avviso) {
+  const testo = avviso || "La zona B non e' pronta: fai prima la copia.";
+  const contenitore = doc.querySelector("#programma-attivo");
+  if (contenitore) {
+    contenitore.innerHTML = "";
+    const carta = doc.createElement("div");
+    carta.setAttribute("style", "background:var(--card,#181822);border:1px solid var(--pink,#f06292);border-radius:18px;padding:20px 22px;color:var(--text,#eee);font-size:14px;line-height:1.5");
+    carta.textContent = testo;
+    contenitore.appendChild(carta);
+  }
+  const nomeVoce = doc.querySelector("#nomeProgrammaAttivo");
+  if (nomeVoce) nomeVoce.textContent = "nessun programma letto";
+  const corpoArchivio = doc.getElementById("archivio-corpo");
+  if (corpoArchivio) {
+    corpoArchivio.innerHTML = "";
+    const riga = doc.createElement("tr");
+    const cella = doc.createElement("td");
+    cella.setAttribute("colspan", "8");
+    cella.textContent = testo;
+    riga.appendChild(cella);
+    corpoArchivio.appendChild(riga);
+  }
+  if (win && win.BD_LB) {
+    win.BD_LB_SEED = { fonte: "zona B non ancora copiata", sedute: [] };
+    win.BD_LB._prende(win.BD_LB_SEED);
+    win.BD_LB.tutto();
+    const ovSed = doc.getElementById("ov-sed");
+    if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
+  }
+  const nota = doc.getElementById("lb-nota-b");
+  if (nota) { nota.textContent = testo; nota.hidden = false; }
+}
+
 export async function avvia(doc, win) {
   const config = win.BD_B;
   const sdk = win.firebase;
@@ -199,16 +236,25 @@ export async function avvia(doc, win) {
   });
 
   const leggi = async (utente) => {
-    const radice = await leggiDocumentoAtleta(db, utente.uid);
-    const sedute = await leggiSedute(db, utente.uid);
-    /* Le esclusioni decise da Alice vivono in bdB_atleti/{uid}/esclusioni, non
-     * nelle sedute di A (li' tornano indietro). Si leggono QUI e si applicano
-     * prima di qualunque schermata: Logbook, riepilogo del programma, card
-     * «Tutto insieme» (che si alimenta dalle chips del Logbook). */
-    const esclusioni = await leggiEsclusioni(db, utente.uid);
+    /* Passo 8 — la fonte e' la zona B (bdB_atleti), non piu' i dati di A.
+     * Le letture da «barbellDivaAccounts» restano solo nella pagina Copia, che
+     * serve a copiare. Se la zona e' vuota o manca un pezzo si dichiara qui
+     * sotto e non si mostra niente: nessun ripiego silenzioso su A, perche'
+     * mostrare i numeri di A dicendo che sono di B e' peggio di un vuoto. */
+    const zona = await leggiZonaBCompleta(db, utente.uid);
+    if (!zona.esito.completa) {
+      mostraZonaBIncompleta(doc, win, zona.esito.avviso);
+      return;
+    }
+    const sedute = zona.sedute;
+    /* Le esclusioni decise da Alice vivono in bdB_atleti/{uid}/esclusioni:
+     * arrivano con la zona B e si applicano prima di qualunque schermata.
+     * Logbook, riepilogo del programma e card «Tutto insieme» (che si alimenta
+     * dalle chips del Logbook) vedono le stesse sedute. */
+    const esclusioni = zona.esclusioni;
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
-    const programmi = await leggiProgrammi(db, utente.uid, radice);
-    const schedeV2 = await leggiSchedeProgrammi(db, utente.uid);
+    const programmi = { programmi: zona.programmi };
+    const schedeV2 = zona.schedeV2;
     const attivo = programmaAttivo(programmi.programmi || []);
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
