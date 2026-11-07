@@ -253,3 +253,47 @@ export function seduteNelBloccoLocale(sedute) {
         "): il suo conto piu' basso non si spiega con la fusione delle righe Excel. Resta la sua lista in memoria, scritta al salvataggio."
   };
 }
+
+/* Le sedute da mostrare, tolte quelle escluse da Alice.
+ *
+ * Questa e' la funzione che chiude il buco: le sedute di A NON hanno
+ * `deletedAt` (in A tornano indietro, e A non si tocca), quindi l'unico
+ * posto dove vive l'esclusione e' bdB_atleti/{uid}/esclusioni. Si confronta
+ * per id: la data scritta nel motivo non conta, perche' una data sbagliata
+ * non deve salvare una seduta.
+ *
+ * Non muta niente: ritorna una lista nuova, e dichiara quante ne ha tolte,
+ * quali, e quali esclusioni non hanno trovato la loro seduta in A. */
+export function applicaEsclusioni(sedute, esclusioni) {
+  const elenco = (Array.isArray(sedute) ? sedute : []).filter((s) => s && typeof s === "object");
+  const documenti = Array.isArray(esclusioni) ? esclusioni : [];
+  const idEsclusi = [];
+  documenti.forEach((e) => {
+    const dati = (e && e.dati) || e || {};
+    const id = testo((e && e.id) || dati.idSeduta);
+    if (id && idEsclusi.indexOf(id) === -1) idEsclusi.push(id);
+  });
+
+  const tenute = [];
+  const escluseId = [];
+  elenco.forEach((s) => {
+    const id = testo(primoNonNull(s.id, s.workoutProSessionId));
+    if (id && idEsclusi.indexOf(id) !== -1) {
+      if (escluseId.indexOf(id) === -1) escluseId.push(id);
+      return;
+    }
+    tenute.push(s);
+  });
+
+  const senzaCorrispondenza = idEsclusi.filter((id) => escluseId.indexOf(id) === -1);
+  const escluse = escluseId.length;
+  return {
+    sedute: tenute,
+    escluse: escluse,
+    escluseId: escluseId,
+    senzaCorrispondenza: senzaCorrispondenza,
+    dichiarazione: escluse === 0
+      ? "nessuna seduta esclusa da Alice"
+      : escluse + (escluse === 1 ? " seduta esclusa da Alice" : " sedute escluse da Alice")
+  };
+}

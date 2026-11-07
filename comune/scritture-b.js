@@ -91,6 +91,14 @@ export function leggiZonaB(db, uid, sottoraccolta) {
     })));
 }
 
+
+/* Le esclusioni decise da Alice, in sola lettura: le usano il Logbook e ogni
+ * schermata che mostra sedute, cosi' una seduta esclusa non ricompare solo
+ * perche' qualcuno legge da A. */
+export function leggiEsclusioni(db, uid) {
+  return leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => []);
+}
+
 export function leggiFotografia(db, uid) {
   return radiceB(db, uid)
     .get()

@@ -24,6 +24,8 @@ import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
+import { leggiEsclusioni } from "../comune/scritture-b.js";
+import { applicaEsclusioni } from "../comune/esclusioni.js";
 
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
@@ -154,6 +156,7 @@ function notaLogbook(doc, lb) {
     }
   }
   if (d.conJournal === 0) righe.push("Journal: non collegato \u2014 il diario non è nella sottoraccolta sedute letta da B");
+  righe.push("Esclusi: " + (d.escluseDaAlice || 0) + (d.escluseDaAlice === 1 ? " seduta" : " sedute") + " escluse da Alice, lette dalla sottoraccolta esclusioni di B: la seduta resta in A, sparisce solo qui");
   const info = d.documenti != null && (d.senzaId || d.duplicati) ? " Letti " + d.tenute + " documenti validi su " + d.documenti + " (" + d.senzaId + " senza id, " + d.duplicati + " doppioni): come A, gli scartati non contano." : "";
   const nota = doc.getElementById("lb-nota-b");
   if (nota && righe.length) {
@@ -197,13 +200,19 @@ export async function avvia(doc, win) {
   const leggi = async (utente) => {
     const radice = await leggiDocumentoAtleta(db, utente.uid);
     const sedute = await leggiSedute(db, utente.uid);
+    /* Le esclusioni decise da Alice vivono in bdB_atleti/{uid}/esclusioni, non
+     * nelle sedute di A (li' tornano indietro). Si leggono QUI e si applicano
+     * prima di qualunque schermata: Logbook, riepilogo del programma, card
+     * «Tutto insieme» (che si alimenta dalle chips del Logbook). */
+    const esclusioni = await leggiEsclusioni(db, utente.uid);
+    const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = await leggiProgrammi(db, utente.uid, radice);
     const schedeV2 = await leggiSchedeProgrammi(db, utente.uid);
     const attivo = programmaAttivo(programmi.programmi || []);
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
     const nomeVoce = doc.querySelector("#nomeProgrammaAttivo");
-    const rp = riepilogoProgramma(attivo ? attivo.programma : null, sedute.sedute, {
+    const rp = riepilogoProgramma(attivo ? attivo.programma : null, sedutePulite.sedute, {
       indice: 0,
       totaleProgrammi: (programmi.programmi || []).length,
       schedeV2,
@@ -223,7 +232,7 @@ export async function avvia(doc, win) {
     if (corpoArchivio) renderArchivio(doc, corpoArchivio, { righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }) });
     /* Il Logbook (passo 3c): le sedute vere dentro la carta del v31, nella
      * stessa forma del seme tolto; niente scritture, controlli spenti. */
-    const lb = seduteLogbook(sedute.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });
+    const lb = seduteLogbook(sedutePulite.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), escluse: sedutePulite.escluse, infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });
     if (win.BD_LB) {
       win.BD_LB_SEED = { fonte: lb.fonte, sedute: lb.sedute };
       win.BD_LB._prende(win.BD_LB_SEED);

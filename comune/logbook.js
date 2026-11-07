@@ -259,9 +259,17 @@ export function seduteLogbook(sedute, opzioni) {
 
   out.sort((a, b) => chiaveData(b.d).localeCompare(chiaveData(a.d)) || (Number(b.id) || 0) - (Number(a.id) || 0));
 
+  /* Le esclusioni decise da Alice non si deducono qui: arrivano gia' applicate
+   * (applicaEsclusioni) e il loro numero si dichiara, cosi' una seduta che
+   * manca ha sempre un nome e un perche'. */
+  const escluseDaAlice = Number(o.escluse) || 0;
   const dichiarazioni = {
     lette,
     cancellate,
+    escluseDaAlice,
+    dichiarazioneEsclusi: escluseDaAlice === 0
+      ? "nessuna seduta esclusa da Alice"
+      : escluseDaAlice + (escluseDaAlice === 1 ? " seduta esclusa da Alice" : " sedute escluse da Alice"),
     doppioniContenuto,
     tenute: out.length,
     senzaData,
