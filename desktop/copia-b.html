@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barbell Diva B · copia nella zona B</title>
+<link rel="stylesheet" href="../comune/tema-b.css">
+<style>
+  body { margin: 0; padding: 24px 18px 60px; background: #090918; color: #f2eefb;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; color: #c9b8ee; letter-spacing: .04em; text-transform: uppercase; }
+  p { margin: 8px 0; }
+  .tenue { color: #a99fc4; font-size: 13px; }
+  .riquadro { background: #131324; border: 1px solid #2a2745; border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+  button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 1px solid #4a3f7a;
+           background: #2b2150; color: #f2eefb; cursor: pointer; margin: 6px 6px 6px 0; }
+  button:disabled { opacity: .45; cursor: default; }
+  #copia { background: #6d3fa8; border-color: #8f5fd0; font-weight: 600; }
+  progress { width: 100%; height: 10px; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #2a2745; vertical-align: top; }
+  th { color: #a99fc4; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .ok { color: #6ee7a8; }
+  .errore { color: #ff9aa2; }
+  .pronto { color: #c9b8ee; }
+  code { background: #131324; padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Copia nella zona B</h1>
+  <p class="tenue">Legge i dati veri di A (sola lettura) e li copia in <code>bdB_atleti/{uid}</code>, la zona di B.
+  Una fotografia: le sedute registrate dopo non arrivano qui da sole.</p>
+
+  <p>Collegato come: <strong id="chi">verifico…</strong> · uid <code id="uid">—</code></p>
+  <button id="entra">Entra con Google</button>
+  <button id="esci" hidden>Esci</button>
+
+  <div id="corpo" hidden>
+    <h2>1 · Cosa c'è in A</h2>
+    <div class="riquadro" id="conteggi-a">leggo…</div>
+    <p class="tenue" id="esclusi"></p>
+    <p class="tenue" id="radice"></p>
+
+    <h2>2 · Copia</h2>
+    <button id="copia" disabled>Copia in B</button>
+    <progress id="avanzamento" value="0" max="1"></progress>
+    <p id="stato" class="tenue"></p>
+
+    <h2>3 · Confronto finale</h2>
+    <table>
+      <thead>
+        <tr><th>Famiglia</th><th>Atteso</th><th>Scritto in B</th><th>Esito</th><th>Dettaglio</th></tr>
+      </thead>
+      <tbody id="righe-confronto">
+        <tr><td colspan="5" class="tenue">nessuna copia eseguita in questa sessione</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4 · La fotografia</h2>
+    <p id="fotografia" class="riquadro">la data compare dopo la copia</p>
+    <p class="tenue">Se la riga qui sopra è vuota o vecchia, questa pagina non ha ancora copiato niente.</p>
+  </div>
+</main>
+
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script type="module" src="./copia-b.js"></script>
+</body>
+</html>

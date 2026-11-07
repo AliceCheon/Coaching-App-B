@@ -101,3 +101,37 @@ export function percorsoAmmesso(percorso, uid) {
   const ammessi = PERCORSI_LETTURA.map((p) => p.modello.replace("{uid}", uid));
   return ammessi.includes(percorso);
 }
+
+/* ---------- ZONA B (passo 4): la casa di B, separata dai dati di A ---------- */
+
+/* Il nome della raccolta radice di B: scritto QUI una volta sola. Ogni
+ * percorso di scrittura nasce da questo (guardia 47). Le raccolte di A
+ * (barbellDivaAccounts, nutritionPhotos, sessions) restano di sola lettura. */
+export const ZONA_B = "bdB_atleti";
+
+/* Sottoraccolte di B: elenco chiuso, nomi italiani. */
+export const SOTTO_B = Object.freeze({
+  programmi: "programmi",
+  schede: "schede",
+  esercizi: "esercizi",
+  sedute: "sedute",
+  registro: "registro"
+});
+
+/* Errore esplicito per qualunque scrittura fuori dalla zona B. */
+export class ErroreZonaNonAmmessa extends Error {
+  constructor(percorso) {
+    super("Percorso fuori dalla zona B (si scrive solo in " + ZONA_B + "): " + percorso);
+    this.name = "ErroreZonaNonAmmessa";
+    this.percorso = percorso;
+  }
+}
+
+/* Percorso testuale della zona B (per test e schermate). La scrittura vera
+ * passa da radiceB() in scritture-b.js. */
+export function percorsoB(uid, sottoraccolta, id) {
+  const parti = [ZONA_B, String(uid || "")];
+  if (sottoraccolta) parti.push(String(sottoraccolta));
+  if (id) parti.push(String(id));
+  return parti.join("/");
+}
