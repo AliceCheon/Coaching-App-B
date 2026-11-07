@@ -191,14 +191,14 @@ export function seduteLogbook(sedute, opzioni) {
   const fonti = [];
   const out = [];
 
-  /* La regola di A per intero: si scartano le sedute con `deletedAt` e si
-   * fondono i doppioni per id e per impronta di contenuto, esattamente come
-   * `deduplicateWorkoutSessions`. Il Logbook mostra quello che mostra A: non un
-   * documento in piu'. La copia in bdB_ resta invece fedele e non filtra nulla. */
+  /* La catena di A: si scartano le sedute con `deletedAt` e si tiene un solo
+   * documento per id. A non ha altri filtri di vista (r.14398 decide solo chi
+   * ha il cestino), quindi il Logbook mostra quello che mostra A. La copia in
+   * bdB_ resta fedele e non filtra nulla. */
   const perA = seduteSecondoA(sedute);
   const cancellate = perA.cancellate;
   const doppioniContenuto = perA.doppioniId;
-  perA.tenute.forEach((s) => {
+  perA.visibili.forEach((s) => {
     if (!s || typeof s !== "object") return;
     lette += 1;
     const d = dataItalianaDaInput(testo(s.dateInput) || testo(s.date));

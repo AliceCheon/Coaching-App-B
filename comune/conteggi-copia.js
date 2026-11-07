@@ -11,7 +11,7 @@
  * scritta a schermo, non nascosta.
  */
 
-import { seduteSecondoA } from "./regola-sedute-a.js";
+import { seduteSecondoA, confrontaElenchi } from "./regola-sedute-a.js";
 
 function valoreO(value, ripiego) {
   return value == null ? ripiego : value;
@@ -134,23 +134,25 @@ export function contaSedute(documenti) {
    * documenti letti, sedute distinte, di cui cancellate. */
   const chiavi = Object.keys(perId);
   const cancellate = chiavi.filter((k) => perId[k] && perId[k].deletedAt).length;
-  /* La regola di A per intero, non solo `deletedAt`: A fonde anche i doppioni
-   * per id e per impronta di contenuto (data + programma + scheda + esercizi,
-   * con tolleranza di 10 minuti). Il numero che A MOSTRA e' `secondoA`; gli
-   * altri restano perche' servono a spiegare la differenza, non a nasconderla. */
-  const perA = seduteSecondoA(elenco.map((d) => {
+  /* La catena vera di A, non solo `deletedAt`: scarta le cancellate e tiene un
+   * solo documento per id. La riga r.14398 di A non e' un filtro: attacca il
+   * cestino alle righe gia' disegnate. Quindi A mostra tutte le sedute vive e
+   * B fa lo stesso; `visibili` e' quel numero, non un totale aggiustato. */
+  const sedutePiatte = elenco.map((d) => {
     const dati = (d && d.dati) || {};
     return dati.session != null ? dati.session : dati;
-  }));
+  });
+  const perA = seduteSecondoA(sedutePiatte);
   return {
     documenti: elenco.length,
     valide: chiavi.length,
     valideNonCancellate: chiavi.length - cancellate,
     cancellate,
-    secondoA: perA.secondoA,
+    visibili: perA.distintePerId,
     doppioniId: perA.doppioniId,
-    ammesseAllaVista: perA.ammesseAllaVista,
-    escluseVista: perA.escluseVista,
+    conCestino: perA.conCestino,
+    senzaCestino: perA.senzaCestino,
+    elenco: sedutePiatte,
     senzaId,
     duplicate,
     primaData: date.length ? date[0] : null,
@@ -167,29 +169,34 @@ export function confrontoConRadice(conteggi, radice) {
   const pc = r.programCount == null || r.programCount === "" ? null : Number(r.programCount);
   const sedute = c.sedute || {};
   const programmi = c.programmi || {};
+  let sessioni = null;
+  if (sc != null && Number.isFinite(sc)) {
+    const qui = sedute.visibili != null
+      ? sedute.visibili
+      : (sedute.valideNonCancellate != null ? sedute.valideNonCancellate : sedute.valide);
+    const elencoDiA = r.training && Array.isArray(r.training.sessions) ? r.training.sessions : null;
+    const perId = confrontaElenchi(elencoDiA, sedute.elenco || []);
+    sessioni = {
+      dichiarato: sc,
+      letto: qui,
+      lettoGrezzo: sedute.valide,
+      valideNonCancellate: sedute.valideNonCancellate,
+      cancellate: sedute.cancellate || 0,
+      senzaCestino: (sedute.senzaCestino || []).length,
+      coincide: sc === qui,
+      differenza: qui - sc,
+      elencoDiA: perId.disponibile,
+      soloInElenco: perId.soloInElenco,
+      soloNeiDocumenti: perId.soloNeiDocumenti
+    };
+  }
   return {
-    sessioni: sc == null || !Number.isFinite(sc)
-      ? null
-      : (() => {
-          const perA = sedute.secondoA != null
-            ? sedute.secondoA
-            : (sedute.valideNonCancellate != null ? sedute.valideNonCancellate : sedute.valide);
-          return {
-            dichiarato: sc,
-            letto: perA,
-            lettoGrezzo: sedute.valide,
-            cancellate: sedute.cancellate || 0,
-            escluseVista: (sedute.escluseVista || []).length,
-            coincide: sc === perA,
-            differenza: perA - sc
-          };
-        })(),
+    sessioni,
     programmi: pc == null || !Number.isFinite(pc)
       ? null
       : { dichiarato: pc, letto: programmi.distinti, coincide: pc === programmi.distinti, differenza: programmi.distinti - pc }
   };
 }
-
 /* Righe della tabella a schermo. Una riga per famiglia, con quattro colonne:
  * cosa, quanto ne dichiara A, quanto ne legge B adesso, dove sta. La quinta
  * colonna (la zona nuova) arriva al passo 3 e per ora dice la verità: non
@@ -211,15 +218,16 @@ export function righeConteggi(letto) {
   if (p.documentiV1) partiProgrammi.push(p.documentiV1 + " v1");
 
   const vive = sed.valideNonCancellate != null ? sed.valideNonCancellate : sed.valide;
-  const perA = sed.secondoA != null ? sed.secondoA : vive;
+  const perA = sed.visibili != null ? sed.visibili : vive;
   const partiSedute = [
     "sedute valide (non cancellate): " + vive,
-    "valide secondo A: " + perA,
+    "sedute che A mostra: " + perA,
     "su " + sed.valide + (sed.valide === 1 ? " distinta letta" : " distinte lette"),
     "su " + sed.documenti + (sed.documenti === 1 ? " documento" : " documenti")
   ];
   if (sed.cancellate) partiSedute.push("di cui con cancellazione logica: " + sed.cancellate);
-  if (sed.escluseVista && sed.escluseVista.length) partiSedute.push("non ammesse alla vista di A: " + sed.escluseVista.length);
+  if (sed.doppioniId) partiSedute.push("doppioni per id: " + sed.doppioniId);
+  if (sed.senzaCestino && sed.senzaCestino.length) partiSedute.push("in A senza cestino: " + sed.senzaCestino.length);
   const periodo = sed.primaData && sed.ultimaData ? " · dal " + sed.primaData + " al " + sed.ultimaData : "";
 
   return [

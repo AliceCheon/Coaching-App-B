@@ -126,23 +126,43 @@ async function conta(uid) {
 
     const sed = nuovo.conteggiSedute || {};
     const vive = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
-    const perA = sed.secondoA == null ? vive : sed.secondoA;
+    const perA = sed.visibili == null ? vive : sed.visibili;
     el("sedute-a").textContent = "Logbook in A: " + (sed.valide || 0) + " sedute distinte · " +
       "di cui con cancellazione logica: " + (sed.cancellate || 0) + " · " +
       "sedute valide (non cancellate): " + vive + " · " +
-      "valide secondo A: " + perA +
-      ((sed.escluseVista || []).length
-        ? ". Fuori dalla vista di A: " + (sed.escluseVista || []).map((e) => e.id + " (fonte " + e.fonte + (e.data ? ", " + e.data : "") + ")").join(" / ")
+      "sedute che A mostra: " + perA +
+      ((sed.doppioniId || 0) ? " · doppioni per id: " + sed.doppioniId : "") +
+      ((sed.senzaCestino || []).length
+        ? ". In A senza cestino (fonte non App, id vecchio): " + (sed.senzaCestino || []).map((e) => e.id + " (" + e.fonte + (e.data ? ", " + e.data : "") + ")").join(" / ")
         : ".");
 
     const viveOra = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
-    const perAOra = sed.secondoA == null ? viveOra : sed.secondoA;
-    el("radice").textContent = radiceDoc && radiceDoc.sessionCount != null
-      ? "A dichiara " + radiceDoc.sessionCount + " sedute; la lettura grezza ne trova " +
-        (sed.valide || 0) + " distinte, " + viveOra + " valide non cancellate, " +
-        perAOra + " valide secondo la regola di A" +
-        (Number(radiceDoc.sessionCount) === perAOra ? ": il conto torna." : ": il conto NON torna, ed e' scritto qui apposta.")
-      : "A non dichiara sessionCount nella radice: nessun confronto possibile.";
+    const perAOra = sed.visibili == null ? viveOra : sed.visibili;
+    const confrontoSedute = nuovo.confronto && nuovo.confronto.sessioni ? nuovo.confronto.sessioni : null;
+    if (!radiceDoc || radiceDoc.sessionCount == null) {
+      el("radice").textContent = "A non dichiara sessionCount nella radice: nessun confronto possibile.";
+    } else {
+      const nA = Number(radiceDoc.sessionCount);
+      let testo = "A dichiara " + nA + " sedute (numeri della sua lista in memoria) · qui in radice: " +
+        (sed.valide || 0) + " documenti, " + viveOra + " valide non cancellate, " + perAOra + " che A mostra";
+      if (nA === perAOra) {
+        testo += ". Il conto coincide.";
+      } else {
+        testo += ". Differenza: " + (perAOra - nA) +
+          ". Non e' un errore da correggere: il numero di A e' la lunghezza della sua lista al momento del salvataggio, non un riconteggio dei documenti.";
+      }
+      if (confrontoSedute && confrontoSedute.elencoDiA) {
+        const mancanti = confrontoSedute.soloNeiDocumenti || [];
+        const fantasmi = confrontoSedute.soloInElenco || [];
+        testo += mancanti.length
+          ? " In radice ma non nella lista di A: " + mancanti.map((e) => e.id + (e.data ? " (" + e.data + ")" : "")).join(" / ") + "."
+          : " Nessuna seduta in radice manca dalla lista di A.";
+        if (fantasmi.length) testo += " Nella lista di A ma non in radice: " + fantasmi.map((e) => e.id).join(" / ") + ".";
+      } else {
+        testo += " Il payload di A non porta l'elenco delle sedute: il confronto id per id non e' possibile da qui.";
+      }
+      el("radice").textContent = testo;
+    }
 
     piano = nuovo;
     el("copia").disabled = nuovo.totaleScritture === 0;
