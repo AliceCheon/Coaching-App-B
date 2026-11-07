@@ -27,6 +27,12 @@
   .errore { color: #ff9aa2; }
   .pronto { color: #c9b8ee; }
   code { background: #131324; padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  .intestazione-riga { background: #1b1830; color: #c9b8ee; font-size: 12px; font-weight: 600;
+                        letter-spacing: .04em; text-transform: uppercase; }
+  .intestazione-riga.avviso { color: #ffd08a; }
+  #cerca { background: #1f3a4d; border-color: #2f6a86; }
+  #escludi { background: #7a2f3f; border-color: #a3485c; }
+  input[type=checkbox] { width: 18px; height: 18px; }
 </style>
 </head>
 <body>
@@ -48,14 +54,29 @@
     <p class="tenue" id="esclusi"></p>
     <p class="tenue" id="sedute-a"></p>
     <p class="tenue" id="radice"></p>
+    <p class="tenue" id="esclusioni-a"></p>
 
-    <h2>2 · Copia</h2>
+    <h2>2 · Escludi sedute</h2>
+    <p class="tenue">Cerca in A (sola lettura) le sedute da togliere dal Logbook di B. Non tocca A:
+    scrive solo in <code>bdB_atleti/{uid}/esclusioni</code> e mette <code>deletedAt</code> sulla copia, cosi’
+    una copia futura non le fa tornare.</p>
+    <button id="cerca" disabled>Cerca in A (sola lettura)</button>
+    <div class="riquadro" id="esclusioni-stato">Prima conta: la ricerca usa la stessa lettura del conteggio.</div>
+    <table id="tabella-esclusioni" hidden>
+      <thead>
+        <tr><th></th><th>Richiesta</th><th>Id</th><th>Data</th><th>Scheda</th><th>Sett.</th><th>Esercizi</th></tr>
+      </thead>
+      <tbody id="righe-esclusioni"></tbody>
+    </table>
+    <button id="escludi" disabled>Escludi le sedute spuntate (scrive in B)</button>
+
+    <h2>3 · Copia</h2>
     <p class="tenue">Si attiva solo dopo un conteggio riuscito.</p>
     <button id="copia" disabled>Copia in B</button>
     <progress id="avanzamento" value="0" max="1"></progress>
     <p id="stato" class="tenue"></p>
 
-    <h2>3 · Confronto finale</h2>
+    <h2>4 · Confronto finale</h2>
     <table>
       <thead>
         <tr><th>Famiglia</th><th>Atteso</th><th>Scritto in B</th><th>Esito</th><th>Dettaglio</th></tr>
@@ -65,7 +86,7 @@
       </tbody>
     </table>
 
-    <h2>4 · La fotografia</h2>
+    <h2>5 · La fotografia</h2>
     <p id="fotografia" class="riquadro">la data compare dopo la copia</p>
     <p class="tenue">Se la riga qui sopra è vuota o vecchia, questa pagina non ha ancora copiato niente.</p>
   </div>

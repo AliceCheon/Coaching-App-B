@@ -15,6 +15,7 @@
  * dichiarato, non nascosto.
  */
 import { ZONA_B, SOTTO_B, ErroreZonaNonAmmessa } from "./modello-dati.js";
+import { conDeletedAt } from "./esclusioni.js";
 
 export { ZONA_B, ErroreZonaNonAmmessa };
 
@@ -23,6 +24,7 @@ const AMMESSE = Object.freeze([
   SOTTO_B.schede,
   SOTTO_B.esercizi,
   SOTTO_B.sedute,
+  SOTTO_B.esclusioni,
   SOTTO_B.registro
 ]);
 
@@ -93,4 +95,45 @@ export function leggiFotografia(db, uid) {
   return radiceB(db, uid)
     .get()
     .then((istantanea) => (istantanea && istantanea.exists ? istantanea.data() || {} : null));
+}
+
+/* ---------- Esclusioni decise da Alice (passo 5) ----------
+ *
+ * Una seduta sbagliata si esclude in B, non in A. Due scritture, entrambe
+ * dentro bdB_atleti/{uid}: il documento `esclusioni/{idSeduta}` (la memoria
+ * della decisione: data, motivo, quando) e il `deletedAt` sulla copia, cosi'
+ * il Logbook di B la salta subito e le copie future la ritrovano esclusa.
+ */
+
+export function scriviEsclusione(db, uid, id, dati) {
+  return riferimentoB(db, uid, SOTTO_B.esclusioni, id).set(dati || {});
+}
+
+/* Marca la copia gia' presente. Se la seduta non e' ancora stata copiata non
+ * si inventa niente: basta il documento di esclusione, e la copia futura
+ * nascera' gia' con deletedAt. */
+export async function marcaEsclusaLaCopia(db, uid, id, quando) {
+  const istantanea = await riferimentoB(db, uid, SOTTO_B.sedute, id).get();
+  if (!istantanea || !istantanea.exists) return { copia: false, motivo: "seduta non ancora copiata" };
+  const dati = (istantanea.data && istantanea.data()) || {};
+  return riferimentoB(db, uid, SOTTO_B.sedute, id).set(conDeletedAt(dati, quando)).then(() => ({ copia: true }));
+}
+
+/* Le due scritture in un colpo solo: e' quello che chiama la pagina. */
+export async function escludiSeduta(db, uid, idSeduta, info) {
+  const i = info || {};
+  const quando = i.quando ? String(i.quando) : new Date().toISOString();
+  const documento = {
+    idSeduta: String(idSeduta),
+    data: i.data == null ? null : String(i.data),
+    scheda: i.scheda == null ? null : String(i.scheda),
+    settimana: i.settimana == null ? null : Number(i.settimana),
+    richiesta: i.richiesta == null ? null : String(i.richiesta),
+    motivo: i.motivo == null ? "esclusa da Alice" : String(i.motivo),
+    quando,
+    origine: "esclusione-decisa-in-B"
+  };
+  await riferimentoB(db, uid, SOTTO_B.esclusioni, idSeduta).set(documento);
+  const copia = await marcaEsclusaLaCopia(db, uid, idSeduta, quando);
+  return { idSeduta: String(idSeduta), quando, copia: copia.copia === true, notaCopia: copia.motivo || null };
 }

@@ -105,7 +105,7 @@ export function contaProgrammi(documenti, radice) {
 
 /* Logbook. `valide` applica la regola di A (senza id si scarta, doppioni
  * riconciliati per id); `documenti` è il totale letto, senza filtri. */
-export function contaSedute(documenti) {
+export function contaSedute(documenti, esclusioni) {
   const elenco = Array.isArray(documenti) ? documenti : [];
   const perId = Object.create(null);
   let senzaId = 0;
@@ -143,16 +143,56 @@ export function contaSedute(documenti) {
     return dati.session != null ? dati.session : dati;
   });
   const perA = seduteSecondoA(sedutePiatte);
+
+  /* Esclusioni decise da Alice, lette da bdB_atleti/{uid}/esclusioni.
+   * Si dichiarano sempre: quelle che trovano la seduta, quelle gia'
+   * cancellate (che non si tolgono due volte) e quelle senza corrispondenza
+   * in A (un documento che indica una seduta che non c'e' piu'). */
+  const elencoEsclusi = Array.isArray(esclusioni) ? esclusioni : [];
+  const idEsclusi = [];
+  const esclusePresenti = [];
+  const senzaCorrispondenza = [];
+  elencoEsclusi.forEach((e) => {
+    const dati = (e && e.dati) || e || {};
+    const id = String((e && e.id) || dati.idSeduta || "").trim();
+    if (!id || idEsclusi.indexOf(id) !== -1) return;
+    idEsclusi.push(id);
+    const seduta = perId[id];
+    if (!seduta) {
+      senzaCorrispondenza.push(id);
+      return;
+    }
+    esclusePresenti.push({
+      id: id,
+      data: String(seduta.dateInput || seduta.date || ""),
+      fonte: String(seduta.source || ""),
+      cancellataPrima: !!seduta.deletedAt
+    });
+  });
+  const sovrapposte = esclusePresenti.filter((e) => e.cancellataPrima).length;
+  const nuoveEsclusioni = esclusePresenti.length - sovrapposte;
+  const valideNonCancellate = chiavi.length - cancellate;
+  const valideRisultanti = valideNonCancellate - nuoveEsclusioni;
+
   return {
     documenti: elenco.length,
     valide: chiavi.length,
-    valideNonCancellate: chiavi.length - cancellate,
+    valideNonCancellate,
     cancellate,
     visibili: perA.distintePerId,
-    doppioniId: perA.doppioniId,
     conCestino: perA.conCestino,
     senzaCestino: perA.senzaCestino,
+    doppioniId: perA.doppioniId,
     elenco: sedutePiatte,
+    esclusioni: {
+      documenti: elencoEsclusi.length,
+      ids: idEsclusi,
+      escluseDaAlice: esclusePresenti.length,
+      sovrapposte,
+      valideRisultanti,
+      senzaCorrispondenza,
+      dettaglio: esclusePresenti
+    },
     senzaId,
     duplicate,
     primaData: date.length ? date[0] : null,
@@ -183,6 +223,8 @@ export function confrontoConRadice(conteggi, radice) {
       valideNonCancellate: sedute.valideNonCancellate,
       cancellate: sedute.cancellate || 0,
       senzaCestino: (sedute.senzaCestino || []).length,
+      escluseDaAlice: sedute.esclusioni ? sedute.esclusioni.escluseDaAlice : 0,
+      valideRisultanti: sedute.esclusioni ? sedute.esclusioni.valideRisultanti : null,
       coincide: sc === qui,
       differenza: qui - sc,
       elencoDiA: perId.disponibile,
@@ -228,6 +270,9 @@ export function righeConteggi(letto) {
   if (sed.cancellate) partiSedute.push("di cui con cancellazione logica: " + sed.cancellate);
   if (sed.doppioniId) partiSedute.push("doppioni per id: " + sed.doppioniId);
   if (sed.senzaCestino && sed.senzaCestino.length) partiSedute.push("in A senza cestino: " + sed.senzaCestino.length);
+  if (sed.esclusioni && sed.esclusioni.escluseDaAlice) partiSedute.push("escluse da Alice: " + sed.esclusioni.escluseDaAlice);
+  if (sed.esclusioni && sed.esclusioni.valideRisultanti != null) partiSedute.push("valide risultanti: " + sed.esclusioni.valideRisultanti);
+  if (sed.esclusioni && sed.esclusioni.senzaCorrispondenza && sed.esclusioni.senzaCorrispondenza.length) partiSedute.push("esclusioni senza seduta in A: " + sed.esclusioni.senzaCorrispondenza.length);
   const periodo = sed.primaData && sed.ultimaData ? " · dal " + sed.primaData + " al " + sed.ultimaData : "";
 
   return [

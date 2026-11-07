@@ -115,6 +115,7 @@ export const SOTTO_B = Object.freeze({
   schede: "schede",
   esercizi: "esercizi",
   sedute: "sedute",
+  esclusioni: "esclusioni",
   registro: "registro"
 });
 

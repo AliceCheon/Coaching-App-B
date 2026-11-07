@@ -19,6 +19,7 @@
  */
 
 import { contaSedute } from "./conteggi-copia.js";
+import { conDeletedAt } from "./esclusioni.js";
 
 export const FAMIGLIE = Object.freeze([
   { chiave: "programmi", etichetta: "Programmi", sottoraccolta: "programmi" },
@@ -91,6 +92,16 @@ function voce(famiglia, d) {
 export function pianoDiCopia(ingresso) {
   const i = ingresso || {};
 
+  /* Le esclusioni decise da Alice (bdB_atleti/{uid}/esclusioni). Una seduta
+   * esclusa si copia lo stesso — la copia resta fedele — ma nasce con
+   * `deletedAt`: cosi' una copia futura non la fa tornare viva. */
+  const escluse = Object.create(null);
+  (Array.isArray(i.esclusioni) ? i.esclusioni : []).forEach((e) => {
+    const dati = (e && e.dati) || e || {};
+    const id = String((e && e.id) || dati.idSeduta || "").trim();
+    if (id) escluse[id] = String(dati.quando || "esclusa da Alice");
+  });
+
   /* Programmi: regola di A (r.5636-5639). Un programma che vive SOLO come v1
    * e' un programma vero e si copia; un v1 che ha gia' il suo v2 non si copia,
    * perche' sarebbe un doppione morto. I saltati si contano e si dichiarano. */
@@ -131,7 +142,16 @@ export function pianoDiCopia(ingresso) {
     .map((d) => voce("esercizi", d))
     .filter((v) => v.id);
 
-  const sedute = elenco(i.sedute).map((d) => voce("sedute", d)).filter((v) => v.id);
+  const sedute = elenco(i.sedute).map((d) => {
+    const id = String(d.id || "");
+    if (id && escluse[id]) {
+      const v = voce("sedute", d);
+      v.dati = conDeletedAt(v.dati, escluse[id]);
+      v.esclusa = true;
+      return v;
+    }
+    return voce("sedute", d);
+  }).filter((v) => v.id);
 
   const voci = programmi.concat(schede, esercizi, sedute).sort((a, b) => {
     if (a.famiglia !== b.famiglia) return a.famiglia < b.famiglia ? -1 : 1;
@@ -149,10 +169,11 @@ export function pianoDiCopia(ingresso) {
       schede: schede.length,
       esercizi: esercizi.length,
       sedute: sedute.length,
+      seduteEscluse: sedute.filter((v) => v.esclusa).length,
       v1DoppioniSaltati: v1Saltati.length
     },
     v1Saltati: v1Saltati,
-    conteggiSedute: contaSedute(i.sedute),
+    conteggiSedute: contaSedute(i.sedute, i.esclusioni),
     esclusi: esclusi,
     totaleScritture: voci.length
   };

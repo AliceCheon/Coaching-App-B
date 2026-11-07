@@ -14,11 +14,13 @@ import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comu
 import { entraConGoogle, esci, ascoltaStato, eMobile } from "../comune/accesso.js";
 import { leggiProgrammiGrezzi, leggiSchedeGrezze, leggiSeduteGrezze } from "../comune/lettura-grezza.js";
 import { leggiDocumentoAtleta } from "../comune/lettura-dati.js";
+import { candidatiEsclusione, seduteNelBloccoLocale } from "../comune/esclusioni.js";
 import {
   copiaProgramma,
   copiaScheda,
   copiaEsercizio,
   copiaSeduta,
+  escludiSeduta,
   scriviVoceRegistro,
   scriviFotografia,
   leggiZonaB,
@@ -59,6 +61,13 @@ function azzeraConteggio() {
   el("conteggi-a").textContent = "Nessun conteggio: premi «Conta (sola lettura)».";
   el("esclusi").textContent = "";
   el("radice").textContent = "";
+  el("esclusioni-a").textContent = "";
+  el("cerca").disabled = true;
+  el("escludi").disabled = true;
+  el("escludi").textContent = "Escludi le sedute spuntate (scrive in B)";
+  el("righe-esclusioni").textContent = "";
+  el("tabella-esclusioni").hidden = true;
+  el("esclusioni-stato").textContent = "Prima conta: la ricerca usa la stessa lettura del conteggio.";
   el("copia").disabled = true;
   el("avanzamento").value = 0;
   el("avanzamento").max = 1;
@@ -106,13 +115,14 @@ async function conta(uid) {
   mostra("stato", "Leggo A (sola lettura)…", "");
 
   try {
-    const [radiceDoc, programmi, schede, sedute] = await Promise.all([
+    const [radiceDoc, programmi, schede, sedute, esclusioni] = await Promise.all([
       leggiDocumentoAtleta(db, uid),
       leggiProgrammiGrezzi(db, uid),
       leggiSchedeGrezze(db, uid),
-      leggiSeduteGrezze(db, uid)
+      leggiSeduteGrezze(db, uid),
+      leggiZonaB(db, uid, "esclusioni")
     ]);
-    const nuovo = pianoDiCopia({ programmi: programmi, schede: schede, sedute: sedute });
+    const nuovo = pianoDiCopia({ programmi: programmi, schede: schede, sedute: sedute, esclusioni: esclusioni });
     nuovo.radice = radiceDoc;
 
     el("conteggi-a").textContent = riepilogo(nuovo).map((r) => r.etichetta + ": " + r.quante).join(" · ") +
@@ -135,6 +145,14 @@ async function conta(uid) {
       ((sed.senzaCestino || []).length
         ? ". In A senza cestino (fonte non App, id vecchio): " + (sed.senzaCestino || []).map((e) => e.id + " (" + e.fonte + (e.data ? ", " + e.data : "") + ")").join(" / ")
         : ".");
+
+    const esc = sed.esclusioni || {};
+    el("esclusioni-a").textContent = "escluse da Alice: " + (esc.escluseDaAlice || 0) +
+      " · valide risultanti: " + (esc.valideRisultanti == null ? vive : esc.valideRisultanti) +
+      (esc.sovrapposte ? " (" + esc.sovrapposte + " erano già cancellate: non si tolgono due volte)" : "") +
+      ((esc.senzaCorrispondenza || []).length
+        ? " · esclusioni senza seduta in A: " + esc.senzaCorrispondenza.join(", ")
+        : "");
 
     const viveOra = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
     const perAOra = sed.visibili == null ? viveOra : sed.visibili;
@@ -161,10 +179,12 @@ async function conta(uid) {
       } else {
         testo += " Il payload di A non porta l'elenco delle sedute: il confronto id per id non e' possibile da qui.";
       }
-      el("radice").textContent = testo;
+      const blocco = seduteNelBloccoLocale(sedute || []);
+      el("radice").textContent = testo + " " + blocco.spiegazione;
     }
 
     piano = nuovo;
+    el("cerca").disabled = false;
     el("copia").disabled = nuovo.totaleScritture === 0;
     mostra("stato", nuovo.totaleScritture === 0
       ? "Conteggio finito: in A non c'e' niente da copiare. La copia resta spenta."
@@ -255,6 +275,149 @@ async function copia(uid) {
   }
 }
 
+
+/* ---------- 2. ESCLUDI SEDUTE (scrive solo nella zona B) ---------- */
+
+/* I candidati dell'ultima ricerca: per costruire il motivo della scrittura. */
+let ultimeEsclusioni = [];
+
+function caselleScelte() {
+  const tutte = document.querySelectorAll("#righe-esclusioni input[type=checkbox]");
+  const scelte = [];
+  for (let i = 0; i < tutte.length; i += 1) {
+    if (tutte[i].checked && !tutte[i].disabled) scelte.push(tutte[i].getAttribute("data-id"));
+  }
+  return scelte;
+}
+
+function aggiornaPulsanteEscludi() {
+  const scelte = caselleScelte().length;
+  const pulsante = el("escludi");
+  pulsante.disabled = scelte === 0;
+  pulsante.textContent = scelte === 0
+    ? "Escludi le sedute spuntate (scrive in B)"
+    : "Escludi " + scelte + (scelte === 1 ? " seduta" : " sedute") + " (scrive in B)";
+}
+
+function rigaTitolo(corpo, testo, avviso) {
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 7;
+  td.className = avviso ? "intestazione-riga avviso" : "intestazione-riga";
+  td.textContent = testo;
+  tr.appendChild(td);
+  corpo.appendChild(tr);
+}
+
+/* Cerca e disegna. Non scrive niente: questa e' la parte di sola lettura. */
+function cercaEsclusioni() {
+  if (!piano) return;
+  const conteggiSedute = piano.conteggiSedute || {};
+  const esito = candidatiEsclusione(conteggiSedute.elenco || []);
+  const gia = (conteggiSedute.esclusioni && conteggiSedute.esclusioni.ids) || [];
+
+  const corpo = el("righe-esclusioni");
+  corpo.textContent = "";
+  ultimeEsclusioni = [];
+
+  esito.richieste.forEach((r) => {
+    rigaTitolo(corpo, r.etichetta + " \u2014 " + r.messaggio +
+      (r.modo === "settimana intera" ? " (trovata nella settimana: la data indicata non combaciava)" : "") +
+      (r.nota ? " \u00b7 " + r.nota : ""), r.stato !== "uno");
+
+    r.candidati.forEach((c) => {
+      ultimeEsclusioni.push(c);
+      const giaEsclusa = gia.indexOf(c.id) >= 0;
+      const tr = document.createElement("tr");
+
+      const tdScelta = document.createElement("td");
+      const casella = document.createElement("input");
+      casella.type = "checkbox";
+      casella.setAttribute("data-id", c.id);
+      /* Preselezione solo senza dubbio: un solo candidato, non gia' escluso. */
+      casella.checked = r.stato === "uno" && !giaEsclusa;
+      casella.disabled = giaEsclusa;
+      casella.title = giaEsclusa ? "Gia\u2019 esclusa in B: non si tocca" : "Spunta per escludere la copia in B";
+      casella.addEventListener("change", aggiornaPulsanteEscludi);
+      tdScelta.appendChild(casella);
+      tr.appendChild(tdScelta);
+
+      const nota = giaEsclusa ? " \u00b7 gia\u2019 esclusa" : (c.giaCancellata ? " \u00b7 gia\u2019 cancellata" : "");
+      const valori = [
+        r.etichetta,
+        c.id,
+        c.data || "data illeggibile",
+        c.scheda || "\u2014",
+        c.settimana == null ? "\u2014" : String(c.settimana),
+        (c.esercizi == null ? "\u2014" : String(c.esercizi)) + nota
+      ];
+      valori.forEach((valore) => {
+        const td = document.createElement("td");
+        td.textContent = valore;
+        tr.appendChild(td);
+      });
+      corpo.appendChild(tr);
+    });
+  });
+
+  el("tabella-esclusioni").hidden = esito.totaleCandidati === 0;
+  el("esclusioni-stato").textContent = esito.totaleCandidati === 0
+    ? "Nessun candidato in A per le cinque richieste: non c\u2019e\u2019 niente da escludere."
+    : "Candidati trovati: " + esito.totaleCandidati + " \u00b7 richieste con zero o piu\u2019 di un candidato: " +
+      esito.richiesteConProblemi + ". Controlla, spunta e conferma.";
+  aggiornaPulsanteEscludi();
+}
+
+/* Scrive SOLO alla conferma, e solo nella zona B. */
+async function escludiScelte() {
+  const uid = uidCorrente();
+  const scelte = caselleScelte();
+  if (scelte.length === 0) {
+    mostra("esclusioni-stato", "Nessuna casella spuntata: non si scrive niente.", "errore");
+    return;
+  }
+  const dettagli = scelte.map((id) => ultimeEsclusioni.filter((c) => c.id === id)[0]).filter(Boolean);
+  const elenco = dettagli.map((c) => c.id + " \u00b7 scheda " + (c.scheda || "?") + " \u00b7 " + (c.data || "data illeggibile")).join("\n");
+  const conferma = window.confirm(
+    "Escludere " + scelte.length + (scelte.length === 1 ? " seduta" : " sedute") + " dal Logbook di B?\n\n" +
+    elenco + "\n\nSi scrive solo in bdB_atleti/" + uid + "/esclusioni e sulla copia. A non si tocca."
+  );
+  if (!conferma) {
+    mostra("esclusioni-stato", "Nessuna scrittura: hai annullato.", "");
+    return;
+  }
+
+  el("escludi").disabled = true;
+  el("cerca").disabled = true;
+  const quando = new Date().toISOString();
+  let fatte = 0;
+  try {
+    for (let i = 0; i < dettagli.length; i += 1) {
+      const c = dettagli[i];
+      const motivo = "chiusa da Alice: scheda " + (c.scheda || "?") + " settimana " +
+        (c.settimana == null ? "?" : c.settimana) + " del " + (c.data || "data illeggibile") +
+        " \u00b7 richiesta " + c.richiesta;
+      await escludiSeduta(db, uid, c.id, {
+        idSeduta: c.id,
+        data: c.data,
+        scheda: c.scheda,
+        settimana: c.settimana,
+        motivo: motivo,
+        richiesta: c.richiesta,
+        quando: quando
+      });
+      fatte += 1;
+      mostra("esclusioni-stato", "Escluse " + fatte + " di " + dettagli.length + "\u2026", "");
+    }
+    mostra("esclusioni-stato", "Escluse " + fatte + " \u00b7 scritte in bdB_atleti/" + uid + "/esclusioni. Rileggo i numeri\u2026", "pronto");
+    await conta(uid);
+    mostra("esclusioni-stato", "Escluse " + fatte + ". I numeri qui sopra sono riletti da A e da B.", "pronto");
+  } finally {
+    el("cerca").disabled = !piano;
+    el("escludi").disabled = true;
+  }
+}
+
 /* ---------- avvio ---------- */
 
 async function avvia() {
@@ -282,6 +445,18 @@ async function avvia() {
   el("copia").addEventListener("click", () => {
     copia(uidCorrente()).catch((e) => {
       mostra("stato", "Copia interrotta: " + (e && e.message ? e.message : e), "errore");
+    });
+  });
+  el("cerca").addEventListener("click", () => {
+    if (!piano) {
+      mostra("esclusioni-stato", "Prima conta: la ricerca usa la stessa lettura del conteggio.", "errore");
+      return;
+    }
+    cercaEsclusioni();
+  });
+  el("escludi").addEventListener("click", () => {
+    escludiScelte().catch((e) => {
+      mostra("esclusioni-stato", "Esclusione interrotta: " + (e && e.message ? e.message : e), "errore");
     });
   });
 
