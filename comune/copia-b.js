@@ -18,6 +18,8 @@
  * nasconde.
  */
 
+import { contaSedute } from "./conteggi-copia.js";
+
 export const FAMIGLIE = Object.freeze([
   { chiave: "programmi", etichetta: "Programmi", sottoraccolta: "programmi" },
   { chiave: "schede", etichetta: "Schede attive", sottoraccolta: "schede" },
@@ -62,6 +64,17 @@ function elenco(valore) {
   return Array.isArray(valore) ? valore.filter((d) => d && typeof d === "object") : [];
 }
 
+/* Il programId si ricava dagli stessi tre campi di A (r.5599), nell'ordine. */
+function programIdVoce(dati) {
+  const d = dati || {};
+  return String(
+    d.programId ||
+    (d.program && d.program.id) ||
+    (d.programMeta && d.programMeta.id) ||
+    ""
+  );
+}
+
 /* Una voce del piano: stesso id di A, stessa famiglia di sottoraccolta in B. */
 function voce(famiglia, d) {
   return {
@@ -78,7 +91,34 @@ function voce(famiglia, d) {
 export function pianoDiCopia(ingresso) {
   const i = ingresso || {};
 
-  const programmi = elenco(i.programmi).map((d) => voce("programmi", d)).filter((v) => v.id);
+  /* Programmi: regola di A (r.5636-5639). Un programma che vive SOLO come v1
+   * e' un programma vero e si copia; un v1 che ha gia' il suo v2 non si copia,
+   * perche' sarebbe un doppione morto. I saltati si contano e si dichiarano. */
+  const programmiGrezzi = elenco(i.programmi);
+  const idConMeta = Object.create(null);
+  programmiGrezzi.forEach((d) => {
+    const dati = (d && d.dati) || {};
+    if (dati.programMeta && typeof dati.programMeta === "object") {
+      const pid = programIdVoce(dati);
+      if (pid) idConMeta[pid] = true;
+    }
+  });
+  const v1Saltati = [];
+  const programmi = programmiGrezzi
+    .filter((d) => {
+      const dati = (d && d.dati) || {};
+      const eMeta = dati.programMeta && typeof dati.programMeta === "object";
+      const eV1 = dati.program && typeof dati.program === "object";
+      if (eMeta || !eV1) return true;
+      const pid = programIdVoce(dati);
+      if (pid && idConMeta[pid]) {
+        v1Saltati.push(String(d.id || ""));
+        return false;
+      }
+      return true;
+    })
+    .map((d) => voce("programmi", d))
+    .filter((v) => v.id);
 
   const schedeGrezze = elenco(i.schede);
   const schede = schedeGrezze
@@ -99,8 +139,7 @@ export function pianoDiCopia(ingresso) {
   });
 
   const esclusi = {
-    archiviate: schedeGrezze.filter((d) => inFamiglia(d.id, PREFISSI.archiviata)).length,
-    schedeV1Intere: elenco(i.programmi).filter((d) => inFamiglia(d.id, PREFISSI.v1)).length
+    archiviate: schedeGrezze.filter((d) => inFamiglia(d.id, PREFISSI.archiviata)).length
   };
 
   return {
@@ -109,8 +148,11 @@ export function pianoDiCopia(ingresso) {
       programmi: programmi.length,
       schede: schede.length,
       esercizi: esercizi.length,
-      sedute: sedute.length
+      sedute: sedute.length,
+      v1DoppioniSaltati: v1Saltati.length
     },
+    v1Saltati: v1Saltati,
+    conteggiSedute: contaSedute(i.sedute),
     esclusi: esclusi,
     totaleScritture: voci.length
   };
@@ -217,7 +259,7 @@ export function fotografia(ingresso) {
       esito: c.esito
     })),
     coincide: tuttoCoincide,
-    esclusi: i.esclusi || { archiviate: 0, schedeV1Intere: 0 },
+    esclusi: i.esclusi || { archiviate: 0 },
     nota: "Questa e' una fotografia: le sedute registrate dopo non arrivano qui da sole."
   };
 }

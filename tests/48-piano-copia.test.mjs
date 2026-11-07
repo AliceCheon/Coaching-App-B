@@ -59,7 +59,7 @@ test("48.2 gli esercizi sciolti entrano nel piano, con la loro sottoraccolta", (
 
 test("48.3 i conteggi sono esatti e il totale è la somma delle voci", () => {
   const piano = pianoDiCopia({ programmi: programmiFinti, schede: schedeFinte, sedute: seduteFinte });
-  assert.deepEqual(piano.conteggi, { programmi: 2, schede: 2, esercizi: 2, sedute: 3 });
+  assert.deepEqual(piano.conteggi, { programmi: 2, schede: 2, esercizi: 2, sedute: 3, v1DoppioniSaltati: 0 });
   assert.equal(piano.totaleScritture, 9);
   assert.equal(piano.voci.length, 9);
 });

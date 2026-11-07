@@ -119,12 +119,22 @@ async function conta(uid) {
       " · totale da scrivere: " + nuovo.totaleScritture;
     el("esclusi").textContent = "Restano in A e non si copiano: " +
       nuovo.esclusi.archiviate + " schede archiviate e le foto di nutrizione. " +
+      "v1 doppioni saltati: " + (nuovo.conteggi.v1DoppioniSaltati || 0) + ". " +
       (nuovo.conteggi.esercizi === 0
         ? "Esercizi sciolti: 0, quindi nessuna scheda grande resta monca per questo motivo."
         : "");
 
+    const sed = nuovo.conteggiSedute || {};
+    el("sedute-a").textContent = "Logbook in A: " + (sed.valide || 0) + " sedute distinte, " +
+      "di cui con cancellazione logica: " + (sed.cancellate || 0) + " · " +
+      "sedute valide (non cancellate): " + (sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate) + ".";
+
+    const viveOra = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
     el("radice").textContent = radiceDoc && radiceDoc.sessionCount != null
-      ? "A dichiara " + radiceDoc.sessionCount + " sedute; la lettura grezza ne trova " + nuovo.conteggi.sedute + "."
+      ? "A dichiara " + radiceDoc.sessionCount + " sedute; la lettura grezza ne trova " +
+        (sed.valide || 0) + " distinte (di cui " + (sed.cancellate || 0) + " con cancellazione logica), " +
+        "quindi " + viveOra + " valide non cancellate" +
+        (Number(radiceDoc.sessionCount) === viveOra ? ": il conto torna." : ": il conto NON torna, ed e' scritto qui apposta.")
       : "A non dichiara sessionCount nella radice: nessun confronto possibile.";
 
     piano = nuovo;

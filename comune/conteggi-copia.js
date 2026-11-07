@@ -126,9 +126,17 @@ export function contaSedute(documenti) {
     .map((k) => String(perId[k].dateInput || perId[k].date || ""))
     .filter(Boolean)
     .sort();
+  /* Cancellazione logica (A, v137-141): la seduta cancellata RESTA nella
+   * raccolta con `deletedAt` valorizzato, e A la nasconde leggendo
+   * `!item?.deletedAt`. Qui si contano tutte e tre le cose, separate:
+   * documenti letti, sedute distinte, di cui cancellate. */
+  const chiavi = Object.keys(perId);
+  const cancellate = chiavi.filter((k) => perId[k] && perId[k].deletedAt).length;
   return {
     documenti: elenco.length,
-    valide: Object.keys(perId).length,
+    valide: chiavi.length,
+    valideNonCancellate: chiavi.length - cancellate,
+    cancellate,
     senzaId,
     duplicate,
     primaData: date.length ? date[0] : null,
@@ -148,7 +156,17 @@ export function confrontoConRadice(conteggi, radice) {
   return {
     sessioni: sc == null || !Number.isFinite(sc)
       ? null
-      : { dichiarato: sc, letto: sedute.valide, coincide: sc === sedute.valide, differenza: sedute.valide - sc },
+      : (() => {
+          const vive = sedute.valideNonCancellate != null ? sedute.valideNonCancellate : sedute.valide;
+          return {
+            dichiarato: sc,
+            letto: vive,
+            lettoGrezzo: sedute.valide,
+            cancellate: sedute.cancellate || 0,
+            coincide: sc === vive,
+            differenza: vive - sc
+          };
+        })(),
     programmi: pc == null || !Number.isFinite(pc)
       ? null
       : { dichiarato: pc, letto: programmi.distinti, coincide: pc === programmi.distinti, differenza: programmi.distinti - pc }
@@ -175,10 +193,13 @@ export function righeConteggi(letto) {
   partiProgrammi.push(p.documentiMeta + " metadati v2");
   if (p.documentiV1) partiProgrammi.push(p.documentiV1 + " v1");
 
+  const vive = sed.valideNonCancellate != null ? sed.valideNonCancellate : sed.valide;
   const partiSedute = [
-    sed.valide + (sed.valide === 1 ? " seduta valida" : " sedute valide"),
+    "sedute valide (non cancellate): " + vive,
+    "su " + sed.valide + (sed.valide === 1 ? " distinta letta" : " distinte lette"),
     "su " + sed.documenti + (sed.documenti === 1 ? " documento" : " documenti")
   ];
+  if (sed.cancellate) partiSedute.push("di cui con cancellazione logica: " + sed.cancellate);
   const periodo = sed.primaData && sed.ultimaData ? " · dal " + sed.primaData + " al " + sed.ultimaData : "";
 
   return [
