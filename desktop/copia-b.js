@@ -1,9 +1,13 @@
 /* Barbell Diva B — la pagina di copia (passo 4). Solo DOM e orchestrazione:
  * nessuna scrittura scritta qui, tutto passa da comune/scritture-b.js.
  *
- * Ordine: leggi A (grezzo) -> mostra i conteggi -> copia in sequenza
- * (programmi, schede, sedute) -> rileggi B -> confronta -> scrivi la
- * fotografia -> rileggi la fotografia e mostra la data.
+ * Due momenti SEPARATI:
+ *   1) «Conta (sola lettura)» — legge A e mostra i numeri veri. Non scrive
+ *      niente, in nessun caso.
+ *   2) «Copia in B» — parte SOLO dopo un conteggio riuscito: e' disabilitato
+ *      fino ad allora, e torna disabilitato se il conteggio si azzera.
+ * Poi: rileggi B -> confronta -> scrivi la fotografia -> rileggi la fotografia
+ * e mostra la data.
  */
 
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
@@ -13,6 +17,7 @@ import { leggiDocumentoAtleta } from "../comune/lettura-dati.js";
 import {
   copiaProgramma,
   copiaScheda,
+  copiaEsercizio,
   copiaSeduta,
   scriviVoceRegistro,
   scriviFotografia,
@@ -42,7 +47,35 @@ const mostra = (id, testo, classe) => {
 let app = null;
 let auth = null;
 let db = null;
+/* Il piano esiste solo dopo un conteggio riuscito: e' la chiave che apre la copia. */
 let piano = null;
+
+function uidCorrente() {
+  return (auth && auth.currentUser && auth.currentUser.uid) || "";
+}
+
+function azzeraConteggio() {
+  piano = null;
+  el("conteggi-a").textContent = "Nessun conteggio: premi «Conta (sola lettura)».";
+  el("esclusi").textContent = "";
+  el("radice").textContent = "";
+  el("copia").disabled = true;
+  el("avanzamento").value = 0;
+  el("avanzamento").max = 1;
+  mostra("stato", "", "");
+}
+
+function tabellaVuota() {
+  const corpo = el("righe-confronto");
+  corpo.textContent = "";
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 5;
+  td.className = "tenue";
+  td.textContent = "nessuna copia eseguita in questa sessione";
+  tr.appendChild(td);
+  corpo.appendChild(tr);
+}
 
 function accendi(utente) {
   el("chi").textContent = utente ? (utente.email || utente.uid) : "non collegato";
@@ -50,105 +83,139 @@ function accendi(utente) {
   el("entra").hidden = !!utente;
   el("esci").hidden = !utente;
   el("uid").textContent = utente ? utente.uid : "—";
-  if (!utente) return;
-  leggiA(utente.uid).catch((e) => mostra("stato", "Lettura di A fallita: " + (e && e.message ? e.message : e), "errore"));
+  if (!utente) {
+    piano = null;
+    tabellaVuota();
+    return;
+  }
+  azzeraConteggio();
+  tabellaVuota();
+  /* La fotografia gia' presente si legge senza contare: e' una lettura. */
+  leggiFotografia(db, utente.uid)
+    .then((doc) => { el("fotografia").textContent = descriviFotografia(doc); })
+    .catch(() => { el("fotografia").textContent = "Fotografia non leggibile in questo momento."; });
 }
 
-/* ---------- 1. leggo A, conto, mostro ---------- */
+/* ---------- 1. CONTA (sola lettura) ---------- */
 
-async function leggiA(uid) {
-  mostra("stato", "Leggo A (sola lettura)…", "");
+async function conta(uid) {
+  el("conta").disabled = true;
   el("copia").disabled = true;
-  const [radiceDoc, programmi, schede, sedute] = await Promise.all([
-    leggiDocumentoAtleta(db, uid),
-    leggiProgrammiGrezzi(db, uid),
-    leggiSchedeGrezze(db, uid),
-    leggiSeduteGrezze(db, uid)
-  ]);
-  piano = pianoDiCopia({ programmi, schede, sedute });
-  piano.radice = radiceDoc;
+  piano = null;
+  tabellaVuota();
+  mostra("stato", "Leggo A (sola lettura)…", "");
 
-  const righe = riepilogo(piano).map((r) => r.etichetta + ": " + r.quante).join(" · ");
-  el("conteggi-a").textContent = righe + " · totale scritture: " + piano.totaleScritture;
-  el("esclusi").textContent = "Non copiati in questo passo: " +
-    piano.esclusi.esercizi + " documenti di esercizio (servono alle schede troppo grandi), " +
-    piano.esclusi.archiviate + " schede archiviate, " +
-    "le foto di nutrizione. Restano in A, non si toccano.";
+  try {
+    const [radiceDoc, programmi, schede, sedute] = await Promise.all([
+      leggiDocumentoAtleta(db, uid),
+      leggiProgrammiGrezzi(db, uid),
+      leggiSchedeGrezze(db, uid),
+      leggiSeduteGrezze(db, uid)
+    ]);
+    const nuovo = pianoDiCopia({ programmi: programmi, schede: schede, sedute: sedute });
+    nuovo.radice = radiceDoc;
 
-  const confrontoRadice = radiceDoc && radiceDoc.sessionCount != null
-    ? "A dichiara " + radiceDoc.sessionCount + " sedute, B ne legge " + piano.conteggi.sedute + " documenti."
-    : "A non dichiara sessionCount nella radice: nessun confronto possibile.";
-  el("radice").textContent = confrontoRadice;
+    el("conteggi-a").textContent = riepilogo(nuovo).map((r) => r.etichetta + ": " + r.quante).join(" · ") +
+      " · totale da scrivere: " + nuovo.totaleScritture;
+    el("esclusi").textContent = "Restano in A e non si copiano: " +
+      nuovo.esclusi.archiviate + " schede archiviate e le foto di nutrizione. " +
+      (nuovo.conteggi.esercizi === 0
+        ? "Esercizi sciolti: 0, quindi nessuna scheda grande resta monca per questo motivo."
+        : "");
 
-  el("copia").disabled = piano.totaleScritture === 0;
-  mostra("stato", "Pronto: " + piano.totaleScritture + " documenti da scrivere in bdB_atleti/" + uid + ".", "pronto");
+    el("radice").textContent = radiceDoc && radiceDoc.sessionCount != null
+      ? "A dichiara " + radiceDoc.sessionCount + " sedute; la lettura grezza ne trova " + nuovo.conteggi.sedute + "."
+      : "A non dichiara sessionCount nella radice: nessun confronto possibile.";
 
-  const esistente = await leggiFotografia(db, uid).catch(() => null);
-  el("fotografia").textContent = descriviFotografia(esistente);
+    piano = nuovo;
+    el("copia").disabled = nuovo.totaleScritture === 0;
+    mostra("stato", nuovo.totaleScritture === 0
+      ? "Conteggio finito: in A non c'e' niente da copiare. La copia resta spenta."
+      : "Conteggio finito. Pronto a scrivere " + nuovo.totaleScritture + " documenti in bdB_atleti/" + uid + ".",
+      nuovo.totaleScritture === 0 ? "errore" : "pronto");
+  } finally {
+    el("conta").disabled = false;
+  }
 }
 
-/* ---------- 2. copio, una famiglia dopo l'altra ---------- */
+/* ---------- 2. COPIA (solo dopo il conteggio) ---------- */
 
 async function copia(uid) {
-  if (!piano) return;
-  el("copia").disabled = true;
-  const voci = piano.voci;
-  let fatte = 0;
-  for (const voce of voci) {
-    if (voce.famiglia === "programmi") await copiaProgramma(db, uid, voce.id, voce.dati);
-    else if (voce.famiglia === "schede") await copiaScheda(db, uid, voce.id, voce.dati);
-    else await copiaSeduta(db, uid, voce.id, voce.dati);
-    fatte += 1;
-    el("avanzamento").value = fatte;
-    el("avanzamento").max = voci.length;
-    mostra("stato", "Copiati " + fatte + " di " + voci.length + " documenti…", "");
+  if (!piano) {
+    mostra("stato", "Prima conta: senza i numeri non si copia.", "errore");
+    return;
   }
+  el("conta").disabled = true;
+  el("copia").disabled = true;
+  const voci = piano.voci.slice();
+  let fatte = 0;
+  el("avanzamento").max = voci.length;
 
-  mostra("stato", "Rileggo B e confronto…", "");
-  const [programmiB, schedeB, seduteB] = await Promise.all([
-    leggiZonaB(db, uid, "programmi"),
-    leggiZonaB(db, uid, "schede"),
-    leggiZonaB(db, uid, "sedute")
-  ]);
-  const confronto = confrontaCopia(piano, { programmi: programmiB, schede: schedeB, sedute: seduteB });
+  try {
+    for (const voce of voci) {
+      if (voce.famiglia === "programmi") await copiaProgramma(db, uid, voce.id, voce.dati);
+      else if (voce.famiglia === "schede") await copiaScheda(db, uid, voce.id, voce.dati);
+      else if (voce.famiglia === "esercizi") await copiaEsercizio(db, uid, voce.id, voce.dati);
+      else await copiaSeduta(db, uid, voce.id, voce.dati);
+      fatte += 1;
+      el("avanzamento").value = fatte;
+      mostra("stato", "Copiati " + fatte + " di " + voci.length + " documenti…", "");
+    }
 
-  const corpo = el("righe-confronto");
-  corpo.textContent = "";
-  righeConfronto(confronto).forEach((r) => {
-    const tr = document.createElement("tr");
-    [r.etichetta, r.atteso, r.scritto, r.esito, r.dettaglio].forEach((valore, indice) => {
-      const td = document.createElement("td");
-      td.textContent = valore;
-      if (indice === 3) td.className = r.esito === "coincide" ? "ok" : "errore";
-      tr.appendChild(td);
+    mostra("stato", "Rileggo B e confronto…", "");
+    const [programmiB, schedeB, eserciziB, seduteB] = await Promise.all([
+      leggiZonaB(db, uid, "programmi"),
+      leggiZonaB(db, uid, "schede"),
+      leggiZonaB(db, uid, "esercizi"),
+      leggiZonaB(db, uid, "sedute")
+    ]);
+    const confronto = confrontaCopia(piano, {
+      programmi: programmiB,
+      schede: schedeB,
+      esercizi: eserciziB,
+      sedute: seduteB
     });
-    corpo.appendChild(tr);
-  });
 
-  const doc = fotografia({
-    uid,
-    quando: new Date(),
-    build: config.build,
-    progetto: config.firebase ? config.firebase.projectId : null,
-    conteggi: piano.conteggi,
-    esclusi: piano.esclusi,
-    confronto
-  });
-  await scriviFotografia(db, uid, doc);
-  await scriviVoceRegistro(db, uid, "copia-" + doc.creatoIl.replace(/[:.]/g, "-"), {
-    quando: doc.creatoIl,
-    totale: piano.totaleScritture,
-    conteggi: piano.conteggi,
-    esclusi: piano.esclusi,
-    esito: doc.coincide ? "coincide" : "da controllare"
-  });
+    const corpo = el("righe-confronto");
+    corpo.textContent = "";
+    righeConfronto(confronto).forEach((r) => {
+      const tr = document.createElement("tr");
+      [r.etichetta, r.atteso, r.scritto, r.esito, r.dettaglio].forEach((valore, indice) => {
+        const td = document.createElement("td");
+        td.textContent = valore;
+        if (indice === 3) td.className = r.esito === "coincide" ? "ok" : "errore";
+        tr.appendChild(td);
+      });
+      corpo.appendChild(tr);
+    });
 
-  const riletto = await leggiFotografia(db, uid);
-  el("fotografia").textContent = descriviFotografia(riletto);
-  mostra("stato", doc.coincide
-    ? "Copia finita e confronto a posto."
-    : "Copia finita, ma il confronto NON coincide: guarda la tabella.", doc.coincide ? "pronto" : "errore");
-  el("copia").disabled = false;
+    const doc = fotografia({
+      uid: uid,
+      quando: new Date(),
+      build: config.build,
+      progetto: config.firebase ? config.firebase.projectId : null,
+      conteggi: piano.conteggi,
+      esclusi: piano.esclusi,
+      confronto: confronto
+    });
+    await scriviFotografia(db, uid, doc);
+    await scriviVoceRegistro(db, uid, "copia-" + doc.creatoIl.replace(/[:.]/g, "-"), {
+      quando: doc.creatoIl,
+      totale: piano.totaleScritture,
+      conteggi: piano.conteggi,
+      esclusi: piano.esclusi,
+      esito: doc.coincide ? "coincide" : "da controllare"
+    });
+
+    const riletto = await leggiFotografia(db, uid);
+    el("fotografia").textContent = descriviFotografia(riletto);
+    mostra("stato", doc.coincide
+      ? "Copia finita e confronto a posto."
+      : "Copia finita, ma il confronto NON coincide: guarda la tabella.", doc.coincide ? "pronto" : "errore");
+  } finally {
+    el("conta").disabled = false;
+    el("copia").disabled = false;
+  }
 }
 
 /* ---------- avvio ---------- */
@@ -168,11 +235,16 @@ async function avvia() {
       .catch((e) => mostra("stato", "Accesso non riuscito: " + (e && e.message ? e.message : e), "errore"));
   });
   el("esci").addEventListener("click", () => esci(auth));
+  el("conta").addEventListener("click", () => {
+    conta(uidCorrente()).catch((e) => {
+      piano = null;
+      el("copia").disabled = true;
+      mostra("stato", "Conteggio non riuscito: " + (e && e.message ? e.message : e), "errore");
+    });
+  });
   el("copia").addEventListener("click", () => {
-    const uid = (auth.currentUser && auth.currentUser.uid) || "";
-    copia(uid).catch((e) => {
+    copia(uidCorrente()).catch((e) => {
       mostra("stato", "Copia interrotta: " + (e && e.message ? e.message : e), "errore");
-      el("copia").disabled = false;
     });
   });
 

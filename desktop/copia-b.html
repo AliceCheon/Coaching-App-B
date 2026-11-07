@@ -17,6 +17,7 @@
   button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 1px solid #4a3f7a;
            background: #2b2150; color: #f2eefb; cursor: pointer; margin: 6px 6px 6px 0; }
   button:disabled { opacity: .45; cursor: default; }
+  #conta { background: #1f3a4d; border-color: #2f6a86; font-weight: 600; }
   #copia { background: #6d3fa8; border-color: #8f5fd0; font-weight: 600; }
   progress { width: 100%; height: 10px; margin: 10px 0; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -39,12 +40,16 @@
   <button id="esci" hidden>Esci</button>
 
   <div id="corpo" hidden>
-    <h2>1 · Cosa c'è in A</h2>
-    <div class="riquadro" id="conteggi-a">leggo…</div>
+    <h2>1 · Conta (sola lettura)</h2>
+    <p class="tenue">Questo pulsante legge e basta: non scrive niente, in nessun caso. Mostra i numeri veri di A,
+    compresi gli zeri.</p>
+    <button id="conta">Conta (sola lettura)</button>
+    <div class="riquadro" id="conteggi-a">Nessun conteggio: premi «Conta (sola lettura)».</div>
     <p class="tenue" id="esclusi"></p>
     <p class="tenue" id="radice"></p>
 
     <h2>2 · Copia</h2>
+    <p class="tenue">Si attiva solo dopo un conteggio riuscito.</p>
     <button id="copia" disabled>Copia in B</button>
     <progress id="avanzamento" value="0" max="1"></progress>
     <p id="stato" class="tenue"></p>

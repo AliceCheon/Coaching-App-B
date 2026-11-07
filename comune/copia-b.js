@@ -5,17 +5,23 @@
  * possono verificare senza aprire un browser, e la pagina non ha scuse per
  * inventarne uno.
  *
- * Cosa si copia in questo passo (deciso con la coach): programmi (metadati v2
- * e programmi interi v1), schede attive (program-v2-sheet-) e sedute. Restano
- * fuori, e vengono DICHIARATI a schermo con il loro conteggio: gli esercizi
- * sciolti (program-v2-exercise-, servono alle schede troppo grandi), le
- * archiviate (program-v2-archived-, storia che B non mostra ancora) e le foto
- * di nutrizione (non sono allenamento).
+ * Cosa si copia (corretto il 7/11/2026): programmi (metadati v2 e programmi
+ * interi v1), schede attive (program-v2-sheet-), ESERCIZI SCIOLTI
+ * (program-v2-exercise-, servono alle schede troppo grandi: senza, una scheda
+ * grande in B e' monca) e sedute. Restano fuori, e vengono DICHIARATE a schermo
+ * con il loro conteggio: le schede archiviate (program-v2-archived-, storia che
+ * B non mostra ancora) e le foto di nutrizione (stanno nella stessa
+ * sottoraccolta di A ma non sono allenamento: la lettura grezza non le chiede
+ * nemmeno, perche' interroga solo per intervalli di id).
+ *
+ * Se una famiglia non esiste in A, il suo numero e' 0: non si inventa e non si
+ * nasconde.
  */
 
 export const FAMIGLIE = Object.freeze([
   { chiave: "programmi", etichetta: "Programmi", sottoraccolta: "programmi" },
   { chiave: "schede", etichetta: "Schede attive", sottoraccolta: "schede" },
+  { chiave: "esercizi", etichetta: "Esercizi sciolti", sottoraccolta: "esercizi" },
   { chiave: "sedute", etichetta: "Sedute (logbook)", sottoraccolta: "sedute" }
 ]);
 
@@ -56,54 +62,62 @@ function elenco(valore) {
   return Array.isArray(valore) ? valore.filter((d) => d && typeof d === "object") : [];
 }
 
-/* Il piano: cosa si scrive, con quale id, in quale sottoraccolta di B.
- * L'ordine e' stabile (id crescente) cosi' due esecuzioni fanno la stessa cosa. */
-export function pianoDiCopia(ingresso) {
-  const i = ingresso || {};
-  const programmi = elenco(i.programmi).map((d) => ({
-    famiglia: "programmi",
-    sottoraccolta: "programmi",
+/* Una voce del piano: stesso id di A, stessa famiglia di sottoraccolta in B. */
+function voce(famiglia, d) {
+  return {
+    famiglia: famiglia,
+    sottoraccolta: famiglia,
     id: String(d.id || ""),
     dati: d.dati || {}
-  })).filter((v) => v.id);
+  };
+}
+
+/* Il piano: cosa si scrive, con quale id, in quale sottoraccolta di B.
+ * L'ordine e' stabile (famiglia, poi id crescente) cosi' due esecuzioni fanno
+ * la stessa cosa. */
+export function pianoDiCopia(ingresso) {
+  const i = ingresso || {};
+
+  const programmi = elenco(i.programmi).map((d) => voce("programmi", d)).filter((v) => v.id);
 
   const schedeGrezze = elenco(i.schede);
   const schede = schedeGrezze
     .filter((d) => inFamiglia(d.id, PREFISSI.scheda))
-    .map((d) => ({
-      famiglia: "schede",
-      sottoraccolta: "schede",
-      id: String(d.id || ""),
-      dati: d.dati || {}
-    }));
+    .map((d) => voce("schede", d))
+    .filter((v) => v.id);
 
-  const sedute = elenco(i.sedute).map((d) => ({
-    famiglia: "sedute",
-    sottoraccolta: "sedute",
-    id: String(d.id || ""),
-    dati: d.dati || {}
-  })).filter((v) => v.id);
+  const esercizi = schedeGrezze
+    .filter((d) => inFamiglia(d.id, PREFISSI.esercizio))
+    .map((d) => voce("esercizi", d))
+    .filter((v) => v.id);
 
-  const voci = programmi.concat(schede, sedute).sort((a, b) => {
+  const sedute = elenco(i.sedute).map((d) => voce("sedute", d)).filter((v) => v.id);
+
+  const voci = programmi.concat(schede, esercizi, sedute).sort((a, b) => {
     if (a.famiglia !== b.famiglia) return a.famiglia < b.famiglia ? -1 : 1;
     return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
   });
 
   const esclusi = {
-    esercizi: schedeGrezze.filter((d) => inFamiglia(d.id, PREFISSI.esercizio)).length,
     archiviate: schedeGrezze.filter((d) => inFamiglia(d.id, PREFISSI.archiviata)).length,
     schedeV1Intere: elenco(i.programmi).filter((d) => inFamiglia(d.id, PREFISSI.v1)).length
   };
 
   return {
-    voci,
-    conteggi: { programmi: programmi.length, schede: schede.length, sedute: sedute.length },
-    esclusi,
+    voci: voci,
+    conteggi: {
+      programmi: programmi.length,
+      schede: schede.length,
+      esercizi: esercizi.length,
+      sedute: sedute.length
+    },
+    esclusi: esclusi,
     totaleScritture: voci.length
   };
 }
 
-/* Quante voci per famiglia: le stesse tre righe della tabella a schermo. */
+/* Quante voci per famiglia: le stesse righe della tabella a schermo, comprese
+ * quelle a zero (uno zero dichiarato e' un'informazione, uno zero taciuto no). */
 export function riepilogo(piano) {
   const p = piano || {};
   const voci = elenco(p.voci);
@@ -152,10 +166,10 @@ export function confrontaCopia(piano, scritto) {
       etichetta: f.etichetta,
       atteso: attese.length,
       scritto: lette.length,
-      uguali,
-      diversi,
-      inPiu,
-      mancanti,
+      uguali: uguali,
+      diversi: diversi,
+      inPiu: inPiu,
+      mancanti: mancanti,
       esito: mancanti.length === 0 && diversi === 0 && inPiu === 0 && lette.length === attese.length
         ? "coincide"
         : "no"
@@ -195,7 +209,7 @@ export function fotografia(ingresso) {
     atleta: { uid: i.uid == null ? null : String(i.uid) },
     origine: "app A · barbellDivaAccounts/{uid}",
     destinazione: "zona B · bdB_atleti/{uid}",
-    copiati: i.conteggi || { programmi: 0, schede: 0, sedute: 0 },
+    copiati: i.conteggi || { programmi: 0, schede: 0, esercizi: 0, sedute: 0 },
     confronto: confronto.map((c) => ({
       famiglia: c.chiave,
       atteso: c.atteso,
@@ -203,7 +217,7 @@ export function fotografia(ingresso) {
       esito: c.esito
     })),
     coincide: tuttoCoincide,
-    esclusi: i.esclusi || { esercizi: 0, archiviate: 0, schedeV1Intere: 0 },
+    esclusi: i.esclusi || { archiviate: 0, schedeV1Intere: 0 },
     nota: "Questa e' una fotografia: le sedute registrate dopo non arrivano qui da sole."
   };
 }
@@ -233,6 +247,7 @@ export function descriviFotografia(doc) {
   if (!quando) return "Fotografia presente ma con una data illeggibile: da rifare.";
   const c = doc.copiati || {};
   return "Fotografia del " + quando + " — programmi " + (c.programmi || 0) +
-    ", schede " + (c.schede || 0) + ", sedute " + (c.sedute || 0) +
+    ", schede " + (c.schede || 0) + ", esercizi " + (c.esercizi || 0) +
+    ", sedute " + (c.sedute || 0) +
     (doc.coincide === true ? " · confronto: coincide" : " · confronto: da controllare");
 }
