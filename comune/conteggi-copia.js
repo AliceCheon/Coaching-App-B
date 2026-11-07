@@ -11,6 +11,8 @@
  * scritta a schermo, non nascosta.
  */
 
+import { seduteSecondoA } from "./regola-sedute-a.js";
+
 function valoreO(value, ripiego) {
   return value == null ? ripiego : value;
 }
@@ -132,11 +134,23 @@ export function contaSedute(documenti) {
    * documenti letti, sedute distinte, di cui cancellate. */
   const chiavi = Object.keys(perId);
   const cancellate = chiavi.filter((k) => perId[k] && perId[k].deletedAt).length;
+  /* La regola di A per intero, non solo `deletedAt`: A fonde anche i doppioni
+   * per id e per impronta di contenuto (data + programma + scheda + esercizi,
+   * con tolleranza di 10 minuti). Il numero che A MOSTRA e' `secondoA`; gli
+   * altri restano perche' servono a spiegare la differenza, non a nasconderla. */
+  const perA = seduteSecondoA(elenco.map((d) => {
+    const dati = (d && d.dati) || {};
+    return dati.session != null ? dati.session : dati;
+  }));
   return {
     documenti: elenco.length,
     valide: chiavi.length,
     valideNonCancellate: chiavi.length - cancellate,
     cancellate,
+    secondoA: perA.secondoA,
+    doppioniId: perA.doppioniId,
+    ammesseAllaVista: perA.ammesseAllaVista,
+    escluseVista: perA.escluseVista,
     senzaId,
     duplicate,
     primaData: date.length ? date[0] : null,
@@ -157,14 +171,17 @@ export function confrontoConRadice(conteggi, radice) {
     sessioni: sc == null || !Number.isFinite(sc)
       ? null
       : (() => {
-          const vive = sedute.valideNonCancellate != null ? sedute.valideNonCancellate : sedute.valide;
+          const perA = sedute.secondoA != null
+            ? sedute.secondoA
+            : (sedute.valideNonCancellate != null ? sedute.valideNonCancellate : sedute.valide);
           return {
             dichiarato: sc,
-            letto: vive,
+            letto: perA,
             lettoGrezzo: sedute.valide,
             cancellate: sedute.cancellate || 0,
-            coincide: sc === vive,
-            differenza: vive - sc
+            escluseVista: (sedute.escluseVista || []).length,
+            coincide: sc === perA,
+            differenza: perA - sc
           };
         })(),
     programmi: pc == null || !Number.isFinite(pc)
@@ -194,12 +211,15 @@ export function righeConteggi(letto) {
   if (p.documentiV1) partiProgrammi.push(p.documentiV1 + " v1");
 
   const vive = sed.valideNonCancellate != null ? sed.valideNonCancellate : sed.valide;
+  const perA = sed.secondoA != null ? sed.secondoA : vive;
   const partiSedute = [
     "sedute valide (non cancellate): " + vive,
+    "valide secondo A: " + perA,
     "su " + sed.valide + (sed.valide === 1 ? " distinta letta" : " distinte lette"),
     "su " + sed.documenti + (sed.documenti === 1 ? " documento" : " documenti")
   ];
   if (sed.cancellate) partiSedute.push("di cui con cancellazione logica: " + sed.cancellate);
+  if (sed.escluseVista && sed.escluseVista.length) partiSedute.push("non ammesse alla vista di A: " + sed.escluseVista.length);
   const periodo = sed.primaData && sed.ultimaData ? " · dal " + sed.primaData + " al " + sed.ultimaData : "";
 
   return [

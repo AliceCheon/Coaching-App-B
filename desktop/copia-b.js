@@ -125,16 +125,23 @@ async function conta(uid) {
         : "");
 
     const sed = nuovo.conteggiSedute || {};
-    el("sedute-a").textContent = "Logbook in A: " + (sed.valide || 0) + " sedute distinte, " +
+    const vive = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
+    const perA = sed.secondoA == null ? vive : sed.secondoA;
+    el("sedute-a").textContent = "Logbook in A: " + (sed.valide || 0) + " sedute distinte · " +
       "di cui con cancellazione logica: " + (sed.cancellate || 0) + " · " +
-      "sedute valide (non cancellate): " + (sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate) + ".";
+      "sedute valide (non cancellate): " + vive + " · " +
+      "valide secondo A: " + perA +
+      ((sed.escluseVista || []).length
+        ? ". Fuori dalla vista di A: " + (sed.escluseVista || []).map((e) => e.id + " (fonte " + e.fonte + (e.data ? ", " + e.data : "") + ")").join(" / ")
+        : ".");
 
     const viveOra = sed.valideNonCancellate == null ? (sed.valide || 0) : sed.valideNonCancellate;
+    const perAOra = sed.secondoA == null ? viveOra : sed.secondoA;
     el("radice").textContent = radiceDoc && radiceDoc.sessionCount != null
       ? "A dichiara " + radiceDoc.sessionCount + " sedute; la lettura grezza ne trova " +
-        (sed.valide || 0) + " distinte (di cui " + (sed.cancellate || 0) + " con cancellazione logica), " +
-        "quindi " + viveOra + " valide non cancellate" +
-        (Number(radiceDoc.sessionCount) === viveOra ? ": il conto torna." : ": il conto NON torna, ed e' scritto qui apposta.")
+        (sed.valide || 0) + " distinte, " + viveOra + " valide non cancellate, " +
+        perAOra + " valide secondo la regola di A" +
+        (Number(radiceDoc.sessionCount) === perAOra ? ": il conto torna." : ": il conto NON torna, ed e' scritto qui apposta.")
       : "A non dichiara sessionCount nella radice: nessun confronto possibile.";
 
     piano = nuovo;

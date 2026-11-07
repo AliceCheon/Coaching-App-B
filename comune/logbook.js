@@ -50,6 +50,7 @@
  */
 
 import { nomePulito } from "./nome-pulito.js";
+import { seduteSecondoA } from "./regola-sedute-a.js";
 import { numeroCarico } from "./carichi.js";
 
 const NON = "non registrato";
@@ -190,16 +191,15 @@ export function seduteLogbook(sedute, opzioni) {
   const fonti = [];
   const out = [];
 
-  let cancellate = 0;
-  (Array.isArray(sedute) ? sedute : []).forEach((s) => {
+  /* La regola di A per intero: si scartano le sedute con `deletedAt` e si
+   * fondono i doppioni per id e per impronta di contenuto, esattamente come
+   * `deduplicateWorkoutSessions`. Il Logbook mostra quello che mostra A: non un
+   * documento in piu'. La copia in bdB_ resta invece fedele e non filtra nulla. */
+  const perA = seduteSecondoA(sedute);
+  const cancellate = perA.cancellate;
+  const doppioniContenuto = perA.doppioniId;
+  perA.tenute.forEach((s) => {
     if (!s || typeof s !== "object") return;
-    /* Cancellazione logica (A, v137-141): `deletedAt` valorizzato = seduta
-     * cancellata. A la nasconde (`!item?.deletedAt`); B fa lo stesso, e la
-     * scarta qui: non entra nel Logbook, non gonfia i conti delle sedute. */
-    if (s.deletedAt) {
-      cancellate += 1;
-      return;
-    }
     lette += 1;
     const d = dataItalianaDaInput(testo(s.dateInput) || testo(s.date));
     if (!d) senzaData += 1;
@@ -262,6 +262,7 @@ export function seduteLogbook(sedute, opzioni) {
   const dichiarazioni = {
     lette,
     cancellate,
+    doppioniContenuto,
     tenute: out.length,
     senzaData,
     conProgramma,

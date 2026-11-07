@@ -144,7 +144,7 @@ test("46.5 — lo stato arriva da status, e se manca da done (true→completed, 
 });
 
 test("46.6 — la provenienza: con source acceso e valori veri, senza source spento", () => {
-  const con = seduteLogbook([sedutaBase(), sedutaBase({ id: "2", source: "Excel" })], OPZ_UNE);
+  const con = seduteLogbook([sedutaBase(), sedutaBase({ id: "1758000000001", source: "Excel" })], OPZ_UNE);
   assert.equal(con.dichiarazioni.haFonte, true);
   assert.deepEqual(con.dichiarazioni.fontiValori, ["App", "Excel"]);
   const senza = seduteLogbook([sedutaBase({ source: undefined })], OPZ_UNE);
