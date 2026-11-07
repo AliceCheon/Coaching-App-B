@@ -130,7 +130,7 @@ test("46.4 — il programma si attribuisce SOLO se il codice della scheda è di 
 
 test("46.5 — lo stato arriva da status, e se manca da done (true→completed, false→bozza); senza niente, spento", () => {
   const daDone = seduteLogbook(
-    [sedutaBase({ status: undefined, done: true }), sedutaBase({ status: undefined, done: false, id: "2" })],
+    [sedutaBase({ status: undefined, done: true }), sedutaBase({ status: undefined, done: false, id: "2", exercises: [{ name: "Leg_raise_seconda", sets: [{ kg: 20, reps: 10 }] }] })],
     OPZ_UNE
   );
   assert.equal(daDone.sedute[0].st, "completed");

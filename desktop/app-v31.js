@@ -157,6 +157,7 @@ function notaLogbook(doc, lb) {
   }
   if (d.conJournal === 0) righe.push("Journal: non collegato \u2014 il diario non è nella sottoraccolta sedute letta da B");
   righe.push("Esclusi: " + (d.escluseDaAlice || 0) + (d.escluseDaAlice === 1 ? " seduta" : " sedute") + " escluse da Alice, lette dalla sottoraccolta esclusioni di B: la seduta resta in A, sparisce solo qui");
+  if (d.doppioniContenuto) righe.push("Contenuto doppio: " + d.doppioniContenuto + (d.doppioniContenuto === 1 ? " seduta" : " sedute") + " con la stessa data, la stessa scheda e gli stessi esercizi di un\u0027altra: A ne mostra una sola (r.3948), B fa lo stesso. Assorbita: " + (d.assorbite || []).map(function (x) { return (x.id || "senza id") + (x.data ? " del " + x.data : "") + (x.tenuta ? " \u2192 tenuta " + x.tenuta : ""); }).join("; "));
   const info = d.documenti != null && (d.senzaId || d.duplicati) ? " Letti " + d.tenute + " documenti validi su " + d.documenti + " (" + d.senzaId + " senza id, " + d.duplicati + " doppioni): come A, gli scartati non contano." : "";
   const nota = doc.getElementById("lb-nota-b");
   if (nota && righe.length) {

@@ -197,7 +197,9 @@ export function seduteLogbook(sedute, opzioni) {
    * bdB_ resta fedele e non filtra nulla. */
   const perA = seduteSecondoA(sedute);
   const cancellate = perA.cancellate;
-  const doppioniContenuto = perA.doppioniId;
+  const doppioniId = perA.doppioniId;
+  const doppioniContenuto = perA.doppioniContenuto || 0;
+  const assorbite = Array.isArray(perA.assorbite) ? perA.assorbite : [];
   perA.visibili.forEach((s) => {
     if (!s || typeof s !== "object") return;
     lette += 1;
@@ -280,6 +282,9 @@ export function seduteLogbook(sedute, opzioni) {
     haFonte: fonti.length > 0,
     fontiValori: fonti.slice().sort(),
     conJournal,
+    doppioniId: doppioniId,
+    doppioniContenuto: doppioniContenuto,
+    assorbite: assorbite,
     documenti: o.infoSedute && o.infoSedute.documenti != null ? Number(o.infoSedute.documenti) : null,
     senzaId: o.infoSedute ? Number(o.infoSedute.senzaId) || 0 : null,
     duplicati: o.infoSedute ? Number(o.infoSedute.duplicati) || 0 : null

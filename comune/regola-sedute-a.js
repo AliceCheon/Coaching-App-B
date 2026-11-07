@@ -49,6 +49,76 @@ function primoNonNull() {
  * solo a dire chi ha il cestino nell'interfaccia di A. */
 export const ID_RECENTE = 1000000000;
 
+/* L'impronta di contenuto di A (r.3898): data, programma, scheda e la firma
+ * degli esercizi con le loro serie. Due sedute con la stessa impronta sono,
+ * per A, la stessa seduta. */
+function codiceSchedaDi(v) {
+  return String(v == null ? "" : v).replace(/^scheda\s+/i, "").replace(/\s+/g, "").toUpperCase();
+}
+
+function improntaEsercizio(e) {
+  const ex = e || {};
+  const identita = String(
+    ex.sourceExerciseId || ex.exerciseId || ex.masterExerciseId ||
+    ex.identityKey || testo(ex.name || ex.exercise || "").toLowerCase()
+  ).trim().toLowerCase();
+  const variante = String(ex.variantRole || ex.variant || ex.progressionRole || "standard").trim().toLowerCase();
+  const serie = Array.isArray(ex.completedSets) ? ex.completedSets
+    : Array.isArray(ex.setValues) ? ex.setValues
+    : Array.isArray(ex.sets) ? ex.sets : [];
+  const firmaSerie = serie.map(function (s) {
+    if (s == null) return "-";
+    if (typeof s !== "object") return String(s);
+    const rip = s.reps != null ? s.reps : (s.ripetizioni != null ? s.ripetizioni : "");
+    const pes = s.weight != null ? s.weight : (s.kg != null ? s.kg : (s.carico != null ? s.carico : ""));
+    return String(rip) + "x" + String(pes);
+  }).join("|");
+  return identita + ":" + variante + ":" + firmaSerie;
+}
+
+function improntaSeduta(s) {
+  const seduta = s || {};
+  const data = String(seduta.dateInput || seduta.date || "").slice(0, 10);
+  const programma = testo(seduta.programId || seduta.phase).toLowerCase();
+  const scheda = testo(seduta.sheetId || codiceSchedaDi(seduta.sessionCode || seduta.code || seduta.sessionName)).toLowerCase();
+  const esercizi = (Array.isArray(seduta.exercises) ? seduta.exercises : []).map(improntaEsercizio).join("||");
+  return [data, programma, scheda, esercizi].join("__");
+}
+
+function momentoRegistrato(s) {
+  const seduta = s || {};
+  const valori = [seduta.startedAt, seduta.completedAt, seduta.savedAt, seduta.recordedAt];
+  for (let i = 0; i < valori.length; i += 1) {
+    const v = valori[i];
+    if (!v) continue;
+    const n = typeof v === "number" ? v : Date.parse(String(v));
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
+}
+
+/* A (r.3906) chiede l'impronta uguale E i due momenti entro 10 minuti; se i
+ * momenti mancano entrambi, chiede la stessa fonte. Senza questa seconda
+ * condizione due sedute davvero distinte con gli stessi numeri verrebbero
+ * fuse: qui si copia A, non si allarga. */
+function nominabile(s) {
+  const seduta = s || {};
+  const id = testo(primoNonNull(seduta.id, seduta.workoutProSessionId));
+  const data = testo(primoNonNull(seduta.dateInput, seduta.date));
+  const esercizi = Array.isArray(seduta.exercises) ? seduta.exercises.length : 0;
+  return Boolean(id) && Boolean(data) && esercizi > 0;
+}
+
+function stessoContenuto(a, b) {
+  if (!nominabile(a) || !nominabile(b)) return false;
+  if (improntaSeduta(a) !== improntaSeduta(b)) return false;
+  const aAt = momentoRegistrato(a);
+  const bAt = momentoRegistrato(b);
+  if (aAt && bAt) return Math.abs(aAt - bAt) <= 10 * 60 * 1000;
+  return testo(a && a.source || "App") === testo(b && b.source || "App");
+}
+
+
 /* Le sedute che A mostra e i conti di ogni passo, cosi' la differenza si spiega
  * invece di sparire in un totale. */
 export function seduteSecondoA(sedute) {
@@ -83,6 +153,34 @@ export function seduteSecondoA(sedute) {
   /* Le righe senza id non si buttano: A le tiene, e cosi' fa B. */
   vive.forEach((s, indice) => { if (!consumato[indice]) visibili.push(s); });
 
+  /* Passo 1c: la SECONDA passata di A (r.3948, il bucket per impronta di
+   * contenuto). Due documenti con id diversi ma stessa data, stesso programma,
+   * stessa scheda e stessi esercizi sono per A la stessa seduta: ne tiene una.
+   * B la applica qui, e nomina quella assorbita invece di lasciar cadere il
+   * numero: cosi' il +1 che si vedeva fra B e A ha un nome e una data. */
+  let doppioniContenuto = 0;
+  const assorbite = [];
+  let posizioneCorrente = 0;
+  while (posizioneCorrente < visibili.length) {
+    const tenuta = visibili[posizioneCorrente];
+    let successiva = posizioneCorrente + 1;
+    while (successiva < visibili.length) {
+      if (stessoContenuto(tenuta, visibili[successiva])) {
+        const assorbita = visibili[successiva];
+        assorbite.push({
+          id: testo(primoNonNull(assorbita.id, assorbita.workoutProSessionId)),
+          data: testo(primoNonNull(assorbita.dateInput, assorbita.date)),
+          scheda: testo(primoNonNull(assorbita.sheetId, assorbita.sessionCode, assorbita.code)),
+          tenuta: testo(primoNonNull(tenuta.id, tenuta.workoutProSessionId)),
+          motivo: "stessa data, stessa scheda e stessi esercizi di un'altra seduta: A ne tiene una (r.3948)"
+        });
+        visibili.splice(successiva, 1);
+        doppioniContenuto += 1;
+      } else successiva += 1;
+    }
+    posizioneCorrente += 1;
+  }
+
   /* Passo 3: non e' un filtro, e' la condizione del cestino in A (r.14398).
    * `Number(id)` di un id non numerico e' NaN, e NaN non supera la soglia:
    * A si comporta cosi', e B lo dichiara senza correggerlo. */
@@ -108,7 +206,10 @@ export function seduteSecondoA(sedute) {
     cancellate: cancellate,
     dopoCancellate: vive.length,
     doppioniId: doppioniId,
+    doppioniContenuto: doppioniContenuto,
+    assorbite: assorbite,
     distintePerId: visibili.length,
+
     visibili: visibili,
     conCestino: conCestino,
     senzaCestino: senzaCestino

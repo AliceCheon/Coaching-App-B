@@ -48,7 +48,7 @@ test("50.5 senza campo fonte la seduta e' App, come in A", () => {
 test("50.6 da 129 documenti A mostra 127: scarta solo le 2 con cancellazione logica", () => {
   const righe = [];
   for (let i = 1; i <= 129; i += 1) {
-    righe.push(seduta({ id: String(1758000000000 + i), source: i <= 31 ? "Logbook vecchio" : "App" }));
+    righe.push(seduta({ id: String(1758000000000 + i), source: i <= 31 ? "Logbook vecchio" : "App", exercises: [{ name: "Esercizio " + i, sets: [{ kg: 60, reps: 8 }] }] }));
   }
   righe[40] = Object.assign({}, righe[40], { deletedAt: "2025-04-01T10:00:00.000Z" });
   righe[77] = Object.assign({}, righe[77], { deletedAt: "2025-04-02T10:00:00.000Z" });

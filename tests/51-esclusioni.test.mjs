@@ -123,7 +123,7 @@ test("51.7 la settimana sbagliata non passa: una C di settimana 2 non e' la C de
 test("51.8 con 5 esclusioni e nessuna sovrapposizione: 127 valide diventano 122", () => {
   const documenti = [];
   for (let i = 1; i <= 127; i += 1) {
-    documenti.push({ id: "d" + i, dati: { session: seduta({ id: "s" + i }) } });
+    documenti.push({ id: "d" + i, dati: { session: seduta({ id: "s" + i, exercises: [{ name: "Esercizio " + ("s" + i), sets: [{ kg: 60, reps: 8 }] }] }) } });
   }
   const esclusioni = [1, 2, 3, 4, 5].map((n) => ({
     id: "s" + n,
@@ -180,8 +180,8 @@ test("51.12 la copia futura rilegge le esclusioni e riscrive deletedAt: la sedut
     programmi: [],
     schede: [],
     sedute: [
-      { id: "s1", dati: { session: seduta({ id: "s1" }) } },
-      { id: "s2", dati: { session: seduta({ id: "s2" }) } }
+      { id: "s1", dati: { session: seduta({ id: "s1", exercises: [{ name: "Esercizio " + "s1", sets: [{ kg: 60, reps: 8 }] }] }) } },
+      { id: "s2", dati: { session: seduta({ id: "s2", exercises: [{ name: "Esercizio " + "s2", sets: [{ kg: 60, reps: 8 }] }] }) } }
     ],
     esclusioni: [{ id: "s1", dati: { idSeduta: "s1", motivo: "sbagliata", quando: "2026-11-07T10:00:00.000Z" } }]
   });
@@ -195,7 +195,7 @@ test("51.12 la copia futura rilegge le esclusioni e riscrive deletedAt: la sedut
 });
 
 test("51.13 la copia non muta il documento di A che ha in mano", () => {
-  const originale = { session: seduta({ id: "s1" }) };
+  const originale = { session: seduta({ id: "s1", exercises: [{ name: "Esercizio " + "s1", sets: [{ kg: 60, reps: 8 }] }] }) };
   const copia = conDeletedAt(originale, "2026-11-07T10:00:00.000Z");
   assert.equal(originale.session.deletedAt, undefined);
   assert.equal(copia.session.deletedAt, "2026-11-07T10:00:00.000Z");

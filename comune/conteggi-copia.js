@@ -172,7 +172,7 @@ export function contaSedute(documenti, esclusioni) {
   const sovrapposte = esclusePresenti.filter((e) => e.cancellataPrima).length;
   const nuoveEsclusioni = esclusePresenti.length - sovrapposte;
   const valideNonCancellate = chiavi.length - cancellate;
-  const valideRisultanti = valideNonCancellate - nuoveEsclusioni;
+  const valideRisultanti = perA.distintePerId - nuoveEsclusioni;
 
   return {
     documenti: elenco.length,
@@ -183,6 +183,9 @@ export function contaSedute(documenti, esclusioni) {
     conCestino: perA.conCestino,
     senzaCestino: perA.senzaCestino,
     doppioniId: perA.doppioniId,
+    doppioniContenuto: perA.doppioniContenuto,
+    assorbite: perA.assorbite,
+
     elenco: sedutePiatte,
     esclusioni: {
       documenti: elencoEsclusi.length,
@@ -223,6 +226,8 @@ export function confrontoConRadice(conteggi, radice) {
       valideNonCancellate: sedute.valideNonCancellate,
       cancellate: sedute.cancellate || 0,
       senzaCestino: (sedute.senzaCestino || []).length,
+      doppioniContenuto: sedute.doppioniContenuto || 0,
+      assorbite: (sedute.assorbite || []).length,
       escluseDaAlice: sedute.esclusioni ? sedute.esclusioni.escluseDaAlice : 0,
       valideRisultanti: sedute.esclusioni ? sedute.esclusioni.valideRisultanti : null,
       coincide: sc === qui,
@@ -269,6 +274,7 @@ export function righeConteggi(letto) {
   ];
   if (sed.cancellate) partiSedute.push("di cui con cancellazione logica: " + sed.cancellate);
   if (sed.doppioniId) partiSedute.push("doppioni per id: " + sed.doppioniId);
+  if (sed.doppioniContenuto) partiSedute.push("assorbite come contenuto doppio: " + sed.doppioniContenuto);
   if (sed.senzaCestino && sed.senzaCestino.length) partiSedute.push("in A senza cestino: " + sed.senzaCestino.length);
   if (sed.esclusioni && sed.esclusioni.escluseDaAlice) partiSedute.push("escluse da Alice: " + sed.esclusioni.escluseDaAlice);
   if (sed.esclusioni && sed.esclusioni.valideRisultanti != null) partiSedute.push("valide risultanti: " + sed.esclusioni.valideRisultanti);
