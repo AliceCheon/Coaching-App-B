@@ -176,7 +176,7 @@ function rendiCellaModificabile(doc, span, mod, info) {
     if (valore === info.prima) return;
     if (typeof mod.onCambia === "function") {
       mod.onCambia({
-        codice: info.codice,
+        idScheda: info.idScheda, codice: info.codice,
         idEsercizio: info.idEsercizio,
         indiceEsercizio: info.indice,
         esercizio: info.esercizio,
@@ -568,7 +568,7 @@ function tabellaEsercizi(doc, scheda, r) {
       const ser = n(doc, "td", "c-ser" + sc);
       const serSpan = n(doc, "span", "", nomePulito(s.serie) || "—");
       if (mod) rendiCellaModificabile(doc, serSpan, mod, {
-        codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
         settimana: k + 1, campo: "serie", prima: nomePulito(s.serie) || ""
       });
       ser.appendChild(serSpan);
@@ -576,7 +576,7 @@ function tabellaEsercizi(doc, scheda, r) {
       const rip = n(doc, "td", "c-reps" + sc);
       const ripSpan = n(doc, "span", "", nomePulito(s.ripetizioni) || "—");
       if (mod) rendiCellaModificabile(doc, ripSpan, mod, {
-        codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
         settimana: k + 1, campo: "ripetizioni", prima: nomePulito(s.ripetizioni) || ""
       });
       rip.appendChild(ripSpan);

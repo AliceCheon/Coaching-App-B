@@ -1,9 +1,10 @@
 /* Barbell Diva B — il ponte fra la tabella e la zona B (passo 9).
  *
  * Qui vivono le due cose che la vista non puo' fare da sola:
- *  - la mappa codice scheda -> documento di B (la tabella mostra il codice, il
- *    documento ha un id diverso, e il codice puo' ripetersi: se si ripete non
- *    si sceglie, si rifiuta);
+ *  - la mappa id scheda -> documento di B (l'id e' quello che legge Programma
+ *    attivo; la lettera del box non si usa, perche' in B si ripete fra scheda
+ *    attiva e scheda archiviata: se un id cade su due documenti non si
+ *    sceglie, si rifiuta);
  *  - la coda delle scritture: una modifica alla volta per scheda.
  *
  * Tutte le scritture passano da comune/scritture-b.js: qui non c'e' un solo
@@ -47,6 +48,38 @@ export function mappaCodici(documenti) {
   return perCodice;
 }
 
+/* L'id della scheda -> l'id del documento nella zona B.
+ * L'id della scheda e' lo stesso che legge Programma attivo: il campo `id`
+ * della scheda ricostruita, che viene da `dati.sheetId` oppure da `sheet.id`.
+ * Restano fuori le schede archiviate e i documenti degli esercizi sciolti.
+ * La lettera non e' una chiave: in B la stessa lettera compare sia sulla
+ * scheda attiva sia su quella archiviata, ed e' il caso che faceva dire
+ * «scheda non riconosciuta in B» (8/11/2026).
+ * Ritorna { perId, doppi }: se un id cade su due documenti non si sceglie a
+ * caso, si segna fra i doppi e la modifica si rifiuta.
+ */
+export function mappaSchede(documenti) {
+  const perId = Object.create(null);
+  const doppi = Object.create(null);
+  (Array.isArray(documenti) ? documenti : []).forEach((d) => {
+    if (!d || !d.id) return;
+    const dati = d.dati || {};
+    const idDocumento = String(d.id);
+    if (dati.kind === "archived") return;
+    if (idDocumento.indexOf("program-v2-archived-") === 0) return;
+    const foglio = dati.sheet;
+    if (!foglio || typeof foglio !== "object") return;
+    [dati.sheetId, foglio.id].forEach((grezza) => {
+      const k = String(grezza == null ? "" : grezza).trim();
+      if (!k) return;
+      if (perId[k] && perId[k] !== idDocumento) { doppi[k] = true; return; }
+      perId[k] = idDocumento;
+    });
+  });
+  Object.keys(doppi).forEach((k) => { delete perId[k]; });
+  return { perId: perId, doppi: doppi };
+}
+
 export function creaEditorSchede(opzioni) {
   const o = opzioni || {};
   const db = o.db;
@@ -54,7 +87,9 @@ export function creaEditorSchede(opzioni) {
   const coda = creaCoda();
   const versioni = Object.create(null);
   const documenti = Array.isArray(o.documenti) ? o.documenti : [];
-  const perCodice = mappaCodici(documenti);
+  const mappe = mappaSchede(documenti);
+  const perIdScheda = mappe.perId;
+  const doppiScheda = mappe.doppi;
   documenti.forEach((d) => { if (d && d.id) versioni[d.id] = versioneDi(d.dati); });
   let ultima = o.ultimaVoce || null;
   let contatore = 0;
@@ -68,17 +103,31 @@ export function creaEditorSchede(opzioni) {
     return t ? String(t) : new Date().toISOString();
   }
 
-  function documentoScheda(codice) {
-    return perCodice[String(codice || "").trim()] || "";
+  /* id della scheda -> id del documento. Il legame e' per id, non per lettera. */
+  function documentoScheda(idScheda) {
+    const k = String(idScheda == null ? "" : idScheda).trim();
+    return k ? (perIdScheda[k] || "") : "";
+  }
+
+  /* Il rifiuto dice sempre QUALE id si e' cercato: senza, non si capisce
+   * niente e si finisce a indovinare. */
+  function schedaNonTrovata(idScheda) {
+    const k = String(idScheda == null ? "" : idScheda).trim();
+    if (!k) return "la tabella non ha passato nessun id di scheda: non ho scritto niente";
+    if (doppiScheda[k]) {
+      return "scheda non riconosciuta in B: l'id " + k + " compare su piu' documenti e non scelgo a caso: non ho scritto niente";
+    }
+    return "scheda non riconosciuta in B: cercavo l'id " + k + " fra " + documenti.length
+      + " documenti di schede e non c'e': non ho scritto niente";
   }
 
   /* Una modifica: si rilegge la scheda, si controlla la versione, si scrive, si
    * lascia la voce nel registro. Tutto dentro la coda della scheda. */
   function modifica(richiesta) {
     const r = richiesta || {};
-    const idScheda = String(r.idScheda || documentoScheda(r.codice) || "");
+    const idScheda = documentoScheda(r.idScheda);
     if (!idScheda) {
-      return Promise.resolve({ ok: false, motivo: "scheda non riconosciuta in B: non ho scritto niente" });
+      return Promise.resolve({ ok: false, motivo: schedaNonTrovata(r.idScheda) });
     }
     return coda.esegui(idScheda, async () => {
       const letto = await leggiSchedaB(db, uid, idScheda);
@@ -126,8 +175,10 @@ export function creaEditorSchede(opzioni) {
         ultima = null;
         return { ok: false, motivo: "non c'e' nessuna modifica da annullare" };
       }
-      const idScheda = String(voce.scheda || documentoScheda(voce.codice) || "");
-      if (!idScheda) return { ok: false, motivo: "la voce del registro non dice quale scheda" };
+      const idScheda = documentoScheda(voce.scheda);
+      if (!idScheda) {
+        return { ok: false, motivo: "la voce del registro non porta a una scheda di B · " + schedaNonTrovata(voce.scheda) };
+      }
       const letto = await leggiSchedaB(db, uid, idScheda);
       if (!letto || !letto.esiste) return { ok: false, motivo: "la scheda non e' piu' in B" };
 

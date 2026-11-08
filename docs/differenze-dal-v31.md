@@ -129,3 +129,27 @@ Cosa cambia rispetto al v31, riga per riga.
   rilettura, due modifiche di fila con una scrittura alla volta, versione diversa
   rifiutata, copia che non sovrascrive, annulla che riporta il valore di prima,
   peso sotto il limite.
+
+## Correzione dell'8 novembre 2026 · la tabella e la scheda si parlano per id
+
+Difetto visto da Alice: cambiando un numero di serie in una scheda compariva
+«scheda non riconosciuta in B: non ho scritto niente». La tabella passava la lettera
+del box («A») e l'editor la usava come chiave per trovare il documento. In B la
+lettera non e' unica: la stessa lettera sta sulla scheda attiva e su quella
+archiviata, quindi la mappa per lettera si svuotava e non restava nessun id da
+aprire. Il legame ora passa dall'id della scheda, lo stesso con cui Programma
+attivo legge il documento.
+
+- `comune/editor-schede-b.js`: nuova `mappaSchede`, che lega l'id della scheda
+  (`dati.sheetId` oppure `sheet.id`) all'id del documento in B; le schede
+  archiviate e i documenti degli esercizi sciolti restano fuori. `modifica` e
+  `annulla` usano solo quell'id, e quando la scheda non si trova il messaggio
+  dice quale id si e' cercato. `mappaCodici` resta per la prova 55.8, non e' piu'
+  il legame della tabella.
+- `comune/vista-programma.js`: le celle serie e ripetizioni passano `idScheda`
+  (l'id della scheda) accanto al codice, che resta solo per il testo a schermo.
+- `tests/56-collegamento-schede.test.mjs` (nuovo): documenti nel formato vero di
+  B (`program-v2-sheet-p1__s1`, `program-v2-archived-p1__s1`,
+  `program-v2-exercise-p1__s1__e1`); la modifica arriva alla scheda attiva e non
+  all'archiviata, la lettera da sola non basta piu', il rifiuto dice l'id cercato.
+- `tests/55-modifiche-schede.test.mjs`: le prove passano l'id della scheda.

@@ -138,7 +138,7 @@ test("55.1 una serie cambiata resta dopo la rilettura", async () => {
   });
 
   const esito = await editor.modifica({
-    codice: "A", idEsercizio: "e1", esercizio: "Panca piana", campo: "serie", settimana: 1, valore: "6"
+    idScheda: "s-A", codice: "A", idEsercizio: "e1", esercizio: "Panca piana", campo: "serie", settimana: 1, valore: "6"
   });
   assert.equal(esito.ok, true);
 
@@ -162,8 +162,8 @@ test("55.2 due modifiche di fila: una scrittura alla volta e tutte e due salvate
   });
 
   const [uno, due] = await Promise.all([
-    editor.modifica({ codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "5" }),
-    editor.modifica({ codice: "A", idEsercizio: "e1", campo: "serie", settimana: 2, valore: "7" })
+    editor.modifica({ idScheda: "s-A", codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "5" }),
+    editor.modifica({ idScheda: "s-A", codice: "A", idEsercizio: "e1", campo: "serie", settimana: 2, valore: "7" })
   ]);
   assert.equal(uno.ok, true);
   assert.equal(due.ok, true);
@@ -188,7 +188,7 @@ test("55.3 versione diversa: rifiuto con messaggio e disco intatto", async () =>
   f.sotto.schede.doc1 = Object.assign({}, f.sotto.schede.doc1, { versione: 3 });
 
   const esito = await editor.modifica({
-    codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "6"
+    idScheda: "s-A", codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "6"
   });
   assert.equal(esito.ok, false);
   assert.match(esito.motivo, /cambiata nel frattempo/);
@@ -244,7 +244,7 @@ test("55.5 annulla: torna il valore di prima e il registro cresce", async () => 
     db: f.db, uid: "u1", documenti: [{ id: "doc1", dati: partenza }], orologio: orologio()
   });
 
-  await editor.modifica({ codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "6" });
+  await editor.modifica({ idScheda: "s-A", codice: "A", idEsercizio: "e1", campo: "serie", settimana: 1, valore: "6" });
   assert.equal(editor.annullabile, true);
 
   const esito = await editor.annulla();
