@@ -144,9 +144,53 @@ function pulsanteConEtichetta(doc, classe, testo, etichetta, titolo) {
   return b;
 }
 
+/* Passo 9: un pulsante che si preme. Stessa classe, stesso aspetto; cambia solo
+ * che non porta "spento" e risponde al clic. */
+function pulsanteVivo(doc, classe, testo, titolo) {
+  const b = n(doc, "button", classe, testo);
+  b.type = "button";
+  if (titolo) b.title = titolo;
+  return b;
+}
+
+/* Passo 9: una cella serie o ripetizioni che si puo' scrivere. L'aspetto e'
+ * identico al v31: nessun bordo, nessun colore nuovo. Si entra col clic, si
+ * conferma con Invio (o uscendo dalla cella), si rinuncia con Esc. Il valore
+ * che parte da qui passa da mod.onCambia, che scrive SOLO nella zona B. */
+function rendiCellaModificabile(doc, span, mod, info) {
+  span.setAttribute("contenteditable", "true");
+  span.setAttribute("spellcheck", "false");
+  span.setAttribute("data-campo", info.campo);
+  span.setAttribute("data-settimana", String(info.settimana));
+  span.setAttribute("data-prima", info.prima);
+  span.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); span.blur(); }
+    else if (e.key === "Escape") {
+      e.preventDefault();
+      span.textContent = info.prima || "—";
+      span.blur();
+    }
+  });
+  span.addEventListener("blur", () => {
+    const valore = String(span.textContent || "").trim();
+    if (valore === info.prima) return;
+    if (typeof mod.onCambia === "function") {
+      mod.onCambia({
+        codice: info.codice,
+        idEsercizio: info.idEsercizio,
+        indiceEsercizio: info.indice,
+        esercizio: info.esercizio,
+        settimana: info.settimana,
+        campo: info.campo,
+        valore: valore
+      });
+    }
+  });
+}
+
 /* ---------- la testa della pagina ---------------------------------------- */
 
-function testata(doc) {
+function testata(doc, modifica) {
   const c = n(doc, "div", "pr-head");
   const top = n(doc, "div", "pg-top");
 
@@ -158,8 +202,17 @@ function testata(doc) {
   d.appendChild(n(doc, "p", "pg-sub", "Una scheda alla volta con le linguette: rotazione, stato e libreria del programma stanno qui sopra, la tabella sotto."));
   top.appendChild(d);
 
-  const annulla = pulsanteSpento(doc, "pg-undo spento", "\u21b6 Annulla", "annulla l'ultima modifica");
+  const mod = modifica || null;
+  const annulla = mod && mod.attivo
+    ? pulsanteVivo(doc, "pg-undo", "\u21b6 Annulla", "annulla l'ultima modifica")
+    : pulsanteSpento(doc, "pg-undo spento", "\u21b6 Annulla", "annulla l'ultima modifica");
   annulla.appendChild(n(doc, "b", "", "ctrl z"));
+  if (mod && mod.attivo) {
+    annulla.disabled = !mod.annullabile;
+    annulla.addEventListener("click", () => {
+      if (typeof mod.onAnnulla === "function") mod.onAnnulla();
+    });
+  }
   top.appendChild(annulla);
 
   top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi"));
@@ -383,6 +436,7 @@ function cerchioPiu(doc) {
  * pagina non salva. Sotto la tabella non c'è nessuna frase: nel v31 non c'è.
  * Dove un dato manca si scrive il trattino, come fa il v31. */
 function tabellaEsercizi(doc, scheda, r) {
+  const mod = r && r.modifica && r.modifica.attivo === true ? r.modifica : null;
   const elenco = scheda.esercizi || [];
   const quante = (r && r.profilo && r.profilo.durata) || 8;
   const scritte = elenco.map((e) => (e.prescrizione && e.prescrizione.elencoSettimane) || []);
@@ -512,10 +566,20 @@ function tabellaEsercizi(doc, scheda, r) {
     perRiga[indice].forEach((s, k) => {
       const sc = inScarico(k) ? " sc-col" : "";
       const ser = n(doc, "td", "c-ser" + sc);
-      ser.appendChild(n(doc, "span", "", nomePulito(s.serie) || "—"));
+      const serSpan = n(doc, "span", "", nomePulito(s.serie) || "—");
+      if (mod) rendiCellaModificabile(doc, serSpan, mod, {
+        codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        settimana: k + 1, campo: "serie", prima: nomePulito(s.serie) || ""
+      });
+      ser.appendChild(serSpan);
       tr.appendChild(ser);
       const rip = n(doc, "td", "c-reps" + sc);
-      rip.appendChild(n(doc, "span", "", nomePulito(s.ripetizioni) || "—"));
+      const ripSpan = n(doc, "span", "", nomePulito(s.ripetizioni) || "—");
+      if (mod) rendiCellaModificabile(doc, ripSpan, mod, {
+        codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        settimana: k + 1, campo: "ripetizioni", prima: nomePulito(s.ripetizioni) || ""
+      });
+      rip.appendChild(ripSpan);
       tr.appendChild(rip);
     });
 
@@ -853,9 +917,10 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
     osservato: r.osservato || { righe: [], conCodice: 0, dentro: 0, fuori: 0, senzaData: 0, totale: 0 },
     settimane: r.settimane || [],
     esercizi: r.esercizi == null ? null : r.esercizi,
-    fonteSchede: r.fonteSchede || null
+    fonteSchede: r.fonteSchede || null,
+    modifica: r.modifica || null
   };
-  contenitore.appendChild(testata(doc));
+  contenitore.appendChild(testata(doc, pieno.modifica));
   const tre = n(doc, "div", "pr-grid");
   tre.appendChild(cartaProgramma(doc, pieno));
   tre.appendChild(cartaRotazione(doc, pieno));

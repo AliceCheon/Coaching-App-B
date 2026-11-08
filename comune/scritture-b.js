@@ -145,3 +145,37 @@ export async function escludiSeduta(db, uid, idSeduta, info) {
   const copia = await marcaEsclusaLaCopia(db, uid, idSeduta, quando);
   return { idSeduta: String(idSeduta), quando, copia: copia.copia === true, notaCopia: copia.motivo || null };
 }
+
+
+/* ---------- Una singola scheda (passo 9) ---------------------------------
+ * La modifica delle schede passa di qui: si rilegge il documento, si confronta
+ * la versione e solo allora si scrive. Cosi' due schede aperte non si
+ * sovrascrivono a vicenda e una scrittura vecchia non torna buona.
+ */
+
+export class ErroreVersione extends Error {
+  constructor(messaggio) {
+    super(messaggio);
+    this.name = "ErroreVersione";
+  }
+}
+
+export function leggiSchedaB(db, uid, id) {
+  const rif = riferimentoB(db, uid, SOTTO_B.schede, id);
+  return rif.get().then((istantanea) => {
+    if (!istantanea || !istantanea.exists) return { id: String(id), esiste: false, dati: null };
+    return { id: String(id), esiste: true, dati: (istantanea.data && istantanea.data()) || {} };
+  });
+}
+
+export async function salvaSchedaConVersione(db, uid, id, dati, versioneAttesa) {
+  const letto = await leggiSchedaB(db, uid, id);
+  if (!letto.esiste) throw new ErroreVersione("la scheda non e' ancora in B: fai prima la copia");
+  const sulDisco = Number(letto.dati.versione) || 0;
+  const attesa = Number(versioneAttesa) || 0;
+  if (sulDisco !== attesa) {
+    throw new ErroreVersione("la scheda e' cambiata nel frattempo (versione " + sulDisco +
+      " invece di " + attesa + "): non ho scritto niente");
+  }
+  return riferimentoB(db, uid, SOTTO_B.schede, id).set(dati);
+}

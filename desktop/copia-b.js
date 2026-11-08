@@ -32,8 +32,10 @@ import {
   confrontaCopia,
   righeConfronto,
   fotografia,
-  descriviFotografia
+  descriviFotografia,
+  dataLeggibile
 } from "../comune/copia-b.js";
+import { protezioneCopia, testoProtezione } from "../comune/modifiche-b.js";
 
 const config = window.BD_B || {};
 const sdk = window.firebase;
@@ -115,15 +117,30 @@ async function conta(uid) {
   mostra("stato", "Leggo A (sola lettura)…", "");
 
   try {
-    const [radiceDoc, programmi, schede, sedute, esclusioni] = await Promise.all([
+    const [radiceDoc, programmi, schede, sedute, esclusioni, schedeInB] = await Promise.all([
       leggiDocumentoAtleta(db, uid),
       leggiProgrammiGrezzi(db, uid),
       leggiSchedeGrezze(db, uid),
       leggiSeduteGrezze(db, uid),
-      leggiZonaB(db, uid, "esclusioni")
+      leggiZonaB(db, uid, "esclusioni"),
+      leggiZonaB(db, uid, "schede")
     ]);
     const nuovo = pianoDiCopia({ programmi: programmi, schede: schede, sedute: sedute, esclusioni: esclusioni });
     nuovo.radice = radiceDoc;
+
+    /* Passo 9 — le schede modificate in B non si sovrascrivono. Si dichiara
+     * quali sono e cosa cambia rispetto ad A; la copia non decide da sola. */
+    const protezione = protezioneCopia(
+      nuovo.voci.filter((v) => v.famiglia === "schede"),
+      schedeInB
+    );
+    nuovo.protezione = protezione;
+    const rigaProtette = el("protette");
+    if (rigaProtette) {
+      const testoProt = testoProtezione(protezione, dataLeggibile);
+      rigaProtette.textContent = testoProt;
+      rigaProtette.hidden = !testoProt;
+    }
 
     el("conteggi-a").textContent = riepilogo(nuovo).map((r) => r.etichetta + ": " + r.quante).join(" · ") +
       " · totale da scrivere: " + nuovo.totaleScritture;
@@ -204,12 +221,15 @@ async function copia(uid) {
   }
   el("conta").disabled = true;
   el("copia").disabled = true;
+  const protetteId = (piano.protezione && piano.protezione.protetteId) || [];
   const voci = piano.voci.slice();
   let fatte = 0;
+  let saltate = 0;
   el("avanzamento").max = voci.length;
 
   try {
     for (const voce of voci) {
+      if (protetteId.indexOf(voce.id) !== -1) { saltate += 1; continue; }
       if (voce.famiglia === "programmi") await copiaProgramma(db, uid, voce.id, voce.dati);
       else if (voce.famiglia === "schede") await copiaScheda(db, uid, voce.id, voce.dati);
       else if (voce.famiglia === "esercizi") await copiaEsercizio(db, uid, voce.id, voce.dati);
@@ -266,9 +286,17 @@ async function copia(uid) {
 
     const riletto = await leggiFotografia(db, uid);
     el("fotografia").textContent = descriviFotografia(riletto);
+    const notaProtette = saltate
+      ? " Le schede protette (" + saltate + ") sono rimaste come sono: se il confronto le segnala diverse, e' quello che deve succedere."
+      : "";
     mostra("stato", doc.coincide
-      ? "Copia finita e confronto a posto."
-      : "Copia finita, ma il confronto NON coincide: guarda la tabella.", doc.coincide ? "pronto" : "errore");
+      ? "Copia finita e confronto a posto." + notaProtette
+      : "Copia finita, ma il confronto NON coincide: guarda la tabella." + notaProtette, doc.coincide ? "pronto" : "errore");
+    const rigaProtette2 = el("protette");
+    if (rigaProtette2 && saltate) {
+      rigaProtette2.textContent = rigaProtette2.textContent + " Ultima copia: " + saltate +
+        (saltate === 1 ? " scheda protetta saltata" : " schede protette saltate") + ", nessuna sovrascrittura.";
+    }
   } finally {
     el("conta").disabled = false;
     el("copia").disabled = false;

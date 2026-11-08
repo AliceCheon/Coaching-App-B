@@ -20,6 +20,9 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
+import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
+import { creaEditorSchede } from "../comune/editor-schede-b.js";
+import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
@@ -170,6 +173,40 @@ function notaLogbook(doc, lb) {
  * lasciato al seme di esempio del v31): un numero inventato sarebbe peggio di
  * un numero assente. L'aspetto delle schermate non cambia: questo riquadro si
  * vede solo quando non c'e' niente da mostrare. */
+/* Passo 9 — la riga di stato delle modifiche. Sta FUORI dal contenitore del
+ * Programma, cosi' il ridisegno della tabella non la cancella: l'avviso resta
+ * leggibile finche' non arriva il successivo. */
+let rigaStato = null;
+
+function creaRigaStato(doc) {
+  const contenitore = doc.querySelector("#programma-attivo");
+  if (!contenitore || !contenitore.parentNode) return null;
+  const riga = doc.createElement("div");
+  riga.id = "modifica-stato";
+  riga.className = "pr-hint";
+  riga.hidden = true;
+  contenitore.parentNode.insertBefore(riga, contenitore.nextSibling);
+  return riga;
+}
+
+function segnalaModifica(testo, tono) {
+  if (!rigaStato) return;
+  rigaStato.textContent = testo || "";
+  rigaStato.hidden = !testo;
+  rigaStato.setAttribute("data-tono", tono || "");
+}
+
+function oraBreve(iso) {
+  const d = new Date(String(iso));
+  if (Number.isNaN(d.getTime())) return "ora non leggibile";
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+
+function kb(byte) {
+  const n = Number(byte) || 0;
+  return n < 1024 ? n + " B" : Math.round(n / 1024) + " KB";
+}
+
 function mostraZonaBIncompleta(doc, win, avviso) {
   const testo = avviso || "La zona B non e' pronta: fai prima la copia.";
   const contenitore = doc.querySelector("#programma-attivo");
@@ -255,6 +292,19 @@ export async function avvia(doc, win) {
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = { programmi: zona.programmi };
     const schedeV2 = zona.schedeV2;
+    if (!rigaStato) rigaStato = creaRigaStato(doc);
+    /* Passo 9 — l'editor delle schede: serie e ripetizioni di una settimana,
+     * scritte SOLO nella zona B, una alla volta e con il controllo di versione. */
+    const schedeGrezze = await leggiZonaB(db, utente.uid, "schede");
+    const registroB = await leggiZonaB(db, utente.uid, "registro");
+    const fotografiaB = await leggiFotografia(db, utente.uid);
+    const editor = creaEditorSchede({
+      db: db,
+      uid: utente.uid,
+      documenti: schedeGrezze,
+      fotografia: fotografiaB,
+      ultimaVoce: ultimaAnnullabile(registroB)
+    });
     const attivo = programmaAttivo(programmi.programmi || []);
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
@@ -271,7 +321,30 @@ export async function avvia(doc, win) {
      * desktop/diagnosi.html (temporanea) dice quali nomi usa davvero il
      * documento; quando li sapremo si collega il campo giusto. */
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
-    if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, rp);
+    if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
+      modifica: {
+        attivo: true,
+        annullabile: editor.annullabile,
+        onAnnulla: () => {
+          editor.annulla().then((esito) => {
+            segnalaModifica(esito.ok
+              ? "annullato · S" + esito.voce.settimana + " " + esito.voce.campo + " torna a " + (esito.voce.dopo || "vuoto")
+              : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
+            return leggi(utente);
+          });
+        },
+        onCambia: (richiesta) => editor.modifica(richiesta).then((esito) => {
+          if (esito.ok) {
+            segnalaModifica("salvato · scheda " + esito.voce.codice + " · S" + esito.voce.settimana +
+              " " + esito.voce.campo + ": " + (esito.voce.dopo || "vuoto") +
+              " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
+          } else {
+            segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+          }
+          return leggi(utente);
+        })
+      }
+    }));
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
     /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri. */

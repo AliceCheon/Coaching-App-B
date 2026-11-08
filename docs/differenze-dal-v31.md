@@ -98,3 +98,34 @@ pagina Copia, che serve a copiare.
   il Logbook invece di lasciargli il seme di esempio. Nessun ripiego su A.
 - I numeri non cambiano: 126 sedute senza esclusioni, 121 con le cinque
   esclusioni di Alice (`tests/54-fonte-b.test.mjs`, su dati di prova).
+
+## Passo 9 — le schede si modificano in B, e la Copia non sovrascrive (8/11/2026)
+
+Cosa cambia rispetto al v31, riga per riga.
+
+- `comune/modifiche-b.js` (nuovo, puro): `cambiaSerieRipetizioni` tocca SOLO
+  `sets` e `reps` di una settimana di un esercizio che c'e' gia'; `annullaModifica`
+  rimette il valore di prima; `ultimaAnnullabile` legge il registro;
+  `protezioneCopia` e `differenzeScheda` dicono quali schede non vanno sovrascritte
+  e cosa cambia; `misuraPeso` conta i byte; `creaCoda` accoda per scheda.
+- `comune/editor-schede-b.js` (nuovo): mappa codice scheda verso documento, coda
+  per scheda, rilettura prima di scrivere, versione, voce nel registro.
+- `comune/scritture-b.js`: aggiunte `leggiSchedaB`, `salvaSchedaConVersione` e
+  `ErroreVersione`. Resta l'unico modulo che scrive, e scrive solo nella zona B.
+- `comune/vista-programma.js`: le celle ser e reps diventano scrivibili quando il
+  modello porta `modifica` (prima erano sempre testo). Il pulsante «Annulla
+  ctrl z» si accende e chiama `onAnnulla`; resta spento quando non c'e' niente da
+  annullare. Nessun altro comando si accende: Rec. resta spento, e cosi' TUT,
+  nota, tecniche, sostituzione, aggiungi/togli.
+- `desktop/app-v31.js`: legge schede e registro dalla zona B, crea l'editor,
+  passa il modello alla vista e mostra la riga di stato `#modifica-stato`
+  (salvato, rifiutato, peso della radice e della scheda) fuori dal contenitore
+  del Programma, cosi' il ridisegno non la cancella.
+- `desktop/copia-b.js` e `desktop/copia-b.html`: al conteggio si leggono le
+  schede gia' in B; quelle con il marchio `modificatoInB` si dichiarano in
+  `#protette` e la copia le salta. Il confronto finale le segnala come diverse:
+  ed e' scritto a schermo che deve succedere.
+- `tests/55-modifiche-schede.test.mjs` (nuovo): modifica che resta dopo la
+  rilettura, due modifiche di fila con una scrittura alla volta, versione diversa
+  rifiutata, copia che non sovrascrive, annulla che riporta il valore di prima,
+  peso sotto il limite.
