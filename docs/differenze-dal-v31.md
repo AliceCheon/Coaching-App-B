@@ -217,3 +217,46 @@ lettera e usciva dalla cella. Rifatto così.
 **Test**: tests/58-rec-tut-menu.test.mjs (58.1-58.7): nessun select nelle celle, il menu con le voci di sempre, la scelta che chiude e scrive, il TUT senza pulsantini, la chiusura con clic fuori e con Esc, l'ordine meno · valore · più · freccia, il testo intero nel title.
 
 Non cambia niente nella scrittura: cambiaRecTempo e comune/scritture-b.js restano come nel passo 10.
+
+## Passo 11 dell'8 novembre 2026 · in Rec e TUT solo il valore, la frase in Descr./Setup
+
+Alice ha visto sul sito vero due errori: le frasi del coach tornate dentro le
+celle Rec e TUT, e la tabella ancora stretta con il testo a capo lettera per
+lettera. Qui si correggono tutti e due.
+
+**La regola di colonna.** Nelle celle Rec e TUT stanno solo i valori:
+
+- TUT: la sequenza di tre o quattro numeri uniti da trattini (`2-0-1`,
+  `3-1-1`, `2-1-0-1`); la barra si accetta e si mostra con i trattini.
+- REC: `2-3'`, `120-180 sec`, `90"`, `1'30"`, `2'30"`, `1'-2'`; la virgola
+  del v31 (`1,30'`) si mostra come `1'30"`.
+
+Tutto il resto del testo e' la frase del coach e va in Descr./Setup con
+l'etichetta davanti (`REC: ...`, `TUT: ...`), sia in sola lettura sia con
+l'editor acceso, e mai due volte: se la frase e' gia' dentro la nota, non si
+ripete.
+
+**Come si separano.** Il valore si prende in fondo al testo, perche' li' sta il
+recupero che si prescrive davvero: «No recupero tra le braccia e poi 1,30'»
+diventa valore `1'30"` e frase «No recupero tra le braccia e poi». Se un valore
+riconoscibile non c'e', la cella resta vuota (trattino) e la frase sta lo stesso
+in Descr./Setup. Le funzioni stanno in `comune/tut-rec.js`:
+`separaRecupero`, `separaTempo`, `sostituisciRecupero`, `sostituisciTempo`,
+`normalizzaValoreRecupero`, `normalizzaValoreTempo`.
+
+**Le modifiche.** Scegliendo un valore dalla freccetta o usando + e -, cambia
+solo il valore: `sostituisciRecupero` / `sostituisciTempo` rimettono il valore
+nuovo al posto di quello vecchio dentro il testo di sempre, e la frase resta
+parola per parola nel dato. Se il valore non c'era, il valore nuovo va in fondo
+alla frase. Scrivendo a mano nella cella succede lo stesso: nel dato va il testo
+intero, non il solo valore.
+
+**La tabella vera.** Colonne Rec 136 px, TUT 124 px, Descr./Setup 210 px,
+larghezza minima della tabella 1470 px: i valori corti non hanno piu' bisogno di
+tre righe e la freccetta resta fuori dal valore. La prova a schermo e' stata
+rifatta sulla pagina vera (`desktop/index.html` con `app-v31.js`) a 1280, 1440
+e 1920 px, non piu' sulla pagina di prova.
+
+**I test.** Nuovo `tests/59-rec-tut-solo-valore.test.mjs`: la separazione sui
+casi veri del v31, la scrittura che conserva la frase, la cella che con l'editor
+acceso mostra il solo valore e la frase in Descr./Setup una volta sola.

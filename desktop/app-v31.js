@@ -29,6 +29,22 @@ import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 
+/* ---------- il foglio di stile di B --------------------------------------
+ * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
+ * regole di B (tabella compresa). Il foglio vero e' comune/dashboard-b.css: lo
+ * si carica qui, per ultimo nel body, cosi' le misure della tabella e le celle
+ * di Rec e TUT sono quelle del foglio che si mantiene, non quelle della copia.
+ */
+function caricaFoglioB(doc, base) {
+  if (!doc || !doc.body || doc.getElementById("foglio-b")) return;
+  const l = doc.createElement("link");
+  l.id = "foglio-b";
+  l.rel = "stylesheet";
+  l.href = new URL("../comune/dashboard-b.css", base || import.meta.url).href;
+  doc.body.appendChild(l);
+}
+caricaFoglioB(document);
+
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
 function montaCartaAccesso(doc) {

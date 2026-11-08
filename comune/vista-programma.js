@@ -19,9 +19,11 @@
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
+  separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
   recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
   REC_TENDINA, TUT_TENDINA, passoRecupero
 } from "./tut-rec.js";
+
 import { nomePulito } from "./nome-pulito.js";
 
 function n(doc, tag, classe, testo) {
@@ -307,28 +309,70 @@ function pulsantePasso(doc, delta, titolo, suPasso) {
   return b;
 }
 
-/* Il recupero: testo libero, i due pulsantini che vanno di 30" e la freccetta
- * con i valori di sempre. Tutto in una riga sola (niente roba sopra le altre
- * celle). Se nella cella c'e' una frase, i pulsantini non la toccano. */
+/* Il valore della cella si scrive a mano, ma nel dato va il testo intero: la
+ * frase di coach resta com'e' e cambia solo il valore (regola di Alice,
+ * 8/11/2026). `componi` costruisce il testo intero e dice com'era prima. */
+function rendiValoreModificabile(doc, span, mod, info, componi) {
+  span.setAttribute("contenteditable", "true");
+  span.setAttribute("spellcheck", "false");
+  span.setAttribute("data-campo", info.campo);
+  span.setAttribute("data-prima", info.prima);
+  span.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); span.blur(); }
+    else if (e.key === "Escape") {
+      e.preventDefault();
+      span.textContent = span.getAttribute("data-prima") || "\u2014";
+      span.blur();
+    }
+  });
+  span.addEventListener("blur", () => {
+    const testo = String(span.textContent || "").trim();
+    const valore = testo === "\u2014" ? "" : testo;
+    if (valore === String(span.getAttribute("data-prima") || "")) return;
+    if (typeof mod.onCambia !== "function") return;
+    const esito = componi(valore);
+    span.textContent = valore || "\u2014";
+    span.title = valore || "";
+    span.setAttribute("data-prima", valore);
+    mod.onCambia({
+      idScheda: info.idScheda, codice: info.codice,
+      idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
+      esercizio: info.esercizio, settimana: null,
+      campo: info.campo, valore: esito.dopo, prima: esito.prima
+    });
+  });
+}
+
+/* Il recupero: in cella il solo valore, i due pulsantini che vanno di 30" e la
+ * freccetta con i valori di sempre. La frase del coach sta in Descr./Setup e
+ * nel dato non si tocca: cambia solo il valore. */
 function rendiCellaRecupero(doc, td, mod, info) {
-  const primo = String(info.valore || "");
+  let intero = String(info.intero || "");
   const riga = n(doc, "div", "rec-riga");
-  const span = n(doc, "span", "rec", primo || "\u2014");
-  if (primo) span.title = primo;
-  rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", settimana: null, prima: primo }));
-  const scrivi = (dopo) => {
-    const prima = String(span.getAttribute("data-prima") || "");
-    span.textContent = dopo || "\u2014";
-    span.title = dopo || "";
-    span.setAttribute("data-prima", dopo);
-    inviaModifica(mod, info, "recupero", dopo, prima);
+  const span = n(doc, "span", "rec", info.valore || "\u2014");
+  if (info.valore) span.title = info.valore;
+  const componi = (nuovoValore) => {
+    const prima = intero;
+    intero = sostituisciRecupero(intero, nuovoValore);
+    span.setAttribute("data-prima", nuovoValore);
+    return { dopo: intero, prima: prima };
+  };
+  const scrivi = (scelto) => {
+    const nuovoValore = separaRecupero(scelto).valore || String(scelto || "").trim();
+    if (!nuovoValore) return;
+    const esito = componi(nuovoValore);
+    if (esito.dopo === esito.prima) return;
+    span.textContent = nuovoValore;
+    span.title = nuovoValore;
+    inviaModifica(mod, info, "recupero", esito.dopo, esito.prima);
   };
   const passo = (delta) => {
     const attuale = String(span.getAttribute("data-prima") || "");
     const dopo = passoRecupero(attuale, delta);
-    if (!dopo) return; /* frase libera o limite raggiunto: non si tocca niente */
+    if (!dopo) return; /* non e' un tempo o limite raggiunto: non si tocca niente */
     scrivi(dopo);
   };
+  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", prima: info.valore || "" }), componi);
   riga.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
   riga.appendChild(span);
   riga.appendChild(pulsantePasso(doc, 30, "pi\u00f9 30 secondi", passo));
@@ -337,20 +381,28 @@ function rendiCellaRecupero(doc, td, mod, info) {
   return span;
 }
 
-/* Il TUT: testo libero e la freccetta con gli schemi. Nessun pulsantino. */
+/* Il TUT: in cella il solo schema, la freccetta con i valori, nessun pulsantino. */
 function rendiCellaTut(doc, td, mod, info) {
-  const primo = String(info.valore || "");
+  let intero = String(info.intero || "");
   const riga = n(doc, "div", "tut-riga");
-  const span = n(doc, "span", "tut", primo || "\u2014");
-  if (primo) span.title = primo;
-  rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", settimana: null, prima: primo }));
-  const scrivi = (dopo) => {
-    const prima = String(span.getAttribute("data-prima") || "");
-    span.textContent = dopo || "\u2014";
-    span.title = dopo || "";
-    span.setAttribute("data-prima", dopo);
-    inviaModifica(mod, info, "tempo", dopo, prima);
+  const span = n(doc, "span", "tut", info.valore || "\u2014");
+  if (info.valore) span.title = info.valore;
+  const componi = (nuovoValore) => {
+    const prima = intero;
+    intero = sostituisciTempo(intero, nuovoValore);
+    span.setAttribute("data-prima", nuovoValore);
+    return { dopo: intero, prima: prima };
   };
+  const scrivi = (scelto) => {
+    const nuovoValore = separaTempo(scelto).valore || String(scelto || "").trim();
+    if (!nuovoValore) return;
+    const esito = componi(nuovoValore);
+    if (esito.dopo === esito.prima) return;
+    span.textContent = nuovoValore;
+    span.title = nuovoValore;
+    inviaModifica(mod, info, "tempo", esito.dopo, esito.prima);
+  };
+  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", prima: info.valore || "" }), componi);
   riga.appendChild(span);
   riga.appendChild(rendiFreccia(doc, "freccia-tut", TUT_TENDINA, "TUT: scegli un valore", scrivi));
   td.appendChild(riga);
@@ -707,17 +759,26 @@ function tabellaEsercizi(doc, scheda, r) {
      * così i bottoni −/+ non gli finiscono sopra. */
     const recTesto = String((e.prescrizione && e.prescrizione.recupero) || "").trim();
     const tutTesto = String((e.prescrizione && e.prescrizione.tempo) || "").trim();
-    const recInColonna = recuperoInColonna(recTesto);
-    const tutInColonna = tempoInColonna(tutTesto);
-    const recMostrato = nomePulito(recTesto);
-    const tutMostrato = nomePulito(tutTesto);
+    /* Solo il valore in colonna, la frase del coach in Descr./Setup una volta
+     * sola, anche con l'editor acceso (regola di Alice, 8/11/2026). */
+    const recParti = separaRecupero(recTesto);
+    const tutParti = separaTempo(tutTesto);
+    const recMostrato = nomePulito(recParti.valore);
+    const tutMostrato = nomePulito(tutParti.valore);
+    const recFrase = nomePulito(recParti.frase);
+    const tutFrase = nomePulito(tutParti.frase);
+    const notaTesto = nomePulito(e.nota) || "";
 
     const nota = n(doc, "td", "c-note");
-    const pn = n(doc, "span", "p8-note", nomePulito(e.nota) || "");
-    pn.setAttribute("data-ph", "nota coach…");
+    const pn = n(doc, "span", "p8-note", notaTesto);
+    pn.setAttribute("data-ph", "nota coach\u2026");
     nota.appendChild(pn);
-    if (!mod && !recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", nomePulito(recTesto))));
-    if (!mod && !tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", nomePulito(tutTesto))));
+    if (recFrase && notaTesto.indexOf(recFrase) === -1) {
+      nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", recFrase)));
+    }
+    if (tutFrase && notaTesto.indexOf(tutFrase) === -1) {
+      nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", tutFrase)));
+    }
     tr.appendChild(nota);
 
     /* Rec e TUT (passo 10): si scrivono a mano, la freccetta offre i valori di
@@ -731,20 +792,21 @@ function tabellaEsercizi(doc, scheda, r) {
     };
     const rec = n(doc, "td", "c-rec");
     if (mod) {
-      rendiCellaRecupero(doc, rec, mod, Object.assign({}, datiCella, { valore: recMostrato }));
+      rendiCellaRecupero(doc, rec, mod, Object.assign({}, datiCella, { valore: recMostrato, intero: recTesto }));
     } else {
-      rec.appendChild(pulsanteSpento(doc, "stp", "−", "meno 30 secondi"));
-      const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recMostrato).testo : "—");
-      if (recInColonna && recTesto) recSpan.title = recMostrato;
+      rec.appendChild(pulsanteSpento(doc, "stp", "\u2212", "meno 30 secondi"));
+      const recSpan = n(doc, "span", "rec", recMostrato ? recuperoVisibile(recMostrato).testo : "\u2014");
+      if (recMostrato) recSpan.title = recMostrato;
       rec.appendChild(recSpan);
-      rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 30 secondi"));
+      rec.appendChild(pulsanteSpento(doc, "stp", "+", "pi\u00f9 30 secondi"));
     }
     tr.appendChild(rec);
 
     const tut = n(doc, "td", "c-tut");
-    if (mod) rendiCellaTut(doc, tut, mod, Object.assign({}, datiCella, { valore: tutMostrato }));
-    else tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutMostrato : "—"));
+    if (mod) rendiCellaTut(doc, tut, mod, Object.assign({}, datiCella, { valore: tutMostrato, intero: tutTesto }));
+    else tut.appendChild(n(doc, "span", "tut", tutMostrato || "\u2014"));
     tr.appendChild(tut);
+
 
     perRiga[indice].forEach((s, k) => {
       const sc = inScarico(k) ? " sc-col" : "";

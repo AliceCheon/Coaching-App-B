@@ -134,7 +134,7 @@ test("41.06 font e larghezza: JetBrains Mono in casa e la tabella larga come il 
   assert.ok(/JetBrains Mono/.test(css));
   [400, 500, 600].forEach((w) => assert.ok(fs.existsSync("comune/font/jetbrains-mono-" + w + ".woff2")));
   const tab = fs.readFileSync("comune/dashboard-b.css", "utf8");
-  assert.ok(/min-width:1374px/.test(tab));
+  assert.ok(/min-width:1470px/.test(tab));
   ["w-js{width:40px}", "w-reps{width:52px}", "w-ult{width:68px}", "w-note{width:178px}"].forEach((f) => assert.ok(tab.indexOf(f) !== -1, f));
 });
 
