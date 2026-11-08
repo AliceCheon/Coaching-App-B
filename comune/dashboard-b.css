@@ -765,3 +765,19 @@ td.c-rec .rec.scrittura,td.c-tut .tut.scrittura{display:inline-block;-webkit-lin
 #pag-programma-1 td.c-rec.in-scrittura,#pag-programma-1 td.c-tut.in-scrittura,
 td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
 #pag-programma-1 .p8-tab.scrittura-tabella{width:auto}
+
+/* A qualunque larghezza la tabella non si stringe: se non ci sta, scorre in
+ * orizzontale dentro .p8-scroll (regola di Alice, 8/11/2026). Le copie vecchie
+ * del foglio stanno dentro index.html, quindi qui serve anche !important.
+ * Sotto i 1265 px le colonne si dimensionano sul contenuto: cosi' il valore non
+ * si spezza lettera per lettera e la tabella scorre invece di stringere. */
+#pag-programma-1 .p8-scroll{overflow-x:auto}
+@media (max-width:1265px){
+  #pag-programma-1 .p8-tab{min-width:1470px !important;table-layout:auto !important;width:auto !important}
+  #pag-programma-1 .p8-tab col.w-note{width:210px !important}
+  #pag-programma-1 .p8-tab col.w-rec{width:136px !important}
+  #pag-programma-1 .p8-tab col.w-tut{width:124px !important}
+  #pag-programma-1 td.c-rec .rec,#pag-programma-1 td.c-tut .tut{white-space:nowrap !important;
+    word-break:normal !important;overflow-wrap:normal !important;-webkit-line-clamp:unset !important;
+    line-clamp:unset !important;overflow:hidden !important;text-overflow:ellipsis}
+}
