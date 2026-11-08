@@ -49,7 +49,7 @@ test("41.01 ripetizioni e recupero si leggono come li scrive il v31", () => {
   assert.equal(testoRipetizioni({ sequence: [10, 8] }), "10-8");
   assert.equal(testoRipetizioni({ label: "10-8-x" }), "10-8-x");
   assert.equal(testoRipetizioni({ label: "test 12rm → 8" }), "test 12rm → 8");
-  assert.equal(testoRecupero({ seconds: 90 }), "90 sec");
+  assert.equal(testoRecupero({ seconds: 90 }), "90\"");
   assert.equal(testoRecupero({ seconds: 120 }), "2'");
   assert.equal(testoSerie({ value: 5 }), "5");
 });
@@ -129,12 +129,12 @@ test("41.05 recupero in REC., scarico in evidenza, controlli spenti, nessuna fra
   assert.ok(!doc.querySelector(".p8-scroll").parentElement.textContent.includes("Otto settimane"));
 });
 
-test("41.06 font e larghezza: JetBrains Mono in casa e la tabella larga come il v31", () => {
+test("41.06 font e larghezza: JetBrains Mono in casa e la tabella larga per la Rec su una riga", () => {
   const css = fs.readFileSync("comune/tema-b.css", "utf8");
   assert.ok(/JetBrains Mono/.test(css));
   [400, 500, 600].forEach((w) => assert.ok(fs.existsSync("comune/font/jetbrains-mono-" + w + ".woff2")));
   const tab = fs.readFileSync("comune/dashboard-b.css", "utf8");
-  assert.ok(/min-width:1470px/.test(tab));
+  assert.ok(/min-width:1500px/.test(tab));
   ["w-js{width:40px}", "w-reps{width:52px}", "w-ult{width:68px}", "w-note{width:210px}"].forEach((f) => assert.ok(tab.indexOf(f) !== -1, f));
 });
 

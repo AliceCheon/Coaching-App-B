@@ -317,8 +317,8 @@ function pulsantePasso(doc, delta, titolo, suPasso) {
  * mai e, se non ci sta, la tabella scorre in orizzontale. Finita la scrittura
  * tornano le misure di sempre. */
 const COLONNA_CAMPO = { recupero: "w-rec", tempo: "w-tut" };
-const BASE_COLONNA = { recupero: 136, tempo: 124 };
-const TABELLA_MIN = 1470;
+const BASE_COLONNA = { recupero: 170, tempo: 124 };
+const TABELLA_MIN = 1500;
 
 function telaMisura(doc) {
   if (!telaMisura.tela) {
@@ -862,7 +862,7 @@ function tabellaEsercizi(doc, scheda, r) {
      * testo intero, perche' e' quello che si modifica; in sola lettura la frase
      * di coach torna spostata in Descr./Setup come prima. */
     const datiCella = {
-      idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome),
+      idScheda: scheda.id, codice: scheda.codice, esercizio: String(e.nome == null ? "" : e.nome).trim(),
       idEsercizio: e.id, indice: indice
     };
     const rec = n(doc, "td", "c-rec");
@@ -888,7 +888,7 @@ function tabellaEsercizi(doc, scheda, r) {
       const ser = n(doc, "td", "c-ser" + sc);
       const serSpan = n(doc, "span", "", nomePulito(s.serie) || "—");
       if (mod) rendiCellaModificabile(doc, serSpan, mod, {
-        idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        idScheda: scheda.id, codice: scheda.codice, esercizio: String(e.nome == null ? "" : e.nome).trim(), idEsercizio: e.id, indice: indice,
         settimana: k + 1, campo: "serie", prima: nomePulito(s.serie) || ""
       });
       ser.appendChild(serSpan);
@@ -896,7 +896,7 @@ function tabellaEsercizi(doc, scheda, r) {
       const rip = n(doc, "td", "c-reps" + sc);
       const ripSpan = n(doc, "span", "", nomePulito(s.ripetizioni) || "—");
       if (mod) rendiCellaModificabile(doc, ripSpan, mod, {
-        idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome), idEsercizio: e.id, indice: indice,
+        idScheda: scheda.id, codice: scheda.codice, esercizio: String(e.nome == null ? "" : e.nome).trim(), idEsercizio: e.id, indice: indice,
         settimana: k + 1, campo: "ripetizioni", prima: nomePulito(s.ripetizioni) || ""
       });
       rip.appendChild(ripSpan);

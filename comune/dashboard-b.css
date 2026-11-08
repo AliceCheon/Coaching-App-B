@@ -537,13 +537,13 @@
  * tutte e otto le settimane e la colonna Ultima.
  */
 .p8-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface, var(--card, var(--raised)))}
-.p8-tab{width:100%;min-width:1470px;table-layout:fixed;border-collapse:separate;border-spacing:0;
+.p8-tab{width:100%;min-width:1500px;table-layout:fixed;border-collapse:separate;border-spacing:0;
   font:600 12.5px/1.3 var(--sans, "Nunito Sans", sans-serif)}
 .p8-tab col.w-js{width:40px}
 .p8-tab col.w-dist{width:34px}
 .p8-tab col.w-ese{width:196px}
 .p8-tab col.w-note{width:210px}
-.p8-tab col.w-rec{width:136px}
+.p8-tab col.w-rec{width:170px}
 .p8-tab col.w-tut{width:124px}
 .p8-tab col.w-ser{width:26px}
 .p8-tab col.w-reps{width:52px}
@@ -730,8 +730,8 @@ td.c-rec .stp{width:14px;height:15px;line-height:1;padding:0;margin:0;font:800 1
   background:transparent;border:1px solid var(--line);color:var(--muto);cursor:pointer;flex:0 0 auto}
 td.c-rec .stp:hover{color:#FF4FA3;border-color:#FF4FA3;opacity:1}
 td.c-rec .rec,td.c-tut .tut{flex:0 1 auto;min-width:0;max-width:100%;display:-webkit-box;-webkit-box-orient:vertical;
-  -webkit-line-clamp:3;line-clamp:3;overflow:hidden;white-space:normal;word-break:normal;
-  overflow-wrap:break-word;hyphens:none;text-align:center;color:var(--testo)}
+  -webkit-line-clamp:3;line-clamp:3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;word-break:normal;
+  overflow-wrap:normal;hyphens:none;text-align:center;color:var(--testo)}
 td.c-rec .rec{font:800 11px/1.15 var(--mono, "JetBrains Mono", monospace)}
 td.c-tut .tut{font:700 10px/1.2 var(--mono, "JetBrains Mono", monospace)}
 td.c-rec .rec:focus,td.c-tut .tut:focus{display:block;-webkit-line-clamp:unset;line-clamp:unset;overflow:visible;
@@ -748,12 +748,12 @@ td.c-rec .rec:focus,td.c-tut .tut:focus{display:block;-webkit-line-clamp:unset;l
 
 /* Le misure della tabella valgono anche sulla pagina vera, dove le vecchie
  * copie del foglio stanno dentro index.html: qui l'id le fa vincere. */
-#pag-programma-1 .p8-tab{min-width:1470px;table-layout:fixed}
+#pag-programma-1 .p8-tab{min-width:1500px;table-layout:fixed}
 #pag-programma-1 .p8-tab col.w-note{width:210px}
-#pag-programma-1 .p8-tab col.w-rec{width:136px}
+#pag-programma-1 .p8-tab col.w-rec{width:170px}
 #pag-programma-1 .p8-tab col.w-tut{width:124px}
 #pag-programma-1 td.c-rec .rec-riga,#pag-programma-1 td.c-tut .tut-riga{display:flex;align-items:center;justify-content:center;gap:2px;max-width:100%}
-#pag-programma-1 td.c-rec .rec,#pag-programma-1 td.c-tut .tut{flex:0 1 auto;min-width:0;max-width:100%;white-space:normal;word-break:normal;overflow-wrap:break-word}
+#pag-programma-1 td.c-rec .rec,#pag-programma-1 td.c-tut .tut{flex:0 1 auto;min-width:0;max-width:100%;white-space:nowrap;word-break:normal;overflow-wrap:normal;text-overflow:ellipsis}
 
 /* Scrittura a mano (passo 12, 8/11/2026): la casella si allarga quanto il
  * testo, la colonna cresce e le celle vicine non si coprono. Se la tabella non
@@ -773,9 +773,9 @@ td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
  * si spezza lettera per lettera e la tabella scorre invece di stringere. */
 #pag-programma-1 .p8-scroll{overflow-x:auto}
 @media (max-width:1265px){
-  #pag-programma-1 .p8-tab{min-width:1470px !important;table-layout:auto !important;width:auto !important}
+  #pag-programma-1 .p8-tab{min-width:1500px !important;table-layout:auto !important;width:auto !important}
   #pag-programma-1 .p8-tab col.w-note{width:210px !important}
-  #pag-programma-1 .p8-tab col.w-rec{width:136px !important}
+  #pag-programma-1 .p8-tab col.w-rec{width:170px !important}
   #pag-programma-1 .p8-tab col.w-tut{width:124px !important}
   #pag-programma-1 td.c-rec .rec,#pag-programma-1 td.c-tut .tut{white-space:nowrap !important;
     word-break:normal !important;overflow-wrap:normal !important;-webkit-line-clamp:unset !important;

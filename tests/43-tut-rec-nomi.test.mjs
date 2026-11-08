@@ -90,8 +90,8 @@ test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il n
   const tut = (i) => righe[i].querySelector("td.c-tut .tut");
   const nota = (i) => righe[i].querySelector("td.c-note");
 
-  assert.equal(rec(0).textContent, "120-180\u2026");
-  assert.equal(rec(0).title, "120-180 sec");
+  assert.equal(rec(0).textContent, "120-180\"");
+  assert.equal(rec(0).title, "120-180\"");
   assert.equal(tut(0).textContent, "\u2014");
 
   assert.equal(rec(1).textContent, "1'30\"");
@@ -99,7 +99,7 @@ test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il n
   assert.ok(nota(1).textContent.includes("REC: No recupero tra le braccia e poi"));
   assert.equal(tut(1).textContent, "\u2014");
 
-  assert.equal(rec(2).textContent, "90 sec");
+  assert.equal(rec(2).textContent, "90\"");
   assert.equal(tut(2).textContent, "\u2014");
   assert.ok(nota(2).textContent.includes("TUT: Partenza al ginocchio cerca di accelerare"));
 

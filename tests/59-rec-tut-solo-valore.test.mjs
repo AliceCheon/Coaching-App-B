@@ -38,7 +38,7 @@ test("59.03 i recuperi veri restano interi, senza frase", () => {
     assert.equal(p.frase, "", "frase trovata in " + t);
     assert.ok(p.valore, "valore perso in " + t);
   });
-  assert.equal(separaRecupero("90").valore, "90");
+  assert.equal(separaRecupero("90").valore, "90\"");
 });
 
 test("59.04 il TUT: schema di cifre in cella, frase del coach fuori", () => {
@@ -125,8 +125,9 @@ test("59.12 freccetta e pulsantini cambiano il valore, non la frase", () => {
 });
 
 test("59.13 le colonne restano larghe e la tabella non si stringe", () => {
-  assert.ok(/\.p8-tab\{[^}]*min-width:1470px/.test(css));
-  assert.ok(/\.p8-tab col\.w-rec\{width:136px\}/.test(css));
+  assert.ok(/\.p8-tab\{[^}]*min-width:1500px/.test(css));
+  assert.ok(/\.p8-tab col\.w-rec\{width:170px\}/.test(css));
   assert.ok(/\.p8-tab col\.w-tut\{width:124px\}/.test(css));
   assert.ok(/\.p8-tab col\.w-note\{width:210px\}/.test(css));
+  assert.ok(/td\.c-rec \.rec,td\.c-tut \.tut\{[^}]*white-space:nowrap/.test(css), "a riposo il valore sta su una riga");
 });

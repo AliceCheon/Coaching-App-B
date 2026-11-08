@@ -284,3 +284,61 @@ Decisioni di Alice, applicate qui:
 
 Prove: aggiornate 43, 57, 58, 59 alla regola nuova; aggiunte le prove della
 scrittura a mano. Suite verde, guardie 02, 42, 44.03 e 47 comprese.
+
+## Passo 13 dell'8 novembre 2026 · il bug dello schermo che torna indietro
+
+Il bug di Alice sul sito (8/11/2026, ore 16:53): cambiando un valore di Rec o
+TUT la cella sembra cambiare, poi la pagina "si sposta" e torna tutto come
+prima, nulla salvato; con i pulsantini + e - del Rec il numero cambia a
+schermo ma non si salva, e premendo piu' volte di fila smette di funzionare.
+
+**La causa (una sola, due facce).** La vista passava al legame della modifica
+il nome PULITO dell'esercizio (nomePulito: trattini bassi diventano spazi,
+iniziale maiuscola), ma trovaEsercizio in comune/modifiche-b.js confronta con
+il nome GREZZO del documento. Con gli esercizi nel formato di A (nomi come
+"Curl_bilanciere", senza campo id) l'esercizio non si ritrova MAI: la modifica
+viene rifiutata ("l'esercizio non si ritrova in questa scheda: non ho scritto
+niente") e leggi() ridisegna la tabella con i dati di prima. Ecco il "sembra
+cambiare, poi torna tutto come prima, nulla salvato" e il "premo piu' volte di
+fila e non funziona piu'": ogni pressione era un rifiuto, non una scrittura
+persa — la coda delle scritture c'era e funziona (prove 55).
+
+**Le correzioni.**
+
+- comune/vista-programma.js: il legame porta il nome ORIGINALE
+  (esercizio: String(e.nome ...).trim()), come vuole la regola di casa di
+  nome-pulito.js ("chiavi e ricerche usano l'originale"). A schermo i nomi
+  restano puliti: doveVoce in desktop/app-v31.js pulisce solo dove si stampa.
+- desktop/app-v31.js: dopo ogni salvataggio NON si rilegge piu' niente subito.
+  La riga di stato dice "salvato alle HH:MM · scheda · rec/TUT di ...: valore",
+  e la sincronizzazione (una rilettura completa) parte UNA sola volta quando
+  le scritture della coda sono tutte finite; se una cella e' in scrittura si
+  rimanda, per non rubarle il focus. Cosi' la tabella si ridisegna SOLO con i
+  dati letti dopo l'ack: mai piu' uno stato vecchio sopra una modifica fresca.
+  Anche "Annulla" usa la stessa via.
+- Colonna Rec a 170 px (era 136), min-width della tabella 1500 (era 1470) e
+  a riposo il valore di Rec e TUT sta su una riga (white-space:nowrap, con i
+  puntini se non ci sta): 2-3', 120-180 sec, 1'30" si leggono senza
+  spezzature, con la freccetta e i pulsantini - e + accanto.
+
+**La prova.** Nuovo tests/60-coda-scritture-rec-tut.test.mjs: la sequenza di
+Alice (+ tre volte di fila, scrittura a mano e uscita dalla cella, freccetta
+del Rec, freccetta del TUT) sulla PAGINA VERA (desktop/index.html con
+desktop/app-v31.js) su jsdom, con la zona B finita in
+tests/finti/zona-b-finta.mjs (letture con latenze a rotazione, scritture
+visibili solo all'ack, registri di ogni lettura e scrittura). Con il codice di
+prima la sequenza falliva alle tre pressioni: il disco restava al valore
+vecchio. Ora: sei scritture in coda, in ordine (2', 2'30", 3', la mano,
+le due freccette), versione 7, le sei voci nel registro con prima/dopo e
+"salvato alle ..." nella riga di stato. Prove 59.13 aggiornate alle misure
+nuove, con l'assert della riga unica a riposo. La colonna Rec a 1200 px e'
+provata con lo scatto della pagina vera (scatta-vera-60.mjs).
+
+## Passo 14 — formato unico del Rec e niente zero inventato (8/11/2026)
+
+Regole di Alice, stesso giorno del Passo 13, stesso commit.
+
+1. In cella solo i simboli delle tendine: secondi con il pollice (30", 90", 120-180"), minuti con l'apostrofo (2', 2-3'), misti (1'30"). Mai la parola sec o min in cella. Il dato non si riscrive: testoRecupero lo lascia com'e', la normalizzazione avviene solo alla vista (normalizzaValoreRecupero converte le parole sec/min); salvando cambia solo il pezzo del valore, come gia' faceva con la frase.
+2. Niente zero inventato: un recupero 0 (0, "0", "0 sec", {seconds:0}) non e' un valore — formattaSecondi(0) adesso torna vuoto e la cella mostra il trattino; prima scriveva 0' (e' questo lo zero che Alice vedeva in colonna). Lo zero scritto a mano non entra nel dato.
+3. A3 (Pulley sbarra presa larga supina): il dato vero sta nel cloud di A e non nel repository; dallo schermo l'unico percorso che metteva uno zero in cella e' formattaSecondi(0), quindi il recupero di A3 e' una forma di zero, mentre "REC: 2 2" in Descr./Setup e' la nota della coach e resta intatta. Le frasi senza valore ("2 2") erano gia' trattino in colonna dal Passo 12.
+4. Test nuovi 61 (formato unico, zero, A3 a schermo, salvataggio); portati ai simboli 41.01, 43, 44.02 e 59.03.

@@ -321,6 +321,35 @@ export async function avvia(doc, win) {
       fotografia: fotografiaB,
       ultimaVoce: ultimaAnnullabile(registroB)
     });
+    /* Passo 13 — le scritture restano in coda (l'editor ne fa una alla volta
+     * per scheda) e lo schermo NON rilegge mai uno stato vecchio: la
+     * sincronizzazione parte UNA sola volta quando le modifiche sono tutte
+     * finite, e si rimanda se una cella e' in scrittura per non rubarle il
+     * focus. Cosi' dopo l'ultima scrittura la tabella mostra il valore
+     * finale, con i dati letti dopo l'ack. */
+    let modificheInVolo = 0;
+    let sincronizzazione = null;
+    let sincronizzazioneRichiesta = false;
+    const cellaInScrittura = () => {
+      const attivoQui = doc.activeElement;
+      return Boolean(attivoQui && attivoQui.getAttribute && attivoQui.getAttribute("contenteditable") === "true");
+    };
+    const sincronizza = (chi) => {
+      if (modificheInVolo > 0) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
+      if (sincronizzazione) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
+      if (cellaInScrittura()) {
+        return new Promise((riattiva) => { setTimeout(() => { riattiva(sincronizza(chi)); }, 300); });
+      }
+      sincronizzazione = leggi(chi).then(() => {
+        sincronizzazione = null;
+        if (sincronizzazioneRichiesta) { sincronizzazioneRichiesta = false; return sincronizza(chi); }
+      }, (e) => {
+        sincronizzazione = null;
+        sincronizzazioneRichiesta = false;
+        segnalaModifica("sincronizzazione non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
+      });
+      return sincronizzazione;
+    };
     const attivo = programmaAttivo(programmi.programmi || []);
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
@@ -346,18 +375,25 @@ export async function avvia(doc, win) {
             segnalaModifica(esito.ok
               ? "annullato · " + doveVoce(esito.voce) + " torna a " + (esito.voce.dopo || "vuoto")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
-            return leggi(utente);
+            return sincronizza(utente);
           });
         },
-        onCambia: (richiesta) => editor.modifica(richiesta).then((esito) => {
-          if (esito.ok) {
-            segnalaModifica("salvato · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + (esito.voce.dopo || "vuoto") +
-              " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
-          } else {
-            segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
-          }
-          return leggi(utente);
-        })
+        /* Passo 13 — il dato appena scritto sta a schermo SUBITO (lo mostra la
+         * cella), la riga di stato dice quando, e la rilettura arriva una sola
+         * volta a coda vuota: mai uno stato vecchio sopra una modifica fresca. */
+        onCambia: (richiesta) => {
+          modificheInVolo += 1;
+          return editor.modifica(richiesta).then((esito) => {
+            modificheInVolo -= 1;
+            if (esito.ok) {
+              segnalaModifica("salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + (esito.voce.dopo || "vuoto") +
+                " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
+            } else {
+              segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente);
+          });
+        }
       }
     }));
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
@@ -399,5 +435,5 @@ function doveVoce(voce) {
   const v = voce || {};
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";
-  return v.esercizio ? nome + " di " + v.esercizio : nome;
+  return v.esercizio ? nome + " di " + nomePulito(v.esercizio) : nome;
 }

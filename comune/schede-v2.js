@@ -182,15 +182,15 @@ export function testoRipetizioni(valore) {
   return "";
 }
 
-/* Quanto recupero: {seconds:90} diventa «90s»; «2'» resta com'è scritto. */
+/* Quanto recupero: {seconds:90} diventa «90"»; «2'» resta com'è scritto. */
 export function formattaSecondi(secondi) {
   const n = Number(secondi);
-  if (!Number.isFinite(n) || n < 0) return "";
-  return n % 60 === 0 ? n / 60 + "'" : n + " sec";
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return n % 60 === 0 ? n / 60 + "'" : n + "\"";
 }
 
 /* Il recupero come lo scrive il v31: i minuti interi diventano «2'», i secondi
- * «90 sec». Un'etichetta già scritta vince su tutto. */
+ * «90"». Un'etichetta già scritta vince su tutto. */
 export function testoRecupero(valore) {
   if (valore && typeof valore === "object") {
     if (typeof valore.label === "string" && valore.label.trim()) return valore.label.trim();

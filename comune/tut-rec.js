@@ -16,6 +16,11 @@
  * posto di quello vecchio dentro il testo di sempre.
  *
  * In lettura i dati non si toccano: la separazione e' solo a schermo.
+ *
+ * Passo 14 (8/11/2026): in cella la mostra e' ai soli simboli delle tendine:
+ * mai la parola sec o min (120-180 sec si vede 120-180", 90 sec si vede 90"),
+ * e lo zero (0, "0", "0 sec") come una frase senza valore ("2 2") non diventano
+ * mai 0" o 0': la cella resta al trattino e la frase va in Descr./Setup.
  */
 
 const NON = "non registrato";
@@ -56,11 +61,22 @@ export function normalizzaValoreRecupero(valore) {
     .replace(/\u2019/g, "'")
     .replace(/\u2032/g, "'")
     .replace(/\u2033/g, '"');
-  const conVirgola = /^(\d{1,2})\s*[.,]\s*(\d{2})\s*'?$/.exec(t);
-  if (conVirgola) return conVirgola[1] + "'" + conVirgola[2] + '"';
-  return t.replace(/\s*'\s*/g, "'").replace(/\s*"\s*/g, '"').replace(/\s+/g, " ").trim();
+  const conVirgola = /^(\d{1,2})\s*[.,]\s*(\d{2})\s*?'?$/.exec(t);
+  if (conVirgola) {
+    if (Number(conVirgola[1]) === 0 && Number(conVirgola[2]) === 0) return "";
+    return conVirgola[1] + "'" + conVirgola[2] + '"';
+  }
+  const soloCifre = /^(\d{1,3})$/.exec(t);
+  if (soloCifre) {
+    const n = Number(soloCifre[1]);
+    if (n === 0) return "";
+    return n % 60 === 0 ? n / 60 + "'" : n + "\"";
+  }
+  const conUnita = t.replace(/sec(?:ondi)?\b/gi, "\"").replace(/min(?:uti)?\b/gi, "'");
+  const pulito = conUnita.replace(/\s*'\s*/g, "'").replace(/\s*"\s*/g, '"').replace(/\s+/g, " ").trim();
+  if (/^0+(?:[.,]0+)?(?:'\s*0{1,2}"?|["']?)$/.test(pulito)) return "";
+  return pulito;
 }
-
 export function normalizzaValoreTempo(valore) {
   return String(valore == null ? "" : valore).trim().replace(/\s*[-\u2013/]\s*/g, "-").replace(/\s+/g, "");
 }
@@ -72,7 +88,10 @@ export function separaRecupero(valore) {
   if (!intero || intero === TRATTINO) return { valore: "", frase: "", intero };
   const m = ultimo(REC_VALORE, intero);
   if (!m) {
-    if (/^\d{1,3}$/.test(intero)) return { valore: intero, frase: "", intero };
+    if (/^\d{1,3}$/.test(intero)) {
+      const n = Number(intero);
+      return { valore: n === 0 ? "" : (n % 60 === 0 ? n / 60 + "'" : n + "\""), frase: "", intero };
+    }
     return { valore: "", frase: intero, intero };
   }
   return {
@@ -81,7 +100,6 @@ export function separaRecupero(valore) {
     intero
   };
 }
-
 export function separaTempo(valore) {
   const intero = String(valore == null ? "" : valore).trim();
   if (!intero || intero === TRATTINO) return { valore: "", frase: "", intero };
