@@ -153,3 +153,37 @@ attivo legge il documento.
   `program-v2-exercise-p1__s1__e1`); la modifica arriva alla scheda attiva e non
   all'archiviata, la lettera da sola non basta piu', il rifiuto dice l'id cercato.
 - `tests/55-modifiche-schede.test.mjs`: le prove passano l'id della scheda.
+
+## Passo 10 dell'8 novembre 2026 · recupero e TUT si scrivono dalla tabella
+
+Rec e TUT sono campi dell'**esercizio**, non della settimana: in A il recupero sta
+in `recupero` (B legge anche `rest` e `pausa`) e il TUT in `tempo` (B legge anche
+`cadenza`), eventualmente dentro `prescription`. E' il valore che la tabella
+mostra, quindi cambiarlo vale per tutte le settimane. A puo' scrivere un `rec`
+dentro la singola settimana: quello resta com'e' e non si tocca.
+
+- `comune/tut-rec.js`: le due tendine (`REC_TENDINA`, `TUT_TENDINA`), il lettore
+  del tempo (`secondiRecupero`), il testo (`testoSecondi`) e il passo di 30"
+  (`passoRecupero`) fra 30" e 3'. Su una frase libera il passo torna vuoto e
+  nessuno tocca la cella.
+- `comune/modifiche-b.js`: nuova `cambiaRecTempo` (recupero e TUT, una sola
+  cella, marchio, `versione` +1, voce nel registro con prima e dopo);
+  `annullaModifica` e `ultimaAnnullabile` valgono per i due passi;
+  `differenzeScheda` guarda anche recupero e TUT, cosi' la Copia non dice
+  «identica ad A» a una scheda col recupero cambiato.
+- `comune/editor-schede-b.js`: `modifica` sceglie la strada dal campo (
+  serie/ripetizioni sulla settimana, recupero/TUT sull'esercizio).
+- `comune/vista-programma.js`: la cella Rec ha testo libero, i pulsantini
+  −/+ vivi (30", non piu' 15) e la freccetta con 30", 1', 1'30", 2', 2'30",
+  3', «1'30" e cambio gamba», «1'30" e cambio braccio»; la cella TUT ha il
+  testo libero e la freccetta con 2-0-2, 2-1-0, 0-1-2, 3-0-1, 3-1-1, 4-0-1.
+  Con l'editor acceso la cella mostra il testo intero (e' quello che si
+  modifica); in sola lettura la frase di coach torna spostata in Descr./Setup.
+- `comune/dashboard-b.css`: solo la freccia e il taglio con i puntini.
+- `desktop/app-v31.js`: il messaggio dice dove e' finita la modifica
+  («S3 serie» oppure «rec di Panca piana»).
+- `tests/57-rec-tut.test.mjs` (nuovo): documenti nel formato vero di B
+  (`program-v2-sheet-p1__s1`, `recupero` sull'esercizio, TUT dentro
+  `prescription`); recupero e TUT scritti dove stanno, settimane e altri campi
+  intatti, testo libero e svuotamento, tendine e passo di 30", annulla, e la
+  Copia che vede la differenza.

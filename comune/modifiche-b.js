@@ -5,9 +5,10 @@
  * verificare ogni regola senza aprire un browser.
  *
  * Le regole di questo passo, decise da Alice l'8/11/2026:
- *  - si toccano SOLO serie e ripetizioni di una settimana di un esercizio che
- *    c'e' gia'. Il recupero no: in B porta frasi, non numeri, e i pulsanti −/+
- *    non avrebbero senso. Tecniche, nota, sostituzione, aggiungi/togli: spenti.
+ *  - si toccano serie e ripetizioni di una settimana, e il recupero e il TUT
+ *    dell'esercizio (passo 10): quei due campi stanno sull'ESERCIZIO, non sulla
+ *    settimana, quindi cambiarli vale per tutte le settimane. Tecniche, nota,
+ *    sostituzione, aggiungi/togli restano spenti.
  *  - ogni scheda ha il suo documento: si scrive la scheda, non una fotografia
  *    di tutto l'atleta.
  *  - la scheda porta un numero di `versione`: prima di scrivere si rilegge il
@@ -268,23 +269,152 @@ export function cambiaSerieRipetizioni(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
 }
 
+/* --- La modifica: recupero o TUT, comuni all'esercizio -------------------- */
+
+/* In A e in B il recupero e il TUT stanno sull'esercizio, non sulla settimana:
+ * `recupero` (oppure `rest`, `pausa`) e `tempo` (oppure `cadenza`), anche
+ * dentro `prescription`. E' il valore che la tabella mostra: cambiarlo vale per
+ * tutte le settimane. Le settimane possono portare un `rec` loro (A lo scrive):
+ * quello resta com'e', e' l'eccezione della singola settimana.
+ */
+const CAMPI_RECUPERO = Object.freeze(["rest", "recupero", "pausa"]);
+const CAMPI_TEMPO = Object.freeze(["tempo", "cadenza"]);
+
+function haCampo(oggetto, nome) {
+  return Boolean(oggetto) && typeof oggetto === "object"
+    && Object.prototype.hasOwnProperty.call(oggetto, nome) && oggetto[nome] != null;
+}
+
+/* Dove sta il campo: prima dentro `prescription` (il lettore guarda li' per
+ * primo), poi sull'esercizio. Se non c'e' da nessuna parte si crea sull'esercizio
+ * con il nome che usa A: `recupero` e `tempo`. */
+function postoCampo(esercizio, nomi, nomeNuovo) {
+  const dentro = esercizio && esercizio.prescription && typeof esercizio.prescription === "object"
+    ? esercizio.prescription : null;
+  for (let i = 0; i < nomi.length; i += 1) {
+    if (haCampo(dentro, nomi[i])) return { dentro: true, chiave: nomi[i] };
+  }
+  for (let i = 0; i < nomi.length; i += 1) {
+    if (haCampo(esercizio, nomi[i])) return { dentro: false, chiave: nomi[i] };
+  }
+  return { dentro: false, chiave: nomeNuovo };
+}
+
+/* Il testo che si accetta in queste due celle: puo' essere una frase di coach
+ * (il v31 lo permette), ma corta e su una riga sola. */
+function testoBreve(valore, massimo) {
+  const t = testo(valore).replace(/\s+/g, " ");
+  if (t.length > massimo) return null;
+  if (/[\u0000-\u001f]/.test(t)) return null;
+  return t;
+}
+
+/* Richiesta: { idScheda, idEsercizio, esercizio, campo: "recupero"|"tempo", valore }
+ * Esito come cambiaSerieRipetizioni: dati nuovi, voce del registro, prima, dopo.
+ * Non c'e' la settimana: questi due campi sono dell'esercizio. */
+export function cambiaRecTempo(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const esercizio = elenco[indice];
+  if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
+  if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' cancellato" };
+
+  const campo = r.campo === "recupero" ? "recupero" : (r.campo === "tempo" ? "tempo" : "");
+  if (!campo) return { ok: false, motivo: "in questo passo si toccano solo serie, ripetizioni, recupero e TUT" };
+
+  const prescr = prescrizione(esercizio);
+  const prima = campo === "recupero" ? prescr.recupero : prescr.tempo;
+  const massimo = campo === "recupero" ? 40 : 24;
+  const dopo = testoBreve(r.valore, massimo);
+  if (dopo == null) {
+    return {
+      ok: false,
+      motivo: (campo === "recupero" ? "il recupero" : "il TUT") + " si scrive in una riga sola, al massimo "
+        + massimo + " caratteri"
+    };
+  }
+  if (dopo === prima) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  const posto = postoCampo(esercizio, campo === "recupero" ? CAMPI_RECUPERO : CAMPI_TEMPO,
+    campo === "recupero" ? "recupero" : "tempo");
+  const nuovoEsercizio = Object.assign({}, esercizio);
+  if (posto.dentro) {
+    nuovoEsercizio.prescription = Object.assign({}, esercizio.prescription);
+    nuovoEsercizio.prescription[posto.chiave] = dopo;
+  } else {
+    nuovoEsercizio[posto.chiave] = dopo;
+  }
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = nuovoEsercizio;
+  const nuovoFoglio = Object.assign({}, f);
+  nuovoFoglio[chiave] = nuovoElenco;
+
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const versionePrima = versioneDi(dati);
+  const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio });
+  nuovo.versione = versionePrima + 1;
+  nuovo[MARCHIO_B] = {
+    quando: quando,
+    da: o.uid == null ? null : String(o.uid),
+    ultima: campo === "recupero" ? "rec" : "tut"
+  };
+
+  const idVoce = idVoceRegistro(quando);
+  const voce = {
+    idVoce: idVoce,
+    quando: quando,
+    tipo: "modifica-rec-tut",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nomeDi(esercizio),
+    idEsercizio: testo(esercizio.id),
+    settimana: null,
+    campo: campo,
+    prima: prima,
+    dopo: dopo,
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
+}
+
+
 /* --- L'annullamento ------------------------------------------------------- */
 
 /* Riporta il campo al valore di prima. Non cancella la voce del registro: ne
  * aggiunge una che la cita, cosi' la storia resta intera. */
 export function annullaModifica(dati, voce, opzioni) {
   const v = voce || {};
-  if (!v.campo || !v.settimana) return { ok: false, motivo: "la voce del registro non dice cosa annullare" };
+  const campo = testo(v.campo);
+  const aSettimana = campo === "serie" || campo === "ripetizioni";
+  const aEsercizio = campo === "recupero" || campo === "tempo";
+  if (!aSettimana && !aEsercizio) return { ok: false, motivo: "la voce del registro non dice cosa annullare" };
   const o = opzioni || {};
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
-  const esito = cambiaSerieRipetizioni(dati, {
+  const richiesta = {
     idScheda: v.scheda,
     idEsercizio: v.idEsercizio,
     esercizio: v.esercizio,
-    campo: v.campo,
-    settimana: v.settimana,
+    campo: campo,
     valore: v.prima == null ? "" : v.prima
-  }, { quando: quando, uid: o.uid });
+  };
+  if (aSettimana) {
+    if (!v.settimana) return { ok: false, motivo: "la voce del registro non dice quale settimana annullare" };
+    richiesta.settimana = v.settimana;
+  }
+  const esito = aSettimana
+    ? cambiaSerieRipetizioni(dati, richiesta, { quando: quando, uid: o.uid })
+    : cambiaRecTempo(dati, richiesta, { quando: quando, uid: o.uid });
   if (!esito.ok) return esito;
   const voce2 = Object.assign({}, esito.voce, {
     tipo: "annulla-modifica",
@@ -303,7 +433,8 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => v.tipo === "modifica-serie-ripetizioni" && v.idVoce && !rifatte[v.idVoce]);
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut")
+      && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
 }
@@ -317,7 +448,10 @@ function tabellaDi(dati) {
   if (!chiave) return [];
   return f[chiave]
     .filter((e) => e && typeof e === "object" && !e.deletedAt)
-    .map((e) => ({ nome: nomeDi(e), settimane: prescrizione(e).elencoSettimane }));
+    .map((e) => {
+      const p = prescrizione(e);
+      return { nome: nomeDi(e), settimane: p.elencoSettimane, recupero: p.recupero, tempo: p.tempo };
+    });
 }
 
 /* Cosa cambia fra la scheda di A e quella di B: si guarda il contenuto della
@@ -336,6 +470,18 @@ export function differenzeScheda(datiA, datiB, massimo) {
     if (ea.nome !== eb.nome) {
       totale += 1;
       if (righe.length < limite) righe.push("esercizio " + (i + 1) + ": " + (ea.nome || "—") + " \u2192 " + (eb.nome || "—"));
+    }
+    /* recupero e TUT stanno sull'esercizio: se cambiano, la scheda non e'
+     * «identica ad A» e la Copia lo deve dire. */
+    const aEsercizio = [["recupero", "recupero"], ["tempo", "TUT"]];
+    for (let c = 0; c < aEsercizio.length; c += 1) {
+      const k = aEsercizio[c][0];
+      if (ea[k] === eb[k]) continue;
+      totale += 1;
+      if (righe.length < limite) {
+        righe.push(aEsercizio[c][1] + " di " + (eb.nome || ea.nome || "esercizio " + (i + 1)) +
+          " " + (ea[k] || "—") + " → " + (eb[k] || "—"));
+      }
     }
     const quante = Math.max(ea.settimane.length, eb.settimane.length);
     for (let k = 0; k < quante; k += 1) {

@@ -18,7 +18,10 @@
 
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
-import { recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile } from "./tut-rec.js";
+import {
+  recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
+  REC_TENDINA, TUT_TENDINA, passoRecupero
+} from "./tut-rec.js";
 import { nomePulito } from "./nome-pulito.js";
 
 function n(doc, tag, classe, testo) {
@@ -153,7 +156,8 @@ function pulsanteVivo(doc, classe, testo, titolo) {
   return b;
 }
 
-/* Passo 9: una cella serie o ripetizioni che si puo' scrivere. L'aspetto e'
+/* Una cella che si puo' scrivere: serie e ripetizioni (passo 9), recupero e
+ * TUT (passo 10). L'aspetto e'
  * identico al v31: nessun bordo, nessun colore nuovo. Si entra col clic, si
  * conferma con Invio (o uscendo dalla cella), si rinuncia con Esc. Il valore
  * che parte da qui passa da mod.onCambia, che scrive SOLO nella zona B. */
@@ -161,32 +165,131 @@ function rendiCellaModificabile(doc, span, mod, info) {
   span.setAttribute("contenteditable", "true");
   span.setAttribute("spellcheck", "false");
   span.setAttribute("data-campo", info.campo);
-  span.setAttribute("data-settimana", String(info.settimana));
+  if (info.settimana != null) span.setAttribute("data-settimana", String(info.settimana));
   span.setAttribute("data-prima", info.prima);
   span.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); span.blur(); }
     else if (e.key === "Escape") {
       e.preventDefault();
-      span.textContent = info.prima || "—";
+      span.textContent = span.getAttribute("data-prima") || "—";
       span.blur();
     }
   });
   span.addEventListener("blur", () => {
-    const valore = String(span.textContent || "").trim();
-    if (valore === info.prima) return;
+    const testo = String(span.textContent || "").trim();
+    const valore = testo === "—" ? "" : testo;
+    /* il valore di partenza si legge dall'attributo: pulsantini e freccetta lo
+     * aggiornano, cosi' l'uscita dalla cella non salva due volte. */
+    if (valore === String(span.getAttribute("data-prima") || "")) return;
     if (typeof mod.onCambia === "function") {
       mod.onCambia({
         idScheda: info.idScheda, codice: info.codice,
         idEsercizio: info.idEsercizio,
         indiceEsercizio: info.indice,
         esercizio: info.esercizio,
-        settimana: info.settimana,
+        settimana: info.settimana == null ? null : info.settimana,
         campo: info.campo,
         valore: valore
       });
     }
   });
 }
+
+/* Il valore che parte da queste celle passa sempre da qui. */
+function inviaModifica(mod, info, campo, valore, prima) {
+  if (!mod || typeof mod.onCambia !== "function") return;
+  mod.onCambia({
+    idScheda: info.idScheda, codice: info.codice,
+    idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
+    esercizio: info.esercizio, settimana: null,
+    campo: campo, valore: valore, prima: prima
+  });
+}
+
+/* La freccetta: una tendina vera vestita da freccia. La prima voce e' il segno
+ * fermo; scelto un valore la tendina ci torna, cosi' la cella resta com'era. */
+function rendiFreccia(doc, classe, voci, titolo, suScelta) {
+  const sel = doc.createElement("select");
+  sel.className = "freccia " + classe;
+  sel.title = titolo;
+  sel.setAttribute("aria-label", titolo);
+  const fermo = doc.createElement("option");
+  fermo.value = "";
+  fermo.textContent = "▾";
+  sel.appendChild(fermo);
+  voci.forEach((v) => {
+    const o = doc.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("mousedown", (e) => e.stopPropagation());
+  sel.addEventListener("change", () => {
+    const scelto = String(sel.value || "");
+    sel.value = "";
+    if (scelto && typeof suScelta === "function") suScelta(scelto);
+  });
+  return sel;
+}
+
+function pulsantePasso(doc, delta, titolo, suPasso) {
+  const b = n(doc, "button", "stp", delta < 0 ? "−" : "+");
+  b.type = "button";
+  b.title = titolo;
+  b.setAttribute("aria-label", titolo);
+  b.addEventListener("click", (e) => {
+    e.preventDefault();
+    suPasso(delta);
+  });
+  return b;
+}
+
+/* Il recupero: testo libero, i due pulsantini che vanno di 30" e la freccetta
+ * con i valori di sempre. Se nella cella c'e' una frase, i pulsantini non la
+ * toccano. */
+function rendiCellaRecupero(doc, td, mod, info) {
+  const primo = String(info.valore || "");
+  const span = n(doc, "span", "rec", primo || "—");
+  if (primo) span.title = primo;
+  rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", settimana: null, prima: primo }));
+  const scrivi = (dopo) => {
+    const prima = String(span.getAttribute("data-prima") || "");
+    span.textContent = dopo || "—";
+    span.title = dopo || "";
+    span.setAttribute("data-prima", dopo);
+    inviaModifica(mod, info, "recupero", dopo, prima);
+  };
+  const passo = (delta) => {
+    const attuale = String(span.getAttribute("data-prima") || "");
+    const dopo = passoRecupero(attuale, delta);
+    if (!dopo) return; /* frase libera o limite raggiunto: non si tocca niente */
+    scrivi(dopo);
+  };
+  td.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
+  td.appendChild(span);
+  td.appendChild(pulsantePasso(doc, 30, "più 30 secondi", passo));
+  td.appendChild(rendiFreccia(doc, "freccia-rec", REC_TENDINA, "recupero: scegli un valore", scrivi));
+  return span;
+}
+
+/* Il TUT: testo libero e la freccetta con gli schemi. Nessun pulsantino. */
+function rendiCellaTut(doc, td, mod, info) {
+  const primo = String(info.valore || "");
+  const span = n(doc, "span", "tut", primo || "—");
+  if (primo) span.title = primo;
+  rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", settimana: null, prima: primo }));
+  const scrivi = (dopo) => {
+    const prima = String(span.getAttribute("data-prima") || "");
+    span.textContent = dopo || "—";
+    span.title = dopo || "";
+    span.setAttribute("data-prima", dopo);
+    inviaModifica(mod, info, "tempo", dopo, prima);
+  };
+  td.appendChild(span);
+  td.appendChild(rendiFreccia(doc, "freccia-tut", TUT_TENDINA, "TUT: scegli un valore", scrivi));
+  return span;
+}
+
 
 /* ---------- la testa della pagina ---------------------------------------- */
 
@@ -547,20 +650,34 @@ function tabellaEsercizi(doc, scheda, r) {
     const pn = n(doc, "span", "p8-note", nomePulito(e.nota) || "");
     pn.setAttribute("data-ph", "nota coach…");
     nota.appendChild(pn);
-    if (!recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", nomePulito(recTesto))));
-    if (!tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", nomePulito(tutTesto))));
+    if (!mod && !recInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", nomePulito(recTesto))));
+    if (!mod && !tutInColonna) nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("TUT", nomePulito(tutTesto))));
     tr.appendChild(nota);
 
+    /* Rec e TUT (passo 10): si scrivono a mano, la freccetta offre i valori di
+     * sempre, i pulsantini del recupero vanno di 30". Sono campi dell'esercizio:
+     * valgono per tutte le settimane. Con l'editor acceso la cella mostra il
+     * testo intero, perche' e' quello che si modifica; in sola lettura la frase
+     * di coach torna spostata in Descr./Setup come prima. */
+    const datiCella = {
+      idScheda: scheda.id, codice: scheda.codice, esercizio: nomePulito(e.nome),
+      idEsercizio: e.id, indice: indice
+    };
     const rec = n(doc, "td", "c-rec");
-    rec.appendChild(pulsanteSpento(doc, "stp", "−", "meno 15 secondi"));
-    const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recMostrato).testo : "—");
-    if (recInColonna && recTesto) recSpan.title = recMostrato;
-    rec.appendChild(recSpan);
-    rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 15 secondi"));
+    if (mod) {
+      rendiCellaRecupero(doc, rec, mod, Object.assign({}, datiCella, { valore: recMostrato }));
+    } else {
+      rec.appendChild(pulsanteSpento(doc, "stp", "−", "meno 30 secondi"));
+      const recSpan = n(doc, "span", "rec", recInColonna && recTesto ? recuperoVisibile(recMostrato).testo : "—");
+      if (recInColonna && recTesto) recSpan.title = recMostrato;
+      rec.appendChild(recSpan);
+      rec.appendChild(pulsanteSpento(doc, "stp", "+", "più 30 secondi"));
+    }
     tr.appendChild(rec);
 
     const tut = n(doc, "td", "c-tut");
-    tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutMostrato : "—"));
+    if (mod) rendiCellaTut(doc, tut, mod, Object.assign({}, datiCella, { valore: tutMostrato }));
+    else tut.appendChild(n(doc, "span", "tut", tutInColonna && tutTesto ? tutMostrato : "—"));
     tr.appendChild(tut);
 
     perRiga[indice].forEach((s, k) => {

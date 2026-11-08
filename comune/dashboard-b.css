@@ -723,3 +723,17 @@
 .pr-shell-carta .pr-hint{font-size:11.5px}
 .pr-guide{margin:0 0 10px;font-size:11.5px;line-height:1.5;color:var(--muto)}
 .pr-guide b{color:var(--testo)}
+
+
+/* Rec e TUT modificabili (passo 10, 8/11/2026). L'aspetto e' quello della
+ * tabella: nessun bordo nuovo, una freccia discreta e i due pulsantini del
+ * recupero come nel v31. Il testo lungo si taglia con i puntini, il valore
+ * intero resta nel Title. */
+td.c-rec .stp{border:0;background:transparent;color:inherit;opacity:.55;font:800 12px/1 monospace;cursor:pointer;padding:0 1px;margin:0 1px}
+td.c-rec .stp:hover{color:#FF4FA3;opacity:1}
+td.c-rec .rec{max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+td.c-tut .tut{max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.c-rec .rec:focus,td.c-tut .tut:focus{background:rgba(255,79,163,.20);outline:none;border-radius:5px}
+.freccia{-webkit-appearance:none;appearance:none;border:0;background:transparent;color:inherit;opacity:.5;font:700 9px/1 monospace;padding:0 0 0 1px;cursor:pointer;width:11px;text-align:center}
+.freccia:hover{color:#FF4FA3;opacity:1}
+.freccia option{background:#241a2e;color:#fff}

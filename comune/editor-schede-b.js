@@ -19,6 +19,7 @@ import {
 } from "./scritture-b.js";
 import {
   cambiaSerieRipetizioni,
+  cambiaRecTempo,
   annullaModifica,
   ultimaAnnullabile,
   versioneDi,
@@ -138,7 +139,15 @@ export function creaEditorSchede(opzioni) {
       const peso = misuraPeso(o.fotografia, [{ dati: letto.dati }]);
       if (!peso.sotto) return { ok: false, motivo: peso.avviso };
 
-      const esito = cambiaSerieRipetizioni(letto.dati, r, { quando: quando(), uid: uid });
+      /* serie e ripetizioni stanno sulla settimana, recupero e TUT
+       * sull'esercizio: la tabella dice il campo, qui si sceglie la strada. */
+      const campo = String(r.campo == null ? "" : r.campo);
+      const aSettimana = campo === "serie" || campo === "ripetizioni";
+      const aEsercizio = campo === "recupero" || campo === "tempo";
+      if (!aSettimana && !aEsercizio) {
+        return { ok: false, motivo: "in questo passo si toccano solo serie, ripetizioni, recupero e TUT" };
+      }
+      const esito = (aSettimana ? cambiaSerieRipetizioni : cambiaRecTempo)(letto.dati, r, { quando: quando(), uid: uid });
       if (!esito.ok) return esito;
 
       if (versioneDi(letto.dati) !== attesa) {

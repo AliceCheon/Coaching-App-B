@@ -57,3 +57,62 @@ export function recuperoVisibile(valore) {
   if (t.length <= REC_LIMITE) return { testo: t, intero: t };
   return { testo: t.slice(0, REC_LIMITE).replace(/\s+$/, "") + "\u2026", intero: t };
 }
+
+/* --- Le tendine e i pulsantini (passo 10, 8/11/2026) ---------------------
+ * Il recupero e il TUT restano testo libero: la freccetta offre i valori di
+ * sempre, non li impone. I pulsantini del recupero vanno di 30" e si fermano a
+ * 30" e 3'. Se nella cella c'e' una frase di coach, non la toccano.
+ */
+
+export const REC_TENDINA = Object.freeze([
+  "30\"", "1'", "1'30\"", "2'", "2'30\"", "3'",
+  "1'30\" e cambio gamba", "1'30\" e cambio braccio"
+]);
+
+export const TUT_TENDINA = Object.freeze(["2-0-2", "2-1-0", "0-1-2", "3-0-1", "3-1-1", "4-0-1"]);
+
+export const REC_PASSO = 30;
+export const REC_MIN = 30;
+export const REC_MAX = 180;
+
+/* Un recupero scritto come tempo, in secondi. Vale solo se il testo e' TUTTO un
+ * tempo: una frase («1'30" e cambio gamba») vale null, cosi' i pulsantini la
+ * lasciano stare invece di rovinarla. */
+export function secondiRecupero(valore) {
+  const t = String(valore == null ? "" : valore).trim()
+    .replace(/\u2033/g, "\"")
+    .replace(/[\u2019\u2032]/g, "'");
+  if (!t) return null;
+  let m = /^(\d{1,2})\s*'\s*(\d{0,2})\s*"?$/.exec(t);
+  if (m) {
+    const secondi = Number(m[2] || 0);
+    if (secondi >= 60) return null;
+    return Number(m[1]) * 60 + secondi;
+  }
+  m = /^(\d{1,3})\s*"?$/.exec(t);
+  if (m) return Number(m[1]);
+  m = /^(\d{1,3})\s*(?:sec|secondi)$/i.exec(t);
+  if (m) return Number(m[1]);
+  return null;
+}
+
+/* Il tempo come lo scrive il v31: 90" oppure 1'30". */
+export function testoSecondi(secondi) {
+  const n = Math.round(Number(secondi));
+  if (!Number.isFinite(n) || n <= 0) return "";
+  if (n < 60) return n + "\"";
+  const minuti = Math.floor(n / 60);
+  const resto = n % 60;
+  return resto === 0 ? minuti + "'" : minuti + "'" + String(resto).padStart(2, "0") + "\"";
+}
+
+/* Un passo di 30" avanti o indietro, dentro 30" e 3'. Torna "" quando non si
+ * deve toccare niente: testo che non e' un tempo, oppure limite raggiunto. */
+export function passoRecupero(valore, delta) {
+  const secondi = secondiRecupero(valore);
+  if (secondi == null) return "";
+  const verso = Number(delta) < 0 ? -1 : 1;
+  const dopo = secondi + verso * REC_PASSO;
+  if (dopo < REC_MIN || dopo > REC_MAX) return "";
+  return testoSecondi(dopo);
+}

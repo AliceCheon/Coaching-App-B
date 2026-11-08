@@ -328,15 +328,14 @@ export async function avvia(doc, win) {
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
-              ? "annullato · S" + esito.voce.settimana + " " + esito.voce.campo + " torna a " + (esito.voce.dopo || "vuoto")
+              ? "annullato · " + doveVoce(esito.voce) + " torna a " + (esito.voce.dopo || "vuoto")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
             return leggi(utente);
           });
         },
         onCambia: (richiesta) => editor.modifica(richiesta).then((esito) => {
           if (esito.ok) {
-            segnalaModifica("salvato · scheda " + esito.voce.codice + " · S" + esito.voce.settimana +
-              " " + esito.voce.campo + ": " + (esito.voce.dopo || "vuoto") +
+            segnalaModifica("salvato · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + (esito.voce.dopo || "vuoto") +
               " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
           } else {
             segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
@@ -377,3 +376,12 @@ export async function avvia(doc, win) {
 }
 
 avvia(document, window).catch((e) => { if (typeof console !== "undefined") console.warn("avvio: ", e); });
+
+/* Dove e' finita la modifica: la settimana per serie e ripetizioni, l'esercizio
+ * per recupero e TUT (quei due campi sono dell'esercizio, non della settimana). */
+function doveVoce(voce) {
+  const v = voce || {};
+  if (v.settimana) return "S" + v.settimana + " " + v.campo;
+  const nome = v.campo === "recupero" ? "rec" : "TUT";
+  return v.esercizio ? nome + " di " + v.esercizio : nome;
+}
