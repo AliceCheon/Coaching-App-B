@@ -187,3 +187,33 @@ dentro la singola settimana: quello resta com'e' e non si tocca.
   `prescription`); recupero e TUT scritti dove stanno, settimane e altri campi
   intatti, testo libero e svuotamento, tendine e passo di 30", annulla, e la
   Copia che vede la differenza.
+
+## Passo 10 bis dell'8 novembre 2026 · la freccetta di Rec e TUT non copre più le settimane
+
+Alice, dopo la prova a schermo del passo 10: la tendina era il select grezzo del
+browser, larga, e copriva le celle S1 e S2; il testo lungo si spezzava lettera per
+lettera e usciva dalla cella. Rifatto così.
+
+**La freccetta** (comune/vista-programma.js: rendiFreccia, apriMenu, chiudiMenu)
+
+- non è più un select: è un pulsantino ▾, un button con aria-haspopup, largo 13 px, dentro la cella;
+- il menu (classe menu-freccia) nasce al clic e sta fuori dalla tabella: position fixed, z-index 1200; misurato 145x204 px, 8 voci nel Rec e 6 nel TUT;
+- si chiude scegliendo una voce, cliccando fuori, con Esc, o quando la tabella scorre;
+- misurato a 1440 e a 1920: il menu aperto non tocca nessuna cella delle settimane (sopraSettimane 0).
+
+**Le due colonne** (comune/dashboard-b.css)
+
+- col.w-rec da 56 a 120 px, col.w-tut da 46 a 110 px, min-width della tabella da 1242 a 1374 px: se lo schermo è stretto la tabella scorre in orizzontale. Misurato: 123/112 px a 1440, 165/151 a 1920;
+- via il white-space nowrap sulla cella: si va a capo fra le parole, word-break normal, hyphens none, mai una parola spezzata lettera per lettera;
+- al massimo tre righe con i puntini (line-clamp 3); il testo intero sta nel title, cioè nel tooltip, e mentre si scrive il limite sparisce e si vede tutto;
+- meno, valore e più stanno in una riga sola (div rec-riga, flex, gap 2px): non finiscono sopra altre celle;
+- altezze misurate con l'editor acceso: 87,87,87,87,87,87,87,114,87,87,90,87 px, le stesse della sola lettura (87,114,87,87,90,87): nessuna riga cresce.
+
+**Prova a schermo** (Chromium, protocollo DevTools, 8/11/2026)
+
+- dati di prova con le frasi vere: «Eccentrica controllata e poi esplosiva», «No recupero tra le braccia e poi 1,30' e si riparte subito», «Partenza al ginocchio, cerca di accelerare senza strappi», «Discesa in tre secondi, fermo di un secondo in basso, salita decisa»;
+- misura a 1440 e a 1920: nessun pezzo fuori dalla cella, nessuna sovrapposizione, nessun testo oltre tre righe (problemi: nessuno).
+
+**Test**: tests/58-rec-tut-menu.test.mjs (58.1-58.7): nessun select nelle celle, il menu con le voci di sempre, la scelta che chiude e scrive, il TUT senza pulsantini, la chiusura con clic fuori e con Esc, l'ordine meno · valore · più · freccia, il testo intero nel title.
+
+Non cambia niente nella scrittura: cambiaRecTempo e comune/scritture-b.js restano come nel passo 10.

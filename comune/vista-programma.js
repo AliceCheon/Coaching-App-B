@@ -206,30 +206,93 @@ function inviaModifica(mod, info, campo, valore, prima) {
   });
 }
 
-/* La freccetta: una tendina vera vestita da freccia. La prima voce e' il segno
- * fermo; scelto un valore la tendina ci torna, cosi' la cella resta com'era. */
+/* La freccetta: un pulsantino ▾ dentro la cella e un menu piccolo che si apre
+ * fuori dalla tabella, in posizione fissa: si chiude scegliendo, cliccando
+ * fuori o con Esc. Non resta mai sopra le colonne delle settimane. */
+let menuAperto = null;
+function chiudiMenu() { if (menuAperto) menuAperto(); }
+
 function rendiFreccia(doc, classe, voci, titolo, suScelta) {
-  const sel = doc.createElement("select");
-  sel.className = "freccia " + classe;
-  sel.title = titolo;
-  sel.setAttribute("aria-label", titolo);
-  const fermo = doc.createElement("option");
-  fermo.value = "";
-  fermo.textContent = "▾";
-  sel.appendChild(fermo);
-  voci.forEach((v) => {
-    const o = doc.createElement("option");
-    o.value = v;
-    o.textContent = v;
-    sel.appendChild(o);
+  const b = n(doc, "button", "freccia " + classe, "\u25be");
+  b.type = "button";
+  b.title = titolo;
+  b.setAttribute("aria-label", titolo);
+  b.setAttribute("aria-haspopup", "menu");
+  b.setAttribute("aria-expanded", "false");
+  b.addEventListener("mousedown", (e) => e.preventDefault());
+  b.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (b.getAttribute("aria-expanded") === "true") { chiudiMenu(); return; }
+    apriMenu(doc, b, voci, suScelta);
   });
-  sel.addEventListener("mousedown", (e) => e.stopPropagation());
-  sel.addEventListener("change", () => {
-    const scelto = String(sel.value || "");
-    sel.value = "";
-    if (scelto && typeof suScelta === "function") suScelta(scelto);
+  return b;
+}
+
+function apriMenu(doc, ancora, voci, suScelta) {
+  chiudiMenu();
+  const win = doc.defaultView || null;
+  const menu = n(doc, "div", "menu-freccia");
+  menu.setAttribute("role", "menu");
+  voci.forEach((testo) => {
+    const voce = n(doc, "button", "menu-voce", testo);
+    voce.type = "button";
+    voce.setAttribute("role", "menuitem");
+    voce.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chiudi();
+      if (typeof suScelta === "function") suScelta(testo);
+    });
+    menu.appendChild(voce);
   });
-  return sel;
+  doc.body.appendChild(menu);
+  /* sotto la freccia; se non c'e' posto si apre sopra; mai fuori dallo schermo */
+  const r = ancora.getBoundingClientRect ? ancora.getBoundingClientRect() : { left: 0, top: 0, bottom: 0, width: 0 };
+  const m = menu.getBoundingClientRect ? menu.getBoundingClientRect() : { width: 140, height: 200 };
+  const larg = Math.round(m.width) || 140;
+  const alt = Math.round(m.height) || 200;
+  const largSchermo = (win && win.innerWidth) || 1200;
+  const altSchermo = (win && win.innerHeight) || 800;
+  let top = r.bottom + 4;
+  if (top + alt > altSchermo - 8) top = Math.max(8, r.top - alt - 4);
+  let left = Math.round(r.left) + Math.round(r.width || 0) - larg;
+  if (left < 8) left = 8;
+  if (left + larg > largSchermo - 8) left = Math.max(8, largSchermo - larg - 8);
+  menu.style.top = Math.round(top) + "px";
+  menu.style.left = Math.round(left) + "px";
+  ancora.setAttribute("aria-expanded", "true");
+  function fuori(ev) {
+    if (menu.contains(ev.target) || ancora.contains(ev.target)) return;
+    chiudi();
+  }
+  function tasto(ev) {
+    if (ev.key !== "Escape") return;
+    ev.preventDefault();
+    chiudi();
+    if (ancora.focus) ancora.focus();
+  }
+  function chiudi() {
+    if (!menu.parentNode) return;
+    menu.parentNode.removeChild(menu);
+    ancora.setAttribute("aria-expanded", "false");
+    doc.removeEventListener("mousedown", fuori, true);
+    doc.removeEventListener("keydown", tasto, true);
+    if (win) {
+      win.removeEventListener("scroll", chiudi, true);
+      win.removeEventListener("resize", chiudi, true);
+    }
+    menuAperto = null;
+  }
+  doc.addEventListener("mousedown", fuori, true);
+  doc.addEventListener("keydown", tasto, true);
+  if (win) {
+    win.addEventListener("scroll", chiudi, true);
+    win.addEventListener("resize", chiudi, true);
+  }
+  menuAperto = chiudi;
+  const primo = menu.querySelector(".menu-voce");
+  if (primo && primo.focus) primo.focus();
 }
 
 function pulsantePasso(doc, delta, titolo, suPasso) {
@@ -245,16 +308,17 @@ function pulsantePasso(doc, delta, titolo, suPasso) {
 }
 
 /* Il recupero: testo libero, i due pulsantini che vanno di 30" e la freccetta
- * con i valori di sempre. Se nella cella c'e' una frase, i pulsantini non la
- * toccano. */
+ * con i valori di sempre. Tutto in una riga sola (niente roba sopra le altre
+ * celle). Se nella cella c'e' una frase, i pulsantini non la toccano. */
 function rendiCellaRecupero(doc, td, mod, info) {
   const primo = String(info.valore || "");
-  const span = n(doc, "span", "rec", primo || "—");
+  const riga = n(doc, "div", "rec-riga");
+  const span = n(doc, "span", "rec", primo || "\u2014");
   if (primo) span.title = primo;
   rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", settimana: null, prima: primo }));
   const scrivi = (dopo) => {
     const prima = String(span.getAttribute("data-prima") || "");
-    span.textContent = dopo || "—";
+    span.textContent = dopo || "\u2014";
     span.title = dopo || "";
     span.setAttribute("data-prima", dopo);
     inviaModifica(mod, info, "recupero", dopo, prima);
@@ -265,31 +329,33 @@ function rendiCellaRecupero(doc, td, mod, info) {
     if (!dopo) return; /* frase libera o limite raggiunto: non si tocca niente */
     scrivi(dopo);
   };
-  td.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
-  td.appendChild(span);
-  td.appendChild(pulsantePasso(doc, 30, "più 30 secondi", passo));
-  td.appendChild(rendiFreccia(doc, "freccia-rec", REC_TENDINA, "recupero: scegli un valore", scrivi));
+  riga.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
+  riga.appendChild(span);
+  riga.appendChild(pulsantePasso(doc, 30, "pi\u00f9 30 secondi", passo));
+  riga.appendChild(rendiFreccia(doc, "freccia-rec", REC_TENDINA, "recupero: scegli un valore", scrivi));
+  td.appendChild(riga);
   return span;
 }
 
 /* Il TUT: testo libero e la freccetta con gli schemi. Nessun pulsantino. */
 function rendiCellaTut(doc, td, mod, info) {
   const primo = String(info.valore || "");
-  const span = n(doc, "span", "tut", primo || "—");
+  const riga = n(doc, "div", "tut-riga");
+  const span = n(doc, "span", "tut", primo || "\u2014");
   if (primo) span.title = primo;
   rendiCellaModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", settimana: null, prima: primo }));
   const scrivi = (dopo) => {
     const prima = String(span.getAttribute("data-prima") || "");
-    span.textContent = dopo || "—";
+    span.textContent = dopo || "\u2014";
     span.title = dopo || "";
     span.setAttribute("data-prima", dopo);
     inviaModifica(mod, info, "tempo", dopo, prima);
   };
-  td.appendChild(span);
-  td.appendChild(rendiFreccia(doc, "freccia-tut", TUT_TENDINA, "TUT: scegli un valore", scrivi));
+  riga.appendChild(span);
+  riga.appendChild(rendiFreccia(doc, "freccia-tut", TUT_TENDINA, "TUT: scegli un valore", scrivi));
+  td.appendChild(riga);
   return span;
 }
-
 
 /* ---------- la testa della pagina ---------------------------------------- */
 
