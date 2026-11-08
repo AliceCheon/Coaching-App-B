@@ -49,14 +49,14 @@ test("43.01 la regola di colonna decide con i casi di Alice", () => {
   assert.equal(recuperoInColonna("90 sec"), true);
   assert.equal(recuperoInColonna("120-180 sec"), true);
   assert.equal(recuperoInColonna("1,30'"), true);
-  assert.equal(recuperoInColonna("No recupero tra le braccia e poi 1,30'"), false);
+  assert.equal(recuperoInColonna("No recupero tra le braccia e poi 1,30'"), true);
   assert.equal(recuperoInColonna("recupero secondo Alice"), false);
   assert.equal(tempoInColonna(""), true);
   assert.equal(tempoInColonna("\u2014"), true);
   assert.equal(tempoInColonna("3-1-1-0"), true);
   assert.equal(tempoInColonna("2/0/1/0"), true);
-  assert.equal(tempoInColonna("30X1"), true);
-  assert.equal(tempoInColonna("3010"), true);
+  assert.equal(tempoInColonna("30X1"), false);
+  assert.equal(tempoInColonna("3010"), false); /* solo numeri con i trattini: 3010 non e' un TUT */
   assert.equal(tempoInColonna("eccentrica controllata e poi explosiva"), false);
   assert.equal(tempoInColonna("eccentrica_controllata_e_poi_explosiva"), false);
   assert.equal(tempoInColonna("Partenza al ginocchio cerca di accelerare"), false);
@@ -94,9 +94,9 @@ test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il n
   assert.equal(rec(0).title, "120-180 sec");
   assert.equal(tut(0).textContent, "\u2014");
 
-  assert.equal(rec(1).textContent, "\u2014");
+  assert.equal(rec(1).textContent, "1'30\"");
   assert.equal(nota(1).textContent.indexOf("Punta i piedi"), 0);
-  assert.ok(nota(1).textContent.includes("REC: No recupero tra le braccia e poi 1,30'"));
+  assert.ok(nota(1).textContent.includes("REC: No recupero tra le braccia e poi"));
   assert.equal(tut(1).textContent, "\u2014");
 
   assert.equal(rec(2).textContent, "90 sec");

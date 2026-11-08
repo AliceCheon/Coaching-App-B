@@ -260,3 +260,27 @@ e 1920 px, non piu' sulla pagina di prova.
 **I test.** Nuovo `tests/59-rec-tut-solo-valore.test.mjs`: la separazione sui
 casi veri del v31, la scrittura che conserva la frase, la cella che con l'editor
 acceso mostra il solo valore e la frase in Descr./Setup una volta sola.
+
+## Passo 12 dell'8 novembre 2026 · tendina corta, niente X, scrittura a mano
+
+Decisioni di Alice, applicate qui:
+
+- **TUT: la X non c'e' piu'.** In cella vanno solo numeri uniti dai trattini:
+  `2-0-1`, `3-1-1`, `2-1-0-1`. Quindi `30X1` e `3010` non sono valori: non e'
+  una prova indebolita, e' la regola nuova. Le prove 43 lo dicono nero su bianco.
+- **Rec: la tendina ha sei voci** — `30"`, `1'`, `1'30"`, `2'`, `2'30"`, `3'`.
+  Tolte «1'30" e cambio gamba» e «1'30" e cambio braccio». Nella cella
+  Rec stanno solo valori numerici.
+- **Rec e TUT si scrivono a mano**, oltre che con la freccetta. Mentre si
+  scrive la casella si allarga quanto il testo, la colonna cresce e le celle
+  vicine non vengono coperte: se la tabella non ci sta, scorre in orizzontale
+  (`.p8-scroll{overflow-x:auto}`). Quello che si scrive finisce nel **valore**;
+  la frase in Descr./Setup non si tocca.
+- **Quello che non e' un valore non entra**: se si scrive una frase, o la X,
+  la cella torna com'era e il dato resta quello di prima
+  (`recuperoScrittoValido`, `tempoScrittoValido`).
+- Nel registro delle modifiche va il **testo intero** di prima e di dopo: cosi'
+  l'annulla rimette la frase esattamente com'era.
+
+Prove: aggiornate 43, 57, 58, 59 alla regola nuova; aggiunte le prove della
+scrittura a mano. Suite verde, guardie 02, 42, 44.03 e 47 comprese.

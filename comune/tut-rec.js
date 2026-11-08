@@ -133,6 +133,20 @@ export function tempoInColonna(valore) {
   return p.valore !== "" || !p.frase;
 }
 
+/* Scritto a mano nella cella (passo 12, 8/11/2026). Vale solo se quello che si
+ * scrive e' tutto un valore: TUT tre o quattro numeri con i trattini, REC un
+ * tempo o un intervallo. Una frase, o la X che Alice non vuole (30X1), non
+ * passa: la cella torna com'era e nel dato non entra niente. */
+export function recuperoScrittoValido(testo) {
+  const p = separaRecupero(testo);
+  return p.valore !== "" && p.frase === "";
+}
+
+export function tempoScrittoValido(testo) {
+  const p = separaTempo(testo);
+  return p.valore !== "" && p.frase === "";
+}
+
 /* Il testo spostato in Descr./Setup, con l'etichetta davanti. */
 export function etichettaSpostata(colonna, valore) {
   const t = String(valore == null ? "" : valore).trim();
@@ -156,10 +170,9 @@ export function recuperoVisibile(valore) {
  * nel dato non si tocca.
  */
 
-export const REC_TENDINA = Object.freeze([
-  "30\"", "1'", "1'30\"", "2'", "2'30\"", "3'",
-  "1'30\" e cambio gamba", "1'30\" e cambio braccio"
-]);
+/* Alice, 8/11/2026: niente «cambio gamba» e «cambio braccio», in cella solo
+ * il numero. La tendina ha sei voci e basta. */
+export const REC_TENDINA = Object.freeze(["30\"", "1'", "1'30\"", "2'", "2'30\"", "3'"]);
 
 export const TUT_TENDINA = Object.freeze(["2-0-2", "2-1-0", "0-1-2", "3-0-1", "3-1-1", "4-0-1"]);
 

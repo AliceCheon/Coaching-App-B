@@ -58,6 +58,7 @@ test("59.05 una frase senza valori: cella vuota e frase intera", () => {
   assert.equal(p.frase, "Partenza al ginocchio, cerca di accelerare");
   const q = separaRecupero("Eccentrica controllata, 1\" concentrica");
   assert.equal(q.frase, "Eccentrica controllata, 1\" concentrica");
+  /* 1" da solo non e' un recupero: la cella resta vuota, la frase va in Descr./Setup */
   assert.equal(recuperoInColonna("Eccentrica controllata, 1\" concentrica"), false);
   assert.equal(tempoInColonna("Partenza al ginocchio, cerca di accelerare"), false);
 });
@@ -118,8 +119,8 @@ test("59.11 la frase va in Descr./Setup una volta sola, anche con l'editor acces
 test("59.12 freccetta e pulsantini cambiano il valore, non la frase", () => {
   assert.ok(sorgenteVista.indexOf("sostituisciRecupero(intero, nuovoValore)") >= 0);
   assert.ok(sorgenteVista.indexOf("sostituisciTempo(intero, nuovoValore)") >= 0);
-  assert.ok(sorgenteVista.indexOf('{ campo: "recupero", prima: info.valore || "" }') >= 0);
-  assert.ok(sorgenteVista.indexOf('{ campo: "tempo", prima: info.valore || "" }') >= 0);
+  assert.ok(sorgenteVista.indexOf('{ campo: "recupero", prima: info.valore || "", valido: recuperoScrittoValido }') >= 0);
+  assert.ok(sorgenteVista.indexOf('{ campo: "tempo", prima: info.valore || "", valido: tempoScrittoValido }') >= 0);
   assert.ok(sorgenteVista.indexOf("valore: esito.dopo, prima: esito.prima") >= 0);
 });
 

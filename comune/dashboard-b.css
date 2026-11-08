@@ -754,3 +754,14 @@ td.c-rec .rec:focus,td.c-tut .tut:focus{display:block;-webkit-line-clamp:unset;l
 #pag-programma-1 .p8-tab col.w-tut{width:124px}
 #pag-programma-1 td.c-rec .rec-riga,#pag-programma-1 td.c-tut .tut-riga{display:flex;align-items:center;justify-content:center;gap:2px;max-width:100%}
 #pag-programma-1 td.c-rec .rec,#pag-programma-1 td.c-tut .tut{flex:0 1 auto;min-width:0;max-width:100%;white-space:normal;word-break:normal;overflow-wrap:break-word}
+
+/* Scrittura a mano (passo 12, 8/11/2026): la casella si allarga quanto il
+ * testo, la colonna cresce e le celle vicine non si coprono. Se la tabella non
+ * ci sta, scorre in orizzontale invece di stringere il testo. */
+#pag-programma-1 td.c-rec .rec.scrittura,#pag-programma-1 td.c-tut .tut.scrittura,
+td.c-rec .rec.scrittura,td.c-tut .tut.scrittura{display:inline-block;-webkit-line-clamp:unset;line-clamp:unset;
+  overflow:visible;max-width:none;white-space:nowrap;background:rgba(255,79,163,.20);outline:none;
+  border-radius:5px;padding:0 2px;text-align:center}
+#pag-programma-1 td.c-rec.in-scrittura,#pag-programma-1 td.c-tut.in-scrittura,
+td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
+#pag-programma-1 .p8-tab.scrittura-tabella{width:auto}

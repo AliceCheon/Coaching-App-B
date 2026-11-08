@@ -126,9 +126,10 @@ test("57.5 si rifiuta quello che non è di questo passo, senza scrivere", () => 
 });
 
 test("57.6 la freccetta ha i valori chiesti e i pulsantini vanno di 30\"", () => {
-  const rec = ["30\"", "1'", "1'30\"", "2'", "2'30\"", "3'",
-    "1'30\" e cambio gamba", "1'30\" e cambio braccio"];
-  rec.forEach((v) => assert.ok(REC_TENDINA.indexOf(v) >= 0, "nel recupero manca " + v));
+  /* Alice, 8/11/2026: niente "cambio gamba" e "cambio braccio", in cella solo
+   * il numero. Sei voci e basta. */
+  const rec = ["30\"", "1'", "1'30\"", "2'", "2'30\"", "3'"];
+  assert.deepEqual(Array.from(REC_TENDINA), rec, "il recupero ha sei voci, solo numeri");
   assert.deepEqual(Array.from(TUT_TENDINA), ["2-0-2", "2-1-0", "0-1-2", "3-0-1", "3-1-1", "4-0-1"]);
 
   assert.equal(secondiRecupero("30\""), 30);

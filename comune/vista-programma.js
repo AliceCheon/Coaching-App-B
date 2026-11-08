@@ -21,8 +21,7 @@ import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
   recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
-  REC_TENDINA, TUT_TENDINA, passoRecupero
-} from "./tut-rec.js";
+  REC_TENDINA, TUT_TENDINA, passoRecupero, recuperoScrittoValido, tempoScrittoValido } from "./tut-rec.js";
 
 import { nomePulito } from "./nome-pulito.js";
 
@@ -312,11 +311,78 @@ function pulsantePasso(doc, delta, titolo, suPasso) {
 /* Il valore della cella si scrive a mano, ma nel dato va il testo intero: la
  * frase di coach resta com'e' e cambia solo il valore (regola di Alice,
  * 8/11/2026). `componi` costruisce il testo intero e dice com'era prima. */
+/* Le caselle Rec e TUT si allargano mentre si scrive (passo 12, 8/11/2026):
+ * si misura il testo con il carattere della cella, si allarga la colonna e la
+ * tabella prende la larghezza che serve; cosi' le celle vicine non si coprono
+ * mai e, se non ci sta, la tabella scorre in orizzontale. Finita la scrittura
+ * tornano le misure di sempre. */
+const COLONNA_CAMPO = { recupero: "w-rec", tempo: "w-tut" };
+const BASE_COLONNA = { recupero: 136, tempo: 124 };
+const TABELLA_MIN = 1470;
+
+function telaMisura(doc) {
+  if (!telaMisura.tela) {
+    telaMisura.tela = doc.createElement("canvas");
+    telaMisura.tela.width = 8;
+    telaMisura.tela.height = 8;
+  }
+  return typeof telaMisura.tela.getContext === "function" ? telaMisura.tela.getContext("2d") : null;
+}
+
+function larghezzaTesto(doc, span, testo) {
+  const t = String(testo == null ? "" : testo).replace(/\u00a0/g, " ");
+  const v = doc.defaultView;
+  const c = telaMisura(doc);
+  if (c && v && typeof v.getComputedStyle === "function") {
+    const cs = v.getComputedStyle(span);
+    c.font = (cs.fontStyle || "normal") + " " + (cs.fontWeight || "700") + " " +
+      (cs.fontSize || "11px") + " " + (cs.fontFamily || "monospace");
+    return Math.ceil(c.measureText(t + " ").width) + 6;
+  }
+  return Math.max(t.length * 8, 24);
+}
+
+function conTabella(span, classe) {
+  const tab = span && typeof span.closest === "function" ? span.closest("table") : null;
+  const td = span && typeof span.closest === "function" ? span.closest("td") : null;
+  const col = tab && typeof tab.querySelector === "function" ? tab.querySelector("col." + classe) : null;
+  return { tab, td, col };
+}
+
+function misuraScrittura(doc, span, campo) {
+  const classe = COLONNA_CAMPO[campo] || "w-rec";
+  const base = BASE_COLONNA[campo] || 136;
+  const { tab, td, col } = conTabella(span, classe);
+  const serve = larghezzaTesto(doc, span, span.textContent) + 48; /* pulsantini e freccetta */
+  const larga = Math.max(base, serve);
+  if (col && col.style) col.style.width = larga + "px";
+  if (tab && tab.style) tab.style.minWidth = TABELLA_MIN + (larga - base) + "px";
+  if (td && td.classList) td.classList.toggle("in-scrittura", true);
+  if (span.style) span.style.whiteSpace = "nowrap";
+}
+
+function apriScrittura(doc, span, campo) {
+  if (span.classList) span.classList.toggle("scrittura", true);
+  misuraScrittura(doc, span, campo);
+}
+
+function chiudiScrittura(doc, span, campo) {
+  const classe = COLONNA_CAMPO[campo] || "w-rec";
+  const { tab, td, col } = conTabella(span, classe);
+  if (span.classList) span.classList.toggle("scrittura", false);
+  if (span.style) span.style.whiteSpace = "";
+  if (col && col.style) col.style.width = "";
+  if (tab && tab.style) tab.style.minWidth = "";
+  if (td && td.classList) td.classList.toggle("in-scrittura", false);
+}
+
 function rendiValoreModificabile(doc, span, mod, info, componi) {
   span.setAttribute("contenteditable", "true");
   span.setAttribute("spellcheck", "false");
   span.setAttribute("data-campo", info.campo);
   span.setAttribute("data-prima", info.prima);
+  span.addEventListener("focus", () => apriScrittura(doc, span, info.campo));
+  span.addEventListener("input", () => misuraScrittura(doc, span, info.campo));
   span.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); span.blur(); }
     else if (e.key === "Escape") {
@@ -328,20 +394,29 @@ function rendiValoreModificabile(doc, span, mod, info, componi) {
   span.addEventListener("blur", () => {
     const testo = String(span.textContent || "").trim();
     const valore = testo === "\u2014" ? "" : testo;
-    if (valore === String(span.getAttribute("data-prima") || "")) return;
-    if (typeof mod.onCambia !== "function") return;
-    const esito = componi(valore);
+    const valido = typeof info.valido === "function" ? info.valido(valore) : true;
+    if (!valido) {
+      /* non e' un valore: la cella torna com'era, il dato non si tocca */
+      span.textContent = span.getAttribute("data-prima") || "\u2014";
+      chiudiScrittura(doc, span, info.campo);
+      return;
+    }
+    if (valore !== String(span.getAttribute("data-prima") || "") && typeof mod.onCambia === "function") {
+      const esito = componi(valore);
+      span.setAttribute("data-prima", valore);
+      mod.onCambia({
+        idScheda: info.idScheda, codice: info.codice,
+        idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
+        esercizio: info.esercizio, settimana: null,
+        campo: info.campo, valore: esito.dopo, prima: esito.prima
+      });
+    }
     span.textContent = valore || "\u2014";
     span.title = valore || "";
-    span.setAttribute("data-prima", valore);
-    mod.onCambia({
-      idScheda: info.idScheda, codice: info.codice,
-      idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
-      esercizio: info.esercizio, settimana: null,
-      campo: info.campo, valore: esito.dopo, prima: esito.prima
-    });
+    chiudiScrittura(doc, span, info.campo);
   });
 }
+
 
 /* Il recupero: in cella il solo valore, i due pulsantini che vanno di 30" e la
  * freccetta con i valori di sempre. La frase del coach sta in Descr./Setup e
@@ -372,7 +447,7 @@ function rendiCellaRecupero(doc, td, mod, info) {
     if (!dopo) return; /* non e' un tempo o limite raggiunto: non si tocca niente */
     scrivi(dopo);
   };
-  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", prima: info.valore || "" }), componi);
+  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", prima: info.valore || "", valido: recuperoScrittoValido }), componi);
   riga.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
   riga.appendChild(span);
   riga.appendChild(pulsantePasso(doc, 30, "pi\u00f9 30 secondi", passo));
@@ -402,7 +477,7 @@ function rendiCellaTut(doc, td, mod, info) {
     span.title = nuovoValore;
     inviaModifica(mod, info, "tempo", esito.dopo, esito.prima);
   };
-  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", prima: info.valore || "" }), componi);
+  rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "tempo", prima: info.valore || "", valido: tempoScrittoValido }), componi);
   riga.appendChild(span);
   riga.appendChild(rendiFreccia(doc, "freccia-tut", TUT_TENDINA, "TUT: scegli un valore", scrivi));
   td.appendChild(riga);

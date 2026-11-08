@@ -85,8 +85,9 @@ test("58.3 scegliendo una voce il menu si chiude e il recupero cambia", () => {
   assert.equal(cambiate.length, 1);
   assert.equal(cambiate[0].campo, "recupero");
   assert.equal(cambiate[0].settimana, null);
-  assert.equal(cambiate[0].valore, REC_TENDINA[1]);
-  assert.equal(cambiate[0].prima, LUNGO_REC);
+  /* nel dato va il testo intero, cambia solo il valore (regola di Alice) */
+  assert.equal(cambiate[0].valore, "No recupero tra le braccia e poi 1' e si riparte subito");
+  assert.equal(cambiate[0].prima, "No recupero tra le braccia e poi 1,30' e si riparte subito");
 });
 
 test("58.4 il TUT ha le voci sue e nessun pulsantino", () => {
@@ -125,8 +126,8 @@ test("58.7 il testo lungo resta intero nel Title e la cella lo taglia", () => {
   const { doc } = schermo();
   const rec = doc.querySelector("td.c-rec .rec");
   const tut = doc.querySelector("td.c-tut .tut");
-  assert.equal(rec.title, LUNGO_REC);
-  assert.equal(tut.title, LUNGO_TUT);
-  assert.equal(rec.textContent, LUNGO_REC);
-  assert.equal(tut.textContent, LUNGO_TUT);
+  assert.equal(rec.title, "1'30\"");
+  assert.equal(tut.title, ""); /* cella vuota: niente Title */
+  assert.equal(rec.textContent, "1'30\"");
+  assert.equal(tut.textContent, "\u2014");
 });

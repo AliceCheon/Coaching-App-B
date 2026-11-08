@@ -68,7 +68,7 @@ test("44.02 a schermo non resta nessun trattino basso, e l'Ultima resta legata a
   const testo = doc.body.textContent;
   assert.ok(!testo.includes("_"), "nessun trattino basso visibile a schermo");
   ["Dorsali e braccia", "Dorso e petto", "Riscaldamento e mobilita", "Lat machine triangolo",
-    "Punta i piedi", "REC: No recupero tra le braccia e poi 1,30'",
+    "Punta i piedi", "REC: No recupero tra le braccia e poi",
     "TUT: Eccentrica controllata e poi explosiva", "Test 12rm", "90 sec", "26/10/2026 \u00b7 40 kg"]
     .forEach((frase) => assert.ok(testo.includes(frase), "manca: " + frase));
 });
