@@ -342,3 +342,17 @@ Regole di Alice, stesso giorno del Passo 13, stesso commit.
 2. Niente zero inventato: un recupero 0 (0, "0", "0 sec", {seconds:0}) non e' un valore — formattaSecondi(0) adesso torna vuoto e la cella mostra il trattino; prima scriveva 0' (e' questo lo zero che Alice vedeva in colonna). Lo zero scritto a mano non entra nel dato.
 3. A3 (Pulley sbarra presa larga supina): il dato vero sta nel cloud di A e non nel repository; dallo schermo l'unico percorso che metteva uno zero in cella e' formattaSecondi(0), quindi il recupero di A3 e' una forma di zero, mentre "REC: 2 2" in Descr./Setup e' la nota della coach e resta intatta. Le frasi senza valore ("2 2") erano gia' trattino in colonna dal Passo 12.
 4. Test nuovi 61 (formato unico, zero, A3 a schermo, salvataggio); portati ai simboli 41.01, 43, 44.02 e 59.03.
+
+## Passo 15 — Rec e TUT: il valore che tornava indietro (9/11/2026)
+
+**Il sintomo.** Dal sito su `e5332ca`: si cambia Rec o TUT, a schermo cambia, e dopo qualche secondo torna il valore di prima senza ricaricare. Serie e reps no. Dal registro Firebase la voce `mod-2026-11-09T13-30-00-388Z` (esercizio «Pendulum focus glutei», prima vuoto, dopo `2-1-0`, versione 15 → 16) dice che la scrittura e' andata a buon fine: il guasto era in lettura.
+
+**Le due cause.**
+1. Lo stesso esercizio arrivava **due volte**: dentro il documento-scheda e nei documenti «esercizio sciolto» (le schede grandi si spezzano). La tabella disegnava due righe con lo stesso id, la modifica andava sulla prima e la riga che si guardava era l'altra, ancora vecchia. Per questo anche le pressioni di + successive ripartivano dal valore vecchio e non si applicavano tutte.
+2. L'esercizio porta **piu' campi di recupero** (dentro `prescription` e fuori, piu' il `rec` della singola settimana). La scrittura ne toccava uno solo; gli altri restavano col valore vecchio e bastava che la lettura ne preferisse un altro perche' la modifica sparisse.
+
+**La correzione.** In `comune/schede-v2.js` la copia sciolta non si aggiunge se l'id c'e' gia' nella scheda (vince la scheda). In `comune/modifiche-b.js` `cambiaRecTempo` scrive il valore nuovo su **tutti i campi esistenti** della famiglia (`rest`/`recupero`/`pausa`, `tempo`/`cadenza`), dentro e fuori da `prescription`; se non ne esiste nessuno lo crea dove la lettura lo cerca per primo. Il `rec` della settimana resta com'e'.
+
+**Le prove.** `tests/62-rec-tut-torna-indietro.test.mjs`: una sola riga per esercizio con il documento sciolto in mezzo (62.1), TUT da vuoto a `2-1-0` riletto dal documento (62.2), nessun campo di recupero lasciato vecchio (62.3), tre pressioni di + di fila applicate in ordine con versione 15 → 19 (62.4). Prima della correzione 62.1, 62.2 e 62.3 fallivano.
+
+**Non toccato.** `desktop/index.html` (guardia 42), nessun dato di A, nessuna scrittura fuori da `bdB_atleti`.

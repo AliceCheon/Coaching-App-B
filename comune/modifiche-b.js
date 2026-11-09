@@ -343,15 +343,35 @@ export function cambiaRecTempo(dati, richiesta, opzioni) {
   }
   if (dopo === prima) return { ok: false, motivo: "il valore non e' cambiato" };
 
-  const posto = postoCampo(esercizio, campo === "recupero" ? CAMPI_RECUPERO : CAMPI_TEMPO,
-    campo === "recupero" ? "recupero" : "tempo");
+  const nomi = campo === "recupero" ? CAMPI_RECUPERO : CAMPI_TEMPO;
+  const posto = postoCampo(esercizio, nomi, campo === "recupero" ? "recupero" : "tempo");
   const nuovoEsercizio = Object.assign({}, esercizio);
-  if (posto.dentro) {
-    nuovoEsercizio.prescription = Object.assign({}, esercizio.prescription);
-    nuovoEsercizio.prescription[posto.chiave] = dopo;
-  } else {
-    nuovoEsercizio[posto.chiave] = dopo;
+  /* Passo 15 (9/11/2026): la lettura prende il PRIMO campo che trova, dentro
+   * prescription e poi fuori. Le schede importate ne portano piu' di uno
+   * (rest + recupero, tempo + cadenza): scriverne uno solo lascia gli altri
+   * col valore vecchio e la cella torna indietro da sola. Il valore nuovo va
+   * su TUTTI quelli che esistono; se non ne esiste nessuno si crea dove la
+   * lettura lo cerca per primo. Il rec della singola settimana e' un'altra
+   * cosa (un'eccezione della settimana) e non si tocca. */
+  const dentro = esercizio && esercizio.prescription && typeof esercizio.prescription === "object"
+    ? esercizio.prescription : null;
+  let scritto = false;
+  if (dentro) {
+    let copia = null;
+    for (let i = 0; i < nomi.length; i += 1) {
+      if (!haCampo(dentro, nomi[i])) continue;
+      if (!copia) copia = Object.assign({}, dentro);
+      copia[nomi[i]] = dopo;
+      scritto = true;
+    }
+    if (copia) nuovoEsercizio.prescription = copia;
   }
+  for (let i = 0; i < nomi.length; i += 1) {
+    if (!haCampo(esercizio, nomi[i])) continue;
+    nuovoEsercizio[nomi[i]] = dopo;
+    scritto = true;
+  }
+  if (!scritto) nuovoEsercizio[posto.chiave] = dopo;
   const nuovoElenco = elenco.slice();
   nuovoElenco[indice] = nuovoEsercizio;
   const nuovoFoglio = Object.assign({}, f);

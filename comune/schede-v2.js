@@ -409,7 +409,19 @@ export function ricostruisciSchede(documenti) {
       const chiave = programId + "::" + scheda.id + "::" + (archivio ? "archiviata" : "scheda");
       const scioltiQui = eserciziSciolti[chiave];
       if (!scioltiQui || !scioltiQui.length) return;
-      const uniti = scheda.esercizi.concat(scioltiQui.map(esercizioNormalizzato));
+      /* Passo 15 (9/11/2026): un esercizio che il documento-scheda porta gia'
+       * dentro non si aggiunge una seconda volta. Le schede grandi si spezzano
+       * e lo stesso esercizio arriva anche come documento sciolto: disegnarlo
+       * due volte faceva scrivere la modifica su una riga e leggere l'altra,
+       * cosi' il valore tornava indietro da solo. Vince la copia della scheda;
+       * la sciolta serve solo a riempire le righe che mancano. */
+      const gia = Object.create(null);
+      scheda.esercizi.forEach((e) => { if (e && e.id) gia[e.id] = true; });
+      const nuovi = scioltiQui
+        .map(esercizioNormalizzato)
+        .filter((e) => !(e && e.id && gia[e.id]));
+      if (!nuovi.length) return;
+      const uniti = scheda.esercizi.concat(nuovi);
       uniti.sort((a, b) => a.ordine - b.ordine);
       scheda.esercizi = uniti;
       scheda.numeroEsercizi = uniti.length;
