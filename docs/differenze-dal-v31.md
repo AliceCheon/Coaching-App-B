@@ -68,6 +68,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `comune/logbook.js` nuovo: `seduteLogbook(...)` traduce le sedute vere nella forma del v31 ({id, d, pn, sc, nm, w, st, dur, jr, pg, ex, so}) e torna le dichiarazioni. Regole dichiarate: stato da `status`, o da `done` (true→completed, false→bozza) se status manca, altrimenti spento «non registrato»; provenienza da `source`, altrimenti spenta; programma SOLO se il codice della scheda (senza «scheda », senza spazi, maiuscolo) appartiene a UN programma solo fra quelli letti, schede attive e archiviate comprese — altrimenti «—» con la ragione in carta; journal solo se la seduta porta l’oggetto `journal` (energy/rpe/mood/note, i campi che il v31 legge nei backup), con solo `journalId` resta «non collegata»; durata da `totalDurationSeconds`; Programmato solo col programma attribuito e la scheda trovata per lo stesso codice, con la settimana DALLA SEDUTA (se il documento della scheda non porta quella settimana, la colonna resta a «—», mai presa da un’altra). Serie: [kg, reps, rpe, rir], i campi accettati dichiarati (kg/weight/peso/carico/load · reps/ripetizioni/rip/repetitions · rpe · rir) — lo zero vero (corpo libero) resta zero, il mancante vale null. Ordine: più recenti in cima (data, poi id); le sedute senza data leggibile restano in fondo, contate, non buttate. Nomi: vero in `n` per il catalogo, pulito in `np` per lo schermo.
 - `desktop/app-v31.js`: dopo la lettura, `seduteLogbook` alimenta `window.BD_LB_SEED` e `BD_LB._prende(...)` + `tutto()` (i chip «Ultime sedute registrate» si ridisegnano); «Importa backup» e «Dimentica» restano visibili ma disabled; i filtri Programma/Stato/Fonte si accendono solo se il campo vero esiste, altrimenti spenti con «non registrato»; la riga di dichiarazione elenca i conti (sedute lette, documenti senza id e doppioni, attribuzioni).
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
+- La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
 - Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo 3c: - righe 1487 · - righe 2737 · - righe 2751-2754 · - righe 2768 · - righe 2781 · - righe 2794 · - righe 3688 · - righe 3950 · - righe 4659 · - righe 4663 · - righe 6513 · - righe 7914 · - righe 8370 · - righe 8527 · - righe 10675 · - righe 10677 · - righe 10679-10678 · - righe 10747-10751
 ## Passo 4 — 7 novembre 2026 · la zona B e la copia (con gli esercizi sciolti)
@@ -406,40 +407,10 @@ Cosa cambia:
 Prove: `tests/63-ridisegno-automatico.test.mjs` (63.1-63.5), con il finto
 Firestore che sa emettere due volte lo stesso documento.
 
-## Diagnosi temporanea della cella (?diagnosi=1) — 9/11/2026 — STRUMENTO DA TOGLIERE
-
-Serve a vedere, sulla pagina vera con i dati veri, perche' una modifica a Rec o
-TUT sparisce dopo qualche secondo. Con `?diagnosi=1` nell'indirizzo compare una
-striscia gialla sotto la tabella del Programma attivo; senza quel parametro la
-pagina e' identica a prima e il modulo non costruisce niente.
-
-Cosa mostra, per la cella aperta (o per l'ultima toccata):
-
-- id della scheda, id dell'esercizio, riga e campo;
-- il valore mostrato dalla cella e il campo da cui viene letto
-  (`prescrizione.recupero`, `prescrizione.tempo`), piu' tutti i campi che
-  esistono davvero su quell'esercizio, con il loro valore;
-- lo stesso campo nel documento appena letto dal database, con l'avviso quando
-  i due valori sono diversi;
-- la versione della scheda a schermo e quella appena letta, con gli orari;
-- ora e valore dell'ultima scrittura riuscita (o il motivo del rifiuto);
-- numero di ridisegni dall'apertura, ora e motivo dell'ultimo (sessione, annulla,
-  controllo rimandato, dopo una scrittura, lettura), letture e controlli rimandati;
-- se lo stesso esercizio sta in piu' documenti (scheda, esercizio sciolto,
-  archiviata), con l'elenco degli id.
-
-Non scrive niente su Firestore e non aggiunge ascoltatori: legge solo quello che
-l'app tiene gia' in memoria e si aggiorna una volta al secondo.
-
-Per toglierla, quando ha finito: eliminare `comune/diagnosi-b.js`, togliere
-l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`,
-e togliere i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in
-`comune/vista-programma.js`.
-
 ## Passo 17 — Rec e TUT: la frase non e' un valore, il rifiuto non ridisegna (10/11/2026)
 
 Alice, dal sito: scrive un valore in Rec o TUT, dopo cinque secondi torna quello
-vecchio, e in Firebase le scritture arrivano. La striscia `?diagnosi=1` ha
+vecchio, e in Firebase le scritture arrivano. La striscia temporanea `?diagnosi=1` (allora accesa, poi tolta) ha
 mostrato la catena: la cella conteneva la frase del coach, uscire dalla cella
 faceva partire un salvataggio con quella frase, il salvataggio veniva rifiutato
 («il TUT si scrive in una riga sola, al massimo 24 caratteri») e il rifiuto
@@ -471,7 +442,3 @@ Correzioni:
 Prove: `tests/64-rec-tut-campo-vero.test.mjs` usa la forma vera del documento
 (campo grezzo diverso da `prescription.tempo`): la modifica resta dopo la
 rilettura, il rifiuto non ridisegna, uscire senza cambiare non scrive.
-
-La striscia `?diagnosi=1` ora stampa anche «Esercizio come e' nel database»:
-l'oggetto grezzo con tutti i campi e i valori, senza normalizzazione. Resta uno
-strumento TEMPORANEO, da togliere.

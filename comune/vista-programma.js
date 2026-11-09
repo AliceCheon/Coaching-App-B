@@ -404,9 +404,7 @@ function rendiValoreModificabile(doc, span, mod, info, componi) {
   span.setAttribute("contenteditable", "true");
   span.setAttribute("spellcheck", "false");
   span.setAttribute("data-campo", info.campo);
-  if (info.idScheda != null) span.setAttribute("data-id-scheda", String(info.idScheda));
-  if (info.idEsercizio != null) span.setAttribute("data-id-ese", String(info.idEsercizio));
-  if (info.indice != null) span.setAttribute("data-indice", String(info.indice));
+
   span.setAttribute("data-prima", info.prima);
   span.addEventListener("focus", () => {
     /* Il testo com'e' quando si apre: se esce uguale, non si scrive niente. */
