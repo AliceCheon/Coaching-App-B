@@ -435,3 +435,43 @@ Per toglierla, quando ha finito: eliminare `comune/diagnosi-b.js`, togliere
 l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`,
 e togliere i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in
 `comune/vista-programma.js`.
+
+## Passo 17 — Rec e TUT: la frase non e' un valore, il rifiuto non ridisegna (10/11/2026)
+
+Alice, dal sito: scrive un valore in Rec o TUT, dopo cinque secondi torna quello
+vecchio, e in Firebase le scritture arrivano. La striscia `?diagnosi=1` ha
+mostrato la catena: la cella conteneva la frase del coach, uscire dalla cella
+faceva partire un salvataggio con quella frase, il salvataggio veniva rifiutato
+(«il TUT si scrive in una riga sola, al massimo 24 caratteri») e il rifiuto
+ridisegnava la pagina da zero, perdendo la modifica e riportando in cima.
+
+Le schede importate non tengono il TUT in `prescription.tempo`: il valore sta in
+un altro campo (`tempo` sull'esercizio, oppure `prescription.cadenza`), e un
+campo vuoto poteva nascondere quello accanto che il valore ce l'aveva.
+
+Correzioni:
+
+1. uscire da una cella che non ha cambiato niente e' un no-op: nessuna
+   scrittura, nessun ridisegno (il testo si confronta con quello di quando la
+   cella si e' aperta);
+2. una scrittura rifiutata o fallita non ridisegna mai la pagina: il motivo si
+   legge sotto la cella (`.errore-cella`) e il resto resta com'e';
+3. la cella Rec/TUT contiene solo il valore (TUT `2-0-1`, Rec `2-3'`), ed e'
+   vuota quando il valore non c'e': la frase sta solo in Descr./Setup;
+4. il limite dei 24 caratteri (40 per il recupero) vale per il VALORE, non per
+   la frase del coach;
+5. la lettura prende il primo campo che un valore ce l'ha davvero: un campo
+   vuoto non nasconde piu' quello accanto, e la scrittura va su tutti i campi
+   che esistono, cosi' campo letto e campo scritto coincidono.
+
+6. l impronta dei dati non conta piu le voci del registro: ogni scrittura ne
+   aggiunge una, e contarle faceva ridisegnare la pagina subito dopo un
+   salvataggio riuscito.
+
+Prove: `tests/64-rec-tut-campo-vero.test.mjs` usa la forma vera del documento
+(campo grezzo diverso da `prescription.tempo`): la modifica resta dopo la
+rilettura, il rifiuto non ridisegna, uscire senza cambiare non scrive.
+
+La striscia `?diagnosi=1` ora stampa anche «Esercizio come e' nel database»:
+l'oggetto grezzo con tutti i campi e i valori, senza normalizzazione. Resta uno
+strumento TEMPORANEO, da togliere.

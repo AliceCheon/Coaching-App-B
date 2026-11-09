@@ -286,7 +286,9 @@ export function improntaDati(pezzi) {
       String(sessione.sessionCode || ""), (sessione.exercises || []).length].join("|");
   }).sort();
   const esclusioni = (p.esclusioni || []).map((e) => String((e && (e.id || e.sedutaId)) || e || "")).sort();
-  return JSON.stringify({ programmi, schede, sedute, esclusioni, registro: (p.registro || []).length });
+  /* Il registro non fa parte della struttura: una voce nuova a ogni scrittura
+   * non deve far ridisegnare la pagina (10/11/2026). */
+  return JSON.stringify({ programmi, schede, sedute, esclusioni });
 }
 
 /* Lo scorrimento: si prende prima di svuotare il contenitore e si rimette
@@ -503,7 +505,7 @@ export async function avvia(doc, win) {
               segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
               /* Passo 16 — una scrittura non riuscita puo' voler dire che il
                * dato a schermo non e' piu' quello del disco: qui si rilegge. */
-              return sincronizza(utente, { forza: true, motivo: "scrittura non riuscita" });
+              return { ok: false, motivo: esito.motivo || "non ho scritto niente" };
             }
             /* Passo 16 — il dato appena scritto e' gia' nella cella: non si
              * rilegge e non si ridisegna da zero. Se un controllo era stato

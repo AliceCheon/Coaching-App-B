@@ -1,3 +1,4 @@
+import { separaRecupero, separaTempo } from "./tut-rec.js";
 /* Barbell Diva B — le modifiche alle schede, dentro la zona B (passo 9). PURE.
  *
  * Niente rete, niente DOM: entrano documenti scheda letti dalla zona B, escono
@@ -333,14 +334,28 @@ export function cambiaRecTempo(dati, richiesta, opzioni) {
   const prescr = prescrizione(esercizio);
   const prima = campo === "recupero" ? prescr.recupero : prescr.tempo;
   const massimo = campo === "recupero" ? 40 : 24;
-  const dopo = testoBreve(r.valore, massimo);
-  if (dopo == null) {
+  /* Il limite vale per il VALORE, non per la frase del coach: in cella c'e'
+   * solo il valore (2-0-1), la frase resta nel testo e non fa fallire la
+   * scrittura (Alice, 10/11/2026). */
+  const grezzo = testo(r.valore).replace(/\s+/g, " ");
+  /* Svuotare la cella e' una modifica legittima: il campo resta vuoto. */
+  if (/[\u0000-\u001f]/.test(grezzo)) return { ok: false, motivo: "il valore si scrive in una riga sola" };
+  const parti = campo === "recupero" ? separaRecupero(grezzo) : separaTempo(grezzo);
+  if (!parti.valore && grezzo) {
+    return {
+      ok: false,
+      motivo: (campo === "recupero" ? "il recupero" : "il TUT") + " non e' un valore: scrivi "
+        + (campo === "recupero" ? "per esempio 2-3' oppure 90\"" : "per esempio 2-0-1")
+    };
+  }
+  if (parti.valore.length > massimo) {
     return {
       ok: false,
       motivo: (campo === "recupero" ? "il recupero" : "il TUT") + " si scrive in una riga sola, al massimo "
         + massimo + " caratteri"
     };
   }
+  const dopo = grezzo;
   if (dopo === prima) return { ok: false, motivo: "il valore non e' cambiato" };
 
   const nomi = campo === "recupero" ? CAMPI_RECUPERO : CAMPI_TEMPO;

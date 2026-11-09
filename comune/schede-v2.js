@@ -279,6 +279,21 @@ export function indiceScarico(settimane) {
   return -1;
 }
 
+/* Il primo campo che porta DAVVERO un valore: un campo vuoto non deve
+ * nascondere quello accanto che il valore ce l'ha (Alice, 10/11/2026). */
+function primoCampoPieno(oggetto, nomi) {
+  if (!oggetto || typeof oggetto !== "object") return undefined;
+  for (let i = 0; i < nomi.length; i += 1) {
+    const nome = nomi[i];
+    if (!Object.prototype.hasOwnProperty.call(oggetto, nome)) continue;
+    const v = oggetto[nome];
+    if (v == null) continue;
+    if (typeof v === "string" && !v.trim()) continue;
+    return v;
+  }
+  return undefined;
+}
+
 /* Una prescrizione può arrivare in tre modi: dentro `prescription`, come
  * campi sciolti sull'esercizio, oppure in una stringa («4x8 @ 90"»). Qui si
  * legge quello che c'è, senza convertirne il senso: si mostrano i numeri come
@@ -288,8 +303,8 @@ export function prescrizione(esercizio) {
   const dentro = p.prescription && typeof p.prescription === "object" ? p.prescription : {};
   const serie = primoCampo(dentro, CAMPI_ESERCIZIO.serie) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.serie) : primoCampo(p, CAMPI_ESERCIZIO.serie);
   const rip = primoCampo(dentro, CAMPI_ESERCIZIO.ripetizioni) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.ripetizioni) : primoCampo(p, CAMPI_ESERCIZIO.ripetizioni);
-  const rec = primoCampo(dentro, CAMPI_ESERCIZIO.recupero) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.recupero) : primoCampo(p, CAMPI_ESERCIZIO.recupero);
-  const tempo = primoCampo(dentro, CAMPI_ESERCIZIO.tempo) != null ? primoCampo(dentro, CAMPI_ESERCIZIO.tempo) : primoCampo(p, CAMPI_ESERCIZIO.tempo);
+  const rec = primoCampoPieno(dentro, CAMPI_ESERCIZIO.recupero) != null ? primoCampoPieno(dentro, CAMPI_ESERCIZIO.recupero) : primoCampoPieno(p, CAMPI_ESERCIZIO.recupero);
+  const tempo = primoCampoPieno(dentro, CAMPI_ESERCIZIO.tempo) != null ? primoCampoPieno(dentro, CAMPI_ESERCIZIO.tempo) : primoCampoPieno(p, CAMPI_ESERCIZIO.tempo);
   const dentroProgressione = primoCampo(p.progression || {}, ["weeks"]);
   const settimane = Array.isArray(dentroProgressione) ? dentroProgressione
     : (Array.isArray(primoCampo(p, CAMPI_ESERCIZIO.settimane)) ? primoCampo(p, CAMPI_ESERCIZIO.settimane) : []);

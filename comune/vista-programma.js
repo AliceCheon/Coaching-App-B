@@ -376,7 +376,31 @@ function chiudiScrittura(doc, span, campo) {
   if (td && td.classList) td.classList.toggle("in-scrittura", false);
 }
 
+/* L'errore di una scrittura si dice dove sta la cella, e la pagina non si
+ * tocca: niente ridisegno, niente ritorno in cima (Alice, 10/11/2026). */
+function mostraErroreCella(doc, span, motivo) {
+  const td = span && typeof span.closest === "function" ? span.closest("td") : null;
+  if (!td) return;
+  let segno = td.querySelector(".errore-cella");
+  if (!segno) {
+    segno = n(doc, "div", "errore-cella");
+    segno.setAttribute("style", "margin-top:2px;font-size:11px;line-height:1.3;color:#a11;white-space:normal;text-align:left;");
+    td.appendChild(segno);
+  }
+  segno.textContent = String(motivo || "non ho scritto niente");
+}
+
+function togliErroreCella(span) {
+  const td = span && typeof span.closest === "function" ? span.closest("td") : null;
+  const segno = td ? td.querySelector(".errore-cella") : null;
+  if (segno) segno.remove();
+}
+
 function rendiValoreModificabile(doc, span, mod, info, componi) {
+  /* Rec e TUT: in cella solo il valore, e senza valore la cella e' vuota
+   * (niente trattino: si scrive da zero). */
+  const senzaTrattino = info.campo === "recupero" || info.campo === "tempo";
+  const vuoto = senzaTrattino ? "" : "\u2014";
   span.setAttribute("contenteditable", "true");
   span.setAttribute("spellcheck", "false");
   span.setAttribute("data-campo", info.campo);
@@ -384,42 +408,60 @@ function rendiValoreModificabile(doc, span, mod, info, componi) {
   if (info.idEsercizio != null) span.setAttribute("data-id-ese", String(info.idEsercizio));
   if (info.indice != null) span.setAttribute("data-indice", String(info.indice));
   span.setAttribute("data-prima", info.prima);
-  span.addEventListener("focus", () => apriScrittura(doc, span, info.campo));
+  span.addEventListener("focus", () => {
+    /* Il testo com'e' quando si apre: se esce uguale, non si scrive niente. */
+    span.setAttribute("data-aperto", String(span.textContent || ""));
+    togliErroreCella(span);
+    apriScrittura(doc, span, info.campo);
+  });
   span.addEventListener("input", () => misuraScrittura(doc, span, info.campo));
   span.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); span.blur(); }
     else if (e.key === "Escape") {
       e.preventDefault();
-      span.textContent = span.getAttribute("data-prima") || "\u2014";
+      span.textContent = span.getAttribute("data-prima") || vuoto;
       span.blur();
     }
   });
   span.addEventListener("blur", () => {
     const testo = String(span.textContent || "").trim();
     const valore = testo === "\u2014" ? "" : testo;
-    const valido = typeof info.valido === "function" ? info.valido(valore) : true;
-    if (!valido) {
-      /* non e' un valore: la cella torna com'era, il dato non si tocca */
-      span.textContent = span.getAttribute("data-prima") || "\u2014";
+    const apertoGrezzo = span.getAttribute("data-aperto");
+    const aperto = String(apertoGrezzo == null ? (span.getAttribute("data-prima") || "") : apertoGrezzo).trim();
+    /* Uscire da una cella che non ha cambiato niente e' un no-op: nessuna
+     * scrittura, nessun ridisegno (Alice, 10/11/2026). */
+    if (valore === aperto) {
+      span.textContent = valore || vuoto;
       chiudiScrittura(doc, span, info.campo);
       return;
     }
-    if (valore !== String(span.getAttribute("data-prima") || "") && typeof mod.onCambia === "function") {
+    const valido = typeof info.valido === "function" ? info.valido(valore) : true;
+    if (!valido) {
+      /* non e' un valore: la cella torna com'era, il dato non si tocca */
+      span.textContent = span.getAttribute("data-prima") || vuoto;
+      chiudiScrittura(doc, span, info.campo);
+      return;
+    }
+    if (typeof mod.onCambia === "function") {
       const esito = componi(valore);
       span.setAttribute("data-prima", valore);
-      mod.onCambia({
+      const attesa = mod.onCambia({
         idScheda: info.idScheda, codice: info.codice,
         idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
         esercizio: info.esercizio, settimana: null,
         campo: info.campo, valore: esito.dopo, prima: esito.prima
       });
+      /* Se la scrittura viene rifiutata, il motivo si legge sotto la cella:
+       * la pagina resta com'e', non si ridisegna e non torna in cima. */
+      if (attesa && typeof attesa.then === "function") {
+        attesa.then((r) => { if (r && r.ok === false) mostraErroreCella(doc, span, r.motivo); }, () => {});
+      }
     }
-    span.textContent = valore || "\u2014";
+    span.textContent = valore || vuoto;
     span.title = valore || "";
     chiudiScrittura(doc, span, info.campo);
   });
 }
-
 
 /* Il recupero: in cella il solo valore, i due pulsantini che vanno di 30" e la
  * freccetta con i valori di sempre. La frase del coach sta in Descr./Setup e
@@ -427,7 +469,7 @@ function rendiValoreModificabile(doc, span, mod, info, componi) {
 function rendiCellaRecupero(doc, td, mod, info) {
   let intero = String(info.intero || "");
   const riga = n(doc, "div", "rec-riga");
-  const span = n(doc, "span", "rec", info.valore || "\u2014");
+  const span = n(doc, "span", "rec", info.valore || "");
   if (info.valore) span.title = info.valore;
   const componi = (nuovoValore) => {
     const prima = intero;
@@ -463,7 +505,7 @@ function rendiCellaRecupero(doc, td, mod, info) {
 function rendiCellaTut(doc, td, mod, info) {
   let intero = String(info.intero || "");
   const riga = n(doc, "div", "tut-riga");
-  const span = n(doc, "span", "tut", info.valore || "\u2014");
+  const span = n(doc, "span", "tut", info.valore || "");
   if (info.valore) span.title = info.valore;
   const componi = (nuovoValore) => {
     const prima = intero;

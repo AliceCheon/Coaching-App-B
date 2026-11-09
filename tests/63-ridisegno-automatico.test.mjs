@@ -90,6 +90,11 @@ async function codaSvuota() {
     if (zona.inVolo() === 0) { silenzio += 60; if (silenzio >= 500) return; }
     else silenzio = 0;
   }
+
+/* Ogni prova parte da una pagina ferma: se una cella e' rimasta aperta dalla
+ * prova prima, si chiude qui e si aspetta la coda. Serve a non far atterrare
+ * un rinvio della prova precedente dentro la successiva (10/11/2026). */
+
   throw new Error("la coda non si e' mai svuotata");
 }
 
@@ -127,6 +132,7 @@ test("63.1 due giri di sessione e due emissioni non toccano la cella aperta", as
 });
 
 test("63.2 salvare non rilegge e non ridisegna: il valore sta nella cella", async () => {
+  await prepara();
   const prima = ridisegni();
   const s = spanTut();
   s.dispatchEvent(new dom.window.FocusEvent("blur"));
@@ -138,6 +144,7 @@ test("63.2 salvare non rilegge e non ridisegna: il valore sta nella cella", asyn
 });
 
 test("63.3 trenta secondi con la pagina ferma: zero ridisegni", async () => {
+  await prepara();
   const prima = ridisegni();
   /* sei giri di cinque secondi: nel mezzo, ogni volta, un rinnovo di sessione
    * e due emissioni dello stesso documento. Se qualcosa ridisegna, si vede. */
@@ -152,6 +159,7 @@ test("63.3 trenta secondi con la pagina ferma: zero ridisegni", async () => {
 });
 
 test("63.4 un cambio vero ridisegna una volta sola", async () => {
+  await prepara();
   const prima = ridisegni();
   const nuovo = zona.datiDi("schede", ID_SCHEDA_DOC);
   nuovo.sheet.exercises.push({
@@ -190,3 +198,13 @@ test("63.5 lo scorrimento si prende prima e si rimette dopo, nodo per nodo", () 
   assert.equal(secondo.tabella.scrollTop, 240, "lo scorrimento della tabella non e' tornato");
   assert.deepEqual(scorso, [0, 180], "lo scorrimento della finestra non e' tornato");
 });
+
+async function prepara() {
+  const attivo = doc.activeElement;
+  if (attivo && attivo.getAttribute && attivo.getAttribute("contenteditable") === "true") {
+    attivo.dispatchEvent(new dom.window.FocusEvent("blur"));
+    attivo.setAttribute("data-aperto", String(attivo.textContent || ""));
+  }
+  await codaSvuota();
+  await new Promise((r) => setTimeout(r, 350));
+}

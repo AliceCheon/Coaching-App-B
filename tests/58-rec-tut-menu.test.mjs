@@ -129,5 +129,5 @@ test("58.7 il testo lungo resta intero nel Title e la cella lo taglia", () => {
   assert.equal(rec.title, "1'30\"");
   assert.equal(tut.title, ""); /* cella vuota: niente Title */
   assert.equal(rec.textContent, "1'30\"");
-  assert.equal(tut.textContent, "\u2014");
+  assert.equal(tut.textContent, ""); /* passo 17: senza valore la cella e vuota */
 });
