@@ -405,3 +405,33 @@ Cosa cambia:
 
 Prove: `tests/63-ridisegno-automatico.test.mjs` (63.1-63.5), con il finto
 Firestore che sa emettere due volte lo stesso documento.
+
+## Diagnosi temporanea della cella (?diagnosi=1) — 9/11/2026 — STRUMENTO DA TOGLIERE
+
+Serve a vedere, sulla pagina vera con i dati veri, perche' una modifica a Rec o
+TUT sparisce dopo qualche secondo. Con `?diagnosi=1` nell'indirizzo compare una
+striscia gialla sotto la tabella del Programma attivo; senza quel parametro la
+pagina e' identica a prima e il modulo non costruisce niente.
+
+Cosa mostra, per la cella aperta (o per l'ultima toccata):
+
+- id della scheda, id dell'esercizio, riga e campo;
+- il valore mostrato dalla cella e il campo da cui viene letto
+  (`prescrizione.recupero`, `prescrizione.tempo`), piu' tutti i campi che
+  esistono davvero su quell'esercizio, con il loro valore;
+- lo stesso campo nel documento appena letto dal database, con l'avviso quando
+  i due valori sono diversi;
+- la versione della scheda a schermo e quella appena letta, con gli orari;
+- ora e valore dell'ultima scrittura riuscita (o il motivo del rifiuto);
+- numero di ridisegni dall'apertura, ora e motivo dell'ultimo (sessione, annulla,
+  controllo rimandato, dopo una scrittura, lettura), letture e controlli rimandati;
+- se lo stesso esercizio sta in piu' documenti (scheda, esercizio sciolto,
+  archiviata), con l'elenco degli id.
+
+Non scrive niente su Firestore e non aggiunge ascoltatori: legge solo quello che
+l'app tiene gia' in memoria e si aggiorna una volta al secondo.
+
+Per toglierla, quando ha finito: eliminare `comune/diagnosi-b.js`, togliere
+l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`,
+e togliere i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in
+`comune/vista-programma.js`.

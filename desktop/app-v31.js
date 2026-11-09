@@ -28,6 +28,7 @@ import { renderProgramma } from "../comune/vista-programma.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
+import { diagnosiAccesa, creaDiagnosi, disegnaDiagnosi } from "../comune/diagnosi-b.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -369,6 +370,8 @@ export async function avvia(doc, win) {
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
   const stato = (win.BD_B_STATO = win.BD_B_STATO || { ridisegni: 0, letture: 0, rimandati: 0, impronta: null });
+  /* Diagnosi temporanea (?diagnosi=1): vive in memoria, nessuna scrittura. */
+  const diagnosi = diagnosiAccesa(win) ? creaDiagnosi(win, stato) : null;
   const leggi = async (utente, opzioni) => {
     const o = opzioni || {};
     /* Passo 8 — la fonte e' la zona B (bdB_atleti), non piu' i dati di A.
@@ -402,6 +405,7 @@ export async function avvia(doc, win) {
     const impronta = improntaDati({ programmi: programmi.programmi, schede: schedeGrezze, sedute: sedutePulite.sedute, esclusioni: esclusioni, registro: registroB });
     const improntaPrima = stato.impronta;
     stato.letture += 1;
+    if (diagnosi) diagnosi.letta({ documenti: schedeGrezze });
     if (o.forza !== true && impronta === improntaPrima) return { ridisegnato: false };
     /* l'impronta si aggiorna quando il disegno parte davvero: un secondo giro
      * che arriva mentre il primo disegna non puo' ridisegnare lo stesso stato. */
@@ -433,7 +437,10 @@ export async function avvia(doc, win) {
       const o = opzioni || {};
       if (modificheInVolo > 0 || sincronizzazione !== null) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
       if (cellaInModifica()) { rimanda(); return Promise.resolve(); }
-      sincronizzazione = leggi(chi, o).then((esito) => {
+      const opzLettura = Object.assign({}, o, {
+        motivo: o.motivo || (typeof chi === "string" ? chi : "sessione")
+      });
+      sincronizzazione = leggi(chi, opzLettura).then((esito) => {
         sincronizzazione = null;
         if (sincronizzazioneRichiesta) { sincronizzazioneRichiesta = false; return sincronizza(chi, o); }
         return esito;
@@ -465,7 +472,10 @@ export async function avvia(doc, win) {
      * documento; quando li sapremo si collega il campo giusto. */
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
     const scorrimentoPrima = prendiScorrimento(doc, win);
-    if (contenitore) stato.ridisegni += 1;
+    if (contenitore) {
+      stato.ridisegni += 1;
+      if (diagnosi) diagnosi.ridisegnato(o.motivo || "lettura");
+    }
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
       modifica: {
         attivo: true,
@@ -475,7 +485,7 @@ export async function avvia(doc, win) {
             segnalaModifica(esito.ok
               ? "annullato · " + doveVoce(esito.voce) + " torna a " + (esito.voce.dopo || "vuoto")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
-            return sincronizza(utente, { forza: true });
+            return sincronizza(utente, { forza: true, motivo: "annulla" });
           });
         },
         /* Passo 13 — il dato appena scritto sta a schermo SUBITO (lo mostra la
@@ -485,6 +495,7 @@ export async function avvia(doc, win) {
           modificheInVolo += 1;
           return editor.modifica(richiesta).then((esito) => {
             modificheInVolo -= 1;
+            if (diagnosi) diagnosi.scritto(esito, richiesta);
             if (esito.ok) {
               segnalaModifica("salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + (esito.voce.dopo || "vuoto") +
                 " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
@@ -492,18 +503,26 @@ export async function avvia(doc, win) {
               segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
               /* Passo 16 — una scrittura non riuscita puo' voler dire che il
                * dato a schermo non e' piu' quello del disco: qui si rilegge. */
-              return sincronizza(utente, { forza: true });
+              return sincronizza(utente, { forza: true, motivo: "scrittura non riuscita" });
             }
             /* Passo 16 — il dato appena scritto e' gia' nella cella: non si
              * rilegge e non si ridisegna da zero. Se un controllo era stato
              * rimandato perche' si stava scrivendo, ora si puo' fare: l'impronta
              * (struttura) dira' se c'e' davvero qualcosa di nuovo. */
-            if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente); }
+            if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             return { ridisegnato: false };
           });
         }
       }
     }));
+    /* Diagnosi temporanea: la striscia si aggiorna ogni secondo leggendo
+     * solo la memoria. Nessuna scrittura, nessuna lettura dal database. */
+    if (diagnosi && contenitore) {
+      diagnosi.disegnata({ schede: rp.schede, documenti: schedeGrezze });
+      disegnaDiagnosi(doc, contenitore, diagnosi);
+      if (diagnosi.timer) win.clearInterval(diagnosi.timer);
+      diagnosi.timer = win.setInterval(() => disegnaDiagnosi(doc, contenitore, diagnosi), 1000);
+    }
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
     /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri. */
