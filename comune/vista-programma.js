@@ -1231,10 +1231,7 @@ function schede(doc, r) {
     linguette.appendChild(b);
   });
 
-  if (r.archiviate && r.archiviate.length) {
-    linguette.appendChild(n(doc, "span", "pr-tabs-sep"));
-    linguette.appendChild(n(doc, "span", "pr-ntab spenta", "Archiviate " + r.archiviate.length));
-  }
+
   c.appendChild(linguette);
 
   elenco.forEach((s, i) => {
@@ -1252,14 +1249,6 @@ function schede(doc, r) {
   c.appendChild(pannelli);
   accendi(0);
 
-  if (r.archiviate && r.archiviate.length) {
-    const arch = n(doc, "div", "pr-archiviate");
-    arch.appendChild(n(doc, "div", "pr-lab", "Schede archiviate · " + r.archiviate.length + ", in sola lettura"));
-    r.archiviate.forEach((s) => {
-      arch.appendChild(n(doc, "span", "pr-chip-arch", "Scheda " + s.codice + " · " + s.numeroEsercizi));
-    });
-    c.appendChild(arch);
-  }
   return c;
 }
 

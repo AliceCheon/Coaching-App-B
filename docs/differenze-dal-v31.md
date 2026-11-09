@@ -442,3 +442,22 @@ Correzioni:
 Prove: `tests/64-rec-tut-campo-vero.test.mjs` usa la forma vera del documento
 (campo grezzo diverso da `prescription.tempo`): la modifica resta dopo la
 rilettura, il rifiuto non ridisegna, uscire senza cambiare non scrive.
+
+## Programma senza le archiviate (10/11/2026)
+
+Alice: le schede archiviate non servono nella schermata Programma. Sono uscite
+due cose, in `comune/vista-programma.js`: la linguetta «Archiviate N» in coda alla
+barra delle linguette (con il suo separatore `pr-tabs-sep`, che adesso resta uno
+solo, quello tra le schede e le letture) e il riquadro in fondo «Schede
+archiviate · N, in sola lettura» con i chip (`div.pr-archiviate`,
+`span.pr-chip-arch`).
+
+I dati non si toccano: `r.archiviate` resta nel riepilogo come prima, e la vista
+semplicemente non lo disegna. CSS e `desktop/index.html` non sono stati toccati.
+
+Prova: `tests/65-programma-senza-archiviate.test.mjs` (65.1-65.6) disegna il
+Programma con due schede attive e due archiviate nei dati: nessun riquadro,
+nessun chip, nessuna linguetta «Archiviate», una sola barretta; le linguette
+«Scheda A» e «Scheda B» e «Analisi programmazione» ci sono e il pannello delle
+analisi si apre ancora; la pagina con le archiviate e' identica, carattere per
+carattere, a quella senza.
