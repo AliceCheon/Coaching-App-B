@@ -41,8 +41,32 @@ export function creaZonaBFinta(opzioni = {}) {
     return scaffale[sotto];
   }
 
+  /* Passo 16 — gli ascoltatori, per il test 63: il finto sa emettere lo
+   * stesso documento due volte, come fa l'SDK quando il server manda un
+   * aggiornamento e poi lo ripete. L'app di B non ne usa (legge con get), e
+   * il test lo verifica: la causa del ridisegno non era uno snapshot. */
+  const ascoltatori = Object.create(null);
+  function avvisa(sotto, id) {
+    const chiave = sotto + "/" + id;
+    const valore = documentiDi(sotto).get(id) || null;
+    (ascoltatori[chiave] || []).forEach((cb) => {
+      cb(valore == null
+        ? { exists: false, data: () => null }
+        : { exists: true, data: () => JSON.parse(JSON.stringify(valore)) });
+    });
+  }
+
   function docFinto(sotto, id) {
     return {
+      onSnapshot: (cb) => {
+        const chiave = sotto + "/" + id;
+        if (!ascoltatori[chiave]) ascoltatori[chiave] = [];
+        ascoltatori[chiave].push(cb);
+        return () => {
+          const i = ascoltatori[chiave].indexOf(cb);
+          if (i >= 0) ascoltatori[chiave].splice(i, 1);
+        };
+      },
       get: async () => {
         registri.lettureInVolo += 1;
         registri.letture.push(sotto + "/" + id);
@@ -58,6 +82,7 @@ export function creaZonaBFinta(opzioni = {}) {
         await attesa(latenzaScrittura);
         documentiDi(sotto).set(id, JSON.parse(JSON.stringify(nuovi || {})));
         registri.scritture.push({ percorso: sotto + "/" + id, dati: JSON.parse(JSON.stringify(nuovi || {})) });
+        avvisa(sotto, id);
         registri.scrittureInVolo -= 1;
       }
     };
@@ -115,6 +140,11 @@ export function creaZonaBFinta(opzioni = {}) {
     registri,
     db,
     inVolo: () => registri.lettureInVolo + registri.scrittureInVolo,
+    emettiVolte: (sotto, id, quante) => {
+      const n = Math.max(1, Number(quante) || 1);
+      for (let i = 0; i < n; i += 1) avvisa(String(sotto), String(id));
+    },
+    ascoltatoriDi: (sotto, id) => (ascoltatori[String(sotto) + "/" + String(id)] || []).length,
     datiDi: (sotto, id) => {
       const valore = documentiDi(String(sotto)).get(String(id)) || null;
       return valore == null ? null : JSON.parse(JSON.stringify(valore));
@@ -133,7 +163,10 @@ export function creaZonaBFinta(opzioni = {}) {
 export function creaSdkFinto(zona, utente) {
   const auth = {
     setPersistence: async () => "ok",
-    onAuthStateChanged: (cb) => { cb(utente || null); return () => {}; },
+    /* Il callback tenuto da parte: il test 63 lo richiama due volte, come fa
+     * l'SDK quando rinnova il token con lo stesso utente. */
+    ripetiStato: () => {},
+    onAuthStateChanged: (cb) => { auth.ripetiStato = () => cb(utente || null); cb(utente || null); return () => {}; },
     signInWithPopup: async () => ({ user: utente || null }),
     signInWithRedirect: async () => ({ via: "redirect" }),
     signOut: async () => ({ via: "uscita" })
@@ -151,5 +184,6 @@ export function creaSdkFinto(zona, utente) {
       return app;
     }
   };
+  sdk._auth = auth;
   return sdk;
 }

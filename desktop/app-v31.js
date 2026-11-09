@@ -256,6 +256,77 @@ function mostraZonaBIncompleta(doc, win, avviso) {
   if (nota) { nota.textContent = testo; nota.hidden = false; }
 }
 
+/* ---------- Passo 16: il ridisegno automatico --------------------------- */
+
+/* L'impronta dei dati letti. Guarda la STRUTTURA (quali programmi, quali
+ * schede con quali esercizi e in che ordine, quante sedute, quante voci nel
+ * registro) e non i valori di serie/reps/rec/TUT: quei valori li aggiorna la
+ * cella che li scrive, e rileggerli per ridisegnarli era il difetto del passo
+ * 15. Due letture con la stessa impronta non toccano la pagina. */
+export function improntaDati(pezzi) {
+  const p = pezzi || {};
+  const datiDi = (d) => (d && d.dati != null ? d.dati : d) || {};
+  const programmi = (p.programmi || []).map((d) => {
+    const meta = datiDi(d).programMeta || datiDi(d);
+    return [String((d && d.id) || meta.id || ""), String(meta.name || ""), String(meta.status || ""),
+      String(meta.phase || ""), String(meta.startDate || ""), Number(meta.durationWeeks) || 0].join("|");
+  }).sort();
+  const schede = (p.schede || []).map((d) => {
+    const g = datiDi(d);
+    const s = g.sheet || g;
+    const esercizi = (s.exercises || []).map((e) => String(e.id || e.exerciseId || e.name || "")).join(",");
+    return [String((d && d.id) || g.id || ""), String(g.programId || ""), String(s.code || ""),
+      String(s.name || ""), esercizi].join("|");
+  }).sort();
+  const sedute = (p.sedute || []).map((s) => {
+    const g = s || {};
+    const sessione = g.session || g;
+    return [String(g.id || sessione.id || ""), String(sessione.dateInput || sessione.date || ""),
+      String(sessione.sessionCode || ""), (sessione.exercises || []).length].join("|");
+  }).sort();
+  const esclusioni = (p.esclusioni || []).map((e) => String((e && (e.id || e.sedutaId)) || e || "")).sort();
+  return JSON.stringify({ programmi, schede, sedute, esclusioni, registro: (p.registro || []).length });
+}
+
+/* Lo scorrimento: si prende prima di svuotare il contenitore e si rimette
+ * dopo. Ogni nodo che scorre si ritrova dal suo percorso di tag e classi (la
+ * struttura del ridisegno e' la stessa), non dall'indice, che cambia. */
+export function prendiScorrimento(doc, win) {
+  const preso = { finestra: Number((win && (win.scrollY || win.pageYOffset)) || 0), elementi: [] };
+  const att = doc && doc.querySelector ? doc.querySelector("#programma-attivo") : null;
+  if (!att || !att.querySelectorAll) return preso;
+  const tutti = att.querySelectorAll("*");
+  for (let i = 0; i < tutti.length; i += 1) {
+    const el = tutti[i];
+    if (el && el.scrollTop) preso.elementi.push({ percorso: percorsoNodo(att, el), cima: el.scrollTop });
+  }
+  return preso;
+}
+
+function percorsoNodo(radice, el) {
+  const pezzi = [];
+  let qui = el;
+  while (qui && qui !== radice) {
+    const tag = qui.tagName ? String(qui.tagName).toLowerCase() : "";
+    const classi = qui.getAttribute ? String(qui.getAttribute("class") || "").trim().split(/\s+/).filter(Boolean) : [];
+    pezzi.unshift(tag + classi.map((c) => "." + c).join(""));
+    qui = qui.parentNode;
+  }
+  return pezzi.join(">");
+}
+
+export function rimettiScorrimento(doc, win, preso) {
+  if (!preso) return;
+  if (win && typeof win.scrollTo === "function" && preso.finestra) win.scrollTo(0, preso.finestra);
+  const att = doc && doc.querySelector ? doc.querySelector("#programma-attivo") : null;
+  if (!att || !att.querySelector) return;
+  (preso.elementi || []).forEach((v) => {
+    let nodo = null;
+    try { nodo = v.percorso ? att.querySelector(v.percorso) : null; } catch (e) { nodo = null; }
+    if (nodo) nodo.scrollTop = v.cima;
+  });
+}
+
 export async function avvia(doc, win) {
   const config = win.BD_B;
   const sdk = win.firebase;
@@ -288,7 +359,18 @@ export async function avvia(doc, win) {
     }
   });
 
-  const leggi = async (utente) => {
+  /* Passo 16 — lo stato che sopravvive a un ridisegno. Prima viveva dentro
+   * leggi: ogni ridisegno lo azzerava, e una scrittura partita prima del
+   * ridisegno diventava invisibile al controllo che doveva aspettarla. */
+  let modificheInVolo = 0;
+  let sincronizzazione = null;
+  let sincronizzazioneRichiesta = false;
+  let rinvioAutomatico = false;
+  let utenteCorrente = null;
+  let sincronizzaEsterno = null;
+  const stato = (win.BD_B_STATO = win.BD_B_STATO || { ridisegni: 0, letture: 0, rimandati: 0, impronta: null });
+  const leggi = async (utente, opzioni) => {
+    const o = opzioni || {};
     /* Passo 8 — la fonte e' la zona B (bdB_atleti), non piu' i dati di A.
      * Le letture da «barbellDivaAccounts» restano solo nella pagina Copia, che
      * serve a copiare. Se la zona e' vuota o manca un pezzo si dichiara qui
@@ -314,6 +396,18 @@ export async function avvia(doc, win) {
     const schedeGrezze = await leggiZonaB(db, utente.uid, "schede");
     const registroB = await leggiZonaB(db, utente.uid, "registro");
     const fotografiaB = await leggiFotografia(db, utente.uid);
+    /* Passo 16 — l'impronta dei dati letti: se e' la stessa che sta a schermo
+     * non c'e' niente da ridisegnare (ed e' il caso normale di un giro di
+     * sessione o di un controllo dopo un salvataggio). */
+    const impronta = improntaDati({ programmi: programmi.programmi, schede: schedeGrezze, sedute: sedutePulite.sedute, esclusioni: esclusioni, registro: registroB });
+    const improntaPrima = stato.impronta;
+    stato.letture += 1;
+    if (o.forza !== true && impronta === improntaPrima) return { ridisegnato: false };
+    /* l'impronta si aggiorna quando il disegno parte davvero: un secondo giro
+     * che arriva mentre il primo disegna non puo' ridisegnare lo stesso stato. */
+    stato.impronta = impronta;
+    /* nel frattempo puo' essersi aperta una cella: si ricontrolla prima di
+     * toccare la pagina, non dopo */
     const editor = creaEditorSchede({
       db: db,
       uid: utente.uid,
@@ -321,28 +415,28 @@ export async function avvia(doc, win) {
       fotografia: fotografiaB,
       ultimaVoce: ultimaAnnullabile(registroB)
     });
-    /* Passo 13 — le scritture restano in coda (l'editor ne fa una alla volta
-     * per scheda) e lo schermo NON rilegge mai uno stato vecchio: la
-     * sincronizzazione parte UNA sola volta quando le modifiche sono tutte
-     * finite, e si rimanda se una cella e' in scrittura per non rubarle il
-     * focus. Cosi' dopo l'ultima scrittura la tabella mostra il valore
-     * finale, con i dati letti dopo l'ack. */
-    let modificheInVolo = 0;
-    let sincronizzazione = null;
-    let sincronizzazioneRichiesta = false;
-    const cellaInScrittura = () => {
+
+    /* Una cella e' in modifica se il fuoco e' dentro un campo scrivibile, o se
+     * c'e' una cella aperta (classe "scrittura") anche quando il fuoco e' sul
+     * pulsantino +: li' dentro c'e' una modifica che non e' ancora partita. */
+    const cellaInModifica = () => {
       const attivoQui = doc.activeElement;
-      return Boolean(attivoQui && attivoQui.getAttribute && attivoQui.getAttribute("contenteditable") === "true");
-    };
-    const sincronizza = (chi) => {
-      if (modificheInVolo > 0) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
-      if (sincronizzazione) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
-      if (cellaInScrittura()) {
-        return new Promise((riattiva) => { setTimeout(() => { riattiva(sincronizza(chi)); }, 300); });
+      if (attivoQui && attivoQui.getAttribute && attivoQui.getAttribute("contenteditable") === "true") return true;
+      const aperte = doc.querySelectorAll("#programma-attivo [contenteditable='true']");
+      for (let i = 0; i < aperte.length; i += 1) {
+        if (aperte[i].classList && aperte[i].classList.contains("scrittura")) return true;
       }
-      sincronizzazione = leggi(chi).then(() => {
+      return false;
+    };
+    const rimanda = () => { rinvioAutomatico = true; stato.rimandati += 1; };
+    const sincronizza = (chi, opzioni) => {
+      const o = opzioni || {};
+      if (modificheInVolo > 0 || sincronizzazione !== null) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
+      if (cellaInModifica()) { rimanda(); return Promise.resolve(); }
+      sincronizzazione = leggi(chi, o).then((esito) => {
         sincronizzazione = null;
-        if (sincronizzazioneRichiesta) { sincronizzazioneRichiesta = false; return sincronizza(chi); }
+        if (sincronizzazioneRichiesta) { sincronizzazioneRichiesta = false; return sincronizza(chi, o); }
+        return esito;
       }, (e) => {
         sincronizzazione = null;
         sincronizzazioneRichiesta = false;
@@ -350,6 +444,10 @@ export async function avvia(doc, win) {
       });
       return sincronizzazione;
     };
+    sincronizzaEsterno = sincronizza;
+    /* Niente letture mentre si scrive: si rimanda, non si insiste. Le
+     * funzioni sono dichiarate qui sopra, quindi si possono usare. */
+    if (modificheInVolo > 0 || cellaInModifica()) { rimanda(); return { ridisegnato: false, rimandato: true }; }
     const attivo = programmaAttivo(programmi.programmi || []);
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
@@ -366,6 +464,8 @@ export async function avvia(doc, win) {
      * desktop/diagnosi.html (temporanea) dice quali nomi usa davvero il
      * documento; quando li sapremo si collega il campo giusto. */
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
+    const scorrimentoPrima = prendiScorrimento(doc, win);
+    if (contenitore) stato.ridisegni += 1;
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
       modifica: {
         attivo: true,
@@ -375,7 +475,7 @@ export async function avvia(doc, win) {
             segnalaModifica(esito.ok
               ? "annullato · " + doveVoce(esito.voce) + " torna a " + (esito.voce.dopo || "vuoto")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
-            return sincronizza(utente);
+            return sincronizza(utente, { forza: true });
           });
         },
         /* Passo 13 — il dato appena scritto sta a schermo SUBITO (lo mostra la
@@ -390,8 +490,16 @@ export async function avvia(doc, win) {
                 " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
             } else {
               segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+              /* Passo 16 — una scrittura non riuscita puo' voler dire che il
+               * dato a schermo non e' piu' quello del disco: qui si rilegge. */
+              return sincronizza(utente, { forza: true });
             }
-            return sincronizza(utente);
+            /* Passo 16 — il dato appena scritto e' gia' nella cella: non si
+             * rilegge e non si ridisegna da zero. Se un controllo era stato
+             * rimandato perche' si stava scrivendo, ora si puo' fare: l'impronta
+             * (struttura) dira' se c'e' davvero qualcosa di nuovo. */
+            if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente); }
+            return { ridisegnato: false };
           });
         }
       }
@@ -412,14 +520,37 @@ export async function avvia(doc, win) {
       if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
     }
     notaLogbook(doc, lb);
+    rimettiScorrimento(doc, win, scorrimentoPrima);
+    return { ridisegnato: true };
   };
 
+  /* Passo 16 — onAuthStateChanged torna anche quando l'SDK rinnova il token,
+   * con lo stesso utente: quel giro non e' un motivo per rileggere e
+   * ridisegnare. Il primo (o un cambio di account) legge; i successivi passano
+   * dal controllo d'impronta, che con i dati uguali non tocca la pagina. */
+  doc.addEventListener("focusout", () => {
+    if (!rinvioAutomatico || modificheInVolo > 0 || sincronizzazione !== null) return;
+    rinvioAutomatico = false;
+    setTimeout(() => {
+      if (typeof sincronizzaEsterno === "function" && utenteCorrente) sincronizzaEsterno(utenteCorrente);
+    }, 0);
+  }, true);
+  let uidLetto = null;
   ascoltaStato(auth, (utente) => {
     if (!utente) {
+      uidLetto = null;
+      utenteCorrente = null;
+      stato.impronta = null;
       carta.velo.style.display = "flex";
       return;
     }
     carta.velo.style.display = "none";
+    utenteCorrente = utente;
+    if (uidLetto === utente.uid) {
+      if (typeof sincronizzaEsterno === "function") sincronizzaEsterno(utente);
+      return;
+    }
+    uidLetto = utente.uid;
     leggi(utente).catch((e) => {
       carta.velo.style.display = "flex";
       carta.segnala("lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")));

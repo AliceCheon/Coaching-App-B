@@ -356,3 +356,52 @@ Regole di Alice, stesso giorno del Passo 13, stesso commit.
 **Le prove.** `tests/62-rec-tut-torna-indietro.test.mjs`: una sola riga per esercizio con il documento sciolto in mezzo (62.1), TUT da vuoto a `2-1-0` riletto dal documento (62.2), nessun campo di recupero lasciato vecchio (62.3), tre pressioni di + di fila applicate in ordine con versione 15 → 19 (62.4). Prima della correzione 62.1, 62.2 e 62.3 fallivano.
 
 **Non toccato.** `desktop/index.html` (guardia 42), nessun dato di A, nessuna scrittura fuori da `bdB_atleti`.
+
+## Passo 16 — la pagina che si ridisegnava da sola (9/11/2026)
+
+Alice, dal sito: mentre scrive Rec o TUT la pagina fa dei micro riavvii, si
+ridisegna piu' volte e cancella la modifica in corso; il registro di Firebase
+dice che i salvataggi arrivano. Quindi il guasto non e' la scrittura: e' il
+ridisegno.
+
+Chi poteva far ripartire `leggi()` o il disegno, cercato in
+`desktop/app-v31.js` e in `comune/`:
+
+- `onAuthStateChanged` (`comune/accesso.js:46`, l'unico ascoltatore di B):
+  **scatta da solo**, e torna anche quando l'SDK rinnova il token con lo
+  stesso utente. Ogni giro rifaceva `leggi()` da zero.
+- `sincronizza()` dopo ogni salvataggio: `onCambia` la chiamava anche quando
+  la scrittura era andata bene, quindi ogni modifica finiva con una rilettura
+  completa e un ridisegno.
+- il `setTimeout(..., 300)` dentro `sincronizza`: se una cella era in
+  scrittura si riprovava ogni 300 ms, all'infinito finche' la cella restava
+  aperta. Era l'unico timer dell'app: non c'e' nessun `setInterval`.
+- nessun `onSnapshot`: le letture di B sono `get()` una volta sola
+  (`comune/lettura-dati.js`, `comune/lettura-b.js`). Nessun
+  `visibilitychange`, `focus` o `online` sull'app.
+- `modificheInVolo`, `sincronizzazione` e gli altri contatori stavano
+  **dentro** `leggi()`: ogni ridisegno li azzerava, quindi una scrittura
+  partita prima del ridisegno diventava invisibile al controllo che doveva
+  aspettarla.
+
+Quanti ridisegni in 30 secondi con la pagina ferma? Adesso zero (prova 63.3).
+Prima: uno per ogni giro di sessione, uno per ogni salvataggio, piu' i
+tentativi ogni 300 ms con una cella aperta.
+
+Cosa cambia:
+
+1. Dopo un salvataggio la cella tiene il valore appena scritto: niente
+   rilettura e niente ridisegno. Si rilegge solo se la scrittura fallisce.
+2. Il ridisegno automatico non parte se una cella e' aperta o se c'e' una
+   scrittura in coda o in corso: si rimanda e si riprova quando la cella si
+   chiude (un solo ascolto `focusout`, nessun timer che rigira).
+3. Si ridisegna solo se l'impronta dei dati letti (struttura: programmi,
+   schede con i loro esercizi in ordine, sedute, voci del registro) e' diversa
+   da quella a schermo. I valori di serie/reps/rec/TUT non entrano
+   nell'impronta: li aggiorna la cella che li scrive.
+4. Il ridisegno prende e rimette la posizione di scorrimento (finestra e
+   contenitori che scorrono, ritrovati dal percorso di tag e classi).
+5. `window.BD_B_STATO` conta i ridisegni veri, le letture e i rinvii.
+
+Prove: `tests/63-ridisegno-automatico.test.mjs` (63.1-63.5), con il finto
+Firestore che sa emettere due volte lo stesso documento.
