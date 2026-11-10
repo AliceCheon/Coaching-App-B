@@ -25,7 +25,10 @@ import {
   versioneDi,
   codiceScheda,
   misuraPeso,
-  creaCoda
+  creaCoda,
+  applicaProgressione,
+  applicaProgressioneScheda,
+  cancellaEsercizio
 } from "./modifiche-b.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
@@ -142,12 +145,20 @@ export function creaEditorSchede(opzioni) {
       /* serie e ripetizioni stanno sulla settimana, recupero e TUT
        * sull'esercizio: la tabella dice il campo, qui si sceglie la strada. */
       const campo = String(r.campo == null ? "" : r.campo);
-      const aSettimana = campo === "serie" || campo === "ripetizioni";
-      const aEsercizio = campo === "recupero" || campo === "tempo";
-      if (!aSettimana && !aEsercizio) {
-        return { ok: false, motivo: "in questo passo si toccano solo serie, ripetizioni, recupero e TUT" };
+      let esito = null;
+      if (campo === "serie" || campo === "ripetizioni") {
+        esito = cambiaSerieRipetizioni(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "recupero" || campo === "tempo") {
+        esito = cambiaRecTempo(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "progressione") {
+        esito = applicaProgressione(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "progressione-scheda") {
+        esito = applicaProgressioneScheda(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "riga") {
+        esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
+      } else {
+        return { ok: false, motivo: "campo non riconosciuto: non ho scritto niente" };
       }
-      const esito = (aSettimana ? cambiaSerieRipetizioni : cambiaRecTempo)(letto.dati, r, { quando: quando(), uid: uid });
       if (!esito.ok) return esito;
 
       if (versioneDi(letto.dati) !== attesa) {

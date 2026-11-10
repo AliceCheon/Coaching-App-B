@@ -497,7 +497,7 @@ export async function avvia(doc, win) {
             modificheInVolo -= 1;
 
             if (esito.ok) {
-              segnalaModifica("salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + (esito.voce.dopo || "vuoto") +
+              segnalaModifica("salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + ((esito.voce.dopoTesto || esito.voce.dopo) || "vuoto") +
                 " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
             } else {
               segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
@@ -510,6 +510,11 @@ export async function avvia(doc, win) {
              * rimandato perche' si stava scrivendo, ora si puo' fare: l'impronta
              * (struttura) dira' se c'e' davvero qualcosa di nuovo. */
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
+            /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
+             * senza rileggere, a schermo non cambierebbe niente. */
+            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga")) {
+              return sincronizza(utente, { forza: true, motivo: "progressione" });
+            }
             return { ridisegnato: false };
           });
         }
@@ -576,6 +581,19 @@ avvia(document, window).catch((e) => { if (typeof console !== "undefined") conso
  * per recupero e TUT (quei due campi sono dell'esercizio, non della settimana). */
 function doveVoce(voce) {
   const v = voce || {};
+  const tipo = String(v.tipo || "");
+  if (tipo === "modifica-progressione") {
+    return "progressione «" + (v.nomeProgressione || v.progressione || "") + "» di " + nomePulito(v.esercizio || "");
+  }
+  if (tipo === "modifica-progressione-scheda") {
+    return "progressione «" + (v.nomeProgressione || "") + "» su " + ((v.righe || []).length) + " righe";
+  }
+  if (tipo === "cancella-riga") return "riga tolta: " + nomePulito(v.esercizio || "");
+  if (tipo === "annulla-modifica") {
+    if (v.campo === "riga") return "la riga «" + nomePulito(v.esercizio || "") + "» rimessa";
+    if (v.campo === "progressione") return "progressione di " + nomePulito(v.esercizio || "") + " riportata indietro";
+    if (v.campo === "progressione-scheda") return "progressione di scheda riportata indietro";
+  }
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";
   return v.esercizio ? nome + " di " + nomePulito(v.esercizio) : nome;

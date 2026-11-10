@@ -24,6 +24,7 @@ import {
   REC_TENDINA, TUT_TENDINA, passoRecupero, recuperoScrittoValido, tempoScrittoValido } from "./tut-rec.js";
 
 import { nomePulito } from "./nome-pulito.js";
+import { PROG, PRG } from "./progressioni-b.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -131,6 +132,77 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
 /* Un pulsante del v31, spento: stessa forma, stessa parola, nessun effetto.
  * Tutti i pulsanti di questa pagina nascono da qui, così nessuno può scrivere
  * per distrazione. */
+/* Un pulsante che fa qualcosa: e' il gemello di pulsanteSpento, e si usa solo
+ * dove la pagina sa scrivere davvero. */
+function pulsanteVivo(doc, classe, testo, titolo, alClic) {
+  const b = n(doc, "button", classe, testo);
+  b.type = "button";
+  if (titolo) b.title = titolo;
+  b.addEventListener("click", (ev) => {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    alClic(ev);
+  });
+  return b;
+}
+
+/* --- Le progressioni (passo 20) ------------------------------------------
+ * Il pannello e' quello del v31 (r.7305-7345): si apre sotto il pulsante, con
+ * l'etichetta in maiuscoletto e una voce per riga. Stessi nomi di classe del
+ * v31, cosi' l'aspetto e' quello di sempre e il foglio di B non si tocca.
+ * Si chiude al clic fuori o dopo la scelta. */
+let pannelloProgressioni = null;
+
+function chiudiProgressioni() {
+  if (pannelloProgressioni && pannelloProgressioni.parentNode) {
+    pannelloProgressioni.parentNode.removeChild(pannelloProgressioni);
+  }
+  pannelloProgressioni = null;
+}
+
+function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
+  chiudiProgressioni();
+  const pannello = n(doc, "div", "prog-panel");
+  pannello.appendChild(n(doc, "span", "tec-lab", etichetta));
+  voci.forEach((v) => {
+    const b = n(doc, "button", "prog-item");
+    b.type = "button";
+    b.appendChild(n(doc, "b", "", v.nome));
+    b.appendChild(n(doc, "em", "", v.descrizione));
+    b.addEventListener("click", (ev) => {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      chiudiProgressioni();
+      alScelta(v.id);
+    });
+    pannello.appendChild(b);
+  });
+  doc.body.appendChild(pannello);
+  const win = doc.defaultView;
+  const r = bottone && bottone.getBoundingClientRect ? bottone.getBoundingClientRect() : null;
+  const sx = win ? win.scrollX : 0;
+  const sy = win ? win.scrollY : 0;
+  const larga = win ? win.innerWidth : 800;
+  pannello.style.left = Math.max(10, Math.min((r ? r.left : 0) + sx, Math.max(10, larga - 300))) + "px";
+  pannello.style.top = ((r ? r.bottom : 0) + sy + 7) + "px";
+  pannelloProgressioni = pannello;
+  if (!doc.__progFuori) {
+    doc.__progFuori = true;
+    doc.addEventListener("click", (ev) => {
+      if (!pannelloProgressioni) return;
+      if (ev && ev.target && pannelloProgressioni.contains(ev.target)) return;
+      chiudiProgressioni();
+    });
+  }
+}
+
+/* Le due liste, nella forma che serve al pannello. */
+function vociRiga() {
+  return PROG.map((v) => ({ id: v[0], nome: v[1], descrizione: v[2] }));
+}
+function vociScheda() {
+  return PRG.map((v) => ({ id: v.id, nome: v.n, descrizione: v.d }));
+}
+
 function pulsanteSpento(doc, classe, testo, titolo) {
   const b = n(doc, "button", classe, testo);
   b.type = "button";
@@ -150,12 +222,6 @@ function pulsanteConEtichetta(doc, classe, testo, etichetta, titolo) {
 
 /* Passo 9: un pulsante che si preme. Stessa classe, stesso aspetto; cambia solo
  * che non porta "spento" e risponde al clic. */
-function pulsanteVivo(doc, classe, testo, titolo) {
-  const b = n(doc, "button", classe, testo);
-  b.type = "button";
-  if (titolo) b.title = titolo;
-  return b;
-}
 
 /* Una cella che si puo' scrivere: serie e ripetizioni (passo 9), recupero e
  * TUT (passo 10). L'aspetto e'
@@ -849,9 +915,20 @@ function tabellaEsercizi(doc, scheda, r) {
     piu.appendChild(cerchioPiu(doc));
     chips.appendChild(piu);
     const gruppo = n(doc, "span", "abgroup");
-    gruppo.appendChild(pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
+    gruppo.appendChild(mod
+      ? pulsanteVivo(doc, "ab", "\u2715", "cancella riga", () => mod.onCambia({
+        idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "riga"
+      }))
+      : pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
     gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
-    gruppo.appendChild(pulsanteSpento(doc, "ab", "\uff0b", "inserisci progressione sotto"));
+    gruppo.appendChild(mod
+      ? pulsanteVivo(doc, "ab", "\uff0b", "inserisci progressione sotto", () => apriProgressioni(doc, bottonePiu,
+        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
+        (pid) => mod.onCambia({
+          idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "progressione", progressione: pid
+        })))
+      : pulsanteSpento(doc, "ab", "\uff0b", "inserisci progressione sotto"));
+    const bottonePiu = gruppo.lastChild;
     chips.appendChild(gruppo);
     ese.appendChild(chips);
 
@@ -863,7 +940,13 @@ function tabellaEsercizi(doc, scheda, r) {
     chips2.appendChild(test);
     ese.appendChild(chips2);
 
-    const prog = pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
+    const prog = mod
+      ? pulsanteVivo(doc, "tb-prog btn-prog", "", "applica progressione", () => apriProgressioni(doc, prog,
+        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
+        (pid) => mod.onCambia({
+          idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "progressione", progressione: pid
+        })))
+      : pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
     prog.appendChild(n(doc, "span", "bp-ic", "\u25a4"));
     prog.appendChild(n(doc, "span", "", "Applica progressione"));
     ese.appendChild(prog);

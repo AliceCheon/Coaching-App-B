@@ -22,6 +22,7 @@ import { separaRecupero, separaTempo } from "./tut-rec.js";
  */
 
 import { prescrizione } from "./schede-v2.js";
+import { coppieRiga, coppieScheda, baseDaSettimane, nomeProgressione, voceScheda } from "./progressioni-b.js";
 
 /* Il nome del campo che dice "a questa scheda ho messo mano in B". */
 export const MARCHIO_B = "modificatoInB";
@@ -424,18 +425,339 @@ export function cambiaRecTempo(dati, richiesta, opzioni) {
 }
 
 
+
+/* --- Le progressioni del v31 (passo 20) ----------------------------------
+ * Il tastino "+" della riga ("inserisci progressione sotto") e "Applica
+ * progressione a tutta la scheda" non inventano niente: applicano una voce
+ * delle due liste del v31 (r.7252-7298 e r.9043-9060, copiate alla lettera in
+ * progressioni-b.js) alle otto settimane.
+ *
+ * Una scrittura sola: le 8 coppie [serie, reps] si calcolano in memoria, il
+ * documento si scrive una volta con la versione nuova, e nel registro va UNA
+ * voce che porta prima e dopo come array di 8 coppie. Cosi' l'Annulla del v31
+ * riporta indietro tutto in un colpo, non una settimana per volta.
+ */
+
+/* Una settimana come la legge la tabella: [serie, ripetizioni] di testo. */
+function coppiaDiSettimana(s) {
+  const w = s && typeof s === "object" ? s : {};
+  return [testo(w.serie), testo(w.ripetizioni)];
+}
+
+/* Le otto coppie che l'esercizio ha adesso (le mancanti restano vuote). */
+function coppieAttuali(esercizio) {
+  const elenco = prescrizione(esercizio).elencoSettimane;
+  const out = [];
+  for (let k = 0; k < 8; k += 1) out.push(coppiaDiSettimana(elenco[k]));
+  return out;
+}
+
+function stesseCoppie(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (testo(a[i][0]) !== testo(b[i][0])) return false;
+    if (testo(a[i][1]) !== testo(b[i][1])) return false;
+  }
+  return true;
+}
+
+/* Il numero resta numero quando il testo e' un numero: cosi' l'Annulla
+ * riscrive il valore com'era, non "4" al posto di 4. */
+function valoreCella(scritto) {
+  const t = testo(scritto);
+  if (t === "") return "";
+  const n = Number(t);
+  return String(n) === t ? n : t;
+}
+
+/* Scrive le otto coppie nelle settimane dell'esercizio, senza toccare il resto
+ * della settimana (riposo, tipo, nota) e senza toccare gli altri esercizi.
+ * Ritorna una COPIA: il documento di partenza non si modifica. */
+function scriviCoppie(esercizio, coppie) {
+  const posto = posizioneSettimane(esercizio);
+  if (!posto) return null;
+  const grezze = posto.chiave === "weeks" ? posto.oggetto.weeks : posto.oggetto[posto.chiave];
+  const nuove = (Array.isArray(grezze) ? grezze : []).map((w) => (w && typeof w === "object" ? Object.assign({}, w) : {}));
+  while (nuove.length < 8) nuove.push({});
+  for (let k = 0; k < 8; k += 1) {
+    const coppia = coppie[k] || ["", ""];
+    const settimana = Object.assign({}, nuove[k]);
+    const s = valoreCella(coppia[0]);
+    const rp = testo(coppia[1]);
+    settimana.sets = s === "" ? { cleared: true } : s;
+    settimana.reps = rp === "" ? { cleared: true } : rp;
+    nuove[k] = settimana;
+  }
+  const nuovoEsercizio = Object.assign({}, esercizio);
+  if (posto.oggetto === esercizio) nuovoEsercizio[posto.chiave] = nuove;
+  else nuovoEsercizio.progression = Object.assign({}, esercizio.progression, { weeks: nuove });
+  return nuovoEsercizio;
+}
+
+/* Il documento nuovo: una versione in piu' e il marchio che ferma la Copia. */
+function chiudiDocumento(dati, foglio, chiave, elenco, quando, uid, ultima) {
+  const nuovoFoglio = Object.assign({}, foglio);
+  nuovoFoglio[chiave] = elenco;
+  const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio });
+  nuovo.versione = versioneDi(dati) + 1;
+  nuovo[MARCHIO_B] = { quando: quando, da: uid == null ? null : String(uid), ultima: ultima };
+  return nuovo;
+}
+
+function indicePerId(elenco, id) {
+  const k = testo(id);
+  if (!k) return -1;
+  for (let i = 0; i < elenco.length; i += 1) if (testo(elenco[i] && elenco[i].id) === k) return i;
+  return -1;
+}
+
+/* Il tastino "+": una voce del v31, le otto settimane di QUELLA riga. */
+export function applicaProgressione(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const esercizio = elenco[indice];
+  if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
+  if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' cancellato" };
+  if (!posizioneSettimane(esercizio)) {
+    return { ok: false, motivo: "questa scheda non porta le settimane scritte: la progressione si apre in un passo successivo" };
+  }
+  const pid = testo(r.progressione);
+  const coppie = coppieRiga(pid, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
+  if (!coppie) return { ok: false, motivo: "la progressione «" + pid + "» non esiste: non ho scritto niente" };
+  const nome = nomeProgressione(pid) || pid;
+  const prima = coppieAttuali(esercizio);
+  if (stesseCoppie(prima, coppie)) {
+    return {
+      ok: false,
+      motivo: "la progressione «" + nome + "» non cambia nessuna cella: come nel v31 parla di carico, non di serie e ripetizioni. Non ho scritto niente."
+    };
+  }
+  const nuovoEsercizio = scriviCoppie(esercizio, coppie);
+  if (!nuovoEsercizio) return { ok: false, motivo: "questa scheda non porta le settimane scritte" };
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = nuovoEsercizio;
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "progressione");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "modifica-progressione",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nomeDi(esercizio),
+    idEsercizio: testo(esercizio.id),
+    settimana: null,
+    campo: "progressione",
+    progressione: pid,
+    nomeProgressione: nome,
+    prima: prima,
+    dopo: coppie,
+    dopoTesto: "8 settimane",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: coppie };
+}
+
+/* Il "x": la riga si marca come tolta, non si cancella dal documento. Le
+ * settimane restano scritte (i dati non si buttano via) e le sedute passate non
+ * c'entrano nulla: il Logbook tiene i nomi dentro di se', non punta qui. */
+export function cancellaEsercizio(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const esercizio = elenco[indice];
+  if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
+  if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' gia' tolto" };
+  const copia = Object.assign({}, esercizio);
+  copia.deletedAt = quando;
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = copia;
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "riga");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "cancella-riga",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nomeDi(esercizio),
+    idEsercizio: testo(esercizio.id),
+    settimana: null,
+    campo: "riga",
+    prima: { deletedAt: esercizio.deletedAt == null ? null : esercizio.deletedAt },
+    dopo: quando,
+    dopoTesto: "riga tolta",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
+
+/* "Applica progressione a tutta la scheda" (r.3771, r.9965-10024): le otto
+ * settimane di TUTTE le righe, e una voce sola con tutte le righe dentro. */
+export function applicaProgressioneScheda(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const voceProg = voceScheda(r.progressione);
+  if (!voceProg) return { ok: false, motivo: "questa progressione di scheda non esiste: non ho scritto niente" };
+
+  const vive = [];
+  for (let i = 0; i < elenco.length; i += 1) {
+    const e = elenco[i];
+    if (!e || typeof e !== "object" || e.deletedAt) continue;
+    vive.push(i);
+  }
+  if (!vive.length) return { ok: false, motivo: "la scheda non ha esercizi da toccare" };
+  for (let k = 0; k < vive.length; k += 1) {
+    if (!posizioneSettimane(elenco[vive[k]])) {
+      return { ok: false, motivo: "la riga " + (vive[k] + 1) + " non porta le settimane scritte: non ho scritto niente" };
+    }
+  }
+
+  const nuove = elenco.slice();
+  const righe = [];
+  let cambia = false;
+  for (let k = 0; k < vive.length; k += 1) {
+    const i = vive[k];
+    const esercizio = elenco[i];
+    const coppie = coppieScheda(voceProg.id, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
+    const prima = coppieAttuali(esercizio);
+    nuove[i] = scriviCoppie(esercizio, coppie);
+    if (!stesseCoppie(prima, coppie)) cambia = true;
+    righe.push({ idEsercizio: testo(esercizio.id), esercizio: nomeDi(esercizio), prima: prima, dopo: coppie });
+  }
+  if (!cambia) {
+    return { ok: false, motivo: "la progressione «" + voceProg.n + "» non cambia nessuna cella di questa scheda: non ho scritto niente" };
+  }
+  const nuovo = chiudiDocumento(dati, f, chiave, nuove, quando, o.uid, "progressione-scheda");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "modifica-progressione-scheda",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: String(righe.length) + " righe",
+    idEsercizio: "",
+    settimana: null,
+    campo: "progressione-scheda",
+    progressione: voceProg.id,
+    nomeProgressione: voceProg.n,
+    righe: righe,
+    dopoTesto: String(righe.length) + " righe",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
+
+/* --- L'annullamento delle tre scritture nuove --------------------------- */
+
+/* Riporta indietro tutto quello che la voce dice: le otto settimane di una
+ * riga, la riga tolta, o le otto settimane di tutte le righe. Un colpo solo. */
+function annullaProgressione(dati, v, quando, uid) {
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  let elenco = f[chiave].slice();
+  const tipo = testo(v.tipo);
+  let ultima = "annulla";
+  let manca = "";
+
+  if (tipo === "cancella-riga") {
+    const i = indicePerId(elenco, v.idEsercizio);
+    if (i < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+    const copia = Object.assign({}, elenco[i]);
+    if (v.prima && v.prima.deletedAt != null) copia.deletedAt = v.prima.deletedAt;
+    else delete copia.deletedAt;
+    elenco[i] = copia;
+    ultima = "riga rimessa";
+  } else if (tipo === "modifica-progressione") {
+    const i = indicePerId(elenco, v.idEsercizio);
+    if (i < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+    const riportato = scriviCoppie(elenco[i], Array.isArray(v.prima) ? v.prima : []);
+    if (!riportato) return { ok: false, motivo: "questa scheda non porta le settimane scritte" };
+    elenco[i] = riportato;
+    ultima = "progressione annullata";
+  } else if (tipo === "modifica-progressione-scheda") {
+    const righe = Array.isArray(v.righe) ? v.righe : [];
+    if (!righe.length) return { ok: false, motivo: "la voce del registro non dice quali righe annullare" };
+    const nuove = elenco.slice();
+    for (let k = 0; k < righe.length; k += 1) {
+      const i = indicePerId(elenco, righe[k].idEsercizio);
+      if (i < 0) { manca = String(righe[k].idEsercizio || ""); break; }
+      const riportato = scriviCoppie(elenco[i], Array.isArray(righe[k].prima) ? righe[k].prima : []);
+      if (!riportato) { manca = String(righe[k].idEsercizio || ""); break; }
+      nuove[i] = riportato;
+    }
+    if (manca) return { ok: false, motivo: "una riga della progressione non si ritrova piu' (" + manca + "): non ho scritto niente" };
+    elenco = nuove;
+    ultima = "progressione di scheda annullata";
+  } else {
+    return { ok: false, motivo: "la voce del registro non dice cosa annullare" };
+  }
+
+  const nuovo = chiudiDocumento(dati, f, chiave, elenco, quando, uid, ultima);
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "annulla-modifica",
+    origine: "annullamento-in-B",
+    scheda: testo(v.scheda),
+    codice: codiceScheda(nuovo),
+    esercizio: testo(v.esercizio),
+    idEsercizio: testo(v.idEsercizio),
+    settimana: null,
+    campo: testo(v.campo),
+    prima: v.dopo == null ? null : v.dopo,
+    dopo: v.prima == null ? null : v.prima,
+    dopoTesto: "prima",
+    annullaDi: String(v.idVoce || ""),
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
 /* --- L'annullamento ------------------------------------------------------- */
 
 /* Riporta il campo al valore di prima. Non cancella la voce del registro: ne
  * aggiunge una che la cita, cosi' la storia resta intera. */
 export function annullaModifica(dati, voce, opzioni) {
   const v = voce || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const tipo = testo(v.tipo);
+  /* Passo 20: progressione di una riga, riga tolta, progressione di scheda. */
+  if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga") {
+    return annullaProgressione(dati, v, quando, o.uid);
+  }
   const campo = testo(v.campo);
   const aSettimana = campo === "serie" || campo === "ripetizioni";
   const aEsercizio = campo === "recupero" || campo === "tempo";
   if (!aSettimana && !aEsercizio) return { ok: false, motivo: "la voce del registro non dice cosa annullare" };
-  const o = opzioni || {};
-  const quando = o.quando ? String(o.quando) : new Date().toISOString();
   const richiesta = {
     idScheda: v.scheda,
     idEsercizio: v.idEsercizio,
@@ -468,7 +790,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
