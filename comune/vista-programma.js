@@ -153,6 +153,11 @@ function pulsanteVivo(doc, classe, testo, titolo, alClic) {
  * Si chiude al clic fuori o dopo la scelta. */
 let pannelloProgressioni = null;
 
+/* L'editor della scheda che si sta guardando: lo lascia qui la tabella, cosi'
+ * la barra dei comandi puo' applicare una progressione a tutte le righe senza
+ * doverlo ricevere per parametro. */
+let modificaCorrente = null;
+
 function chiudiProgressioni() {
   if (pannelloProgressioni && pannelloProgressioni.parentNode) {
     pannelloProgressioni.parentNode.removeChild(pannelloProgressioni);
@@ -167,8 +172,8 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
   voci.forEach((v) => {
     const b = n(doc, "button", "prog-item");
     b.type = "button";
-    b.appendChild(n(doc, "b", "", v.nome));
-    b.appendChild(n(doc, "em", "", v.descrizione));
+    b.appendChild(n(doc, "b", "", nomePulito(v.nome)));
+    b.appendChild(n(doc, "em", "", nomePulito(v.descrizione)));
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       chiudiProgressioni();
@@ -856,6 +861,9 @@ function tabellaEsercizi(doc, scheda, r) {
 
   const box = n(doc, "div", "p8-scroll");
   const t = n(doc, "table", "p8-tab");
+  /* Passo 21: l'editor di questa scheda e il suo id, per la barra dei comandi. */
+  modificaCorrente = mod;
+  t.setAttribute("data-scheda", String((scheda && scheda.id) || ""));
 
   const cg = n(doc, "colgroup");
   ["w-js", "w-dist", "w-ese", "w-note", "w-rec", "w-tut"].forEach((cl) => cg.appendChild(n(doc, "col", cl)));
@@ -917,7 +925,7 @@ function tabellaEsercizi(doc, scheda, r) {
     const gruppo = n(doc, "span", "abgroup");
     gruppo.appendChild(mod
       ? pulsanteVivo(doc, "ab", "\u2715", "cancella riga", () => mod.onCambia({
-        idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "riga"
+        idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "riga"
       }))
       : pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
     gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
@@ -925,7 +933,7 @@ function tabellaEsercizi(doc, scheda, r) {
       ? pulsanteVivo(doc, "ab", "\uff0b", "inserisci progressione sotto", () => apriProgressioni(doc, bottonePiu,
         vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
         (pid) => mod.onCambia({
-          idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "progressione", progressione: pid
+          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
         })))
       : pulsanteSpento(doc, "ab", "\uff0b", "inserisci progressione sotto"));
     const bottonePiu = gruppo.lastChild;
@@ -944,7 +952,7 @@ function tabellaEsercizi(doc, scheda, r) {
       ? pulsanteVivo(doc, "tb-prog btn-prog", "", "applica progressione", () => apriProgressioni(doc, prog,
         vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
         (pid) => mod.onCambia({
-          idScheda: scheda.id, idEsercizio: e.id, esercizio: e.nome, campo: "progressione", progressione: pid
+          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
         })))
       : pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
     prog.appendChild(n(doc, "span", "bp-ic", "\u25a4"));
@@ -1064,7 +1072,16 @@ function barraStrumenti(doc) {
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Stampa da Compilare", "stampa la scheda con le caselle vuote"));
   const sug = pulsanteSpento(doc, "pr-btn on", "Suggerimenti: ON", "accende o spegne i suggerimenti");
   bar.appendChild(sug);
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Applica progressione a tutta la scheda", "applica la progressione a tutte le righe"));
+  const btProgScheda = pulsanteVivo(doc, "pr-btn", "Applica progressione a tutta la scheda",
+    "applica la progressione alle 8 settimane di tutte le righe", () => {
+    if (!modificaCorrente) return;
+    const tabella = doc.querySelector(".p8-tab[data-scheda]");
+    const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
+    apriProgressioni(doc, btProgScheda, vociScheda(),
+      "Le 8 settimane di tutte le righe di questa scheda vengono riscritte. Puoi annullare subito dopo.",
+      (pid) => modificaCorrente.onCambia({ idScheda: idScheda, campo: "progressione-scheda", progressione: pid }));
+  });
+  bar.appendChild(btProgScheda);
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Salva come scheletro", "salva la scheda come scheletro"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn danger", "Svuota tutto il programma", "svuota tutto il programma"));
