@@ -89,6 +89,7 @@ export function creaEditorSchede(opzioni) {
   const db = o.db;
   const uid = o.uid;
   const coda = creaCoda();
+  const SCADENZA_MS = Number(o.scadenzaVoceMs) || 8000;
   const versioni = Object.create(null);
   const documenti = Array.isArray(o.documenti) ? o.documenti : [];
   const mappe = mappaSchede(documenti);
@@ -104,7 +105,40 @@ export function creaEditorSchede(opzioni) {
   function quando() {
     contatore += 1;
     const t = adesso(contatore);
-    return t ? String(t) : new Date().toISOString();
+    const base = t ? String(t) : new Date().toISOString();
+    /* Due modifiche nello stesso istante non si sfacciano piu' la voce nel
+     * registro: l'id porta anche il numero d'ordine. */
+    return base + "-" + String(contatore).padStart(4, "0");
+  }
+
+  /* La scrittura che non torna: Firestore fermo (rete giu', token scaduto)
+   * non risponde e la promessa non si risolve piu'. Qui la attendo al massimo
+   * 8 secondi: se non torna e' fallita, e lo dico invece di restare zitti. */
+  function conScadenza(promessa, cosa) {
+    let scaduto = null;
+    const orologio = new Promise((_, nega) => {
+      scaduto = setTimeout(() => nega(new Error(cosa + ": nessuna risposta in " + SCADENZA_MS + " ms")), SCADENZA_MS);
+    });
+    return Promise.race([promessa, orologio]).then(
+      (v) => { clearTimeout(scaduto); return v; },
+      (e) => { clearTimeout(scaduto); throw e; }
+    );
+  }
+
+  /* La voce del registro si scrive e si riprova una volta: se proprio non
+   * passa, il salvataggio resta valido ma l'avviso torna a chi disegna. */
+  async function scriviVoceSicura(voce) {
+    try {
+      await conScadenza(scriviVoceRegistro(db, uid, voce.idVoce, voce), "la voce di registro");
+      return null;
+    } catch (primo) {
+      try {
+        await conScadenza(scriviVoceRegistro(db, uid, voce.idVoce, voce), "la voce di registro");
+        return null;
+      } catch (secondo) {
+        return secondo && secondo.message ? secondo.message : "la voce di registro non e' scritta";
+      }
+    }
   }
 
   /* id della scheda -> id del documento. Il legame e' per id, non per lettera. */
@@ -169,18 +203,19 @@ export function creaEditorSchede(opzioni) {
         };
       }
       try {
-        await salvaSchedaConVersione(db, uid, idScheda, esito.dati, attesa);
+        await conScadenza(salvaSchedaConVersione(db, uid, idScheda, esito.dati, attesa), "la scrittura della scheda");
       } catch (e) {
         return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
       }
-      await scriviVoceRegistro(db, uid, esito.voce.idVoce, esito.voce);
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
       versioni[idScheda] = versioneDi(esito.dati);
       ultima = esito.voce;
       return {
         ok: true,
         voce: esito.voce,
         versione: versioni[idScheda],
-        peso: { radice: peso.radice, scheda: peso.scheda }
+        peso: { radice: peso.radice, scheda: peso.scheda },
+        avvisoRegistro: avvisoVoce
       };
     });
   }
@@ -189,7 +224,7 @@ export function creaEditorSchede(opzioni) {
    * prima e aggiunge una voce nuova. Non cancella niente. */
   function annulla() {
     return coda.esegui("registro", async () => {
-      const registro = await leggiZonaB(db, uid, "registro");
+      const registro = await conScadenza(leggiZonaB(db, uid, "registro"), "la lettura del registro");
       const voce = ultimaAnnullabile(registro);
       if (!voce) {
         ultima = null;
@@ -205,14 +240,46 @@ export function creaEditorSchede(opzioni) {
       const esito = annullaModifica(letto.dati, voce, { quando: quando(), uid: uid });
       if (!esito.ok) return { ok: false, motivo: esito.motivo };
       try {
-        await salvaSchedaConVersione(db, uid, idScheda, esito.dati, versioneDi(letto.dati));
+        await conScadenza(salvaSchedaConVersione(db, uid, idScheda, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
       } catch (e) {
         return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
       }
-      await scriviVoceRegistro(db, uid, esito.voce.idVoce, esito.voce);
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
       versioni[idScheda] = versioneDi(esito.dati);
       ultima = ultimaAnnullabile(registro.concat([{ id: esito.voce.idVoce, dati: esito.voce }]));
-      return { ok: true, voce: esito.voce };
+      return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
+    });
+  }
+
+  /* Il ripristino mirato (passo 23): riporta i valori di prima della voce
+   * DETTA, non dell'ultima. La voce nuova porta annullaDi, la storia resta
+   * intera e niente si cancella. */
+  function annullaVoce(idVoceCercato) {
+    return coda.esegui("registro", async () => {
+      const registro = await conScadenza(leggiZonaB(db, uid, "registro"), "la lettura del registro");
+      const cercata = String(idVoceCercato == null ? "" : idVoceCercato);
+      const voce = (Array.isArray(registro) ? registro : [])
+        .filter((d) => d && d.dati && String((d.dati && d.dati.idVoce) || d.id || "") === cercata)
+        .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))[0] || null;
+      if (!voce) return { ok: false, motivo: "nel registro non c'e' la voce " + cercata + ": non ho scritto niente" };
+      const giaRifatta = (Array.isArray(registro) ? registro : [])
+        .some((d) => d && d.dati && String(d.dati.annullaDi || "") === cercata);
+      if (giaRifatta) return { ok: false, motivo: "la voce " + cercata + " e' gia' stata annullata: non ho scritto niente" };
+      const idScheda = documentoScheda(voce.scheda);
+      if (!idScheda) return { ok: false, motivo: "la voce del registro non porta a una scheda di B · " + schedaNonTrovata(voce.scheda) };
+      const letto = await leggiSchedaB(db, uid, idScheda);
+      if (!letto || !letto.esiste) return { ok: false, motivo: "la scheda non e' piu' in B" };
+      const esito = annullaModifica(letto.dati, voce, { quando: quando(), uid: uid });
+      if (!esito.ok) return { ok: false, motivo: esito.motivo };
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, idScheda, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      versioni[idScheda] = versioneDi(esito.dati);
+      ultima = ultimaAnnullabile(registro.concat([{ id: esito.voce.idVoce, dati: esito.voce }]));
+      return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
     });
   }
 
@@ -221,6 +288,7 @@ export function creaEditorSchede(opzioni) {
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,
-    annulla: annulla
+    annulla: annulla,
+    annullaVoce: annullaVoce
   };
 }

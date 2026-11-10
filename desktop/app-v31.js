@@ -43,7 +43,7 @@ function caricaFoglioB(doc, base) {
   l.href = new URL("../comune/dashboard-b.css", base || import.meta.url).href;
   doc.body.appendChild(l);
 }
-caricaFoglioB(document);
+if (typeof document !== "undefined") caricaFoglioB(document);
 
 /* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
@@ -319,6 +319,8 @@ function percorsoNodo(radice, el) {
 
 export function rimettiScorrimento(doc, win, preso) {
   if (!preso) return;
+  if (win) win.__bdScorrimentoApp = Date.now();
+  if (doc && doc.querySelector && doc.querySelector(".prog-panel:not([data-progp])")) return;
   if (win && typeof win.scrollTo === "function" && preso.finestra) win.scrollTo(0, preso.finestra);
   const att = doc && doc.querySelector ? doc.querySelector("#programma-attivo") : null;
   if (!att || !att.querySelector) return;
@@ -327,6 +329,25 @@ export function rimettiScorrimento(doc, win, preso) {
     try { nodo = v.percorso ? att.querySelector(v.percorso) : null; } catch (e) { nodo = null; }
     if (nodo) nodo.scrollTop = v.cima;
   });
+}
+
+/* Passo 24 — il messaggio che Alice ha chiesto per le progressioni, e quello
+ * di sempre (salvato alle...) per le celle. Qui e' provato: la pagina lo mostra
+ * nella riga di stato. */
+export function testoEsito(richiesta, esito) {
+  const r = richiesta || {};
+  const v = (esito && esito.voce) || {};
+  if (r.campo === "progressione") {
+    return "progressione «" + (v.nomeProgressione || r.progressione || "") + "» applicata alle 8 settimane · Annulla per annullare";
+  }
+  if (r.campo === "progressione-scheda") {
+    return "progressione «" + (v.nomeProgressione || r.progressione || "") + "» applicata alle 8 settimane di tutte le righe · Annulla per annullare";
+  }
+  if (r.campo === "riga") {
+    return "riga tolta · Annulla per rimetterla";
+  }
+  return "salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + v.codice + " · " + doveVoce(v) + ": " + ((v.dopoTesto || v.dopo) || "vuoto") +
+    " · peso radice " + kb((esito.peso || {}).radice) + ", scheda " + kb((esito.peso || {}).scheda);
 }
 
 export async function avvia(doc, win) {
@@ -370,6 +391,7 @@ export async function avvia(doc, win) {
   let rinvioAutomatico = false;
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
+  let editorCorrente = null;
   const stato = (win.BD_B_STATO = win.BD_B_STATO || { ridisegni: 0, letture: 0, rimandati: 0, impronta: null });
 
   const leggi = async (utente, opzioni) => {
@@ -419,6 +441,7 @@ export async function avvia(doc, win) {
       fotografia: fotografiaB,
       ultimaVoce: ultimaAnnullabile(registroB)
     });
+    editorCorrente = editor;
 
     /* Una cella e' in modifica se il fuoco e' dentro un campo scrivibile, o se
      * c'e' una cella aperta (classe "scrittura") anche quando il fuoco e' sul
@@ -483,9 +506,11 @@ export async function avvia(doc, win) {
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
-              ? "annullato · " + doveVoce(esito.voce) + " torna a " + (esito.voce.dopo || "vuoto")
+              ? "annullato \u00b7 " + doveVoce(esito.voce) + (esito.voce && ["serie", "ripetizioni", "recupero", "tempo"].indexOf(String(esito.voce.campo || "")) !== -1 ? " torna a " + String(esito.voce.dopo == null ? "vuoto" : esito.voce.dopo) : "")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
             return sincronizza(utente, { forza: true, motivo: "annulla" });
+          }, (e) => {
+            segnalaModifica("annullamento non riuscito: " + (e && e.message ? e.message : "errore"), "errore");
           });
         },
         /* Passo 13 — il dato appena scritto sta a schermo SUBITO (lo mostra la
@@ -497,13 +522,17 @@ export async function avvia(doc, win) {
             modificheInVolo -= 1;
 
             if (esito.ok) {
-              segnalaModifica("salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + esito.voce.codice + " · " + doveVoce(esito.voce) + ": " + ((esito.voce.dopoTesto || esito.voce.dopo) || "vuoto") +
-                " · peso radice " + kb(esito.peso.radice) + ", scheda " + kb(esito.peso.scheda), "ok");
+              /* Passo 24 — il messaggio di Alice, con l'avviso del registro
+               * se la voce non e' passata (il salvataggio resta valido). */
+              segnalaModifica(testoEsito(richiesta, esito) + (esito.avvisoRegistro ? " · MA: " + esito.avvisoRegistro : ""), "ok");
             } else {
               segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
-              /* Passo 16 — una scrittura non riuscita puo' voler dire che il
-               * dato a schermo non e' piu' quello del disco: qui si rilegge. */
-              return { ok: false, motivo: esito.motivo || "non ho scritto niente" };
+              /* Passo 16/24 — una scrittura non riuscita puo' voler dire che il
+               * dato a schermo non e' piu' quello del disco: qui si rilegge
+               * DAVVERO (prima il commento lo diceva e il codice tornava senza
+               * rileggere: cosi' il rifiuto per versione taceva in eterno). */
+              return sincronizza(utente, { forza: true, motivo: "scrittura rifiutata" })
+                .then(() => ({ ok: false, motivo: esito.motivo || "non ho scritto niente" }));
             }
             /* Passo 16 — il dato appena scritto e' gia' nella cella: non si
              * rilegge e non si ridisegna da zero. Se un controllo era stato
@@ -516,6 +545,14 @@ export async function avvia(doc, win) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };
+          }, (e) => {
+            /* Passo 24 — un rifiuto non puo' piu' bloccare la pagina: si
+             * scende di uno, si dice la causa e si rilegge, cosi' la versione
+             * a schermo torna quella del disco e i tasti riprendono a valere. */
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("scrittura non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "scrittura fallita" })
+              .then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
           });
         }
       }
@@ -552,6 +589,112 @@ export async function avvia(doc, win) {
       if (typeof sincronizzaEsterno === "function" && utenteCorrente) sincronizzaEsterno(utenteCorrente);
     }, 0);
   }, true);
+  /* ---------- Passo 23 — il ripristino mirato (?ripristina=) ------------- */
+  const ripristina = new URLSearchParams(win.location.search).get("ripristina");
+  let ripristinoGiaperto = false;
+
+  function descrizioneVoce(v) {
+    const t = String(v.tipo || "");
+    const nome = nomePulito(v.esercizio || "");
+    if (t === "modifica-progressione") return "progressione «" + (v.nomeProgressione || v.progressione || "") + "» su " + nome;
+    if (t === "modifica-progressione-scheda") return "progressione «" + (v.nomeProgressione || "") + "» su " + ((v.righe || []).length) + " righe";
+    if (t === "cancella-riga") return "riga tolta: " + nome;
+    if (t === "modifica-serie-ripetizioni") return "S" + (v.settimana || "?") + " " + String(v.campo || "") + " di " + nome;
+    if (t === "modifica-rec-tut") return (v.campo === "recupero" ? "Rec" : "TUT") + " di " + nome;
+    return t || "voce";
+  }
+
+  async function apriRipristino(idCercata) {
+    if (!utenteCorrente || !editorCorrente) return;
+    let registro = [];
+    try { registro = await leggiZonaB(db, utenteCorrente.uid, "registro"); } catch (e) { registro = []; }
+    const tutte = (Array.isArray(registro) ? registro : [])
+      .filter((d) => d && d.dati && TIPI_RIPRISTINABILI.indexOf(String(d.dati.tipo || "")) !== -1)
+      .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }));
+    const rifatte = {};
+    (Array.isArray(registro) ? registro : []).forEach((d) => {
+      if (d && d.dati && d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true;
+    });
+    const voci = tutte
+      .filter((v) => !rifatte[v.idVoce] && (!idCercata || v.idVoce === idCercata))
+      .sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || "")));
+    const vecchio = doc.getElementById("pannello-ripristino");
+    if (vecchio) vecchio.remove();
+    const velo = doc.createElement("div");
+    velo.id = "pannello-ripristino";
+    velo.setAttribute("style", "position:fixed;inset:0;z-index:99991;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)");
+    const carta = doc.createElement("div");
+    carta.setAttribute("style", "background:var(--card,#181822);border:1px solid var(--line,#2a2a38);border-radius:18px;padding:22px 24px;max-width:540px;max-height:70vh;overflow:auto;color:var(--text,#eee);font-size:13px;line-height:1.5");
+    const t1 = doc.createElement("div");
+    t1.setAttribute("style", "font-size:16px;font-weight:800;margin-bottom:4px");
+    t1.textContent = "Ripristino dai valori di prima";
+    const t2 = doc.createElement("div");
+    t2.setAttribute("style", "opacity:.65;margin-bottom:14px");
+    t2.textContent = idCercata
+      ? "voce " + idCercata + ": i valori tornano quelli di prima, con una voce nuova nel registro (versione +1). Niente si cancella."
+      : "le voci di registro ancora annullabili, dalla più recente: il ripristino riscrive i valori di prima con una voce nuova (versione +1). Niente si cancella.";
+    carta.appendChild(t1);
+    carta.appendChild(t2);
+    if (!voci.length) {
+      const vuoto = doc.createElement("div");
+      vuoto.setAttribute("style", "opacity:.75");
+      vuoto.textContent = idCercata
+        ? "nel registro non c'e' nessuna voce ancora annullabile con l'id " + idCercata + "."
+        : "nel registro non c'e' nessuna voce ancora annullabile.";
+      carta.appendChild(vuoto);
+    }
+    voci.forEach((v) => {
+      const riga = doc.createElement("div");
+      riga.setAttribute("style", "border-top:1px solid var(--line,#2a2a38);padding:10px 0");
+      const q = doc.createElement("div");
+      q.textContent = String(v.quando || "senza data").replace("T", " ").replace(/..*/, "") + " · " + descrizioneVoce(v);
+      riga.appendChild(q);
+      const idv = doc.createElement("div");
+      idv.setAttribute("style", "opacity:.55;font-size:11px;margin:2px 0 8px");
+      idv.textContent = v.idVoce;
+      riga.appendChild(idv);
+      const bottone = doc.createElement("button");
+      bottone.type = "button";
+      bottone.textContent = "Ripristina i valori di prima";
+      bottone.setAttribute("style", "font:700 13px/1 inherit;font-family:inherit;color:var(--text,#eee);background:var(--card-2,#20202c);border:1px solid var(--lav,#8b8bf5);border-radius:10px;padding:9px 14px;cursor:pointer");
+      bottone.addEventListener("click", () => {
+        bottone.disabled = true;
+        bottone.textContent = "scrittura in corso…";
+        editorCorrente.annullaVoce(v.idVoce).then((esito) => {
+          if (esito.ok) {
+            segnalaModifica("ripristinato · " + descrizioneVoce(esito.voce || v) + " torna ai valori di prima" + (esito.avvisoRegistro ? " · MA: " + esito.avvisoRegistro : ""), "ok");
+            velo.remove();
+            if (typeof sincronizzaEsterno === "function") sincronizzaEsterno(utenteCorrente, { forza: true, motivo: "ripristino" });
+          } else {
+            bottone.disabled = false;
+            bottone.textContent = "Ripristina i valori di prima";
+            const why = doc.createElement("div");
+            why.setAttribute("style", "color:var(--pink,#f06292);margin-top:6px");
+            why.textContent = esito.motivo || "non ho scritto niente";
+            riga.appendChild(why);
+          }
+        }).catch((e) => {
+          bottone.disabled = false;
+          bottone.textContent = "Ripristina i valori di prima";
+          const why = doc.createElement("div");
+          why.setAttribute("style", "color:var(--pink,#f06292);margin-top:6px");
+          why.textContent = "ripristino non riuscito: " + (e && e.message ? e.message : "errore");
+          riga.appendChild(why);
+        });
+      });
+      riga.appendChild(bottone);
+      carta.appendChild(riga);
+    });
+    const chiudiB = doc.createElement("button");
+    chiudiB.type = "button";
+    chiudiB.textContent = "Chiudi";
+    chiudiB.setAttribute("style", "margin-top:14px;font:700 13px/1 inherit;font-family:inherit;color:var(--text,#eee);background:transparent;border:1px solid var(--line,#2a2a38);border-radius:10px;padding:9px 14px;cursor:pointer");
+    chiudiB.addEventListener("click", () => velo.remove());
+    carta.appendChild(chiudiB);
+    velo.appendChild(carta);
+    doc.body.appendChild(velo);
+  }
+
   let uidLetto = null;
   ascoltaStato(auth, (utente) => {
     if (!utente) {
@@ -571,11 +714,23 @@ export async function avvia(doc, win) {
     leggi(utente).catch((e) => {
       carta.velo.style.display = "flex";
       carta.segnala("lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")));
+    }).then(() => {
+      /* Passo 23 — ?ripristina=<id voce> (o senza id, per l'elenco). */
+      if (ripristina === null || ripristinoGiaperto) return;
+      ripristinoGiaperto = true;
+      const idCercata = ripristina === "" || ripristina === "1" || ripristina === "elenco" ? "" : ripristina;
+      apriRipristino(idCercata).catch((e) => {
+        if (typeof console !== "undefined") console.warn("ripristino: ", e);
+      });
     });
   });
 }
 
-avvia(document, window).catch((e) => { if (typeof console !== "undefined") console.warn("avvio: ", e); });
+const TIPI_RIPRISTINABILI = ["modifica-serie-ripetizioni", "modifica-rec-tut", "modifica-progressione", "modifica-progressione-scheda", "cancella-riga"];
+
+if (typeof document !== "undefined" && typeof window !== "undefined") {
+  avvia(document, window).catch((e) => { if (typeof console !== "undefined") console.warn("avvio: ", e); });
+}
 
 /* Dove e' finita la modifica: la settimana per serie e ripetizioni, l'esercizio
  * per recupero e TUT (quei due campi sono dell'esercizio, non della settimana). */

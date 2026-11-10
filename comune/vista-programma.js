@@ -141,7 +141,7 @@ function pulsanteVivo(doc, classe, testo, titolo, alClic) {
   b.addEventListener("click", (ev) => {
     if (ev && ev.preventDefault) ev.preventDefault();
     if (ev && ev.stopPropagation) ev.stopPropagation();
-    alClic(ev);
+    if (typeof alClic === "function") alClic(ev);
   });
   return b;
 }
@@ -188,8 +188,20 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
   const sy = win ? win.scrollY : 0;
   const larga = win ? win.innerWidth : 800;
   pannello.style.left = Math.max(10, Math.min((r ? r.left : 0) + sx, Math.max(10, larga - 300))) + "px";
-  pannello.style.top = ((r ? r.bottom : 0) + sy + 7) + "px";
+  const cimaPannello = (r ? r.bottom : 0) + sy + 7;
+  const altaPannello = pannello.offsetHeight || 0;
+  const fondoPannello = sy + (win ? win.innerHeight : 600) - altaPannello - 10;
+  pannello.style.top = Math.max(sy + 10, Math.min(cimaPannello, fondoPannello)) + "px";
   pannelloProgressioni = pannello;
+  if (!doc.__bdAntiscorrimento) {
+    doc.__bdAntiscorrimento = true;
+    doc.addEventListener("scroll", () => {
+      if (!pannelloProgressioni) return;
+      const adesso = Date.now();
+      const quando = Number((doc.defaultView && doc.defaultView.__bdScorrimentoApp) || 0);
+      if (adesso - quando < 1500 && pannelloProgressioni.hasAttribute("hidden")) pannelloProgressioni.removeAttribute("hidden");
+    }, true);
+  }
   if (!doc.__progFuori) {
     doc.__progFuori = true;
     doc.addEventListener("click", (ev) => {

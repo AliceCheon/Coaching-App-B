@@ -33,6 +33,20 @@ function valido(valore) {
   return typeof valore === "string" && valore.length > 0 && valore.indexOf("/") === -1;
 }
 
+/* Firestore vero rifiuta qualunque campo o elemento undefined: il finto lo
+ * ingoia e le prove non se ne accorgono. Da qui niente undefined esce di
+ * casa: diventa null, che e' quello che i lettori del registro sanno leggere. */
+export function senzaUndefined(valore) {
+  if (valore === undefined) return null;
+  if (Array.isArray(valore)) return valore.map((v) => senzaUndefined(v));
+  if (valore && typeof valore === "object") {
+    const out = {};
+    Object.keys(valore).forEach((k) => { out[k] = senzaUndefined(valore[k]); });
+    return out;
+  }
+  return valore;
+}
+
 /* Radice della zona B: `bdB_atleti/{uid}`. */
 export function radiceB(db, uid) {
   if (!db || typeof db.collection !== "function") throw new ErroreZonaNonAmmessa("db mancante");
@@ -68,7 +82,7 @@ export function copiaSeduta(db, uid, id, dati) {
 }
 
 export function scriviVoceRegistro(db, uid, id, dati) {
-  return riferimentoB(db, uid, SOTTO_B.registro, id).set(dati || {});
+  return riferimentoB(db, uid, SOTTO_B.registro, id).set(senzaUndefined(dati || {}));
 }
 
 /* La fotografia e' il documento radice della zona B (bdB_atleti/{uid}). */
@@ -177,5 +191,5 @@ export async function salvaSchedaConVersione(db, uid, id, dati, versioneAttesa) 
     throw new ErroreVersione("la scheda e' cambiata nel frattempo (versione " + sulDisco +
       " invece di " + attesa + "): non ho scritto niente");
   }
-  return riferimentoB(db, uid, SOTTO_B.schede, id).set(dati);
+  return riferimentoB(db, uid, SOTTO_B.schede, id).set(senzaUndefined(dati));
 }

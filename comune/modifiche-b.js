@@ -441,7 +441,10 @@ export function cambiaRecTempo(dati, richiesta, opzioni) {
 /* Una settimana come la legge la tabella: [serie, ripetizioni] di testo. */
 function coppiaDiSettimana(s) {
   const w = s && typeof s === "object" ? s : {};
-  return [testo(w.serie), testo(w.ripetizioni)];
+  /* Le settimane portano sets/reps (e alcuni documenti serie/ripetizioni):
+   * la coppia legge ENTRAMBE le forme, senno' i valori di prima escono vuoti
+   * e l'Annulla cancella invece di rimettere. */
+  return [testo(w.sets != null ? w.sets : w.serie), testo(w.reps != null ? w.reps : w.ripetizioni)];
 }
 
 /* Le otto coppie che l'esercizio ha adesso (le mancanti restano vuote). */
@@ -459,6 +462,15 @@ function stesseCoppie(a, b) {
     if (testo(a[i][1]) !== testo(b[i][1])) return false;
   }
   return true;
+}
+
+/* Le coppie di prima sono TUTTE vuote? E' la firma delle voci nate quando la
+ * coppia leggeva i campi sbagliati (riparato il 10/11/2026): rimetterle
+ * cancellerebbe le settimane invece di riportarle indietro. */
+function coppieVuote(coppie) {
+  const elenco = Array.isArray(coppie) ? coppie : [];
+  if (!elenco.length) return true;
+  return elenco.every((c) => testo(c && c[0]) === "" && testo(c && c[1]) === "");
 }
 
 /* Il numero resta numero quando il testo e' un numero: cosi' l'Annulla
@@ -698,6 +710,7 @@ function annullaProgressione(dati, v, quando, uid) {
   } else if (tipo === "modifica-progressione") {
     const i = indicePerId(elenco, v.idEsercizio);
     if (i < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+    if (coppieVuote(Array.isArray(v.prima) ? v.prima : [])) return { ok: false, motivo: "la voce non porta i valori di prima (nata prima della correzione del 10/11/2026): il ripristino non scrive niente, le celle si rimettono a mano" };
     const riportato = scriviCoppie(elenco[i], Array.isArray(v.prima) ? v.prima : []);
     if (!riportato) return { ok: false, motivo: "questa scheda non porta le settimane scritte" };
     elenco[i] = riportato;
@@ -709,10 +722,12 @@ function annullaProgressione(dati, v, quando, uid) {
     for (let k = 0; k < righe.length; k += 1) {
       const i = indicePerId(elenco, righe[k].idEsercizio);
       if (i < 0) { manca = String(righe[k].idEsercizio || ""); break; }
+      if (coppieVuote(Array.isArray(righe[k].prima) ? righe[k].prima : [])) { manca = "SENZA-PRIMA"; break; }
       const riportato = scriviCoppie(elenco[i], Array.isArray(righe[k].prima) ? righe[k].prima : []);
       if (!riportato) { manca = String(righe[k].idEsercizio || ""); break; }
       nuove[i] = riportato;
     }
+    if (manca === "SENZA-PRIMA") return { ok: false, motivo: "una riga della voce non porta i valori di prima (voce nata prima della correzione del 10/11/2026): il ripristino non scrive niente, le celle si rimettono a mano" };
     if (manca) return { ok: false, motivo: "una riga della progressione non si ritrova piu' (" + manca + "): non ho scritto niente" };
     elenco = nuove;
     ultima = "progressione di scheda annullata";
