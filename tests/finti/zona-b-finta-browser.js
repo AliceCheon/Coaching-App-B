@@ -46,7 +46,19 @@
   var inVolo = 0;
   var attesa = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var copia = function (x) { return JSON.parse(JSON.stringify(x == null ? null : x)); };
+  /* Il Firestore vero rifiuta qualunque undefined: il finto lo dice anche lui,
+   * cosi' le prove lo trovano prima di Alice. */
+  var sguarda = function (v, dove) {
+    if (v === undefined) throw new Error("Firestore vero rifiuta " + dove + ": valore undefined");
+    if (Array.isArray(v)) { for (var i = 0; i < v.length; i += 1) sguarda(v[i], dove); return; }
+    if (v && typeof v === "object") { for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) sguarda(v[k], dove + "." + k); } }
+  };
   var scaffale = {};
+  /* La memoria resta dall'altra parte della navigazione (localStorage): e'
+   * quello che serve alla prova del ripristino dopo la ricarica. */
+  var CHIAVE_MEMORIA = "bd-b-finta-v1";
+  var sottoTutte = ["programmi", "schede", "sedute", "esclusioni", "registro"];
+  var salva = null;
   var documentiDi = function (sotto) {
     if (!scaffale[sotto]) {
       scaffale[sotto] = new Map();
@@ -54,6 +66,24 @@
     }
     return scaffale[sotto];
   };
+  salva = function () {
+    try { window.localStorage.setItem(CHIAVE_MEMORIA, JSON.stringify((function () {
+      var o = { radice: zona.radice };
+      sottoTutte.forEach(function (sotto) { o[sotto] = {}; documentiDi(sotto).forEach(function (v, k) { o[sotto][k] = v; }); });
+      return o;
+    })())); } catch (e) {}
+  };
+  (function ripristinaMemoria() {
+    var d = null;
+    try { d = JSON.parse(window.localStorage.getItem(CHIAVE_MEMORIA) || "null"); } catch (e) { d = null; }
+    if (!d) return;
+    if (d.radice != null) zona.radice = d.radice;
+    sottoTutte.forEach(function (sotto) {
+      var t = d[sotto] || {};
+      Object.keys(t).forEach(function (k) { documentiDi(sotto).set(k, t[k]); });
+    });
+  })();
+
   var docFinto = function (sotto, id) {
     return {
       get: function () {
@@ -69,7 +99,9 @@
       set: function (nuovi) {
         inVolo += 1;
         return attesa(SCRITTURA).then(function () {
+          sguarda(nuovi || {}, sotto + "/" + id);
           documentiDi(sotto).set(id, copia(nuovi || {}));
+          if (salva) salva();
           inVolo -= 1;
         });
       }
@@ -105,7 +137,9 @@
       set: function (nuovi) {
         inVolo += 1;
         return attesa(SCRITTURA).then(function () {
+          sguarda(nuovi || {}, "radice");
           zona.radice = copia(nuovi || {});
+          if (salva) salva();
           inVolo -= 1;
         });
       },

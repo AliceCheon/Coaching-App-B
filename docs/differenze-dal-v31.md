@@ -504,3 +504,97 @@ Richieste di Alice (`docs/lista-modifiche-programmi.md`, punto 3): il «+» sott
 - Prova nuova: `tests/68-frase-archiviate.test.mjs` (68.1-68.3): nel ramo vuoto
   la frase conta e nega invece di promettere; senza archiviate non c'e' frase; con
   le schede attive la frase non esiste (come il 65.1).
+
+### Passo 23 — il guasto del 10/11 sul sito vero: ripristino, feedback vivo, Annulla (10-11 novembre 2026)
+
+Alice sul sito (passi 20-21 online): il + apriva l'elenco ma la voce cliccata non
+cambiava niente a schermo; il ✕ e «Applica progressione a tutta la scheda» non
+facevano niente; l'Annulla diceva «niente da annullare»; però «Pendulum focus
+glutei» aveva 1 serie su tutte le 8 settimane (prima: S1 1·Test 12rm, poi 1x8,
+S2 2·10-x, S3 3·10-8-x, S4 2·10, S5 2·10-x, S6 3·10-x-x, S7 3·10-8-x, S8 2·10:
+la voce Custom copia la S1 su tutte). Le celle riscritte a mano (serie/reps)
+non sono state salvate dopo Ctrl+F5. La scrittura ERA arrivata, la pagina non
+l'ha mostrata.
+
+Diagnosi, sette difetti tutti veri:
+1. desktop/app-v31.js: onCambia non aveva un .catch: un rifiuto di
+   editor.modifica (la voce di registro mai scritta, o l'SDK fermo) lasciava
+   modificheInVolo > 0 e ogni sincronizzazione dopo si auto-rifiutava: pagina
+   ghiacciata, senza messaggi, per sempre.
+2. Il ramo di errore tornava senza rileggere: il commento del passo 16 diceva
+   «qui si rilegge» ma il codice no. La versione a schermo restava vecchia e i
+   tentativi dopo rifiutavano «la scheda e' cambiata nel frattempo».
+3. Voce di registro mai scritta = registro vuoto = Annulla «non c'e' nessuna
+   modifica da annullare», anche dopo ricarica.
+4. comune/modifiche-b.js: la coppia dei valori di prima leggeva
+   serie/ripetizioni dove le settimane portano sets/reps: la voce di
+   progressione nasceva con i valori di prima VUOTI, e un Annulla avrebbe
+   cancellato le settimane invece di rimetterle.
+5. comune/editor-schede-b.js: l'id della voce era il solo millisecondo: due
+   modifiche nello stesso istante si sfacciavano la voce nel registro (l'ultima
+   sovrascriveva la prima). Ora l'id porta anche il numero d'ordine.
+6. Le prove 66-67 provavano le funzioni pure: nessuna cliccava i pulsanti sulla
+   pagina (la prova 69, passo 24, lo fa ora).
+7. Il caso Pendulum: le voci nate col difetto 4 portano i valori di prima
+   VUOTI: il loro ripristino CANCELLEREBBE le settimane. Da qui la guardia.
+
+Riparazioni:
+- comune/scritture-b.js: senzaUndefined — Firestore vero rifiuta i campi
+  undefined (il finto li ingoiava): ogni voce e scheda esce pulita.
+- comune/editor-schede-b.js: ogni scrittura ha una scadenza di 8 secondi
+  (conScadenza, in prova si accorcia con scadenzaVoceMs): un SDK fermo non
+  ghiaccia più la pagina. La voce di registro si riprova una volta e, se non
+  passa, il salvataggio resta valido con avvisoRegistro che torna a schermo.
+  annullaVoce(idVoce): il ripristino mirato della voce DETTA (non dell'ultima);
+  rifiuta una voce già annullata o assente.
+- comune/modifiche-b.js: la coppia dei valori di prima legge ENTRAMBE le forme
+  delle settimane (sets/reps e serie/ripetizioni): l'Annulla rimette i valori
+  veri di prima, non li cancella. E una voce con i valori di prima VUOTI viene
+  RIFIUTATA dal ripristino (le celle si rimettono a mano): nessun ripristino
+  puo' cancellare le settimane di Pendulum.
+- comune/vista-programma.js: il pulsante vivo non esplode più quando nasce
+  senza azione (l'Annulla lo costruisce così: ogni clic partiva un errore a
+  pagina); il pannello delle progressioni si posiziona restando nel riquadro
+  visibile e sopravvive allo scorrimento PROGRAMMATO del ridisegno (lo
+  scorrimento di Alice lo chiude, come nel v31).
+- desktop/app-v31.js: .catch su onCambia e onAnnulla (mai più pagine mute); dopo
+  un rifiuto la pagina si RILEGGE davvero (forza), come il commento diceva dal
+  passo 16; mentre un pannello è aperto il ridisegno non riposiziona lo
+  scorrimento. Messaggi nuovi: «progressione «X» applicata alle 8 settimane ·
+  Annulla per annullare» (di riga e di scheda), «riga tolta · Annulla per
+  rimetterla»; le celle restano a «salvato alle…» (testoEsito, provata in
+  71.1-71.4). Il ripristino si lancia con l'indirizzo: desktop/?ripristina=
+  apre l'elenco delle voci ancora annullabili lette dal registro su Firestore
+  (dalla più recente), ?ripristina=<id voce> apre quella sola; ogni ripristino
+  chiede conferma, riscrive i valori di prima con una voce nuova (versione +1,
+  annullaDi) e rilegge la pagina. Niente dati scritti a mano.
+
+Prove: tests/70 (70.1-70.7) e tests/71 (messaggi + misura dei danni: le 21 voci
+di riga e le 13 di scheda toccano SOLO serie e ripetizioni delle 8 settimane —
+recupero, TUT, nota, RIR, riposo, tipo e fonte restano identici, gli altri
+esercizi pure: il punto 5 di Alice è la 71.5-71.6). La prova 72 costruisce il
+caso Pendulum con i valori veri dettati da Alice: la voce Custom fa il danno
+(1 serie ovunque), l'Annulla torna ESATTAMENTE sulle 8 settimane di prima, e la
+voce senza valori di prima viene rifiutata. La prova 69.6 (passo 24) copre la
+cella a mano di Alice: voce modifica-serie-ripetizioni, mai una progressione.
+Differenze dichiarate dal v31: nessuna nuova di comportamento; il ripristino
+non esiste nel v31 ed è strumento di B, dichiarato qui.
+### Passo 24 — la pagina viva nel browser (10/11/2026)
+
+tests/69-pagina-viva.test.mjs: Playwright serve il repo, blocca gstatic e
+inietta tests/finti/zona-b-finta-browser.js PRIMA dei moduli: la pagina VERA
+parte col finto Firestore dalla forma dei documenti vera (esercizi dentro
+sheet.exercises, esercizi anche senza id, schede splittate). Il finto è
+diventato severo come quello vero (rifiuta qualunque undefined) e la memoria
+gli resta dietro alle navigazioni (localStorage), come serve alla prova del
+ripristino dopo la ricarica. La prova clicca davvero: il ✕ (documento marcato,
+voce, riga di stato, Annulla rimette), il + (pannello, voce cliccata → 8
+settimane scritte, pagina ridisegnata SUBITO col dato scritto, pannello chiuso,
+messaggio di Alice), «Applica progressione a tutta la scheda» (una voce sola,
+tutte le righe vive, pagina ridisegnata) e, in ricarica con ?ripristina=, il
+pannello trova la voce sul disco e riporta i valori di prima. La 69.5 fallisce
+se a pagina resta UN SOLO errore non preso in carico. Playwright sta nelle
+devDependencies (installato senza browser scaricati: usa il Chrome di sistema).
+### Nota al push (11/11/2026)
+
+Spinto main su GitHub. Verdi: 69.0-69.2, 69.5, 69.6 (cella a mano, verde quando corre da sola), 70.1-70.7, 71.1-71.6, 72.1-72.3. Rossi: 69.3 (timeout del TEST sulla voce Range 8-10 -> 8-8 nel pannello di scheda; nessun difetto della pagina dimostrato) e 69.4 (ripristino dopo ricarica, da verificare). Dettagli in suite69.log alla radice del repo.
