@@ -486,3 +486,21 @@ Richieste di Alice (`docs/lista-modifiche-programmi.md`, punto 3): il «+» sott
 - Come il pulsante trova la scheda: la tabella lascia l'editor in `modificaCorrente` e scrive l'id sull'attributo `data-scheda` di `.p8-tab`; la barra dei comandi non deve indovinare niente.
 - `comune/vista-programma.js`: il pulsante «Applica progressione a tutta la scheda» della barra passa da `pulsanteSpento` a `pulsanteVivo` (riga ~1075) e apre lo stesso pannello del v31 con le 13 voci. Rispetto al v31 (r.3771) cambia solo che la finestra è il pannello `.prog-panel` già usato dal «+» della riga, non un modale: stesse classi, nessun foglio di stile nuovo.
 - Prova nuova: `tests/67-progressione-scheda.test.mjs` (67.1-67.8).
+
+### Passo 22 — la frase delle archiviate dice la verità (10 novembre 2026)
+
+- Il passo 19 toglie dalla schermata Programma il disegno delle archiviate, ma
+  lascia appesa la frase del `pr-hint` nel ramo «programma senza schede attive»
+  di `comune/vista-programma.js` (r.1275): «Schede archiviate di questo
+  programma: N — si vedono nella tabella qui sotto». Falsa due volte: la carta
+  finisce lì, di tabella non c'e' niente, e dal passo 19 le archiviate non si
+  disegnano più.
+- Ora la frase dice: «Schede archiviate di questo programma: N — restano nei
+  dati, la pagina non le disegna più». Il conto resta (`r.archiviate` è ancora
+  nel riepilogo, come vuole il passo 19); cambia solo la promessa, che era una
+  bugia. Nessun'altra riga toccata: CSS e `desktop/index.html` intatti (guardia 42).
+- Il v31 non ha nessuna di queste frasi: in `pc/index.html` «archiviate» non
+  compare. La frase nasce con B e la differenza resta dichiarata qui.
+- Prova nuova: `tests/68-frase-archiviate.test.mjs` (68.1-68.3): nel ramo vuoto
+  la frase conta e nega invece di promettere; senza archiviate non c'e' frase; con
+  le schede attive la frase non esiste (come il 65.1).

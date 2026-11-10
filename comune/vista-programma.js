@@ -1272,7 +1272,7 @@ function schede(doc, r) {
       ? "Nessuna scheda per questo programma nei dati letti" + (r.schedeMotivo ? " — " + r.schedeMotivo : "") + "."
       : "Il programma non ha schede attive: nessun pannello da mostrare."));
     if (r.archiviate && r.archiviate.length) {
-      c.appendChild(n(doc, "p", "pr-hint", "Schede archiviate di questo programma: " + r.archiviate.length + " — si vedono nella tabella qui sotto."));
+      c.appendChild(n(doc, "p", "pr-hint", "Schede archiviate di questo programma: " + r.archiviate.length + " — restano nei dati, la pagina non le disegna più."));
     }
     return c;
   }
