@@ -522,6 +522,9 @@ export async function avvia(doc, win) {
             modificheInVolo -= 1;
 
             if (esito.ok) {
+              // Passo 29: una cella salvata riattiva Annulla senza ridisegnare.
+              const annullaB = doc.querySelector("#programma-attivo button.pg-undo");
+              if (annullaB && richiesta && ["serie", "ripetizioni", "recupero", "tempo"].indexOf(richiesta.campo) !== -1) annullaB.disabled = !editor.annullabile;
               /* Passo 24 — il messaggio di Alice, con l'avviso del registro
                * se la voce non e' passata (il salvataggio resta valido). */
               segnalaModifica(testoEsito(richiesta, esito) + (esito.avvisoRegistro ? " · MA: " + esito.avvisoRegistro : ""), "ok");

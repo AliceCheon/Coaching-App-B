@@ -10562,6 +10562,16 @@ function doRedo(){
 window.addEventListener('keydown', function(e){
   if(!(e.ctrlKey||e.metaKey)) return;
   var k = String(e.key||'').toLowerCase();
+  // Passo 30: nei campi si lascia al browser la cronologia del testo.
+  var campoUndo = e.target;
+  if(k==='z' && campoUndo && (campoUndo.isContentEditable || /^(INPUT|TEXTAREA)$/.test(campoUndo.tagName||''))) return;
+  // Passo 29: in B Ctrl+Z usa lo stesso pulsante e lo stesso registro Firestore.
+  var undoB = root.querySelector('#programma-attivo button.pg-undo');
+  if(k==='z' && !e.shiftKey && !e.altKey && undoB && root.getClientRects().length){
+    e.preventDefault(); e.stopImmediatePropagation();
+    undoB.click();
+    return;
+  }
   if(k==='z'){ e.preventDefault(); e.stopPropagation(); if(e.shiftKey) doRedo(); else doUndo(); }
   else if(k==='y'){ e.preventDefault(); e.stopPropagation(); doRedo(); }
 }, true);

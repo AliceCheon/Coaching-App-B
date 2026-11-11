@@ -59,7 +59,7 @@ non salvano niente. Sono le righe che portano la pillola `pr-demo`.
 | 7643 | pag-archivio | #pag-programma-1 .pr-demo{ |
 | 8879 | pag-archivio | ' Applica a Prog 2 demo ' + |
 
-## Cosa e' gia' vivo in B (10 novembre 2026)
+## Cosa e' gia' vivo in B (aggiornamento 11 novembre 2026)
 
 Questi non sono piu' spenti: sono stati collegati nei passi 9-21 e hanno una prova nella suite.
 
@@ -67,10 +67,23 @@ Questi non sono piu' spenti: sono stati collegati nei passi 9-21 e hanno una pro
 - Celle **Rec** e **TUT** (passi 10-19).
 - Il pulsante **Annulla** in testa alla schermata: riporta indietro l'ultima modifica e cita la voce annullata.
 - **x** della riga: toglie l'esercizio (`deletedAt`) e l'Annulla lo rimette (passo 20).
-- **+** della riga: apre le 21 progressioni del v31 e le applica alle otto settimane di quella riga (passo 20).
-- **Applica progressione** della riga: le stesse 21 voci (passo 20).
+- **+** della riga: dal passo 28 è volutamente disabilitato, riservato alle future superserie; non apre le progressioni.
+- **Applica progressione** della riga: apre le 21 voci, applica alla singola riga e consente Annulla (passi 20/28).
 - **Applica progressione a tutta la scheda**: le 13 voci con Custom, su tutte le righe, un solo Annulla (passo 21).
 - **Escludi seduta** nel Logbook: due scritture, la seduta sparisce dalle letture.
 - I **filtri** del Logbook, la tabella delle sedute vere, la tabella del Programma, l'Archivio dei programmi.
 
 Tutto il resto che compare in questo elenco e' ancora spento: e' la lista delle cose da far vivere.
+
+## Ctrl+Z e Annulla — passo 29, 11 novembre 2026
+
+Il pulsante non era finto: chiamava editor.annulla() sul registro B. La scorciatoia leggeva invece stack/HIST del v31, non alimentate dalle modifiche B. Correzione locale, con eccezione HTML autorizzata da Alice: Ctrl+Z/Cmd+Z nella pagina Programma B aziona proprio lo stesso pulsante, rispettandone lo stato disabled e impedendo i gestori storici. Dopo il salvataggio di una cella lo stato del pulsante viene riallineato al registro senza ridisegnare. Nessun Rifai B implementato; Ctrl+Shift+Z e Ctrl+Y non sono dichiarati funzionanti sul registro B. Test 76: 4 verdi; riprodotto prima il difetto, verificati cancellazione, serie, ripetizioni, annullaDi e assenza di doppie scritture. Numeri della tabella iniziale storici, non riferimenti aggiornati. Nessun dato reale modificato; nessun commit o push in questo passo.
+
+Verifica finale passo 29: suite tranne 63 con 361 verdi e quattro rossi preesistenti 64.4/69.3/69.4/69.6. Ctrl+Z è provato dai quattro verdi della 76; i rossi di scheda/ripristino non sono dichiarati risolti.
+
+Prova 63 separata: 5/5 verdi. Modifiche solo locali, nessun commit né push.
+
+## Passo 30 — precedenza al testo nei campi
+Ctrl+Z/Cmd+Z dentro input, ricerca, textarea e celle modificabili non richiama Annulla scheda; il browser mantiene la cronologia del testo. Fuori dai campi resta il collegamento al pulsante B. Le celle salvano su uscita o Invio, non a ogni carattere. Database esercizi resta spento: il test apre soltanto il DOM storico del suo modale. Nessun Rifai B aggiunto.
+
+Esiti finali passo 30: test 76, 10/10 verdi; suite tranne 63, 367 verdi e quattro rossi 64.4/69.3/69.4/69.6; 63 separata, 5/5 verdi. Meta+Z verificato non intercettato su Windows; annullamento nativo macOS da confermare su Mac. Alice richiede push dopo la comunicazione dei rossi, non dichiarati risolti.
