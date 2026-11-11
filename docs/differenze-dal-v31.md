@@ -646,3 +646,16 @@ caratteri di controllo no; 73.4 `tre` nelle serie viene ancora rifiutato.
 
 Nessun commit e nessun push in questo passo: il lavoro è pronto sul disco e
 aspetta la parola di Alice.
+
+
+## Passo 26 — scorrimento interno del pannello progressioni (11/11/2026)
+
+Richiesta di Alice: il + apre il pannello; lo scroll interno verso il basso non deve chiuderlo. Commit richiesto, nessun push.
+
+Causa: il gestore scroll in cattura di desktop/index.html nasconde tutti i pannelli, compreso quello che sta scorrendo internamente. La pagina originale resta intatta. In comune/vista-programma.js un gestore sulla finestra intercetta scroll e touchmove SOLO quando il bersaglio appartiene al pannello progressioni corrente, fermandone la propagazione prima del gestore globale. Nessun preventDefault: lo scorrimento nativo non viene annullato. Nessun cambio a CSS, dati o scritture.
+
+Prova 74 sulla pagina vera con Firestore finto: + apre, rotella interna sposta scrollTop da 0 a 151 oltre i 1500ms della vecchia protezione, pannello visibile; touchmove interno non annullato e pannello aperto; scrollTop fino al fondo lascia aperto; scroll esterno e clic fuori chiudono ancora. Senza la correzione la stessa prova fallisce: il pannello risulta nascosto e non scorrevole dopo gli eventi iniziali; con la correzione la prova mirata passa. Il gesto fisico su telefono non e stato verificato: touchmove e sintetico, la rotella e reale tramite Playwright.
+
+Verifica finale: suite tranne 63, 354 verdi e 4 rossi (64.4, 69.3, 69.4, 69.6, gli stessi quattro segnalati nel passo 25). La nuova 74 passa sia nella suite completa sia isolata: scrollTop 0 -> 151, pannello visibile, touchmove non annullato, clic fuori chiude. Non si dichiara la suite tutta verde. Il commit e richiesto esplicitamente da Alice; nessun push.
+
+Prova 63 eseguita separatamente dopo la suite finale: 5 verdi, 0 rossi. Guardia 42 verificata con git diff --exit-code su desktop/index.html; nessun Map/Set aggiunto.

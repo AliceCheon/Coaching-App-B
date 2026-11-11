@@ -193,6 +193,19 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
   const fondoPannello = sy + (win ? win.innerHeight : 600) - altaPannello - 10;
   pannello.style.top = Math.max(sy + 10, Math.min(cimaPannello, fondoPannello)) + "px";
   pannelloProgressioni = pannello;
+  /* Passo 26: il v31 ascolta scroll sul document in cattura e nasconde
+   * tutti i pannelli. Fermiamo SOLO gli eventi nati dentro questo pannello,
+   * prima che raggiungano quel gestore. Nessun preventDefault: lo scorrimento
+   * nativo (rotella, barra e tocco) deve continuare a funzionare. */
+  if (win && !doc.__bdScrollInternoProgressioni) {
+    doc.__bdScrollInternoProgressioni = true;
+    const scorrimentoInterno = (ev) => {
+      if (!pannelloProgressioni || !ev || !ev.target) return;
+      if (pannelloProgressioni.contains(ev.target)) ev.stopPropagation();
+    };
+    win.addEventListener("scroll", scorrimentoInterno, { capture: true, passive: true });
+    win.addEventListener("touchmove", scorrimentoInterno, { capture: true, passive: true });
+  }
   if (!doc.__bdAntiscorrimento) {
     doc.__bdAntiscorrimento = true;
     doc.addEventListener("scroll", () => {
