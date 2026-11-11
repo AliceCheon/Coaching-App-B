@@ -90,15 +90,30 @@ test("74.0 si apre la pagina vera col finto Firestore", async () => {
 });
 
 
-test("74.1 il + apre, rotella e touchmove interni non chiudono, fuori chiude", async () => {
+test("74.1 + inattivo; Applica progressione apre tutte le voci e conserva lo scroll", async () => {
   try {
-    const piu = page.locator('.p8-r').first().locator('button[title="inserisci progressione sotto"]');
+    const riga = page.locator('.p8-r').first();
+    const inattivo = riga.locator('button.ab').filter({ hasText: '\uff0b' });
+    assert.equal(await inattivo.isDisabled(), true, '+ disabilitato');
+    const primaScheda = await documentoScheda(page);
+    const primaRegistro = await page.evaluate(async () => (await window.firebase.app('B').firestore().collection('bdB_atleti').doc('alice-prova').collection('registro').get()).docs.map(d => ({ id: d.id, dati: d.data() })));
+    await inattivo.evaluate(b => b.click());
+    await inattivo.dispatchEvent('click');
+    assert.equal(await page.locator('.prog-panel:not([data-progp])').count(), 0, '+ non apre popup');
+    assert.deepEqual(await documentoScheda(page), primaScheda, '+ non modifica la scheda');
+    const piu = riga.locator('button.btn-prog');
     await page.waitForTimeout(2000);
     await piu.scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
     await piu.click();
     const pannello = page.locator('.prog-panel:not([data-progp])');
     await pannello.waitFor({ state: 'visible' });
+    const attese = await page.evaluate(async () => (await import('/comune/progressioni-b.js')).PROG.map(v => v[1]));
+    assert.deepEqual(await pannello.locator('.prog-item b').allTextContents(), attese, 'tutte le progressioni originali, nello stesso ordine');
+    assert.deepEqual(await documentoScheda(page), primaScheda, 'aprire il popup non modifica la scheda');
+    const dopoRegistro = await page.evaluate(async () => (await window.firebase.app('B').firestore().collection('bdB_atleti').doc('alice-prova').collection('registro').get()).docs.map(d => ({ id: d.id, dati: d.data() })));
+    assert.deepEqual(dopoRegistro, primaRegistro, '+ e apertura popup non scrivono nel registro');
+    console.log('Evidenza 28: + disabilitato, nessun popup o scrittura; Applica progressione mostra tutte le ' + attese.length + ' voci, senza scrivere.');
     // Oltre la finestra di 1500ms: non deve essere l'antiscorrimento a salvarlo.
     await page.waitForTimeout(1700);
     assert.equal(await pannello.isVisible(), true, 'il pannello resta aperto dopo apertura e assestamento');

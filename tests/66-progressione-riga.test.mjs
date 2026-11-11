@@ -238,11 +238,13 @@ test("66.7 il x marca la riga con deletedAt e si annulla", () => {
 
 /* --- 66.8: la pagina e' collegata ---------------------------------------- */
 
-test("66.8 i due pulsanti della riga non sono piu' spenti", () => {
+test("66.8 Applica progressione attivo, + inattivo per le future superserie", () => {
   const vista = readFileSync(join(radice, "comune", "vista-programma.js"), "utf8");
   assert.match(vista, /pulsanteVivo\(doc, "ab", "\\u2715"/, "il x deve essere un pulsante vero");
-  assert.match(vista, /pulsanteVivo\(doc, "ab", "\\uff0b"/, "il + deve essere un pulsante vero");
-  assert.match(vista, /campo: "progressione"/, "il + deve chiedere una progressione alla riga");
+  assert.match(vista, /pulsanteSpento\(doc, "ab", "\\uff0b", "superserie non ancora disponibili"/, "il + deve restare inattivo");
+  assert.doesNotMatch(vista, /pulsanteVivo\(doc, "ab", "\\uff0b"/, "il + non deve aprire progressioni");
+  assert.match(vista, /pulsanteVivo\(doc, "tb-prog btn-prog"/, "Applica progressione deve essere attivo");
+  assert.match(vista, /campo: "progressione"/, "Applica progressione deve chiedere una progressione alla riga");
   assert.match(vista, /campo: "riga"/, "il x deve chiedere la cancellazione della riga");
   /* le liste vengono dal modulo copiato dal v31, non da una copia in pagina */
   assert.match(vista, /from "\.\/progressioni-b\.js"/);

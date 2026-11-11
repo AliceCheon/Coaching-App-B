@@ -144,7 +144,7 @@ test("69.1 il ✕ di una riga marca, scrive la voce, avvisa e si annulla", async
   assert.ok(rimessa, "l'Annulla rimette la riga \u00b7 " + JSON.stringify(diagnosi));
 });
 
-test("69.2 il + di una riga scrive le 8 settimane e la pagina si ridisegna SUBITO", async () => {
+test("69.2 Applica progressione di una riga scrive le 8 settimane e la pagina si ridisegna SUBITO", async () => {
   await page.evaluate(() => {
     window.__nascondimenti = [];
     window.__scrolls = [];
@@ -160,7 +160,7 @@ test("69.2 il + di una riga scrive le 8 settimane e la pagina si ridisegna SUBIT
       window.__scrolls.push(String((e.target && (e.target.id || e.target.tagName)) || "?") + "@" + Math.round((window.scrollY || 0)));
     }, true);
   });
-  await page.locator(".p8-r").first().locator("button.ab").filter({ hasText: "\uff0b" }).click();
+  await page.locator(".p8-r").first().locator("button.btn-prog").click();
   try {
     await page.waitForSelector(".prog-panel .prog-item", { state: "visible", timeout: 8000 });
   } catch (e) {

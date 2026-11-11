@@ -954,14 +954,8 @@ function tabellaEsercizi(doc, scheda, r) {
       }))
       : pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
     gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
-    gruppo.appendChild(mod
-      ? pulsanteVivo(doc, "ab", "\uff0b", "inserisci progressione sotto", () => apriProgressioni(doc, bottonePiu,
-        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
-        (pid) => mod.onCambia({
-          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
-        })))
-      : pulsanteSpento(doc, "ab", "\uff0b", "inserisci progressione sotto"));
-    const bottonePiu = gruppo.lastChild;
+    // Passo 28: il + resta inattivo, riservato alle future superserie.
+    gruppo.appendChild(pulsanteSpento(doc, "ab", "\uff0b", "superserie non ancora disponibili"));
     chips.appendChild(gruppo);
     ese.appendChild(chips);
 
@@ -980,6 +974,28 @@ function tabellaEsercizi(doc, scheda, r) {
           idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
         })))
       : pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
+    /* Passo 28: il v31 intercetta .btn-prog sul document in cattura e
+     * interrompe il clic prima del pulsante di B. Gestiamo solo questo
+     * comando della vista B sulla finestra, prima del vecchio gestore. */
+    if (mod) {
+      prog.setAttribute("data-b-progressione", "true");
+      prog.__bdApriProgressioni = () => apriProgressioni(doc, prog,
+        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
+        (pid) => mod.onCambia({
+          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
+        }));
+      const win = doc.defaultView;
+      if (win && !doc.__bdClicProgressione) {
+        doc.__bdClicProgressione = true;
+        win.addEventListener("click", (ev) => {
+          const b = ev.target && ev.target.closest ? ev.target.closest('button[data-b-progressione="true"]') : null;
+          if (!b || b.disabled || typeof b.__bdApriProgressioni !== "function") return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          b.__bdApriProgressioni();
+        }, true);
+      }
+    }
     prog.appendChild(n(doc, "span", "bp-ic", "\u25a4"));
     prog.appendChild(n(doc, "span", "", "Applica progressione"));
     ese.appendChild(prog);

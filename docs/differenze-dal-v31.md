@@ -676,3 +676,18 @@ Esiti conclusivi: suite tranne 63, 357 verdi e 4 rossi (64.4, 69.3, 69.4, 69.6, 
 Controllo browser aggiuntivo: 69.0/69.1/69.2/69.5, nella sequenza originale, 4 verdi: apertura, applicazione dal +, Annulla e assenza errori. La 69.2 isolata saltando 69.1 fallisce sulla verifica finale di Annulla: resta una dipendenza della prova dalla sequenza, non dichiarata risolta.
 
 Autorizzazione di Alice, 11/11/2026 ore 16:03: pubblicare solo la correzione per azioni e modifiche future. La scheda è già stata corretta da Alice: NON sovrascrivere. Nessuna migrazione, riparazione retroattiva o scrittura nel database viene eseguita dalla pubblicazione; il codice interviene solo quando viene richiesta una nuova azione.
+
+
+## Passo 28 — Applica progressione al posto del + (11/11/2026)
+
+Vincoli di Alice: «se premo applica progressione si deve aprire il popup con tutte le progressioni»; «se premo il + per ora nulla»; le superserie sono rimandate. Il + della riga è disabilitato e non ha più il collegamento alle progressioni. Applica progressione conserva le 21 voci e la stessa applicazione alla singola riga. Nessuna superserie introdotta, nessun accesso ai dati reali, nessun ripristino.
+
+La prima prova browser ha mostrato che il gestore storico in cattura su document interrompeva il clic su .btn-prog prima del pulsante di B. Il modulo vista-programma.js ora intercetta sulla finestra solo i pulsanti marcati della vista B e apre il pannello prima del vecchio gestore. desktop/index.html e CSS intatti; nessun Map/Set aggiunto.
+
+Prove mirate 66/74: 13 verdi. Evidenze browser: + disabilitato, clic anche sintetico non apre popup e non modifica scheda o registro; Applica progressione mostra tutti i 21 nomi originali nello stesso ordine; apertura senza scritture; scrollTop 0 -> 151, touchmove interno non annullato, scroll esterno e clic fuori chiudono. Prova 69.2 aggiornata per scegliere dal nuovo pulsante; formule e dati della progressione invariati. Suite completa in corso. Nessun commit e nessun push autorizzato in questo passo.
+
+Esiti verificati: suite tranne 63, 357 verdi e i quattro rossi già presenti (64.4, 69.3, 69.4, 69.6); browser mirato 69.0/69.1/69.2/69.5, 4 verdi, inclusi applicazione dal nuovo pulsante e Annulla. La 63 viene eseguita separatamente e il suo esito è in suite63-passo28-separata.log. Nessun commit o push.
+
+Prova 63 separata conclusa: 5 verdi, 0 rossi (suite63-passo28-separata.log). Vincoli ricontrollati: popup con tutte le 21 progressioni su Applica progressione; + inattivo senza scritture; nessuna funzione superserie introdotta.
+
+Autorizzazione di Alice, 11/11/2026 ore 23:31 Europe/Rome: «fai commit e push per favore», dopo il riepilogo degli esiti (357 verdi, quattro rossi già noti, 63 separata 5/5). Pubblicazione limitata al passo 28; nessuna scrittura sui dati reali o sovrascrittura delle schede.
