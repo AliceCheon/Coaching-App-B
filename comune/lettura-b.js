@@ -222,11 +222,14 @@ export function statoZonaB(letture) {
  * Lesclusioni sono gia' dentro la zona B: non servono letture da A nemmeno per
  * quelle. */
 export async function leggiZonaBCompleta(db, uid) {
-  const fotografia = await leggiFotografia(db, uid).catch(() => null);
-  const documentiProgrammi = await leggiZonaB(db, uid, SOTTO_B.programmi);
-  const documentiSchede = await leggiZonaB(db, uid, SOTTO_B.schede);
-  const documentiSedute = await leggiZonaB(db, uid, SOTTO_B.sedute);
-  const esclusioni = await leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => []);
+  // Passo 31: letture indipendenti in parallelo, stessi risultati e ripieghi.
+  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni] = await Promise.all([
+    leggiFotografia(db, uid).catch(() => null),
+    leggiZonaB(db, uid, SOTTO_B.programmi),
+    leggiZonaB(db, uid, SOTTO_B.schede),
+    leggiZonaB(db, uid, SOTTO_B.sedute),
+    leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => [])
+  ]);
 
   const p = programmiDaDocumenti(documentiProgrammi);
   const s = seduteDaDocumenti(documentiSedute);

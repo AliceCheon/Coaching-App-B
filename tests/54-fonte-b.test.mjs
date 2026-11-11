@@ -185,3 +185,48 @@ test("54.10 il modulo della zona B non scrive niente", () => {
     assert.equal(src.indexOf(vietato), -1, "scrittura vietata in lettura-b.js: " + vietato);
   });
 });
+
+/* Passo 31: promesse controllate, nessuna soglia temporale fragile. */
+function lettureControllate(errori = []) {
+  const avviate = [], pendenti = {};
+  const dati = zonaPiena();
+  const get = nome => { avviate.push(nome); return new Promise((risolvi, rifiuta) => {
+    pendenti[nome] = () => errori.includes(nome) ? rifiuta(new Error('errore-' + nome)) : risolvi(nome === 'fotografia'
+      ? { exists: true, data: () => dati.fotografia }
+      : { docs: (dati[nome] || []).map(d => ({ id: d.id, data: () => d.dati })) });
+  }); };
+  const db = { collection: nome => {
+    assert.equal(nome, 'bdB_atleti');
+    return { doc: () => ({ get: () => get('fotografia'), collection: sotto => ({ get: () => get(sotto) }) }) };
+  } };
+  return { db, avviate, pendenti };
+}
+test('54.11 tutte le cinque letture partono prima che una risponda, risultato identico', async () => {
+  const f = lettureControllate();
+  const promessa = leggiZonaBCompleta(f.db, 'uid-di-prova');
+  try {
+    assert.deepEqual(f.avviate, ['fotografia', 'programmi', 'schede', 'sedute', 'esclusioni']);
+    let conclusa = false; promessa.then(() => { conclusa = true; });
+    for (const nome of ['esclusioni', 'sedute', 'schede', 'programmi']) f.pendenti[nome]();
+    await Promise.resolve(); await Promise.resolve(); assert.equal(conclusa, false, 'aspetta anche la fotografia');
+    f.pendenti.fotografia();
+    const atteso = await leggiZonaBCompleta(fintoZonaB(zonaPiena()).db, 'uid-di-prova');
+    assert.deepEqual(await promessa, atteso, 'stesso oggetto restituito con risposte in ordine inverso');
+  } finally { Object.values(f.pendenti).forEach(r => r()); }
+});
+test('54.12 fotografia ed esclusioni restano facoltative anche se falliscono', async () => {
+  const f = lettureControllate(['fotografia', 'esclusioni']);
+  const promessa = leggiZonaBCompleta(f.db, 'uid-di-prova');
+  for (let i = 0; i < 8; i++) { Object.values(f.pendenti).forEach(r => r()); await new Promise(r => setImmediate(r)); }
+  const zona = await promessa;
+  assert.equal(zona.fotografia, null); assert.deepEqual(zona.esclusioni, []); assert.equal(zona.esito.completa, true);
+});
+for (const nome of ['programmi', 'schede', 'sedute']) {
+  test('54.13 errore obbligatorio propagato: ' + nome, async () => {
+    const f = lettureControllate([nome]);
+    const promessa = leggiZonaBCompleta(f.db, 'uid-di-prova');
+    const verifica = assert.rejects(promessa, new RegExp('errore-' + nome));
+    for (let i = 0; i < 8; i++) { Object.values(f.pendenti).forEach(r => r()); await new Promise(r => setImmediate(r)); }
+    await verifica;
+  });
+}
