@@ -725,6 +725,10 @@ function annullaProgressione(dati, v, quando, uid) {
     if (!righe.length) return { ok: false, motivo: "la voce del registro non dice quali righe annullare" };
     const nuove = elenco.slice();
     for (let k = 0; k < righe.length; k += 1) {
+      // Passo 32 B: nessuna identita valida, nessun ripristino parziale.
+      if (!testo(righe[k] && righe[k].idEsercizio)) {
+        return { ok: false, motivo: "ripristino non eseguito: manca un identificativo nella voce del registro (riga " + (k + 1) + "). Non ho ripristinato nessuna riga e non ho scritto niente" };
+      }
       const i = indicePerId(elenco, righe[k].idEsercizio);
       if (i < 0) { manca = String(righe[k].idEsercizio || ""); break; }
       if (coppieVuote(Array.isArray(righe[k].prima) ? righe[k].prima : [])) { manca = "SENZA-PRIMA"; break; }

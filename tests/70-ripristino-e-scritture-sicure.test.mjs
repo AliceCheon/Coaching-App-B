@@ -18,18 +18,20 @@ import assert from "node:assert/strict";
 
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { scriviVoceRegistro, senzaUndefined, leggiZonaB } from "../comune/scritture-b.js";
-import { applicaProgressione } from "../comune/modifiche-b.js";
+import { applicaProgressione, applicaProgressioneScheda } from "../comune/modifiche-b.js";
 import { PROG } from "../comune/progressioni-b.js";
 
 /* Un db finto con la superficie che l'editor usa, e le rotture richieste. */
 function dbFinto(opzioni) {
   const o = opzioni || {};
   const memoria = { schede: {}, registro: {} };
+  const scritture = [];
   /* La scheda e' gia' in B: senza il seme, l'editor rilegge e non la trova. */
   memoria.schede["program-v2-sheet-p1__A"] = JSON.parse(JSON.stringify(documento()));
   const pausa = () => new Promise(() => {});
   const db = {
     _memoria: memoria,
+    _scritture: scritture,
     collection: (nome) => {
       if (nome !== "bdB_atleti") throw new Error("fuori dalla zona B: " + nome);
       return {
@@ -40,6 +42,7 @@ function dbFinto(opzioni) {
                 ? { exists: true, data: () => JSON.parse(JSON.stringify(memoria[sotto][id])) }
                 : { exists: false, data: () => null }),
               set: async (dati) => {
+                scritture.push({ sotto, id });
                 if (sotto === "schede" && o.schedaCheNonRisponde) return pausa();
                 if (sotto === "registro" && o.registroCheNonRisponde) return pausa();
                 if (sotto === "registro" && o.registroRifiutato) throw new Error(o.motivoRegistro || "scrittura rifiutata");
@@ -60,8 +63,8 @@ function dbFinto(opzioni) {
 const sett = (n, sets, reps) => ({ week: n, sets, reps, rest: { seconds: 90 }, type: "normal", note: "", rir: "2", source: "coach" });
 const otto = (s, r) => [sett(1, s, r), sett(2, s, r), sett(3, s, r), sett(4, s, r), sett(5, s, r), sett(6, s, r), sett(7, s, r), sett(8, s, r)];
 
-/* Una scheda con un esercizio con id e uno SENZA (come i dati veri di Alice:
- * "Curl_bilanciere" non porta id). */
+/* Scheda sintetica con un esercizio con id e uno SENZA.
+ * Nel backup di Alice del 04/11/2026 il controllo del passo 32 trova zero righe senza id. */
 function documento() {
   return {
     id: "program-v2-sheet-p1__A",
@@ -192,4 +195,57 @@ test("70.7 l'annulla dopo la ricarica: un editor nuovo legge il registro dal dis
   assert.equal(esito.ok, true, esito.motivo || "l'annulla trova la voce anche dopo la ricarica");
   const scheda = db._memoria.schede["program-v2-sheet-p1__A"];
   assert.equal(JSON.stringify(scheda.sheet.exercises[0].progression.weeks), JSON.stringify(otto(4, "10")), "i valori di prima sono tornati");
+});
+
+/* Passo 32 B: banco sintetico, tutte le righe e tutte le otto settimane. */
+function schedaCompleta32() {
+  const d = documento();
+  d.sheet.exercises = Array.from({ length: 6 }, (_, i) => ({
+    id: "riga-" + i, name: "Esercizio di prova " + i,
+    progression: { weeks: Array.from({ length: 8 }, (_, k) => sett(k + 1, i + 2, String(k + 6))) }
+  }));
+  return d;
+}
+for (const modo of ["assente-prima", "assente-meta", "assente-ultima", "vuoto", "spazi", "null", "non-trovato", "senza-settimane"]) {
+  test("70.8 ripristino intero rifiutato senza scritture: " + modo, async () => {
+    const iniziale = schedaCompleta32();
+    const indice = modo === "assente-prima" ? 0 : modo === "assente-ultima" ? 5 : 3;
+    if (modo.startsWith("assente")) delete iniziale.sheet.exercises[indice].id;
+    if (modo === "vuoto") iniziale.sheet.exercises[indice].id = "";
+    if (modo === "spazi") iniziale.sheet.exercises[indice].id = "   ";
+    if (modo === "null") iniziale.sheet.exercises[indice].id = null;
+    const applicata = applicaProgressioneScheda(iniziale, { idScheda: "sh-A", progressione: "0" }, Q);
+    assert.equal(applicata.ok, true, applicata.motivo);
+    const db = dbFinto();
+    const sulDisco = JSON.parse(JSON.stringify(applicata.dati));
+    if (modo === "non-trovato") sulDisco.sheet.exercises[indice].id = "id-diverso";
+    if (modo === "senza-settimane") sulDisco.sheet.exercises[indice].progression = {};
+    db._memoria.schede["program-v2-sheet-p1__A"] = sulDisco;
+    await scriviVoceRegistro(db, "alice-prova", applicata.voce.idVoce, applicata.voce);
+    const prima = JSON.parse(JSON.stringify(db._memoria));
+    const quante = db._scritture.length;
+    const editor = creaEditorSchede({ db, uid: "alice-prova", documenti: [{ id: "program-v2-sheet-p1__A", dati: sulDisco }], fotografia: {} });
+    const esito = await editor.annullaVoce(applicata.voce.idVoce);
+    /* Prima tutte le righe/settimane: intercetta il salvataggio parziale. */
+    assert.deepEqual(db._memoria.schede, prima.schede, "nessuna riga o settimana deve cambiare sul rifiuto");
+    assert.deepEqual(db._memoria.registro, prima.registro, "nessuna voce di falso successo");
+    assert.equal(db._scritture.length, quante, "zero tentativi di scrittura, scheda e registro");
+    assert.equal(esito.ok, false, "mai dichiarare un ripristino parziale riuscito");
+    assert.equal(esito.dati, undefined);
+    assert.match(esito.motivo, /non.*ripristinat|non ho scritto niente/);
+    if (["assente-prima", "assente-meta", "assente-ultima", "vuoto", "spazi", "null"].includes(modo)) assert.match(esito.motivo, /identificativo/);
+  });
+}
+test("70.9 con identificativi validi ripristina tutte le righe e tutte le settimane dopo rilettura", async () => {
+  const iniziale = schedaCompleta32();
+  const applicata = applicaProgressioneScheda(iniziale, { idScheda: "sh-A", progressione: "0" }, Q);
+  assert.equal(applicata.ok, true);
+  const db = dbFinto();
+  db._memoria.schede["program-v2-sheet-p1__A"] = applicata.dati;
+  await scriviVoceRegistro(db, "alice-prova", applicata.voce.idVoce, applicata.voce);
+  const editor = creaEditorSchede({ db, uid: "alice-prova", documenti: [{ id: "program-v2-sheet-p1__A", dati: applicata.dati }], fotografia: {} });
+  const esito = await editor.annullaVoce(applicata.voce.idVoce);
+  assert.equal(esito.ok, true, esito.motivo);
+  const rilette = await leggiZonaB(db, "alice-prova", "schede");
+  assert.deepEqual(rilette[0].dati.sheet.exercises, iniziale.sheet.exercises, "tutte le sei righe con tutte le otto settimane e gli altri campi");
 });
