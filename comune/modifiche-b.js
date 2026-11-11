@@ -209,17 +209,22 @@ export function cambiaSerieRipetizioni(dati, richiesta, opzioni) {
   const grezze = posto.chiave === "weeks" ? posto.oggetto.weeks : posto.oggetto[posto.chiave];
   const normalizzate = prescrizione(esercizio).elencoSettimane;
   const prima = k < normalizzate.length ? testo(normalizzate[k][campo]) : "";
-  const dopo = testo(r.valore).replace(/\s+/g, "");
+  const dopo = testo(r.valore).replace(/\s+/g, " ");
 
-  if (dopo === prima.replace(/\s+/g, "")) return { ok: false, motivo: "il valore non e' cambiato" };
+  if (dopo === prima.replace(/\s+/g, " ")) return { ok: false, motivo: "il valore non e' cambiato" };
 
   if (campo === "serie") {
     if (dopo !== "") {
       const n = intero(dopo);
       if (n == null || n < 1 || n > 99) return { ok: false, motivo: "le serie si scrivono con un numero da 1 a 99" };
     }
-  } else if (dopo !== "" && !/^\d{1,3}([-\u2013/]\d{1,3})?$/.test(dopo)) {
-    return { ok: false, motivo: "le ripetizioni si scrivono come 8 oppure 8-10" };
+  } else if (dopo !== "") {
+    /* Passo 25: le ripetizioni sono un TESTO, non un numero. "10-x",
+     * "10-8-x", "Test 12rm, poi 1x8" sono valori veri e gia' presenti nelle
+     * schede: vanno accettati come li scrive Alice. Si rifiuta solo cio' che
+     * romperebbe la riga (testo troppo lungo, a capo o caratteri di controllo). */
+    if (dopo.length > 40) return { ok: false, motivo: "le ripetizioni stanno in 40 caratteri: per esempio 8, 8-10, 10-x-x" };
+    if (/[\u0000-\u001f\u007f]/.test(dopo)) return { ok: false, motivo: "le ripetizioni si scrivono su una riga sola" };
   }
 
   const nuoveSettimane = grezze.map((w) => (w && typeof w === "object" ? Object.assign({}, w) : {}));

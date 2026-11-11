@@ -598,3 +598,51 @@ devDependencies (installato senza browser scaricati: usa il Chrome di sistema).
 ### Nota al push (11/11/2026)
 
 Spinto main su GitHub. Verdi: 69.0-69.2, 69.5, 69.6 (cella a mano, verde quando corre da sola), 70.1-70.7, 71.1-71.6, 72.1-72.3. Rossi: 69.3 (timeout del TEST sulla voce Range 8-10 -> 8-8 nel pannello di scheda; nessun difetto della pagina dimostrato) e 69.4 (ripristino dopo ricarica, da verificare). Dettagli in suite69.log alla radice del repo.
+
+
+## Passo 25 — le ripetizioni sono un testo (11/11/2026)
+
+**Il sintomo (Alice, sul sito).** Rimettere la progressione vera di «Pendulum focus
+glutei» era impossibile: appena si toccava una cella delle ripetizioni l'app
+rispondeva «les ripetizioni si scrivono come 8 oppure 8-10». Ma `10-x`,
+`10-8-x`, `10-x-x`, `Test 12rm, poi 1x8` sono i valori VERI delle schede di Alice:
+negli altri esercizi ci sono già e la pagina li mostra senza dire niente. Il
+controllo era più stretto dei dati che l'app stessa contiene, e bloccava proprio
+la riparazione del caso Pendulum.
+
+**La causa, due difetti.**
+1. `comune/modifiche-b.js`, `cambiaSerieRipetizioni`: le ripetizioni erano
+   validate con `/^\d{1,3}([-\u2013/]\d{1,3})?$/` — solo `8` e `8-10`. Tutto
+   il resto veniva rifiutato.
+2. Sempre lì, il valore digitato passava per `.replace(/\s+/g, "")`: gli spazi
+   sparivano, quindi `Test 12rm, poi 1x8` sarebbe stato scritto `Test12rm,poi1x8`.
+   Fino a oggi non si vedeva solo perché il controllo del punto 1 rifiutava prima.
+
+**La correzione.** Le ripetizioni sono un TESTO, come sono nei dati: si accetta
+quello che Alice scrive, con gli spazi normalizzati a uno solo, fino a 40
+caratteri; si rifiuta solo ciò che romperebbe la riga (testo troppo lungo,
+caratteri di controllo; un a capo diventa uno spazio). Le serie restano
+numeriche da 1 a 99, e il resto della scheda non si tocca. Nessun cambio di CSS
+e nessun cambio della forma dei dati: `reps` era già e resta una stringa.
+
+**Le prove.** `tests/73-ripetizioni-testo-libero.test.mjs`, quattro prove verdi:
+73.1 `10-x` passa e arriva nel documento con la voce del registro; 73.2 la
+progressione vera di Pendulum, settimana per settimana, riporta il documento
+ESATTAMENTE a quella dettata da Alice (S1 `1 · Test 12rm, poi 1x8`, S2 `2 · 10-x`,
+S3 `3 · 10-8-x`, S4 `2 · 10`, S5 `2 · 10-x`, S6 `3 · 10-x-x`, S7 `3 · 10-8-x`,
+S8 `2 · 10`), spazi compresi; 73.3 i testi veri passano, il troppo lungo e i
+caratteri di controllo no; 73.4 `tre` nelle serie viene ancora rifiutato.
+
+**Stato della suite a fine passo (suite.log).** 352 verdi, 4 rossi:
+- 64.4 — «la scrittura rifiutata ha ridisegnato la pagina»: ROSSA ANCHE SENZA
+  questa correzione (verificato mettendo da parte `comune/modifiche-b.js` e
+  rilanciando la 64). È l'aspettativa vecchia contro la rilettura forzata dopo un
+  rifiuto, voluta nel passo 23: la prova va riallineata, non l'app.
+- 69.3 e 69.4 — già note dal passo 24 (la voce `.prog-item` di scheda e il
+  ripristino dopo ricarica).
+- 69.6 — cade per la scia della 69.3 nello stesso browser (la cella non è
+  visibile quando la pagina resta col pannello aperto): da riverificare a 69.3
+  chiusa, non un difetto nuovo.
+
+Nessun commit e nessun push in questo passo: il lavoro è pronto sul disco e
+aspetta la parola di Alice.
