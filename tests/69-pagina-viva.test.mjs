@@ -218,106 +218,135 @@ test("69.2 Applica progressione di una riga scrive le 8 settimane e la pagina si
   assert.ok(dopo.sheet.exercises[0].progression.weeks.every((w) => String(w.reps) === "10"), "l'Annulla riporta le 8 settimane di prima");
 });
 
-test("69.3 tutta la scheda: una voce sola, tutte le righe, pagina ridisegnata", async () => {
-  await page.locator("button", { hasText: "Applica progressione a tutta la scheda" }).first().click();
-  try {
-    await page.waitForSelector(".prog-panel .prog-item", { state: "visible", timeout: 8000 });
-  } catch (e) {
-    const dove = await page.evaluate(() => ({
-      pannelli: [].map.call(document.querySelectorAll(".prog-panel"), (p) => ({
-        nascosto: p.hidden, display: getComputedStyle(p).display, delV31: p.hasAttribute("data-progp"),
-        box: Math.round(p.getBoundingClientRect().width) + "x" + Math.round(p.getBoundingClientRect().height),
-        item: p.querySelectorAll(".prog-item").length
-      })),
-      fuori: Boolean(document.__progFuori),
-      nascosti: (window.__nascondimenti || []).slice(-6),
-      scroll: (window.__scrolls || []).slice(-8)
-    }));
-    assert.fail("il pannello della scheda non ha voci visibili: " + JSON.stringify(dove) + " \u00b7 errori: " + errori.concat(erroriConsole).join(" | "));
+/* Passo 33: attese dal banco Node: null e false non sono risultati conclusivi. */
+async function aspetta69(leggi, pronta, cosa) {
+  const fine = Date.now() + 20000;
+  let ultimo;
+  while (Date.now() < fine) {
+    ultimo = await leggi();
+    if (pronta(ultimo)) return ultimo;
+    await new Promise(r => setTimeout(r, 60));
   }
-  /* Le voci di scheda hanno effetti diversi sui valori di prova: qualcuna
-   * legittimamente non cambia niente (e il rifiuto e' giusto). Si cerca la
-   * voce che SCRIVE: una alla volta, con attesa corta fra una e l'altra. */
-  const nomiVoci = await page.evaluate(() => [].map.call(
-    document.querySelectorAll(".prog-panel:not([data-progp]) .prog-item"),
-    (b) => b.querySelector("b").textContent));
-  let voce = null;
-  for (const nomeVoce of nomiVoci) {
-    const primaQuante = await page.evaluate(async () => {
-      const db = window.firebase.app("B").firestore();
-      const s = await db.collection("bdB_atleti").doc("alice-prova").collection("registro").get();
-      return s.docs.filter((d) => d.data().tipo === "modifica-progressione-scheda").length;
-    });
-    await page.locator(".prog-panel:not([data-progp]) .prog-item").filter({ hasText: nomeVoce }).first().click();
-    const trovata = await page.waitForFunction((gia) => {
-      const db = window.firebase.app("B").firestore();
-      return db.collection("bdB_atleti").doc("alice-prova").collection("registro")
-        .get().then((s) => {
-          const quante = s.docs.filter((d) => d.data().tipo === "modifica-progressione-scheda").length;
-          return quante > gia ? s.docs.map((d) => d.data()).filter((v) => v.tipo === "modifica-progressione-scheda").pop() : null;
-        });
-    }, primaQuante, { timeout: 6000 }).then((presa) => presa.jsonValue()).catch(() => null);
-    if (trovata && Array.isArray(trovata.righe) && trovata.righe.length === 6) { voce = trovata; break; }
+  assert.fail("attesa scaduta: " + cosa + " · " + JSON.stringify(ultimo));
+}
+async function registro69() {
+  return page.evaluate(async () => {
+    const db = window.firebase.app("B").firestore();
+    return (await db.collection("bdB_atleti").doc("alice-prova").collection("registro").get()).docs.map(d => d.data());
+  });
+}
+async function stabile69(minimo = 0) {
+  let precedente = "", uguali = 0;
+  await aspetta69(() => page.evaluate(() => ({
+    inVolo: window.__zonaB.inVolo(), ridisegni: window.BD_B_STATO.ridisegni,
+    testo: document.querySelector("#programma-attivo")?.textContent || ""
+  })), x => {
+    const firma = JSON.stringify([x.ridisegni, x.testo]);
+    uguali = x.inVolo === 0 && x.ridisegni >= minimo && firma === precedente ? uguali + 1 : 0;
+    precedente = firma;
+    return uguali >= 4;
+  }, "aggiornamento concluso e tabella stabile");
+}
+async function apriProgramma69() {
+  await page.locator(".voce[data-vista=programma-1]").first().click();
+  await page.waitForSelector("#programma-attivo .p8-tab", { state: "visible", timeout: 20000 });
+  await stabile69();
+}
+async function applicaScheda69(nome) {
+  await stabile69();
+  const prima = await registro69();
+  const ridisegni = await page.evaluate(() => window.BD_B_STATO.ridisegni);
+  // Ogni scelta chiude il menu: va riaperto anche per la scelta successiva.
+  const apri = page.locator("button", { hasText: "Applica progressione a tutta la scheda" }).first();
+  await apri.scrollIntoViewIfNeeded();
+  await stabile69();
+  await apri.click();
+  // Clic DOM sul menu: evita lo scroll automatico Playwright che lo chiude.
+  await page.locator(".prog-panel:not([data-progp]) .prog-item").filter({ hasText: nome }).first().evaluate(b => {
+    if (!b.isConnected || b.closest(".prog-panel").hidden) throw Error("voce non disponibile");
+    b.click();
+  });
+  const nuove = await aspetta69(registro69, v => v.some(x => x.tipo === "modifica-progressione-scheda" && !prima.some(p => p.idVoce === x.idVoce)), "nuova voce reale della progressione");
+  const aggiunte = nuove.filter(x => !prima.some(p => p.idVoce === x.idVoce));
+  assert.equal(aggiunte.length, 1, "una sola voce per scelta");
+  await stabile69(ridisegni + 1);
+  assert.equal(await page.locator(".prog-panel:not([data-progp])").count(), 0);
+  assert.match(await page.textContent("#modifica-stato"), /applicata alle 8 settimane/);
+  return aggiunte[0];
+}
+
+test("69.3 tutta la scheda: registro vero e aggiornamento finito prima della scelta successiva", async () => {
+  await apriProgramma69();
+  for (const nome of ["Forza neurale", "Range 8-10 → 8-8"]) {
+    const prima = await documentoScheda(page);
+    const voce = await applicaScheda69(nome);
+    const dopo = await documentoScheda(page);
+    const vivePrima = prima.sheet.exercises.filter(e => !e.deletedAt);
+    const viveDopo = dopo.sheet.exercises.filter(e => !e.deletedAt);
+    assert.equal(voce.righe.length, vivePrima.length);
+    for (let i = 0; i < vivePrima.length; i++) {
+      assert.equal(voce.righe[i].esercizio, vivePrima[i].name);
+      // Il registro su disco contiene gli involucri Firestore: lettura tramite decoder reale.
+    }
+    const decodificata = await page.evaluate(async id => {
+      const { leggiZonaB } = await import("/comune/scritture-b.js");
+      return (await leggiZonaB(window.firebase.app("B").firestore(), "alice-prova", "registro")).find(d => d.dati.idVoce === id).dati;
+    }, voce.idVoce);
+    assert.deepEqual(decodificata.righe.map(r => r.prima), vivePrima.map(e => e.progression.weeks.map(w => [String(w.sets), String(w.reps)])));
+    assert.deepEqual(decodificata.righe.map(r => r.dopo), viveDopo.map(e => e.progression.weeks.map(w => [String(w.sets), String(w.reps)])));
   }
-  if (!voce) {
-    const diagnosi = await page.evaluate(async () => {
-      const db = window.firebase.app("B").firestore();
-      const s = await db.collection("bdB_atleti").doc("alice-prova").collection("registro").get();
-      return { voci: s.docs.map((d) => d.data().tipo), stato: (document.getElementById("modifica-stato") || {}).textContent || "" };
-    });
-    assert.fail("nessuna voce di scheda ha scritto: " + JSON.stringify(diagnosi) + " \u00b7 errori: " + errori.concat(erroriConsole).join(" | "));
-  }
-  assert.ok(Array.isArray(voce.righe) && voce.righe.length === 6, "tutte le righe vive della scheda sono nella voce");
-  await page.waitForFunction(() => {
-    const s = document.getElementById("modifica-stato");
-    return s && s.textContent.indexOf("applicata alle 8 settimane") !== -1;
-  }, null, { timeout: 10000 });
-  const stato = await page.textContent("#modifica-stato");
-  assert.match(stato, /applicata alle 8 settimane/);
-  assert.equal(await page.locator(".prog-panel:not([data-progp])").count(), 0, "il pannello di B si chiude (i pannelli del v31 restano nel documento)");
 });
 
-test("69.4 dopo la ricarica, ?ripristina= trova la voce sul disco e ripristina", async () => {
-  await page.goto(base + "/desktop/index.html?ripristina=");
-  await page.waitForSelector("#pannello-ripristino", { timeout: 20000 });
-  const titolo = await page.textContent("#pannello-ripristino");
-  assert.match(titolo, /Ripristino dai valori di prima/);
-  const quanteVoci = await page.evaluate(() => document.querySelectorAll("#pannello-ripristino button").length);
-  assert.ok(quanteVoci >= 2, "nel pannello del ripristino mancano i bottoni (bottoni: " + quanteVoci + "): " + titolo.slice(0, 300));
-  await page.locator("#pannello-ripristino button", { hasText: "Ripristina i valori di prima" }).first().click();
-  await page.waitForFunction(async () => {
-    const db = window.firebase.app("B").firestore();
-    const d = await db.collection("bdB_atleti").doc("alice-prova").collection("schede")
-      .doc("program-v2-sheet-prg-intensita__sh-A").get();
-    return d.data().sheet.exercises[0].progression.weeks.every((w) => String(w.reps) === "10");
-  }, null, { timeout: 20000 }).catch(() => {});
-  const doc = await documentoScheda(page);
-  assert.ok(doc.sheet.exercises[0].progression.weeks.every((w) => String(w.reps) === "10"), "il ripristino riporta le 8 settimane di prima");
-  await page.waitForFunction(() => {
-    const db = window.firebase.app("B").firestore();
-    return db.collection("bdB_atleti").doc("alice-prova").collection("registro")
-      .get().then((s) => s.docs.some((d) => d.data().tipo === "annulla-modifica" && d.data().annullaDi));
-  }, null, { timeout: 15000 });
-  assert.equal(await page.locator("#pannello-ripristino").count(), 0, "il pannello si chiude dopo il ripristino");
+test("69.4 dopo ricarica: tutte le righe e settimane ripristinate con ID, nessuna scrittura senza ID", async () => {
+  for (const validi of [true, false]) {
+    await page.close();
+    // newPage crea un contesto isolato: niente registro o localStorage del caso precedente.
+    page = await browser.newPage();
+    page.on("pageerror", e => errori.push(String(e.message || e)));
+    await page.route(/gstatic[.]com/, r => r.abort());
+    const finto = await readFile(join(radice, "tests", "finti", "zona-b-finta-browser.js"), "utf8");
+    // Un solo script: ordine deterministico prima dei moduli applicativi.
+    await page.addInitScript({ content: finto + (validi ? ";window.__zonaB.dati.schede[0].dati.sheet.exercises[4].id = 6904;" : "") });
+    await page.goto(base + "/desktop/index.html");
+    await page.waitForSelector(".p8-tab", { state: "attached" });
+    await apriProgramma69();
+    const iniziale = await documentoScheda(page);
+    const voce = await applicaScheda69("Forza neurale");
+    const applicata = await documentoScheda(page);
+    const registroPrima = await registro69();
+    await page.goto(base + "/desktop/index.html?ripristina=" + encodeURIComponent(voce.idVoce), { waitUntil: "domcontentloaded", timeout: 20000 });
+    await page.waitForSelector("#pannello-ripristino", { state: "visible", timeout: 20000 });
+    await stabile69();
+    assert.match(await page.textContent("#pannello-ripristino"), /Ripristino dai valori di prima/);
+    await page.locator("#pannello-ripristino button", { hasText: "Ripristina i valori di prima" }).click();
+    if (validi) {
+      const registro = await aspetta69(registro69, v => v.some(x => x.tipo === "annulla-modifica" && x.annullaDi === voce.idVoce), "voce di ripristino concluso");
+      await page.waitForSelector("#pannello-ripristino", { state: "detached" });
+      await stabile69(2);
+      const dopo = await documentoScheda(page);
+      assert.deepEqual(dopo.sheet.exercises, iniziale.sheet.exercises, "tutte le righe e tutte le otto settimane, inclusi gli altri campi");
+      assert.equal(dopo.versione, applicata.versione + 1);
+      assert.equal(registro.filter(x => x.annullaDi === voce.idVoce).length, 1);
+    } else {
+      await aspetta69(() => page.textContent("#pannello-ripristino"), t => t.includes("Non ho ripristinato nessuna riga e non ho scritto niente"), "rifiuto esplicito senza ID");
+      await stabile69();
+      assert.deepEqual(await documentoScheda(page), applicata, "nessuna riga/settimana o versione modificata");
+      assert.deepEqual(await registro69(), registroPrima, "nessuna voce di falso successo");
+      await page.locator("#pannello-ripristino button", { hasText: "Chiudi", exact: true }).click();
+    }
+  }
 });
 
 test("69.6 la cella a mano (serie) salva e la voce dice serie", async () => {
+  await apriProgramma69();
   const cella = page.locator(".p8-r").first().locator('span[data-campo="serie"], span[data-campo="ripetizioni"]').first();
   await cella.scrollIntoViewIfNeeded();
   await cella.click({ clickCount: 3, timeout: 8000 });
   await page.keyboard.type("5");
   const digitato = (await cella.textContent()).trim();
   await page.keyboard.press("Enter");
-  await page.waitForFunction(() => {
-    const db = window.firebase.app("B").firestore();
-    return db.collection("bdB_atleti").doc("alice-prova").collection("registro")
-      .get().then((s) => s.docs.some((d) => d.data().tipo === "modifica-serie-ripetizioni"));
-  }, null, { timeout: 15000 });
-  const voce = await page.evaluate(async () => {
-    const db = window.firebase.app("B").firestore();
-    const s = await db.collection("bdB_atleti").doc("alice-prova").collection("registro").get();
-    return s.docs.map((d) => d.data()).filter((v) => v.tipo === "modifica-serie-ripetizioni").pop() || null;
-  });
+  const registro = await aspetta69(registro69, v => v.some(x => x.tipo === "modifica-serie-ripetizioni"), "registro della modifica manuale concluso");
+  const voce = registro.filter(v => v.tipo === "modifica-serie-ripetizioni").pop();
   await page.waitForFunction((attesoValore) => {
     const db = window.firebase.app("B").firestore();
     return db.collection("bdB_atleti").doc("alice-prova").collection("schede")

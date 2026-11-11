@@ -535,7 +535,15 @@ export async function avvia(doc, win) {
                * DAVVERO (prima il commento lo diceva e il codice tornava senza
                * rileggere: cosi' il rifiuto per versione taceva in eterno). */
               return sincronizza(utente, { forza: true, motivo: "scrittura rifiutata" })
-                .then(() => ({ ok: false, motivo: esito.motivo || "non ho scritto niente" }));
+                .then(() => {
+                  const programma = doc.querySelector("#programma-attivo");
+                  if (rigaStato && programma && programma.parentNode) {
+                    programma.parentNode.insertBefore(rigaStato, programma);
+                    segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+                    if (typeof rigaStato.scrollIntoView === "function") rigaStato.scrollIntoView({ block: "start" });
+                  }
+                  return { ok: false, motivo: esito.motivo || "non ho scritto niente" };
+                });
             }
             /* Passo 16 — il dato appena scritto e' gia' nella cella: non si
              * rilegge e non si ridisegna da zero. Se un controllo era stato

@@ -12,8 +12,8 @@
  *  64.2 la frase lunga non fa fallire la scrittura: il limite e' del VALORE;
  *  64.3 si scrive nel campo che si legge (anche `cadenza`), e il valore resta
  *       dopo la rilettura;
- *  64.4 sul rifiuto la pagina NON si ridisegna e il motivo si legge sotto la
- *       cella;
+ *  64.4 sul conflitto si rilegge e ridisegna, senza scrivere il valore
+ *       rifiutato; il motivo resta visibile sopra Programma, non in cella;
  *  64.5 la cella contiene solo il valore, ed e' vuota se il valore non c'e';
  *  64.6 uscire da una cella non cambiata non scrive niente.
  */
@@ -151,7 +151,9 @@ test("64.6 uscire da una cella non cambiata non scrive niente", async () => {
   assert.equal(spanTut().textContent, "2-0-1", "la cella ha cambiato testo: " + spanTut().textContent);
 });
 
-test("64.4 un cambio vero si salva, resta in cella e non ridisegna; il rifiuto non ridisegna", async () => {
+test("64.4 il conflitto non scrive, rilegge e ridisegna con messaggio visibile sopra Programma", async () => {
+  // JSDOM outside-only non esegue la navigazione incorporata: apre la vista tramite la classe reale.
+  doc.querySelector("#pag-programma-1").classList.add("on");
   const prima = ridisegni();
   const s = spanTut();
   s.dispatchEvent(new dom.window.FocusEvent("focus"));
@@ -171,6 +173,9 @@ test("64.4 un cambio vero si salva, resta in cella e non ridisegna; il rifiuto n
   await zona.db.collection("bdB_atleti").doc("alice-prova").collection("schede").doc(ID_SCHEDA_DOC).set(dietro);
 
   const dopoRifiuto = ridisegni();
+  const scritturePrima = zona.registri.scritture.length;
+  const letturePrima = zona.registri.letture.length;
+  const registroPrima = zona.elencoDi("registro");
   const s2 = spanTut();
   s2.dispatchEvent(new dom.window.FocusEvent("focus"));
   s2.textContent = "4-0-2";
@@ -179,9 +184,28 @@ test("64.4 un cambio vero si salva, resta in cella e non ridisegna; il rifiuto n
   await codaSvuota();
   await new Promise((r) => setTimeout(r, 150));
 
-  assert.equal(ridisegni(), dopoRifiuto, "la scrittura rifiutata ha ridisegnato la pagina");
-  assert.equal(separaTempo(esDisco(0).tempo).valore, "3-1-1", "il rifiuto ha scritto lo stesso: " + esDisco(0).tempo);
-  const errore = riga().querySelector("td.c-tut .errore-cella");
-  assert.ok(errore, "il motivo del rifiuto non si legge sotto la cella");
-  assert.ok(String(errore.textContent).length > 5, "l'errore sotto la cella e' vuoto");
+  assert.ok(ridisegni() > dopoRifiuto, "il conflitto non ha ridisegnato la pagina");
+  assert.ok(zona.registri.letture.slice(letturePrima).includes("schede"), "manca la rilettura delle schede dopo il conflitto");
+  assert.equal(s2.isConnected, false, "la cella precedente non e stata sostituita");
+  assert.deepEqual(schedaDisco(), dietro, "il tentativo rifiutato ha cambiato la scheda o la versione 99");
+  assert.equal(zona.registri.scritture.length, scritturePrima, "il conflitto ha eseguito una scrittura");
+  assert.deepEqual(zona.elencoDi("registro"), registroPrima, "il conflitto ha cambiato il registro");
+  assert.equal(spanTut().textContent, "3-1-1", "la cella ridisegnata mostra il valore rifiutato");
+  const programma = doc.querySelector("#programma-attivo");
+  const errore = doc.querySelector("#modifica-stato");
+  assert.ok(errore && errore.isConnected, "manca il messaggio dopo il ridisegno");
+  assert.equal(errore.hidden, false, "il messaggio superiore e nascosto");
+  assert.equal(errore.getAttribute("data-tono"), "errore");
+  assert.match(errore.textContent, /la scheda e. cambiata nel frattempo/);
+  assert.match(errore.textContent, /versione 99 invece di 2/);
+  assert.match(errore.textContent, /non ho scritto niente/);
+  assert.equal(errore.nextElementSibling, programma, "il messaggio non e sopra Programma");
+  for (let n = errore; n; n = n.parentElement) {
+    assert.equal(n.hidden, false, "un antenato nasconde il messaggio");
+    const stile = dom.window.getComputedStyle(n);
+    assert.notEqual(stile.display, "none", "nodo nascosto: " + n.tagName + "#" + n.id + "." + n.className);
+    assert.notEqual(stile.visibility, "hidden");
+  }
+  assert.equal(programma.querySelector(".errore-cella"), null, "il rifiuto compare sotto la cella");
+  console.log("64.4 osservato: " + errore.textContent + "; messaggio sopra Programma, cella 3-1-1, versione 99, nessuna scrittura");
 });
