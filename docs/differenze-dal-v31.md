@@ -659,3 +659,20 @@ Prova 74 sulla pagina vera con Firestore finto: + apre, rotella interna sposta s
 Verifica finale: suite tranne 63, 354 verdi e 4 rossi (64.4, 69.3, 69.4, 69.6, gli stessi quattro segnalati nel passo 25). La nuova 74 passa sia nella suite completa sia isolata: scrollTop 0 -> 151, pannello visibile, touchmove non annullato, clic fuori chiude. Non si dichiara la suite tutta verde. Il commit e richiesto esplicitamente da Alice; nessun push.
 
 Prova 63 eseguita separatamente dopo la suite finale: 5 verdi, 0 rossi. Guardia 42 verificata con git diff --exit-code su desktop/index.html; nessun Map/Set aggiunto.
+
+
+## Passo 27 — registro progressioni compatibile con Firestore (11/11/2026)
+
+Alice segnala Nested arrays are not supported nel registro dopo la scelta di Intensità: test 12rm + ondata 10-x. La causa riprodotta è prima/dopo come array di coppie: Firestore rifiuta array direttamente dentro array. Il finto browser finora rifiutava undefined ma accettava erroneamente questa struttura.
+
+In comune/scritture-b.js, SOLO al confine di scrittura del registro gli array interni sono avvolti in mappe con marcatore __bdRegistroArrayV1; leggiZonaB li decodifica SOLO per registro. Le coppie usate da Annulla e la forma dei documenti scheda restano intatte. Le vecchie voci sono ancora leggibili. Nessun cambio di CSS o desktop/index.html, nessun Map/Set aggiunto. Il finto browser ora rifiuta gli array annidati come il servizio vero. La 70.1 verifica il registro riletto, non impone il formato vietato sul disco.
+
+Nuova prova 75: il finto rifiuta gli array annidati; intensity-test12-wave scrive otto settimane, lascia intatto l’altro esercizio, salva il registro senza avvisi; dopo una nuova lettura Annulla ripristina le settimane di prima e scrive la propria voce. Si provano anche coppie dentro righe, undefined e voci precedenti. Senza la correzione 75.2 e 75.3 falliscono con Nested arrays are not supported; con la correzione le 13 prove 70/72/75 passano. Le verifiche usano dati finti: nessun accesso o ripristino dei dati reali di Alice è stato eseguito.
+
+Nota diagnostica: il codice salva la scheda prima di scrivere il registro. Quell’errore, da solo, NON dimostra che la scheda non sia stata scritta; l’esito sui dati veri resta da controllare nella sessione autenticata. Nessuna promessa di applicazione avvenuta sul sito. Nessun commit o push richiesto in questo passo.
+
+Esiti conclusivi: suite tranne 63, 357 verdi e 4 rossi (64.4, 69.3, 69.4, 69.6, gli stessi segnalati prima). Prova 63 separata: 5 verdi, 0 rossi. Lo scroll della 74 resta verificato anche nella suite. Nessun push.
+
+Controllo browser aggiuntivo: 69.0/69.1/69.2/69.5, nella sequenza originale, 4 verdi: apertura, applicazione dal +, Annulla e assenza errori. La 69.2 isolata saltando 69.1 fallisce sulla verifica finale di Annulla: resta una dipendenza della prova dalla sequenza, non dichiarata risolta.
+
+Autorizzazione di Alice, 11/11/2026 ore 16:03: pubblicare solo la correzione per azioni e modifiche future. La scheda è già stata corretta da Alice: NON sovrascrivere. Nessuna migrazione, riparazione retroattiva o scrittura nel database viene eseguita dalla pubblicazione; il codice interviene solo quando viene richiesta una nuova azione.

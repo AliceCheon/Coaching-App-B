@@ -50,7 +50,7 @@
    * cosi' le prove lo trovano prima di Alice. */
   var sguarda = function (v, dove) {
     if (v === undefined) throw new Error("Firestore vero rifiuta " + dove + ": valore undefined");
-    if (Array.isArray(v)) { for (var i = 0; i < v.length; i += 1) sguarda(v[i], dove); return; }
+    if (Array.isArray(v)) { for (var i = 0; i < v.length; i += 1) { if (Array.isArray(v[i])) throw new Error("Nested arrays are not supported: " + dove); sguarda(v[i], dove); } return; }
     if (v && typeof v === "object") { for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) sguarda(v[k], dove + "." + k); } }
   };
   var scaffale = {};

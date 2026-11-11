@@ -17,7 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
-import { scriviVoceRegistro, senzaUndefined } from "../comune/scritture-b.js";
+import { scriviVoceRegistro, senzaUndefined, leggiZonaB } from "../comune/scritture-b.js";
 import { applicaProgressione } from "../comune/modifiche-b.js";
 import { PROG } from "../comune/progressioni-b.js";
 
@@ -107,7 +107,7 @@ test("70.1 una voce con campi undefined arriva su Firestore come null", async ()
   const db = dbFinto();
   const voce = { idVoce: "mod-prova", tipo: "modifica-progressione", scheda: "sh-A", prima: [["4", "10"], [undefined, "10"]] };
   await scriviVoceRegistro(db, "alice-prova", voce.idVoce, voce);
-  const salvata = db._memoria.registro["mod-prova"];
+  const salvata = (await leggiZonaB(db, "alice-prova", "registro"))[0].dati;
   assert.equal(salvata.prima[1][0], null, "l'undefined e' diventato null");
   assert.equal(salvata.prima[0][0], "4", "il resto non si tocca");
   const pulita = senzaUndefined({ a: undefined, b: [1, undefined, 2] });

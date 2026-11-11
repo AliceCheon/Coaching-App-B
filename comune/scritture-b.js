@@ -47,6 +47,38 @@ export function senzaUndefined(valore) {
   return valore;
 }
 
+/* Passo 27: Firestore non accetta un array come elemento di un array.
+ * Solo sul confine del REGISTRO avvolgiamo gli array interni in una mappa.
+ * I documenti scheda e il formato usato da applicazione/Annulla non cambiano.
+ * La lettura riconosce esclusivamente la mappa con questa singola chiave;
+ * le voci precedenti, prive del marcatore, restano leggibili. */
+export function preparaRegistro(valore, dentroArray) {
+  if (Array.isArray(valore)) {
+    const elementi = valore.map((v) => preparaRegistro(v, true));
+    return dentroArray ? { __bdRegistroArrayV1: elementi } : elementi;
+  }
+  if (valore && typeof valore === "object") {
+    const out = {};
+    Object.keys(valore).forEach((k) => { out[k] = preparaRegistro(valore[k], false); });
+    return out;
+  }
+  return valore === undefined ? null : valore;
+}
+
+export function ripristinaRegistro(valore) {
+  if (Array.isArray(valore)) return valore.map(ripristinaRegistro);
+  if (valore && typeof valore === "object") {
+    const chiavi = Object.keys(valore);
+    if (chiavi.length === 1 && chiavi[0] === "__bdRegistroArrayV1" && Array.isArray(valore.__bdRegistroArrayV1)) {
+      return valore.__bdRegistroArrayV1.map(ripristinaRegistro);
+    }
+    const out = {};
+    chiavi.forEach((k) => { out[k] = ripristinaRegistro(valore[k]); });
+    return out;
+  }
+  return valore;
+}
+
 /* Radice della zona B: `bdB_atleti/{uid}`. */
 export function radiceB(db, uid) {
   if (!db || typeof db.collection !== "function") throw new ErroreZonaNonAmmessa("db mancante");
@@ -82,7 +114,7 @@ export function copiaSeduta(db, uid, id, dati) {
 }
 
 export function scriviVoceRegistro(db, uid, id, dati) {
-  return riferimentoB(db, uid, SOTTO_B.registro, id).set(senzaUndefined(dati || {}));
+  return riferimentoB(db, uid, SOTTO_B.registro, id).set(preparaRegistro(dati || {}));
 }
 
 /* La fotografia e' il documento radice della zona B (bdB_atleti/{uid}). */
@@ -101,7 +133,7 @@ export function leggiZonaB(db, uid, sottoraccolta) {
     .get()
     .then((istantanea) => ((istantanea && istantanea.docs) || []).map((d) => ({
       id: String(d.id || ""),
-      dati: d.data ? d.data() : {}
+      dati: sottoraccolta === SOTTO_B.registro ? ripristinaRegistro(d.data ? d.data() : {}) : (d.data ? d.data() : {})
     })));
 }
 
