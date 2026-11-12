@@ -30,7 +30,6 @@ fare» riporta il testo che il codice stesso dichiara, non una mia ipotesi.
 | \u2212 | 1006 | non trovato | - | meno 30 secondi |
 | + | 1010 | 3804 | pag-programma-1 | pi\u00f9 30 secondi |
 | Applica sett./scarico a tutte le schede | 1055 | 3757 | pag-programma-1 | applica settimane e scarico a tutte le schede |
-| + Riga | 1065 | 3760 | pag-programma-1 | aggiunge una riga alla scheda |
 | + Nuova progressione | 1066 | non trovato | - | demo |
 | Progressioni | 1067 | 1486 | - | apre le progressioni |
 | Periodizzazione | 1068 | 3741 | pag-programma-1 | apre la periodizzazione |
@@ -91,3 +90,10 @@ Esiti finali passo 30: test 76, 10/10 verdi; suite tranne 63, 367 verdi e quattr
 ## Passo B — Database esercizi aggiunge la riga, 12 novembre 2026
 
 Il pulsante **🗄 Database esercizi** non e’ piu’ solo un selettore: la scelta di un esercizio aggiunge la riga IN FONDO alla scheda aperta (nome scelto, distretto del catalogo verbatim nel campo muscolo, serie e ripetizioni vuote, otto settimane, id nuovo mai riutilizzato). **Ctrl+Z** e **↶ Annulla** tolgono la riga aggiunta (una voce di registro, annullata una volta sola). Senza scheda aperta o senza editor di scrittura la scelta resta senza effetto. Le righe gia’ presenti non vengono toccate: «Addome», «Attivazione» e le altre etichette restano come sono. Resta spento: **⇄ sostituisci esercizio**, **＋ superserie**, Libreria Coach, «+ Riga» della barra strumenti (l’aggiunta passa solo dal Database esercizi).
+
+## Aggiornamento 12 novembre 2026 (passo B)
+
+Vivo da oggi: **+ Riga** nella barra strumenti apre il selettore del Database esercizi (prova 79); alla scelta la riga si aggiunge in fondo alla scheda aperta (prova 78). Non e' piu' nell'elenco qui sopra: non e' piu' un tasto finto.
+Restano come stanno: il tondo ⊕ delle tecniche di intensita' (chplus) e il ＋ grigio accanto a ✕ e ⇄ sono entrambi spenti; il ＋ grigio nel v31 diceva «inserisci progressione sotto», oggi in B porta il titolo «superserie non ancora disponibili».
+Nota: il pulsante 🗂 Database esercizi della testa nasce nel codice ma non viene mai attaccato alla pagina (manca il append in testata): a schermo non esiste. Decisione di Alice pendente: toglierlo o attaccarlo.
+

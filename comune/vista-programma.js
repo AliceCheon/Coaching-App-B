@@ -673,6 +673,21 @@ function testata(doc, modifica) {
   return c;
 }
 
+/* Passo B: «+ Riga» apre lo stesso selettore del Database esercizi della testa.
+Alla scelta la riga nasce in fondo alla scheda aperta (aggiungiEsercizio in
+modifiche-b.js); senza editor acceso la scelta resta sola lettura. */
+function apriSelettoreRigaB(doc, mod) {
+  creaSelettoreEserciziB(doc, {
+    allaScelta: (scelta) => {
+      const m = mod || null;
+      if (!m || typeof m.onCambia !== "function") return;
+      const tabella = doc.querySelector(".p8-tab[data-scheda]");
+      const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
+      m.onCambia({ idScheda: idScheda, campo: "aggiunta-riga", esercizio: scelta.n, muscolo: scelta.g });
+    }
+  }).apri();
+}
+
 /* ---------- carta 1: il programma ---------------------------------------- */
 
 function cartaProgramma(doc, r) {
@@ -1120,7 +1135,7 @@ function barraStrumenti(doc) {
   cerca.appendChild(input);
   cerca.appendChild(n(doc, "span", "pr-hint", "🔍 Cerca"));
   bar.appendChild(cerca);
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda"));
+  bar.appendChild(pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, modificaCorrente)));
   bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "+ Nuova progressione", "demo", "nuova progressione"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Progressioni", "apre le progressioni"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Periodizzazione", "apre la periodizzazione"));
