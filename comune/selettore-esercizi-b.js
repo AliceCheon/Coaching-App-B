@@ -8,11 +8,12 @@
  * ne documento. Il catalogo e' la copia verbatim dei 179 esercizi del v31
  * (comune/catalogo-esercizi-b.js).
  *
- * Passo B.3 (12/11/2026): dentro il popup nasce la fila di filtri per gruppo
- * muscolare (richiesta di Alice). I chip sono i gruppi del catalogo, nello
- * stesso ordine in cui compaiono; «Tutti» in testa, un gruppo attivo per
- * volta, riclick per azzerare, combinati con la ricerca per nome e azzerati
- * alla riapertura. Sempre sola lettura: nessuna scrittura.
+ * Passo B.3 (12/11/2026): dentro il popup entra il filtro per gruppo
+ * muscolare (richiesta di Alice). Passo B.4 (stesso giorno): su richiesta di
+ * Alice la fila di chip diventa un MENÙ A TENDINA: un <select> con «Tutti»
+ * in testa e poi i gruppi VERI del catalogo, nello stesso ordine in cui
+ * compaiono; un gruppo per volta, combinato con la ricerca per nome,
+ * azzerato alla riapertura. Sempre sola lettura: nessuna scrittura.
  *
  * Le classi bdsel-* sono nuove: nessun tocco al CSS esistente di B. I colori
  * sono quelli del modal del v31 (#221531, bordi #C9A7FF, accento #FF4FA3). */
@@ -38,12 +39,11 @@ const STILE =
   ".bdsel-q{margin:12px 18px 0;padding:10px 13px;border-radius:11px;border:1px solid rgba(201,167,255,.26);" +
   "background:#180d24;color:#FFF7FC;font:700 13px/1.3 'Nunito Sans',sans-serif;outline:none}" +
   ".bdsel-q:focus{border-color:#FF4FA3;box-shadow:0 0 0 3px rgba(255,79,163,.16)}" +
-  ".bdsel-filtri{display:flex;flex-wrap:wrap;gap:6px;margin:10px 18px 0}" +
-  ".bdsel-fchip{border:1px solid rgba(201,167,255,.26);background:#180d24;color:#C9A7FF;" +
-  "font:700 10.5px/1 'Nunito Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;" +
-  "border-radius:999px;padding:6px 11px;cursor:pointer}" +
-  ".bdsel-fchip:hover{border-color:#FF4FA3;color:#FFF7FC}" +
-  ".bdsel-fchip.on{background:#FF4FA3;border-color:#FF4FA3;color:#fff}" +
+  ".bdsel-sel{margin:10px 18px 0;padding:9px 12px;border-radius:11px;border:1px solid rgba(201,167,255,.26);" +
+  "background:#180d24;color:#C9A7FF;font:700 12px/1.3 'Nunito Sans',sans-serif;outline:none;cursor:pointer;" +
+  "width:fit-content;letter-spacing:.03em;text-transform:uppercase}" +
+  ".bdsel-sel:focus{border-color:#FF4FA3;box-shadow:0 0 0 3px rgba(255,79,163,.16)}" +
+  ".bdsel-sel option{background:#221531;color:#FFF7FC;text-transform:none}" +
   ".bdsel-griglia{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:14px 18px 18px;overflow:auto}" +
   ".bdsel-it{display:block;text-align:left;border:1px solid rgba(201,167,255,.18);" +
   "background:rgba(53,33,69,.55);border-radius:10px;padding:9px 11px;cursor:pointer}" +
@@ -82,7 +82,7 @@ export function creaSelettoreEserciziB(doc, opzioni) {
     '<span class="bdsel-n"></span>' +
     '<button type="button" class="bdsel-x" title="chiudi">\u00d7</button></div>' +
     '<input type="search" class="bdsel-q" placeholder="Cerca per nome o distretto\u2026" autocomplete="off">' +
-    '<div class="bdsel-filtri"></div>' +
+    '<select class="bdsel-sel" aria-label="Filtra per gruppo muscolare"></select>' +
     '<div class="bdsel-griglia"></div>' +
     "</div>";
   doc.body.appendChild(velo);
@@ -90,36 +90,27 @@ export function creaSelettoreEserciziB(doc, opzioni) {
   const contatore = velo.querySelector(".bdsel-n");
   const griglia = velo.querySelector(".bdsel-griglia");
   const casella = velo.querySelector(".bdsel-q");
-  const fila = velo.querySelector(".bdsel-filtri");
+  const menu = velo.querySelector(".bdsel-sel");
 
-  /* I gruppi del filtro: quelli VERI del catalogo, nell'ordine in cui
-   * compaiono (prima occorrenza). Nessun gruppo inventato. */
+  /* Le voci del menù: «Tutti» in testa, poi i gruppi VERI del catalogo,
+   * nell'ordine di prima comparsa. Nessun gruppo inventato. */
   const gruppi = [];
   CATALOGO_ESERCIZI_B.forEach((v) => {
     if (gruppi.indexOf(v.g) === -1) gruppi.push(v.g);
   });
   ["Tutti"].concat(gruppi).forEach((g) => {
-    const b = doc.createElement("button");
-    b.type = "button";
-    b.className = "bdsel-fchip" + (g === "Tutti" ? " on" : "");
-    b.setAttribute("data-g", g === "Tutti" ? "" : g);
-    b.textContent = g;
-    fila.appendChild(b);
+    const o = doc.createElement("option");
+    o.value = g === "Tutti" ? "" : g;
+    o.textContent = g;
+    menu.appendChild(o);
   });
 
-  /* Il filtro di gruppo: uno solo per volta, null = tutti. */
-  let gruppoAttivo = null;
-
-  function aggiornaFiltri() {
-    Array.prototype.forEach.call(fila.querySelectorAll(".bdsel-fchip"), (c) => {
-      const g = c.getAttribute("data-g") || "";
-      c.classList.toggle("on", g === "" ? gruppoAttivo == null : g === gruppoAttivo);
-    });
-  }
+  /* Il gruppo scelto nel menù: stringa vuota = tutti. */
+  let gruppoAttivo = "";
 
   /* Il disegno della griglia, identico alla filtra del v31 (swRender): il
-   * testo cerca sta nel nome o nel distretto, senza maiuscole. Il gruppo
-   * attivo, se c'e', restringe il risultato della ricerca. */
+   * testo cerca sta nel nome o nel distretto, senza maiuscole. Il gruppo del
+   * menù, se c'e', restringe il risultato della ricerca. */
   function disegna(domanda) {
     let voci = cercaNelCatalogoB(domanda);
     if (gruppoAttivo) voci = voci.filter((v) => v.g === gruppoAttivo);
@@ -133,8 +124,8 @@ export function creaSelettoreEserciziB(doc, opzioni) {
   }
 
   function apri() {
-    gruppoAttivo = null;
-    aggiornaFiltri();
+    gruppoAttivo = "";
+    menu.value = "";
     velo.hidden = false;
     casella.value = "";
     disegna("");
@@ -154,14 +145,9 @@ export function creaSelettoreEserciziB(doc, opzioni) {
     if (ev && ev.key === "Escape") chiudi();
   });
 
-  /* Il click su un chip: «Tutti» azzera, il gruppo attivo si spegne al
-   * riclick, un gruppo nuovo si accende e ridisegna la griglia. */
-  fila.addEventListener("click", (ev) => {
-    const chip = ev.target.closest(".bdsel-fchip");
-    if (!chip) return;
-    const g = chip.getAttribute("data-g") || "";
-    gruppoAttivo = g === "" || g === gruppoAttivo ? null : g;
-    aggiornaFiltri();
+  /* La scelta nel menù: il gruppo selezionato ridisegna la griglia. */
+  menu.addEventListener("change", () => {
+    gruppoAttivo = menu.value || "";
     disegna(casella.value);
   });
 
@@ -185,7 +171,7 @@ export function creaSelettoreEserciziB(doc, opzioni) {
       velo: velo,
       input: casella,
       griglia: griglia,
-      filtri: fila
+      menu: menu
     }
   };
   giaCostruito = stato;
