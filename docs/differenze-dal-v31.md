@@ -70,7 +70,23 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-- Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo B.5 (CSS pannello tecniche, 17 righe inserite dopo la riga 1436; tutti i blocchi successivi aggiornati di 17): - righe 1437-1453 - righe 1504 · - righe 2754 · - righe 2768-2771 · - righe 2785 · - righe 2798 · - righe 2811 · - righe 3705 · - righe 3967 · - righe 4676 · - righe 4680 · - righe 6530 · - righe 7931 · - righe 8387 · - righe 8544 · - righe 10702 · - righe 10704 · - righe 10706-10705 · - righe 10774-10778
+- Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo B.7 (pannello tecniche: 17 righe dopo la 1436; colore della figlia e X: 9 righe dopo la 1451; tutti i blocchi successivi aggiornati di 26 in tutto): - righe 1437-1464 · - righe 1515 · - righe 2765 · - righe 2779-2782 · - righe 2796 · - righe 2809 · - righe 2822 · - righe 3716 · - righe 3978 · - righe 4687 · - righe 4691 · - righe 6541 · - righe 7942 · - righe 8398 · - righe 8555 · - righe 10593-10602 · - righe 10713 · - righe 10715 · - righe 10717 · - righe 10785-10789
+## Passo B.7 — 12 novembre 2026 · la riga della tecnica prende il colore del mockup
+
+- Alice, guardando l’app: «nel mockup era più carino il tutto, sul sito è un po’ spento». Aveva ragione: la riga figlia era un velo al 5% e un badge solo contornato, cioè la versione timida della variante A del mockup.
+- Adesso è la variante **A — Spina**, tradotta sui colori del tema: velo viola al 13% con sfumatura a sinistra, filo verticale di 3px in gradiente lavanda→viola con alone, badge a gradiente pieno con testo scuro, e la nota in lavanda chiara.
+- Le due regole vecchie (`tr.p8-tec .c-js...` e `tr.p8-tec td{background:rgba(168,85,247,.05)}`) sono state **sostituite**, non affiancate: resta un blocco solo, leggibile.
+- Tema chiaro: la stessa riga ha i suoi tre override (velo all’11%, serie e reps in viola scuro #7A34C4, nota in #553A70, alone della spina spento) perché la lavanda su fondo chiaro spariva.
+- La X resta rossa: è l’unica cosa che cancella, deve staccarsi dal viola che ora è pieno.
+- Prove: `tests/83-colore-riga-tecnica.test.mjs`, 4 controlli sul foglio. Guardia 42: blocco 1437-1462 dichiarato, tutti i successivi spostati di +7.
+
+## Passo B.6 — 12 novembre 2026 · la X sulla riga della tecnica
+
+- La riga figlia ha la sua X, accanto al badge della tecnica: era l’unico modo di togliere una tecnica il pannello («✕ Rimuovi tecnica»), un giro troppo lungo per una cosa che si decide guardando la scheda.
+- La X manda la STESSA richiesta del pannello (`campo: "rimozione-tecnica"`, l’id della figlia), quindi il registro scrive `cancella-riga`, Annulla la rimette e i conti dei padri non si muovono: nessuna strada nuova, solo una scorciatoia.
+- Il padre non porta la X della tecnica: la X dell’esercizio resta la sua, e su `pc/index.html` (v31 congelato) non cambia un pixel.
+- CSS: 2 righe in `desktop/index.html` dopo la 1453 (`button.tec-x` e i suoi due stati), dichiarate qui sotto nell’elenco dei blocchi. Prove: `tests/82-x-tecnica.test.mjs`, 4 controlli.
+
 ## Passo 4 — 7 novembre 2026 · la zona B e la copia (con gli esercizi sciolti)
 
 - Perche' una zona separata: B non scrive dove scrive A. La zona si chiama `bdB_atleti/{uid}` e il nome sta **una volta sola** (`ZONA_B` in `comune/modello-dati.js`); la guardia `tests/47` fallisce se il nome compare altrove, se una scrittura nasce fuori dalla zona o se un modulo diverso da `comune/scritture-b.js` contiene un verbo di scrittura.
@@ -699,7 +715,7 @@ Richiesta: prima diagnosi senza modifiche, poi Ctrl+Z identico al pulsante; test
 
 Diagnosi: il pulsante della vista chiama mod.onAnnulla in desktop/app-v31.js, poi editor.annulla(), leggiZonaB(registro) e ultimaAnnullabile. Ctrl+Z era intercettato in window/cattura da doUndo(), con stack/redo e snapshot delle celle data-k; un altro listener document usa annulla() con HIST/REDO. La vista B non usa data-k: nessuna delle due pile storiche legge il registro B.
 
-- righe 10582-10591
+righe 10582-10593
 Inserite solo sette righe nel gestore storico: con Programma B visibile, Ctrl+Z/Cmd+Z senza Shift/Alt chiama click() sullo stesso button.pg-undo. preventDefault e stopImmediatePropagation evitano sia undo nativo sia i vecchi gestori. Pulsante disabilitato resta inerte, come il clic. Fuori da B, Ctrl+Shift+Z e Ctrl+Y restano sul comportamento storico: non viene introdotto Rifai per B. I numeri dei blocchi successivi sono aggiornati di sette righe; pc/index.html resta congelato.
 
 In desktop/app-v31.js, dopo un salvataggio riuscito, lo stato disabled del pulsante viene riallineato a editor.annullabile, senza ridisegnare. La prova ha evidenziato che dopo aver esaurito gli annullamenti e modificato una cella il pulsante altrimenti restava disabilitato. Nessuna modifica al modello, al CSS o alle funzioni di scrittura; nessun accesso ai dati reali.

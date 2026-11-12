@@ -1473,6 +1473,15 @@ function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScari
     ? pulsanteVivo(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica", () => apriPannelloTecnica(doc, badge, scheda, padre, riga, mod))
     : pulsanteSpento(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica");
   p8ese.appendChild(badge);
+  /* Passo B.6: la X della figlia. Cancella la sola tecnica con la voce di
+   * registro «cancella-riga» (la stessa del pannello), quindi Annulla la
+   * rimette; con l'editor spento la X e' spenta e non scrive. */
+  p8ese.appendChild(mod
+    ? pulsanteVivo(doc, "tec-x", "✕", "cancella la riga della tecnica", () => mod.onCambia({
+      idScheda: scheda.id, idEsercizio: riga.id,
+      esercizio: "↳ " + nomeTecnica(riga.tecnica), campo: "rimozione-tecnica"
+    }))
+    : pulsanteSpento(doc, "tec-x", "✕", "cancella la riga della tecnica"));
   nome.appendChild(p8ese);
   ese.appendChild(nome);
 
