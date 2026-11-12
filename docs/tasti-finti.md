@@ -14,7 +14,6 @@ fare» riporta il testo che il codice stesso dichiara, non una mia ipotesi.
 | Tasto come lo vede Alice | riga in B | riga nel v31 | pagina nel v31 | cosa dovrebbe fare |
 |---|---|---|---|---|
 | \u21b6 Annulla | 618 | non trovato | - | annulla l'ultima modifica |
-| \ud83d\uddc4 Database esercizi | 628 | non trovato | - | apre il Database esercizi |
 | \ud83d\udcda Libreria Coach | 629 | non trovato | - | apre la Libreria Coach |
 | ⬆ Importa da PDF | 657 | 3702 | pag-programma-1 | un PDF di scheda diventa una scheda nuova |
 | Cambia | 766 | 3725 | pag-programma-1 | cambia la data di visibilità |
@@ -59,13 +58,14 @@ non salvano niente. Sono le righe che portano la pillola `pr-demo`.
 | 7643 | pag-archivio | #pag-programma-1 .pr-demo{ |
 | 8879 | pag-archivio | ' Applica a Prog 2 demo ' + |
 
-## Cosa e' gia' vivo in B (aggiornamento 11 novembre 2026)
+## Cosa e' gia' vivo in B (aggiornamento 12 novembre 2026)
 
 Questi non sono piu' spenti: sono stati collegati nei passi 9-21 e hanno una prova nella suite.
 
 - Celle **serie** e **rips** delle otto settimane (passo 9).
 - Celle **Rec** e **TUT** (passi 10-19).
 - Il pulsante **Annulla** in testa alla schermata: riporta indietro l'ultima modifica e cita la voce annullata.
+- Il pulsante **Database esercizi** in testa a Programma: dal passo 35 apre il selettore del catalogo dei 179 esercizi del v31 (ricerca per nome o distretto, clic per scegliere, Esc per chiudere); la scelta torna all'app e non scrive niente. La **Libreria Coach** accanto resta spenta.
 - **x** della riga: toglie l'esercizio (`deletedAt`) e l'Annulla lo rimette (passo 20).
 - **+** della riga: dal passo 28 è volutamente disabilitato, riservato alle future superserie; non apre le progressioni.
 - **Applica progressione** della riga: apre le 21 voci, applica alla singola riga e consente Annulla (passi 20/28).

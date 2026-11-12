@@ -25,6 +25,7 @@ import {
 
 import { nomePulito } from "./nome-pulito.js";
 import { PROG, PRG } from "./progressioni-b.js";
+import { creaSelettoreEserciziB } from "./selettore-esercizi-b.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -650,7 +651,12 @@ function testata(doc, modifica) {
   }
   top.appendChild(annulla);
 
-  top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi"));
+  /* Passo 35: il Database esercizi si accende come selettore di sola lettura,
+   * gemello del modal pg-lib del v31: cerca nel catalogo dei 179, si sceglie,
+   * e la scelta torna a chi ascolta. Ancora nessuna scrittura. */
+  pulsanteVivo(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi", () => {
+    creaSelettoreEserciziB(doc).apri();
+  })
   top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-c", "\ud83d\udcda Libreria Coach", "apre la Libreria Coach"));
   c.appendChild(top);
   return c;
