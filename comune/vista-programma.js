@@ -653,9 +653,20 @@ function testata(doc, modifica) {
 
   /* Passo 35: il Database esercizi si accende come selettore di sola lettura,
    * gemello del modal pg-lib del v31: cerca nel catalogo dei 179, si sceglie,
-   * e la scelta torna a chi ascolta. Ancora nessuna scrittura. */
+   * e la scelta aggiunge la riga in fondo alla scheda aperta (passo B). */
   pulsanteVivo(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi", () => {
-    creaSelettoreEserciziB(doc).apri();
+    creaSelettoreEserciziB(doc, {
+      /* Passo B: la scelta aggiunge la riga IN FONDO alla scheda aperta
+       * (l'id scheda e' quello della tabella disegnata, come per la
+       * progressione di scheda). Senza editor acceso la scelta resta sola
+       * lettura, come prima. */
+      allaScelta: (scelta) => {
+        if (!mod || typeof mod.onCambia !== "function") return;
+        const tabella = doc.querySelector(".p8-tab[data-scheda]");
+        const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
+        mod.onCambia({ idScheda: idScheda, campo: "aggiunta-riga", esercizio: scelta.n, muscolo: scelta.g });
+      }
+    }).apri();
   })
   top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-c", "\ud83d\udcda Libreria Coach", "apre la Libreria Coach"));
   c.appendChild(top);

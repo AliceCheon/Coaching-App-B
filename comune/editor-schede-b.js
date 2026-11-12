@@ -28,7 +28,8 @@ import {
   creaCoda,
   applicaProgressione,
   applicaProgressioneScheda,
-  cancellaEsercizio
+  cancellaEsercizio,
+  aggiungiEsercizio
 } from "./modifiche-b.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
@@ -188,6 +189,8 @@ export function creaEditorSchede(opzioni) {
         esito = applicaProgressione(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "progressione-scheda") {
         esito = applicaProgressioneScheda(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "aggiunta-riga") {
+        esito = aggiungiEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "riga") {
         esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else {

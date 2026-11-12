@@ -87,3 +87,7 @@ Prova 63 separata: 5/5 verdi. Modifiche solo locali, nessun commit né push.
 Ctrl+Z/Cmd+Z dentro input, ricerca, textarea e celle modificabili non richiama Annulla scheda; il browser mantiene la cronologia del testo. Fuori dai campi resta il collegamento al pulsante B. Le celle salvano su uscita o Invio, non a ogni carattere. Database esercizi resta spento: il test apre soltanto il DOM storico del suo modale. Nessun Rifai B aggiunto.
 
 Esiti finali passo 30: test 76, 10/10 verdi; suite tranne 63, 367 verdi e quattro rossi 64.4/69.3/69.4/69.6; 63 separata, 5/5 verdi. Meta+Z verificato non intercettato su Windows; annullamento nativo macOS da confermare su Mac. Alice richiede push dopo la comunicazione dei rossi, non dichiarati risolti.
+
+## Passo B — Database esercizi aggiunge la riga, 12 novembre 2026
+
+Il pulsante **🗄 Database esercizi** non e’ piu’ solo un selettore: la scelta di un esercizio aggiunge la riga IN FONDO alla scheda aperta (nome scelto, distretto del catalogo verbatim nel campo muscolo, serie e ripetizioni vuote, otto settimane, id nuovo mai riutilizzato). **Ctrl+Z** e **↶ Annulla** tolgono la riga aggiunta (una voce di registro, annullata una volta sola). Senza scheda aperta o senza editor di scrittura la scelta resta senza effetto. Le righe gia’ presenti non vengono toccate: «Addome», «Attivazione» e le altre etichette restano come sono. Resta spento: **⇄ sostituisci esercizio**, **＋ superserie**, Libreria Coach, «+ Riga» della barra strumenti (l’aggiunta passa solo dal Database esercizi).

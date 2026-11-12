@@ -626,6 +626,90 @@ export function cancellaEsercizio(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce };
 }
 
+/* --- L'aggiunta di una riga dal Database esercizi (passo B, 12/11/2026) ---
+ * Il clic su un esercizio del selettore aggiunge IN FONDO alla scheda una
+ * riga nuova: il nome scelto, il distretto del catalogo scritto VERBATIM nel
+ * campo muscolo (il catalogo e' l'unica fonte: nessuna traduzione, nessuna
+ * normalizzazione delle righe gia' presenti), serie e ripetizioni vuote, le
+ * otto settimane come le altre righe, e un id nuovo assegnato alla creazione
+ * e MAI riutilizzato: non prende neanche l'id di una riga cancellata. */
+
+/* Un id che non esiste ancora nella scheda, neanche su una riga tolta. */
+function idNuovoEsercizio(elenco, genera) {
+  for (let tentativo = 0; tentativo < 20; tentativo += 1) {
+    const id = testo(genera(tentativo));
+    if (!id) continue;
+    const gia = elenco.some((e) => e && typeof e === "object" && testo(e.id) === id);
+    if (!gia) return id;
+  }
+  return "";
+}
+
+function generaIdDiDefault() {
+  return "bdb-ex-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+function numeroDi(valore) {
+  const n = Number(valore);
+  return Number.isFinite(n) ? n : null;
+}
+
+/* Richiesta: { idScheda, esercizio: nome scelto, muscolo: distretto del catalogo }
+ * Esito come le altre scritture: dati nuovi, voce del registro, id assegnato. */
+export function aggiungiEsercizio(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const nome = testo(r.esercizio).replace(/\s+/g, " ");
+  if (!nome) return { ok: false, motivo: "il selettore non ha passato nessun nome di esercizio: non ho scritto niente" };
+  if (nome.length > 80) return { ok: false, motivo: "il nome dell'esercizio sta in 80 caratteri: non ho scritto niente" };
+  const muscolo = testo(r.muscolo).replace(/\s+/g, " ");
+  const elenco = f[chiave];
+
+  const id = idNuovoEsercizio(elenco, typeof o.generaId === "function" ? o.generaId : generaIdDiDefault);
+  if (!id) return { ok: false, motivo: "non ho trovato un identificativo libero: non ho scritto niente" };
+
+  /* In fondo: l'ordine segue quello che la tabella mostra (chi non porta
+   * `order` conta la sua posizione) e la riga nuova sta dopo l'ultimo. */
+  let massimo = -1;
+  elenco.forEach((e, i) => {
+    if (!e || typeof e !== "object") return;
+    const v = numeroDi(e.order != null ? e.order : e.ordine);
+    massimo = Math.max(massimo, v == null ? i : v);
+  });
+  const riga = { id: id, name: nome };
+  if (muscolo) riga.muscle = muscolo;
+  riga.order = massimo + 1;
+  riga.progression = { weeks: [] };
+  for (let k = 0; k < 8; k += 1) riga.progression.weeks.push({});
+  riga.aggiuntoInB = quando;
+
+  const nuovoElenco = elenco.concat([riga]);
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "riga");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "aggiunta-riga",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nome,
+    idEsercizio: id,
+    settimana: null,
+    campo: "riga",
+    prima: null,
+    dopo: { nome: nome, muscolo: muscolo },
+    dopoTesto: "riga aggiunta",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, id: id };
+}
+
 /* "Applica progressione a tutta la scheda" (r.3771, r.9965-10024): le otto
  * settimane di TUTTE le righe, e una voce sola con tutte le righe dentro. */
 export function applicaProgressioneScheda(dati, richiesta, opzioni) {
@@ -740,6 +824,13 @@ function annullaProgressione(dati, v, quando, uid) {
     if (manca) return { ok: false, motivo: "una riga della progressione non si ritrova piu' (" + manca + "): non ho scritto niente" };
     elenco = nuove;
     ultima = "progressione di scheda annullata";
+  } else if (tipo === "aggiunta-riga") {
+    /* La riga aggiunta si TOGLIE (per id, non per posizione): e' l'unico
+     * annullamento che toglie una riga invece di rimettere i valori. */
+    const i = indicePerId(elenco, v.idEsercizio);
+    if (i < 0) return { ok: false, motivo: "la riga aggiunta non si ritrova piu' in questa scheda: non ho scritto niente" };
+    elenco.splice(i, 1);
+    ultima = "riga aggiunta tolta";
   } else {
     return { ok: false, motivo: "la voce del registro non dice cosa annullare" };
   }
@@ -775,7 +866,7 @@ export function annullaModifica(dati, voce, opzioni) {
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
   const tipo = testo(v.tipo);
   /* Passo 20: progressione di una riga, riga tolta, progressione di scheda. */
-  if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga") {
+  if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga" || tipo === "aggiunta-riga") {
     return annullaProgressione(dati, v, quando, o.uid);
   }
   const campo = testo(v.campo);
@@ -814,7 +905,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
