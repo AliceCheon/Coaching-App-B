@@ -29,7 +29,10 @@ import {
   applicaProgressione,
   applicaProgressioneScheda,
   cancellaEsercizio,
-  aggiungiEsercizio
+  aggiungiEsercizio,
+  aggiungiTecnica,
+  scriviTecnica,
+  rimuoviTecnica
 } from "./modifiche-b.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
@@ -191,6 +194,13 @@ export function creaEditorSchede(opzioni) {
         esito = applicaProgressioneScheda(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "aggiunta-riga") {
         esito = aggiungiEsercizio(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "aggiunta-tecnica") {
+        esito = aggiungiTecnica(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "rimozione-tecnica") {
+        esito = rimuoviTecnica(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "tecnica-cambia" || campo === "tecnica-parametri" || campo === "tecnica-settimana" || campo === "tecnica-nota") {
+        const richiestaTecnica = Object.assign({}, r, { sottocampo: campo === "tecnica-cambia" ? "cambia" : (campo === "tecnica-parametri" ? "parametri" : (campo === "tecnica-settimana" ? "settimana" : "nota")) });
+        esito = scriviTecnica(letto.dati, richiestaTecnica, { quando: quando(), uid: uid });
       } else if (campo === "riga") {
         esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else {

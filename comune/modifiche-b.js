@@ -22,6 +22,8 @@ import { separaRecupero, separaTempo } from "./tut-rec.js";
  */
 
 import { prescrizione } from "./schede-v2.js";
+
+import { rigaTecnica as costruisciRigaTecnica, nomeTecnica, tecnicaCambiata, notaAutomatica as notaAutoTecnica, parametriValidi, eTecnica } from "./tecniche-b.js";
 import { coppieRiga, coppieScheda, baseDaSettimane, nomeProgressione, voceScheda } from "./progressioni-b.js";
 
 /* Il nome del campo che dice "a questa scheda ho messo mano in B". */
@@ -529,6 +531,14 @@ function indicePerId(elenco, id) {
 }
 
 /* Il tastino "+": una voce del v31, le otto settimane di QUELLA riga. */
+/* Fase 1 — la riga figlia della tecnica. E' legata al padre SOLO da padreId:
+ * niente nome, niente distretto. Nei conti NON esiste, con la progressione
+ * NON si mescola: se la tocchiamo e' un errore, non un campo vuoto. */
+function eFigliaTecnica(e) {
+  return Boolean(e) && typeof e === "object"
+    && (e.tipo === "tecnica" || (e.padreId != null && String(e.padreId) !== ""));
+}
+
 export function applicaProgressione(dati, richiesta, opzioni) {
   const r = richiesta || {};
   const o = opzioni || {};
@@ -543,6 +553,7 @@ export function applicaProgressione(dati, richiesta, opzioni) {
   const esercizio = elenco[indice];
   if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
   if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' cancellato" };
+  if (eFigliaTecnica(esercizio)) return { ok: false, motivo: "la riga della tecnica non prende la progressione: si regola dal pannello della tecnica. Non ho scritto niente" };
   if (!posizioneSettimane(esercizio)) {
     return { ok: false, motivo: "questa scheda non porta le settimane scritte: la progressione si apre in un passo successivo" };
   }
@@ -603,13 +614,23 @@ export function cancellaEsercizio(dati, richiesta, opzioni) {
   if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' gia' tolto" };
   const copia = Object.assign({}, esercizio);
   copia.deletedAt = quando;
-  const nuovoElenco = elenco.slice();
-  nuovoElenco[indice] = copia;
+  /* La figlia segue il padre: senza questo resterebbe viva, con il padre
+   * tolto, e l'annullamento la rimetterebbe sola. */
+  const figli = [];
+  const nuovoElenco = elenco.map((e, i) => {
+    if (i === indice) return copia;
+    if (eFigliaTecnica(e) && !e.deletedAt && String(e.padreId || "") === String(esercizio.id || "")) {
+      figli.push(testo(e.id));
+      return Object.assign({}, e, { deletedAt: quando });
+    }
+    return e;
+  });
   const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "riga");
   const voce = {
     idVoce: idVoceRegistro(quando),
     quando: quando,
     tipo: "cancella-riga",
+    figli: figli,
     origine: "modifica-fatta-in-B",
     scheda: testo(r.idScheda),
     codice: codiceScheda(nuovo),
@@ -727,7 +748,7 @@ export function applicaProgressioneScheda(dati, richiesta, opzioni) {
   const vive = [];
   for (let i = 0; i < elenco.length; i += 1) {
     const e = elenco[i];
-    if (!e || typeof e !== "object" || e.deletedAt) continue;
+    if (!e || typeof e !== "object" || e.deletedAt || eFigliaTecnica(e)) continue;
     vive.push(i);
   }
   if (!vive.length) return { ok: false, motivo: "la scheda non ha esercizi da toccare" };
@@ -795,6 +816,15 @@ function annullaProgressione(dati, v, quando, uid) {
     if (v.prima && v.prima.deletedAt != null) copia.deletedAt = v.prima.deletedAt;
     else delete copia.deletedAt;
     elenco[i] = copia;
+    elenco = elenco.map((e) => {
+      if (eFigliaTecnica(e) && e.deletedAt && String(e.padreId || "") === String(v.idEsercizio || "")
+        && (!Array.isArray(v.figli) || !v.figli.length || v.figli.indexOf(testo(e.id)) !== -1)) {
+        const c = Object.assign({}, e);
+        delete c.deletedAt;
+        return c;
+      }
+      return e;
+    });
     ultima = "riga rimessa";
   } else if (tipo === "modifica-progressione") {
     const i = indicePerId(elenco, v.idEsercizio);
@@ -824,6 +854,13 @@ function annullaProgressione(dati, v, quando, uid) {
     if (manca) return { ok: false, motivo: "una riga della progressione non si ritrova piu' (" + manca + "): non ho scritto niente" };
     elenco = nuove;
     ultima = "progressione di scheda annullata";
+  } else if (tipo === "modifica-tecnica") {
+    /* La riga tecnica torna com'era: la voce porta la riga INTERA di prima. */
+    const i = indicePerId(elenco, v.idEsercizio);
+    if (i < 0) return { ok: false, motivo: "la riga della tecnica non si ritrova piu' in questa scheda: non ho scritto niente" };
+    if (!v.prima || typeof v.prima !== "object" || !v.prima.padreId) return { ok: false, motivo: "la voce non porta la riga di prima: non ho scritto niente" };
+    elenco[i] = Object.assign({}, v.prima);
+    ultima = "tecnica rimessa";
   } else if (tipo === "aggiunta-riga") {
     /* La riga aggiunta si TOGLIE (per id, non per posizione): e' l'unico
      * annullamento che toglie una riga invece di rimettere i valori. */
@@ -866,7 +903,7 @@ export function annullaModifica(dati, voce, opzioni) {
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
   const tipo = testo(v.tipo);
   /* Passo 20: progressione di una riga, riga tolta, progressione di scheda. */
-  if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga" || tipo === "aggiunta-riga") {
+  if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga" || tipo === "aggiunta-riga" || tipo === "modifica-tecnica") {
     return annullaProgressione(dati, v, quando, o.uid);
   }
   const campo = testo(v.campo);
@@ -905,7 +942,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -1036,4 +1073,181 @@ export function creaCoda() {
       return dopo;
     }
   };
+}
+
+/* --- Fase 1: le tecniche di intensita' ------------------------------------ */
+
+/* Il piu' rotondo: sotto il padre nasce la riga figlia. Una sola per riga:
+ * se ce n'e' gia' una viva, si rifiuta e si dice di aprire il pannello. */
+export function aggiungiTecnica(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const padre = elenco[indice];
+  if (!padre || typeof padre !== "object" || padre.deletedAt) return { ok: false, motivo: "l'esercizio e' cancellato" };
+  if (eFigliaTecnica(padre)) return { ok: false, motivo: "sotto una tecnica non nasce un'altra tecnica" };
+  const idPadre = testo(padre.id);
+  if (!idPadre) return { ok: false, motivo: "l'esercizio non ha un id: non ho scritto niente" };
+  for (let i = 0; i < elenco.length; i += 1) {
+    if (eFigliaTecnica(elenco[i]) && !elenco[i].deletedAt && String(elenco[i].padreId) === idPadre) {
+      return { ok: false, motivo: "questa riga ha gia' la sua tecnica: aprila dal badge per cambiarla" };
+    }
+  }
+  const tecnica = testo(r.tecnica);
+  if (!nomeTecnica(tecnica)) return { ok: false, motivo: "la tecnica " + tecnica + " non esiste: non ho scritto niente" };
+  const figlia = costruisciRigaTecnica(tecnica, idPadre, null, o.generaId ? o.generaId() : null);
+  if (!figlia) return { ok: false, motivo: "la tecnica " + tecnica + " non esiste: non ho scritto niente" };
+  const nuovoElenco = elenco.slice();
+  nuovoElenco.splice(indice + 1, 0, figlia);
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "tecnica aggiunta");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "aggiunta-riga",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "\u21b3 " + nomeTecnica(tecnica),
+    idEsercizio: figlia.id,
+    settimana: null,
+    campo: "riga",
+    tecnica: tecnica,
+    padreId: idPadre,
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, riga: figlia };
+}
+
+/* Cambiare tecnica, parametri, settimane e nota: UNA scrittura per volta, la
+ * voce porta la riga INTERA di prima, cosi' l'annulla rimette tutto. */
+export function scriviTecnica(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "la riga della tecnica non si ritrova in questa scheda: non ho scritto niente" };
+  const riga = elenco[indice];
+  if (!riga || typeof riga !== "object" || riga.deletedAt) return { ok: false, motivo: "la riga della tecnica e' tolta" };
+  if (!eTecnica(riga)) return { ok: false, motivo: "questa riga non e' una tecnica" };
+  const prima = JSON.parse(JSON.stringify(riga));
+  const sottocampo = testo(r.sottocampo);
+  let nuova = null;
+
+  if (sottocampo === "cambia") {
+    const tecnicaNuova = testo(r.tecnica);
+    if (!nomeTecnica(tecnicaNuova)) return { ok: false, motivo: "la tecnica " + tecnicaNuova + " non esiste: non ho scritto niente" };
+    if (tecnicaNuova === riga.tecnica) return { ok: false, motivo: "la tecnica non e' cambiata" };
+    nuova = tecnicaCambiata(riga, tecnicaNuova);
+  } else if (sottocampo === "parametri") {
+    const parametri = r.parametri && typeof r.parametri === "object" ? r.parametri : null;
+    if (!parametri) return { ok: false, motivo: "il pannello non ha passato i parametri" };
+    const valida = parametriValidi(riga.tecnica, parametri);
+    if (!valida.ok) return { ok: false, motivo: valida.motivo + ": non ho scritto niente" };
+    nuova = Object.assign({}, riga, { parametri: parametri });
+    /* La nota automatica segue i parametri; quella scritta a mano NO. */
+    nuova.nota = { auto: notaAutoTecnica(riga.tecnica, parametri), manuale: riga["nota"] && riga["nota"].manuale != null ? String(riga["nota"].manuale) : null };
+  } else if (sottocampo === "settimana") {
+    const k = Number(r.settimana) - 1;
+    if (!Number.isInteger(k) || k < 0 || k > 30) return { ok: false, motivo: "settimana non valida" };
+    const campoCella = r.campoCella === "serie" ? "serie" : (r.campoCella === "reps" ? "reps" : "");
+    if (!campoCella) return { ok: false, motivo: "in questo passo si toccano solo serie e ripetizioni della tecnica" };
+    const valore = testo(r.valore).replace(/\s+/g, " ");
+    const settimane = (Array.isArray(riga.settimane) ? riga.settimane : []).map((w) => (w && typeof w === "object" ? Object.assign({}, w) : {}));
+    while (settimane.length <= k) settimane.push({});
+    if (campoCella === "serie" && valore !== "") {
+      const n = intero(valore);
+      if (n == null || n < 1 || n > 99) return { ok: false, motivo: "le serie si scrivono con un numero da 1 a 99" };
+    }
+    if (campoCella === "reps" && valore !== "") {
+      if (valore.length > 40) return { ok: false, motivo: "le ripetizioni stanno in 40 caratteri" };
+      if (/[\u0000-\u001f\u007f]/.test(valore)) return { ok: false, motivo: "le ripetizioni si scrivono su una riga sola" };
+    }
+    settimane[k][campoCella] = valore === "" ? { cleared: true } : (campoCella === "serie" && String(Number(valore)) === valore ? Number(valore) : valore);
+    nuova = Object.assign({}, riga, { settimane: settimane });
+  } else if (sottocampo === "nota") {
+    const manuale = r.manuale == null ? null : testo(r.manuale);
+    nuova = Object.assign({}, riga, { nota: { auto: notaAutoTecnica(riga.tecnica, riga.parametri), manuale: manuale === "" ? null : manuale } });
+  } else {
+    return { ok: false, motivo: "la voce non dice cosa cambiare della tecnica" };
+  }
+  if (!nuova) return { ok: false, motivo: "non ho scritto niente" };
+
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = nuova;
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "tecnica");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "modifica-tecnica",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "\u21b3 " + nomeTecnica(nuova.tecnica),
+    idEsercizio: testo(nuova.id),
+    settimana: r.settimana == null ? null : Number(r.settimana),
+    campo: "tecnica",
+    tecnica: nuova.tecnica,
+    padreId: testo(nuova.padreId),
+    prima: prima,
+    dopo: JSON.parse(JSON.stringify(nuova)),
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: nuova };
+}
+
+/* Rimuovere la tecnica: la riga figlia si marca tolta, come gli esercizi. */
+export function rimuoviTecnica(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "la riga della tecnica non si ritrova in questa scheda: non ho scritto niente" };
+  const riga = elenco[indice];
+  if (!riga || typeof riga !== "object") return { ok: false, motivo: "la riga non e' leggibile" };
+  if (riga.deletedAt) return { ok: false, motivo: "la tecnica e' gia' tolta" };
+  if (!eTecnica(riga)) return { ok: false, motivo: "questa riga non e' una tecnica" };
+  const copia = Object.assign({}, riga);
+  copia.deletedAt = quando;
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = copia;
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "tecnica tolta");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "cancella-riga",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "\u21b3 " + nomeTecnica(riga.tecnica),
+    idEsercizio: testo(riga.id),
+    settimana: null,
+    campo: "riga",
+    tecnica: riga.tecnica,
+    padreId: testo(riga.padreId),
+    prima: { deletedAt: riga.deletedAt == null ? null : riga.deletedAt },
+    dopo: quando,
+    dopoTesto: "tecnica tolta",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
 }

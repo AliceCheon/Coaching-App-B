@@ -552,7 +552,7 @@ export async function avvia(doc, win) {
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
              * senza rileggere, a schermo non cambierebbe niente. */
-            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga")) {
+            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia")) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };

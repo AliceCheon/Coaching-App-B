@@ -100,3 +100,14 @@ Tolti il 12 novembre 2026 (passo B.2, decisione di Alice):
 Resta come sta: il tondo **⊕** delle tecniche di intensita' (chplus), spento in attesa delle future tecniche (superserie, rest pause, myo reps, drop set).
 
 
+
+## Passo B.5 — il ⊕ delle tecniche di intensità è vivo (12 novembre 2026)
+
+Il tondo **⊕** (chplus) non è più finto: apre il pannello con le tre voci (REST-PAUSE,
+MYO-REPS, DROP SET); la tecnica scelta nasce come riga figlia sotto l'esercizio, col badge
+che apre i parametri, la nota automatica/manuale e «Rimuovi tecnica». La riga figlia NON
+conta negli esercizi e NON prende la progressione; ✕ sul padre la toglie con lui e
+l'Annulla la rimette. Prova: tests/81-tecniche-intensita.test.mjs (13 verdi).
+Restano spenti: ↕ sostituisci esercizio, Libreria Coach e tutto l'elenco qui sopra non
+segnato come vivo. La riga VOLUME collegata è rimandata a Fase 2.
+Nota sui 4 rossi 64.4/69.3/69.4/69.6 (pagina viva Playwright): chiusi ieri sera (passo 33: cinque giri di fila tutti verdi; passo 34: suite 385/385 e 390/390 senza rossi), sono tornati ROSSI in suite dopo la patch B.5 e VERDI al rilancio. Rilanci dedicati di oggi: tutti e quattro (64.4, 69.3, 69.4, 69.6) 3/3 verdi nei rilanci dedicati: stabili.

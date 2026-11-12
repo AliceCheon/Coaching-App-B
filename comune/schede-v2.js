@@ -337,7 +337,7 @@ function eserciziDi(scheda) {
   const elenco = primoCampo(scheda, CAMPI_SCHEDA.esercizi);
   if (!Array.isArray(elenco)) return [];
   return elenco
-    .filter((e) => e && typeof e === "object" && !e.deletedAt)
+    .filter((e) => e && typeof e === "object" && !e.deletedAt && e.tipo !== "tecnica" && e.padreId == null)
     .map(esercizioNormalizzato)
     .sort((a, b) => a.ordine - b.ordine);
 }
@@ -345,6 +345,19 @@ function eserciziDi(scheda) {
 function schedaNormalizzata(scheda, archivio) {
   const s = scheda && typeof scheda === "object" ? scheda : {};
   const esercizi = eserciziDi(s);
+  /* Fase 1: le righe delle tecniche vivono a parte, legate da padreId.
+   * NON sono esercizi e non entrano nei numeri. */
+  const grezzi = primoCampo(s, CAMPI_SCHEDA.esercizi);
+  const tecniche = (Array.isArray(grezzi) ? grezzi : [])
+    .filter((e) => e && typeof e === "object" && !e.deletedAt && e.tipo === "tecnica")
+    .map((e) => ({
+      id: testo(e.id),
+      padreId: testo(e.padreId),
+      tecnica: testo(e.tecnica),
+      settimane: Array.isArray(e.settimane) ? e.settimane : [],
+      parametri: e.parametri && typeof e.parametri === "object" ? e.parametri : null,
+      nota: e["nota"] && typeof e["nota"] === "object" ? e["nota"] : null
+    }));
   return {
     id: testo(s.id),
     codice: testo(primoCampo(s, CAMPI_SCHEDA.codice)) || NON,
@@ -357,6 +370,7 @@ function schedaNormalizzata(scheda, archivio) {
     split: testo(primoCampo(s, CAMPI_SCHEDA.split)),
     aggiornata: testo(primoCampo(s, CAMPI_SCHEDA.aggiornata)),
     esercizi,
+    tecniche,
     numeroEsercizi: esercizi.length,
     archiviata: archivio === true
   };

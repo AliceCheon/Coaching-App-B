@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-- Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo 3c: - righe 1487 · - righe 2737 · - righe 2751-2754 · - righe 2768 · - righe 2781 · - righe 2794 · - righe 3688 · - righe 3950 · - righe 4659 · - righe 4663 · - righe 6513 · - righe 7914 · - righe 8370 · - righe 8527 · - righe 10685 · - righe 10687 · - righe 10689-10688 · - righe 10757-10761
+- Righe di desktop/index.html diverse da pc/index.html, elenco aggiornato al passo B.5 (CSS pannello tecniche, 17 righe inserite dopo la riga 1436; tutti i blocchi successivi aggiornati di 17): - righe 1437-1453 - righe 1504 · - righe 2754 · - righe 2768-2771 · - righe 2785 · - righe 2798 · - righe 2811 · - righe 3705 · - righe 3967 · - righe 4676 · - righe 4680 · - righe 6530 · - righe 7931 · - righe 8387 · - righe 8544 · - righe 10702 · - righe 10704 · - righe 10706-10705 · - righe 10774-10778
 ## Passo 4 — 7 novembre 2026 · la zona B e la copia (con gli esercizi sciolti)
 
 - Perche' una zona separata: B non scrive dove scrive A. La zona si chiama `bdB_atleti/{uid}` e il nome sta **una volta sola** (`ZONA_B` in `comune/modello-dati.js`); la guardia `tests/47` fallisce se il nome compare altrove, se una scrittura nasce fuori dalla zona o se un modulo diverso da `comune/scritture-b.js` contiene un verbo di scrittura.
@@ -699,7 +699,7 @@ Richiesta: prima diagnosi senza modifiche, poi Ctrl+Z identico al pulsante; test
 
 Diagnosi: il pulsante della vista chiama mod.onAnnulla in desktop/app-v31.js, poi editor.annulla(), leggiZonaB(registro) e ultimaAnnullabile. Ctrl+Z era intercettato in window/cattura da doUndo(), con stack/redo e snapshot delle celle data-k; un altro listener document usa annulla() con HIST/REDO. La vista B non usa data-k: nessuna delle due pile storiche legge il registro B.
 
-- righe 10565-10574
+- righe 10582-10591
 Inserite solo sette righe nel gestore storico: con Programma B visibile, Ctrl+Z/Cmd+Z senza Shift/Alt chiama click() sullo stesso button.pg-undo. preventDefault e stopImmediatePropagation evitano sia undo nativo sia i vecchi gestori. Pulsante disabilitato resta inerte, come il clic. Fuori da B, Ctrl+Shift+Z e Ctrl+Y restano sul comportamento storico: non viene introdotto Rifai per B. I numeri dei blocchi successivi sono aggiornati di sette righe; pc/index.html resta congelato.
 
 In desktop/app-v31.js, dopo un salvataggio riuscito, lo stato disabled del pulsante viene riallineato a editor.annullabile, senza ridisegnare. La prova ha evidenziato che dopo aver esaurito gli annullamenti e modificato una cella il pulsante altrimenti restava disabilitato. Nessuna modifica al modello, al CSS o alle funzioni di scrittura; nessun accesso ai dati reali.
@@ -808,3 +808,53 @@ Richiesta Alice dopo il passo B.3: la fila di chip dei gruppi muscolari nel popu
 Fatto: comune/selettore-esercizi-b.js — i chip (bdsel-filtri/bdsel-fchip) escono, entra un <select> (bdsel-sel, aria-label «Filtra per gruppo muscolare») sotto la ricerca: «Tutti» in testa (valore vuoto), poi i gruppi VERI del catalogo in ordine di prima comparsa, nessuno inventato; la scelta (evento change) ridisegna la griglia e si COMBINA con la ricerca per nome (intersezione); alla riapertura il menù riparte su «Tutti» e la ricerca pulita. CSS nuovo bdsel-sel con i colori del modal. Prova 80 riscritta per il menù (80.1 voci = Tutti + gruppi reali in ordine; 80.2 la scelta filtra, il contatore si adegua, si combina con la ricerca, la scelta filtrata arriva a chi ascolta; 80.3 «Tutti» azzera, riapertura pulita, nessuna scrittura). Sempre sola lettura.
 
 Esiti: suite completa NON ripetuta in questa sessione (il banco interrompe il processo della suite a metà, come da nota del passo B.3); prove mirate 77, 79, 80 verdi, zero rossi. Nessuna scrittura su dati veri, banco di prova solo finto. Nessun push: in attesa del via di Alice.
+
+## Passo B.5 — tecniche di intensità come riga figlia (Fase 1, 12/11/2026)
+
+Scostamento dal v31 dichiarato: nel v31 il ⊕ delle tecniche non esiste come comando vivo
+(B lo portava spento, `pulsanteSpento`). Da oggi il ⊕ è vivo e la riga figlia è una
+struttura NUOVA di B, invisibile al v31.
+
+Cosa è vivo (Fase 1, scelte di Alice):
+- Solo la riga della tecnica: Rest-Pause, Myo-Reps, Drop Set. La riga VOLUME collegata è
+  Fase 2; «+ Riga» resta com'è.
+- Il ⊕ apre un pannello con le tre voci; se la tecnica c'è già mostra ✓, i parametri, la
+  nota e «✕ Rimuovi tecnica». Cambiare tecnica tiene le settimane e rinegozia i parametri.
+- I parametri si aprono dal badge della riga figlia. Attivazione e RIR Myo-Reps accettano
+  l'intervallo («12-15», «3-4»); Drop Set porta una percentuale per scalata (nascita [20, 40]).
+- Nota a due livelli: auto (composta dai parametri) e manuale (vince sempre); cambiare un
+  parametro NON tocca la nota a mano; «ripristina automatica» = manuale a null.
+- Settimane modificabili: serie e reps della riga figlia, una cella per settimana, con le
+  regole delle celle (serie 1-99, reps testo ≤ 40).
+- Il Rec della figlia è solo vista («3 resp.», «20-25″», «senza pausa»): NON passa dal
+  validatore delle celle e non ha freccette. Verificato: `recuperoScrittoValido("3 resp.")`
+  è falso — per questo nessuna cella della figlia è scrivibile in Rec.
+
+Struttura dati — riga figlia dentro l'elenco esercizi della scheda, subito sotto il padre:
+`{ tipo:"tecnica", id, padreId, tecnica, settimane:[{serie,reps}], parametri, nota:{auto,manuale}, contaVolume:false }`.
+
+Impatto sulle altre funzioni (verificato in lettura e per prova):
+- Applica progressione (riga): sulla figlia rifiuta e non scrive niente (prova 81.5).
+- Applica progressione (scheda): salta le figlie nel ciclo delle righe vive; il padre
+  cambia, la figlia resta intatta anche nell'annullamento (prova 81.6).
+- Conteggio esercizi: `eserciziDi` in schede-v2.js esclude le figlie — numeroEsercizi,
+  Archivio e conti restano al numero dei padri (prova 81.11).
+- ✕ sull'esercizio: `cancellaEsercizio` marca tolte anche le figlie (voce `figli`) e
+  l'Annulla le rimette ENTRAMBE (prova 81.4).
+- Annulla e Ctrl+Z: l'aggiunta della tecnica nasce come voce «aggiunta-riga» (l'Annulla la
+  toglie, prova 81.3); la voce nuova «modifica-tecnica» porta la riga INTERA di prima e
+  l'Annulla la rimette (prova 81.10); `ultimaAnnullabile` la riconosce.
+- Copia e Archivio: lavorano a livello documento/intera scheda — la figlia viaggia dentro
+  la scheda del padre, nessun codice toccato; i conti dell'Archivio passano da eserciziDi.
+- Logbook: legge le sedute, non le schede — nessun impatto.
+- Svuota scheda / Svuota tutto / ↻ ripristina: nella barra reale di B restano SPENTI
+  (`pulsanteSpento`); l'svuota cablato nel v31 statico opera sul DOM della demo, mai toccato.
+
+Scritture solo su bdB_atleti (documento scheda + voce registro). Schede senza tecniche:
+output di `ricostruisciSchede` identico (prova 81.11). Suite: 356 prove, 4 rossi
+(64.4, 69.3, 69.4, 69.6 — Playwright pagina viva, chiusi ieri sera (passo 33: cinque giri verdi; passo 34: suite 385/385 e 390/390 senza rossi), tornati ROSSI in suite dopo questa patch e VERDI al rilancio; rilanci dedicati di oggi: tutti e quattro (64.4, 69.3, 69.4, 69.6) 3/3 verdi nei rilanci dedicati: stabili), nessun rosso nuovo; 13 prove nuove verdi (tests/81-tecniche-intensita.test.mjs).
+Nessun push.
+
+File toccati: comune/tecniche-b.js (nuovo), comune/modifiche-b.js, comune/schede-v2.js,
+comune/vista-programma.js, comune/editor-schede-b.js, desktop/app-v31.js,
+desktop/index.html (solo CSS del pannello), tests/81-tecniche-intensita.test.mjs (nuovo).

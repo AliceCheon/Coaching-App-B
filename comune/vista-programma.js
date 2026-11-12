@@ -17,6 +17,8 @@
  */
 
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
+
+import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
@@ -891,6 +893,9 @@ function cerchioPiu(doc) {
 function tabellaEsercizi(doc, scheda, r) {
   const mod = r && r.modifica && r.modifica.attivo === true ? r.modifica : null;
   const elenco = scheda.esercizi || [];
+  /* Fase 1: le righe tecniche della scheda, per padre. */
+  const tecnicheRiga = {};
+  ((scheda && scheda.tecniche) || []).forEach((tt) => { if (tt && tt.padreId) tecnicheRiga[tt.padreId] = tt; });
   const quante = (r && r.profilo && r.profilo.durata) || 8;
   const scritte = elenco.map((e) => (e.prescrizione && e.prescrizione.elencoSettimane) || []);
   const numero = Math.max(Number(quante) || 8, ...scritte.map((x) => x.length), 8);
@@ -962,7 +967,10 @@ function tabellaEsercizi(doc, scheda, r) {
 
     const chips = n(doc, "div", "ese-chips");
     ["T", "F", "R", "P"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
-    const piu = pulsanteSpento(doc, "chplus", "", "tecniche di intensità");
+        const tecnicaQui = tecnicheRiga[String(e.id || "")] || null;
+    const piu = mod
+      ? pulsanteVivo(doc, "chplus", "", "tecniche di intensità", () => apriPannelloTecnica(doc, piu, scheda, e, tecnicaQui, mod))
+      : pulsanteSpento(doc, "chplus", "", "tecniche di intensità");
     piu.appendChild(cerchioPiu(doc));
     chips.appendChild(piu);
     const gruppo = n(doc, "span", "abgroup");
@@ -1100,6 +1108,8 @@ function tabellaEsercizi(doc, scheda, r) {
 
     tr.appendChild(n(doc, "td", "c-ult", ultimaVolta(r, scheda, e.nome)));
     corpo.appendChild(tr);
+    const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico);
+    if (trTec) corpo.appendChild(trTec);
   });
   t.appendChild(corpo);
   box.appendChild(t);
@@ -1441,4 +1451,209 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
   contenitore.appendChild(cartaStato(doc, pieno));
   contenitore.appendChild(schede(doc, Object.assign({}, pieno, { prestazioni: r.prestazioni })));
   return contenitore;
+}
+
+/* ---------- Fase 1: la riga della tecnica e il suo pannello --------------- */
+
+function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico) {
+  if (!riga || riga.padreId !== String(padre.id || "") || !riga.tecnica) return null;
+  const tr = n(doc, "tr", "p8-r p8-tec");
+  tr.setAttribute("data-js", String(indice + 1));
+  tr.setAttribute("data-tecnica", String(riga.id || ""));
+  tr.appendChild(n(doc, "td", "c-js", "\u21b3"));
+
+  const dist = n(doc, "td", "c-dist");
+  dist.appendChild(n(doc, "span", "dist", "\u2014"));
+  tr.appendChild(dist);
+
+  const ese = n(doc, "td", "c-ese");
+  const nome = n(doc, "div", "ese-name");
+  const p8ese = n(doc, "span", "p8-ese");
+  const badge = mod
+    ? pulsanteVivo(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica", () => apriPannelloTecnica(doc, badge, scheda, padre, riga, mod))
+    : pulsanteSpento(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica");
+  p8ese.appendChild(badge);
+  nome.appendChild(p8ese);
+  ese.appendChild(nome);
+
+  const chips = n(doc, "div", "ese-chips");
+  ese.appendChild(chips);
+  const chips2 = n(doc, "div", "ese-chips2");
+  ese.appendChild(chips2);
+  tr.appendChild(ese);
+
+  /* La nota: quella scritta a mano vince; il link la rimette automatica. */
+  const nota = n(doc, "td", "c-note");
+  nota.appendChild(n(doc, "span", "p8-note", nomePulito(notaVisibile(riga))));
+  tr.appendChild(nota);
+
+  /* REC dai parametri, solo vista: "3 resp." non e' un recupero scrivibile
+   * e non deve passare dal validatore delle celle. Niente freccette. */
+  const rec = n(doc, "td", "c-rec");
+  rec.appendChild(n(doc, "span", "rec", recTecnica(riga) || "\u2014"));
+  tr.appendChild(rec);
+
+  const tut = n(doc, "td", "c-tut");
+  tut.appendChild(n(doc, "span", "tut", "\u2014"));
+  tr.appendChild(tut);
+
+  const settimane = Array.isArray(riga.settimane) ? riga.settimane : [];
+  for (let k = 0; k < numero; k += 1) {
+    const sc = inScarico(k) ? " sc-col" : "";
+    const sett = settimane[k] || {};
+    const ser = n(doc, "td", "c-ser" + sc);
+    const serSpan = n(doc, "span", "", sett.serie == null ? "\u2014" : nomePulito(sett.serie));
+    if (mod) rendiCellaModificabile(doc, serSpan, mod, {
+      idScheda: scheda.id, codice: scheda.codice, esercizio: "\u21b3 " + nomeTecnica(riga.tecnica),
+      idEsercizio: riga.id, indice: indice, settimana: k + 1,
+      campo: "tecnica-settimana", campoCella: "serie", prima: sett.serie == null ? "" : String(sett.serie)
+    });
+    ser.appendChild(serSpan);
+    tr.appendChild(ser);
+    const rip = n(doc, "td", "c-reps" + sc);
+    const ripSpan = n(doc, "span", "", sett.reps == null ? "\u2014" : nomePulito(sett.reps));
+    if (mod) rendiCellaModificabile(doc, ripSpan, mod, {
+      idScheda: scheda.id, codice: scheda.codice, esercizio: "\u21b3 " + nomeTecnica(riga.tecnica),
+      idEsercizio: riga.id, indice: indice, settimana: k + 1,
+      campo: "tecnica-settimana", campoCella: "reps", prima: sett.reps == null ? "" : String(sett.reps)
+    });
+    rip.appendChild(ripSpan);
+    tr.appendChild(rip);
+  }
+  tr.appendChild(n(doc, "td", "c-ult", "\u2014"));
+  return tr;
+}
+
+/* Il pannello del piu' rotondo: le tre voci, i parametri, la nota. Piccolo,
+ * ancorato al bottone, si chiude cliccando fuori. */
+function apriPannelloTecnica(doc, ancora, scheda, padre, riga, mod) {
+  const win = doc.defaultView;
+  const vecchio = doc.querySelector(".tec-panel-b");
+  if (vecchio) vecchio.remove();
+  const p = n(doc, "div", "tec-panel-b");
+  p.setAttribute("data-tecnica-panel", "true");
+
+  const titolo = n(doc, "div", "tec-titolo", "Tecniche di intensit\u00e0");
+  p.appendChild(titolo);
+  const ricarica = function () { apriPannelloTecnica(doc, ancora, scheda, padre, null, mod); };
+
+  elencoTecniche().forEach((v) => {
+    const scelta = riga && riga.tecnica === v.id;
+    const voce = n(doc, "button", "tec-voce" + (scelta ? " on" : ""));
+    voce.type = "button";
+    voce.textContent = (scelta ? "\u2713 " : "") + v.id;
+    voce.addEventListener("click", () => {
+      p.remove();
+      if (scelta) return;
+      if (!riga) {
+        mod.onCambia({ idScheda: scheda.id, campo: "aggiunta-tecnica", idEsercizio: padre.id, esercizio: nomePulito(padre["nome"]), tecnica: v.id });
+      } else {
+        mod.onCambia({ idScheda: scheda.id, campo: "tecnica-cambia", idEsercizio: riga.id, tecnica: v.id });
+      }
+    });
+    p.appendChild(voce);
+  });
+
+  if (riga) {
+    /* i parametri, un campo per riga */
+    const pp = riga.parametri && typeof riga.parametri === "object" ? riga.parametri : {};
+    const scatola = n(doc, "div", "tec-parametri");
+    const campi = riga.tecnica === "drop-set"
+      ? [{ chiave: "scalate", etichetta: "Scalate (%)", valore: (pp.scalate || []).join(", ") }]
+      : riga.tecnica === "rest-pause"
+        ? [
+          { chiave: "riprese", etichetta: "Riprese", valore: pp.riprese },
+          { chiave: "recuperoSec", etichetta: "Recupero (″)", valore: pp.recuperoSec },
+          { chiave: "maxRiprese", etichetta: "Max riprese", valore: pp.maxRiprese }
+        ]
+        : [
+          { chiave: "attivazione", etichetta: "Attivazione", valore: pp.attivazione },
+          { chiave: "rir", etichetta: "RIR", valore: pp.rir },
+          { chiave: "ripMini", etichetta: "Mini-serie", valore: pp.ripMini },
+          { chiave: "recupero.respiri", etichetta: "Recupero (respiri)", valore: pp.recupero ? pp.recupero.respiri : 3 },
+          { chiave: "maxMini", etichetta: "Max mini-serie", valore: pp.maxMini }
+        ];
+    campi.forEach((c) => {
+      const rigaC = n(doc, "label", "tec-campo");
+      rigaC.appendChild(n(doc, "span", "tec-lab", c.etichetta));
+      const inp = doc.createElement("input");
+      inp.type = "text";
+      inp.value = c.valore == null ? "" : String(c.valore);
+      inp.className = "tec-in";
+      inp.setAttribute("data-chiave", c.chiave);
+      rigaC.appendChild(inp);
+      scatola.appendChild(rigaC);
+    });
+    const salvaPar = n(doc, "button", "tec-salva");
+    salvaPar.type = "button";
+    salvaPar.textContent = "Salva parametri";
+    salvaPar.addEventListener("click", () => {
+      const parametri = {};
+      if (riga.tecnica === "drop-set") {
+        parametri.scalate = [];
+        scatola.querySelectorAll("input").forEach((inp) => {
+          String(inp.value || "").split(",").forEach((pez) => {
+            const nn = Number(pez.trim());
+            if (Number.isFinite(nn) && nn > 0) parametri.scalate.push(nn);
+          });
+        });
+      } else {
+        scatola.querySelectorAll("input").forEach((inp) => {
+          const chiave = inp.getAttribute("data-chiave");
+          const grezzo = inp.value.trim();
+          const valore = grezzo === "" ? null : (Number.isFinite(Number(grezzo)) && grezzo !== "" ? Number(grezzo) : grezzo);
+          if (chiave.indexOf(".") !== -1) {
+            const parti = chiave.split(".");
+            if (!parametri[parti[0]]) parametri[parti[0]] = {};
+            parametri[parti[0]][parti[1]] = valore;
+          } else {
+            parametri[chiave] = valore;
+          }
+        });
+      }
+      p.remove();
+      mod.onCambia({ idScheda: scheda.id, campo: "tecnica-parametri", idEsercizio: riga.id, parametri: parametri });
+    });
+    scatola.appendChild(salvaPar);
+    p.appendChild(scatola);
+
+    /* la nota: manuale vincente, con il ripristino */
+    const etNota = n(doc, "div", "tec-lab", "Nota");
+    p.appendChild(etNota);
+    const ta = doc.createElement("textarea");
+    ta.className = "tec-nota";
+    ta.value = notaVisibile(riga);
+    p.appendChild(ta);
+    const salvaNota = n(doc, "button", "tec-salva");
+    salvaNota.type = "button";
+    salvaNota.textContent = "Salva nota";
+    salvaNota.addEventListener("click", () => {
+      p.remove();
+      mod.onCambia({ idScheda: scheda.id, campo: "tecnica-nota", idEsercizio: riga.id, manuale: ta.value });
+    });
+    p.appendChild(salvaNota);
+
+    const via = n(doc, "button", "tec-voce tec-via");
+    via.type = "button";
+    via.textContent = "\u2715 Rimuovi tecnica";
+    via.addEventListener("click", () => {
+      p.remove();
+      mod.onCambia({ idScheda: scheda.id, campo: "rimozione-tecnica", idEsercizio: riga.id });
+    });
+    p.appendChild(via);
+  }
+
+  doc.body.appendChild(p);
+  if (ancora && ancora.getBoundingClientRect && win) {
+    const r = ancora.getBoundingClientRect();
+    p.style.left = Math.round(r.left) + "px";
+    p.style.top = Math.round(r.bottom + 6 + (win.pageYOffset || 0)) + "px";
+  }
+  const chiudi = (ev) => {
+    if (p.contains(ev.target) || (ev.target === ancora) || (ancora && ancora.contains(ev.target))) return;
+    p.remove();
+    doc.removeEventListener("mousedown", chiudi, true);
+  };
+  doc.addEventListener("mousedown", chiudi, true);
+  return p;
 }
