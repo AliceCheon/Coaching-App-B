@@ -651,23 +651,9 @@ function testata(doc, modifica) {
   }
   top.appendChild(annulla);
 
-  /* Passo 35: il Database esercizi si accende come selettore di sola lettura,
-   * gemello del modal pg-lib del v31: cerca nel catalogo dei 179, si sceglie,
-   * e la scelta aggiunge la riga in fondo alla scheda aperta (passo B). */
-  pulsanteVivo(doc, "pg-lib pg-lib-db", "\ud83d\uddc4 Database esercizi", "apre il Database esercizi", () => {
-    creaSelettoreEserciziB(doc, {
-      /* Passo B: la scelta aggiunge la riga IN FONDO alla scheda aperta
-       * (l'id scheda e' quello della tabella disegnata, come per la
-       * progressione di scheda). Senza editor acceso la scelta resta sola
-       * lettura, come prima. */
-      allaScelta: (scelta) => {
-        if (!mod || typeof mod.onCambia !== "function") return;
-        const tabella = doc.querySelector(".p8-tab[data-scheda]");
-        const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
-        mod.onCambia({ idScheda: idScheda, campo: "aggiunta-riga", esercizio: scelta.n, muscolo: scelta.g });
-      }
-    }).apri();
-  })
+  /* Passo B.2 (12/11/2026): il pulsante Database esercizi della testa e' stato
+   * TOLTO da Alice: non serviva piu', ora che anche «+ Riga» apre il selettore.
+   * La porta di aggiunta e' solo «+ Riga» nella barra strumenti. */
   top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-c", "\ud83d\udcda Libreria Coach", "apre la Libreria Coach"));
   c.appendChild(top);
   return c;
@@ -987,7 +973,9 @@ function tabellaEsercizi(doc, scheda, r) {
       : pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
     gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
     // Passo 28: il + resta inattivo, riservato alle future superserie.
-    gruppo.appendChild(pulsanteSpento(doc, "ab", "\uff0b", "superserie non ancora disponibili"));
+    /* Passo B.2: il ＋ grigio («inserisci progressione sotto» nel v31) e' stato
+     * tolto da Alice: resta solo il ⊕ rotondo, spento, per le future tecniche
+     * di intensita' (superserie, rest pause, myo reps, drop set). */
     chips.appendChild(gruppo);
     ese.appendChild(chips);
 

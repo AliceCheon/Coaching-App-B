@@ -94,6 +94,9 @@ Il pulsante **🗄 Database esercizi** non e’ piu’ solo un selettore: la sce
 ## Aggiornamento 12 novembre 2026 (passo B)
 
 Vivo da oggi: **+ Riga** nella barra strumenti apre il selettore del Database esercizi (prova 79); alla scelta la riga si aggiunge in fondo alla scheda aperta (prova 78). Non e' piu' nell'elenco qui sopra: non e' piu' un tasto finto.
-Restano come stanno: il tondo ⊕ delle tecniche di intensita' (chplus) e il ＋ grigio accanto a ✕ e ⇄ sono entrambi spenti; il ＋ grigio nel v31 diceva «inserisci progressione sotto», oggi in B porta il titolo «superserie non ancora disponibili».
-Nota: il pulsante 🗂 Database esercizi della testa nasce nel codice ma non viene mai attaccato alla pagina (manca il append in testata): a schermo non esiste. Decisione di Alice pendente: toglierlo o attaccarlo.
+Tolti il 12 novembre 2026 (passo B.2, decisione di Alice):
+- il pulsante **Database esercizi** della testa di Programma (non era mai stato attaccato alla pagina; la porta di aggiunta e' solo «+ Riga»);
+- il **＋ grigio** accanto a ✕ e ⇄ (nel v31 diceva «inserisci progressione sotto»): la prova 66.8 ora verifica che non esista piu'.
+Resta come sta: il tondo **⊕** delle tecniche di intensita' (chplus), spento in attesa delle future tecniche (superserie, rest pause, myo reps, drop set).
+
 

@@ -238,10 +238,10 @@ test("66.7 il x marca la riga con deletedAt e si annulla", () => {
 
 /* --- 66.8: la pagina e' collegata ---------------------------------------- */
 
-test("66.8 Applica progressione attivo, + inattivo per le future superserie", () => {
+test("66.8 Applica progressione attivo, il + grigio non esiste piu' (passo B.2)", () => {
   const vista = readFileSync(join(radice, "comune", "vista-programma.js"), "utf8");
   assert.match(vista, /pulsanteVivo\(doc, "ab", "\\u2715"/, "il x deve essere un pulsante vero");
-  assert.match(vista, /pulsanteSpento\(doc, "ab", "\\uff0b", "superserie non ancora disponibili"/, "il + deve restare inattivo");
+  assert.doesNotMatch(vista, /"ab", "\\uff0b"/, "il + grigio non deve piu' esistere (tolto da Alice, passo B.2)");
   assert.doesNotMatch(vista, /pulsanteVivo\(doc, "ab", "\\uff0b"/, "il + non deve aprire progressioni");
   assert.match(vista, /pulsanteVivo\(doc, "tb-prog btn-prog"/, "Applica progressione deve essere attivo");
   assert.match(vista, /campo: "progressione"/, "Applica progressione deve chiedere una progressione alla riga");

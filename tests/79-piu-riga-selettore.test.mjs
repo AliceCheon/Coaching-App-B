@@ -1,5 +1,6 @@
 /* Passo B (12/11/2026): «+ Riga» nella barra strumenti apre il selettore del
- * Database esercizi, come il pulsante 🗂 della testa. Prova sul collegamento
+ * Database esercizi (l'UNICA porta di aggiunta: il pulsante della testa e'
+ * e' stato tolto al passo B.2). Prova sul collegamento
  * della pagina (stile 66.8 e 77.5: lettura del sorgente); la scrittura vera
  * della riga e' provata dalla 78.
  *
