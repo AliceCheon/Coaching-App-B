@@ -20,7 +20,7 @@ import {
   applicaProgressione, applicaProgressioneScheda,
   cancellaEsercizio, annullaModifica, ultimaAnnullabile
 } from "../comune/modifiche-b.js";
-import { notaVisibile, recTecnica, parametriValidi, eTecnica, nomeTecnica } from "../comune/tecniche-b.js";
+import { notaVisibile, recTecnica, parametriValidi, eTecnica, nomeTecnica, contaNelVolume } from "../comune/tecniche-b.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { recuperoScrittoValido } from "../comune/tut-rec.js";
 
@@ -54,7 +54,7 @@ test("il ⊕ aggiunge UNA riga figlia sotto il padre, con le settimane del mocku
   assert.equal(eTecnica(figlia), true);
   assert.equal(figlia.padreId, "ex-1");
   assert.equal(figlia.tecnica, "rest-pause");
-  assert.equal(figlia.contaVolume, false);
+  assert.equal(figlia.contaVolume, true, "le serie della tecnica contano nel volume");
   assert.equal(figlia.settimane.length, 8);
   assert.deepEqual(figlia.settimane[0], { serie: 1, reps: "rest pause" });
   assert.equal(figlia["nota"].manuale, null);
@@ -226,4 +226,18 @@ test("le tre tecniche esistono e si chiamano come nel mockup", () => {
   assert.equal(scalate.ok, true);
   const zero = parametriValidi("drop-set", { scalate: [0] });
   assert.equal(zero.ok, false);
+});
+
+test("le serie della tecnica contano nel volume, anche quelle gia' salvate", () => {
+  const d = datiScheda([padre()]);
+  const esito = aggiungiTecnica(d, { idScheda: "s1", idEsercizio: "ex-1", tecnica: "rest-pause" }, {});
+  const figlia = esito.dati.sheet.exercises[1];
+  assert.equal(contaNelVolume(figlia), true);
+  assert.doesNotMatch(figlia["nota"].auto, /fuori dal volume/);
+  assert.match(figlia["nota"].auto, /contano nel volume/);
+  // le righe scritte dal codice vecchio portano contaVolume false: contano lo stesso
+  assert.equal(contaNelVolume({ tipo: "tecnica", contaVolume: false }), true);
+  // un esercizio normale segue la sua serie
+  assert.equal(contaNelVolume({ contaVolume: true }), true);
+  assert.equal(contaNelVolume({ contaVolume: false }), false);
 });

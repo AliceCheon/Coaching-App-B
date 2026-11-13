@@ -70,7 +70,17 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-- Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.10 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1476 · - righe 1527 · - righe 2777 · - righe 2791-2794 · - righe 2808 · - righe 2821 · - righe 2834 · - righe 3728 · - righe 3990 · - righe 4699 · - righe 4703 · - righe 6553 · - righe 7954 · - righe 8410 · - righe 8567 · - righe 10605-10614 · - righe 10725 · - righe 10727 · - righe 10729 · - righe 10797-10801
+- Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.11 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1481 · - righe 1532 · - righe 2782 · - righe 2796-2799 · - righe 2813 · - righe 2826 · - righe 2839 · - righe 3733 · - righe 3995 · - righe 4704 · - righe 4708 · - righe 6558 · - righe 7959 · - righe 8415 · - righe 8572 · - righe 10610-10619 · - righe 10730 · - righe 10732 · - righe 10734 · - righe 10802-10806
+## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
+
+- Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
+- Il difetto vero: la figlia mostrava solo la capsula «REST-PAUSE», e scorrendo una scheda lunga non si sapeva più a quale esercizio appartenesse. Adesso il nome del padre si ripete nella cella Esercizio, con la stessa `nomePulito` di sempre (`lat_machine_triangolo` → «Lat machine triangolo»).
+- La lettera del distretto arriva nella colonna Dist. con la stessa `codiceDistretto` del padre, al posto del trattino che c'era prima.
+- Sotto il nome, la tecnica in corsivo in forma leggibile: «REST-PAUSE» → *Rest pause*, «MYO-REPS» → *Myo reps*. La forma la ricava `nomeTecnicaCorsivo` dal nome vero della tecnica (minuscolo, trattini in spazi, maiuscola alla prima parola): nessun nome scritto a mano, così una tecnica aggiunta domani si legge da sola.
+- La capsula a gradiente resta (l'ha approvata lei nel mockup, ed è il bottone che apre i parametri), e la X resta accanto: il corsivo sta sotto, la capsula sopra, quindi il testo non si duplica nella stessa riga.
+- Foglio: 4 regole nuove, dopo il blocco del B.10. Nel scuro il nome del padre in `#E6D9F7` e il corsivo in lavanda; sul chiaro `#3A2A4E` e `#7A34C4`, perché la lavanda sul rosa non si legge. Nessuna priorità forzata.
+- Il resto della riga non è toccato: serie, riprese, recupero, nota e conteggi restano com'erano.
+- Prove: `tests/87-riga-tecnica-nome-ese.test.mjs`, 4 controlli sulla riga disegnata con jsdom (nome pulito, lettera uguale a quella del padre, corsivo nel testo e nel foglio, colori dei due temi).
 ## Passo B.10 — 13 novembre 2026 · il badge demo e i due pulsanti Svuota leggibili sul chiaro
 
 - Restavano fuori dalla tabella, quindi il B.9 non li aveva toccati: il badge «demo» accanto a «+ Nuova progressione» e «Copia/Sposta esercizi», e i due pulsanti rossi «Svuota scheda» / «Svuota tutto il programma».
@@ -898,3 +908,19 @@ Nessun push.
 File toccati: comune/tecniche-b.js (nuovo), comune/modifiche-b.js, comune/schede-v2.js,
 comune/vista-programma.js, comune/editor-schede-b.js, desktop/app-v31.js,
 desktop/index.html (solo CSS del pannello), tests/81-tecniche-intensita.test.mjs (nuovo).
+
+## Passo B.12
+
+**Il volume.** Le serie con la tecnica di intensita' contano nel volume.
+Alice, 13/11/2026: «devono rientrarci eccome». Prima la riga figlia nasceva
+con `contaVolume: false` e la nota automatica lo diceva a schermo
+(«fuori dal volume»): adesso nasce con `contaVolume: true` e le tre note
+automatiche dicono «contano nel volume».
+
+Le righe gia' salvate col codice vecchio portano ancora `false`: non si
+riscrive nessun documento, ci pensa `contaNelVolume()` in `comune/tecniche-b.js`,
+che per una riga `tipo: "tecnica"` risponde sempre «conta». Chi somma il
+volume passa da li', quindi vecchie e nuove tecniche pesano uguale.
+
+Nessuna riga di `desktop/index.html` cambiata in questo passo: l'elenco dei
+blocchi resta quello qui sopra.

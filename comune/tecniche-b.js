@@ -8,13 +8,14 @@
  *     settimane: [{ serie: 1, reps: "rest pause" }, ...],   // testo libero
  *     parametri: { ...della tecnica... },
  *     nota: { auto: "...", manuale: null | "..." },
- *     contaVolume: false }
+ *     contaVolume: true }
  *
  * Regole del filone (valgono qui):
  *  - scritture solo su bdB_atleti (la scheda passa da modifiche-b.js);
  *  - schede esistenti identiche: senza tecnica la riga figlia NON esiste;
- *  - non conta nel volume e non conta come esercizio (contaVolume false,
- *    schede-v2.js la esclude dai numeri);
+ *  - CONTA nel volume: le serie con la tecnica sono lavoro fatto (scelta di
+ *    Alice, 13/11/2026). Non conta come esercizio: schede-v2.js la esclude dai
+ *    numeri degli esercizi, non dal volume;
  *  - la nota mostrata e' manuale || auto; i parametri restano separati.
  */
 
@@ -57,6 +58,15 @@ export function nomeTecnica(id) {
   return t ? t.nome : "";
 }
 
+/* Il volume: la serie con la tecnica e' lavoro fatto, quindi conta SEMPRE.
+ * La funzione normalizza anche le righe salvate prima del 13/11/2026, che
+ * portano contaVolume false scritto dal codice vecchio. */
+export function contaNelVolume(e) {
+  if (!e || typeof e !== "object") return false;
+  if (eTecnica(e)) return true;
+  return e.contaVolume !== false;
+}
+
 export function eTecnica(e) {
   return Boolean(e) && typeof e === "object" && e.tipo === "tecnica";
 }
@@ -75,7 +85,7 @@ export function notaAutomatica(tecnica, parametri) {
     const rec = Number(p.recuperoSec) || 20;
     return "Serie tocca il cedimento, poi " + rec + "\u2033 e " + (Number(p.riprese) || 5)
       + " ripetizioni, ripeti finché non chiudi più " + (Number(p.riprese) || 5)
-      + ": lì ti fermi. Le riprese sono tecnica: fuori dal volume.";
+      + ": lì ti fermi. Le riprese sono tecnica e contano nel volume.";
   }
   if (tecnica === "myo-reps") {
     const att = String(p.attivazione == null ? "" : p.attivazione) || "12-15";
@@ -84,13 +94,13 @@ export function notaAutomatica(tecnica, parametri) {
     const mini = Number(p.ripMini) || 5;
     return "Serie attivatrice da " + att + " ripetizioni a RIR " + rir + ". Poi "
       + respiri + " respiri e mini-serie da " + mini
-      + ", ripeti finché non chiudi più " + mini + ": lì ti fermi. Le mini-serie sono tecniche: fuori dal volume.";
+      + ", ripeti finché non chiudi più " + mini + ": lì ti fermi. Le mini-serie sono tecnica e contano nel volume.";
   }
   if (tecnica === "drop-set") {
     const sc = Array.isArray(p.scalate) ? p.scalate : [20, 40];
     const parti = sc.map((s, i) => "scalata " + (i + 1) + " al \u2212" + (Number(s) || 0) + "%");
     return "Serie tocca il cedimento, poi " + parti.join(" e ")
-      + ", senza pausa. Le scalate sono tecniche: fuori dal volume.";
+      + ", senza pausa. Le scalate sono tecnica e contano nel volume.";
   }
   return "";
 }
@@ -118,7 +128,7 @@ export function rigaTecnica(tecnica, idPadre, settimane, generaId) {
     settimane: settimaneNuove,
     parametri: parametri,
     nota: { auto: notaAutomatica(String(tecnica), parametri), manuale: null },
-    contaVolume: false
+    contaVolume: true
   };
 }
 
