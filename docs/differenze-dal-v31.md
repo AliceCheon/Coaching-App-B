@@ -956,11 +956,11 @@ blocchi resta quello qui sopra.
   distretto. Chi entra lo decide solo `contaNelVolume()`, quindi le tecniche
   contano sempre, comprese le righe vecchie con il campo a false.
 - peso mancante: serie e ripetizioni contano, il tonnellaggio resta null e la
-  colonna dice «non registrato», mai zero. Una settimana non scritta non entra
+  colonna dice ï¿½non registratoï¿½, mai zero. Una settimana non scritta non entra
   nel conto: lo zero e' un dato, il vuoto no.
 - `righeDalleSchede()` e' l'unico punto che conosce la forma della scheda: il
   conto non sa da dove arrivano le righe, quindi il Logbook si aggancia li'.
-- la pagina «Riepilogo volume» non ha piu' numeri fissi: `comune/vista-volume.js`
+- la pagina ï¿½Riepilogo volumeï¿½ non ha piu' numeri fissi: `comune/vista-volume.js`
   disegna i KPI e le due tabelle dal risultato del conto, chiamato nel giro di
   disegno di `desktop/app-v31.js`.
 - test: `tests/88-volume.test.mjs`, sette prove con numeri scelti e verificati
@@ -978,15 +978,30 @@ blocchi resta quello qui sopra.
   voce: dieci esercizi da App A (backup del 4/11/2026, campi `primaryMuscles` e `secondaryMuscles`
   dentro `biomechanics`), gli altri dalle risposte di Alice del 13/11/2026. Chi non e' in mappa resta
   senza secondari e conta solo come diretto: la pagina scrive quanti sono.
-- La regola dell'accosciata e' codice, non tabella: se il nome contiene «glutei» comanda il gluteo con
+- La regola dell'accosciata e' codice, non tabella: se il nome contiene ï¿½gluteiï¿½ comanda il gluteo con
   il quadricipite di sponda, altrimenti comanda il quadricipite; i femorali non sono mai secondari in
-  un'accosciata. L'eccezione di «Affondo pesante triset» (primario glutei) e' un dato dichiarato, e il
+  un'accosciata. L'eccezione di ï¿½Affondo pesante trisetï¿½ (primario glutei) e' un dato dichiarato, e il
   dato non viene calpestato dalla regola.
-- La riga tecnica eredita distretto **e** secondari dal padre; lo switch «Solo diretto / Diretto +
-  indiretto» rifa' il conto, non aggiusta il totale a mano.
+- La riga tecnica eredita distretto **e** secondari dal padre; lo switch ï¿½Solo diretto / Diretto +
+  indirettoï¿½ rifa' il conto, non aggiusta il totale a mano.
 - La pagina mostra Dirette / Indirette / Totale, la mappa settimana x distretto, il box sinergie in
   percentuale e la riga in chiaro con la regola.
 - test: `tests/88` aggiornato (senza tonnellaggio), `tests/89` nuovo con la panca (3 serie: petto 3
   dirette, spalle e tricipiti 1,5 indirette), la tecnica che eredita, l'esercizio senza secondari, lo
   switch, la regola dell'accosciata e la copertura di tutti e 79 gli esercizi dei cinque programmi.
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
+
+## Passo B.14e
+
+Il volume legge anche il Logbook: le serie chiuse, settimana per settimana.
+
+- `comune/volume-b.js`: `righeDalLogbook()` (le serie chiuse, le ripetizioni vere)
+  e la cella che porta `ripetizioniTotali` / `ripetizioniMancanti`; la settimana 0
+  e' il secchio Â«senza settimanaÂ», entra nel totale e resta fuori dalla media.
+- `comune/vista-volume.js`: secondo switch Â«Dalla scheda / Dal LogbookÂ», che rifa'
+  il conto invece di aggiustare i numeri.
+- `desktop/app-v31.js`: `renderVolume` riceve `sedute: lb.sedute` e viene chiamato
+  dopo il Logbook (una riga spostata, niente altro).
+- `tests/90-volume-logbook.test.mjs`: 9 prove nuove.
+- `desktop/index.html`: **nessuna riga toccata** in questo passo (lo switch nuovo
+  riusa `.rv-seg`), quindi l'elenco dei blocchi qui sopra resta valido.

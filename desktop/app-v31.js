@@ -500,8 +500,6 @@ export async function avvia(doc, win) {
       stato.ridisegni += 1;
 
     }
-    /* Passo B.14: la pagina del volume legge il conto delle schede, non i numeri fissi. */
-    renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8 });
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
       modifica: {
         attivo: true,
@@ -587,6 +585,8 @@ export async function avvia(doc, win) {
       const ovSed = doc.getElementById("ov-sed");
       if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
     }
+    /* Passo B.14e: il volume sa leggere anche il Logbook — le serie chiuse. */
+    renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8, sedute: lb.sedute });
     notaLogbook(doc, lb);
     rimettiScorrimento(doc, win, scorrimentoPrima);
     return { ridisegnato: true };

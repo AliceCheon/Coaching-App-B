@@ -38,7 +38,9 @@ export const CAMPI_VOLUME = Object.freeze({
   settimane: Object.freeze(["settimane", "weeks", "elencoSettimane"]),
   numeroSettimana: Object.freeze(["settimana", "week", "weekNumber", "numero"]),
   serie: Object.freeze(["serie", "sets", "set"]),
-  ripetizioni: Object.freeze(["ripetizioni", "reps", "repsTesto"])
+  ripetizioni: Object.freeze(["ripetizioni", "reps", "repsTesto"]),
+  ripetizioniTotali: Object.freeze(["ripetizioniTotali", "repsTotali"]),
+  ripetizioniMancanti: Object.freeze(["ripetizioniMancanti", "repsMancanti"])
 });
 
 function primoCampo(oggetto, nomi) {
@@ -122,10 +124,12 @@ function chiudi(c) {
 /* Somma una riga dentro una cella: le serie vanno sui primari a punto pieno,
  * sui secondari a mezzo punto. Un distretto che e' gia' primario non prende
  * anche il mezzo punto. */
-function sommaRiga(c, serie, ripetizioni, primari, secondari) {
+function sommaRiga(c, serie, ripetizioni, primari, secondari, totali, mancanti) {
   c.serie += serie;
-  if (ripetizioni != null) c.ripetizioni += serie * ripetizioni;
+  if (totali != null && Number.isFinite(totali)) c.ripetizioni += totali;
+  else if (ripetizioni != null) c.ripetizioni += serie * ripetizioni;
   else c.ripetizioniMancanti += serie;
+  if (Number.isFinite(mancanti) && mancanti > 0) c.ripetizioniMancanti += mancanti;
   c.dirette += PUNTO_BERSAGLIO * serie * primari.length;
   const secondariUtili = secondari.filter((d) => primari.indexOf(d) === -1);
   c.indirette += PUNTO_SECONDARIO * serie * secondariUtili.length;
@@ -195,25 +199,27 @@ export function contaVolume(righe, opzioni) {
       const serie = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.serie));
       if (serie == null || serie <= 0) continue;
       const ripetizioni = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioni));
+      const totali = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioniTotali));
+      const mancanti = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioniMancanti));
       const numeroGrezzo = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.numeroSettimana));
-      const numero = numeroGrezzo != null && numeroGrezzo > 0 ? Math.floor(numeroGrezzo) : k + 1;
+      const numero = numeroGrezzo != null && numeroGrezzo >= 0 ? Math.floor(numeroGrezzo) : k + 1;
 
       if (!settimane[numero]) settimane[numero] = cella();
       const utili = sommaRiga(settimane[numero], serie, ripetizioni, primari, secondari);
       primari.forEach((d) => {
         const c = cellaDistretto(d);
-        sommaRiga(c, serie, ripetizioni, [d], []);
+        sommaRiga(c, serie, ripetizioni, [d], [], totali, mancanti);
         if (!mappa[d][numero]) mappa[d][numero] = cella();
-        sommaRiga(mappa[d][numero], serie, ripetizioni, [d], []);
+        sommaRiga(mappa[d][numero], serie, ripetizioni, [d], [], totali, mancanti);
       });
       utili.forEach((d) => {
         const c = cellaDistretto(d);
-        sommaRiga(c, serie, ripetizioni, [], [d]);
+        sommaRiga(c, serie, ripetizioni, [], [d], totali, mancanti);
         if (!mappa[d][numero]) mappa[d][numero] = cella();
-        sommaRiga(mappa[d][numero], serie, ripetizioni, [], [d]);
+        sommaRiga(mappa[d][numero], serie, ripetizioni, [], [d], totali, mancanti);
       });
       /* il totale del programma: una volta sola, con primari e secondari */
-      sommaRiga(totale, serie, ripetizioni, primari, secondari);
+      sommaRiga(totale, serie, ripetizioni, primari, secondari, totali, mancanti);
     }
   });
 
@@ -232,9 +238,11 @@ export function contaVolume(righe, opzioni) {
   });
 
   const chiuso = chiudi(totale);
+  const fuoriSettimana = settimane[0] ? chiudi(settimane[0]) : null;
   const dirette = soloDiretto ? chiuso.dirette : chiuso.dirette;
   const indirette = soloDiretto ? 0 : chiuso.indirette;
-  const settimaneViste = elencoSettimane.filter((s) => s.serie > 0);
+  /* La settimana 0 e' il secchio senza settimana: entra nel totale, non nella media. */
+  const settimaneViste = elencoSettimane.filter((s) => s.serie > 0 && s.numero > 0);
   const picco = settimaneViste.reduce((max, s) => {
     const v = soloDiretto ? s.dirette : s.totale;
     const m = max ? (soloDiretto ? max.dirette : max.totale) : -1;
@@ -250,6 +258,7 @@ export function contaVolume(righe, opzioni) {
     settimane: elencoSettimane.map((s) => Object.assign({}, s, { totale: soloDiretto ? s.dirette : s.totale, indirette: soloDiretto ? 0 : s.indirette })),
     distretti: elencoDistretti.map((d) => Object.assign({}, d, { totale: soloDiretto ? d.dirette : d.totale, indirette: soloDiretto ? 0 : d.indirette })),
     perDistrettoSettimana,
+    senzaSettimana: fuoriSettimana,
     settimaneContate: settimaneViste.length,
     mediaDirette: settimaneViste.length ? Math.round((sommaDirette / settimaneViste.length) * 10) / 10 : null,
     mediaTotale: settimaneViste.length ? Math.round(((soloDiretto ? sommaDirette : sommaTotale) / settimaneViste.length) * 10) / 10 : null,
@@ -275,7 +284,7 @@ export function righeDalleSchede(schede) {
     const esercizi = Array.isArray(scheda.esercizi) ? scheda.esercizi : [];
     esercizi.forEach((e) => {
       if (!e || typeof e !== "object" || e.deletedAt) return;
-      const nome = testo(primoCampo(e, CAMPI_VOLUME.nome));
+      const nome = testo(e.n != null ? e.n : primoCampo(e, CAMPI_VOLUME.nome));
       const distretto = testo(primoCampo(e, CAMPI_VOLUME.distretto));
       const muscoli = muscoliEsercizio(nome, distretto);
       const comune = {
@@ -297,4 +306,92 @@ export function righeDalleSchede(schede) {
     });
   });
   return out;
+}
+
+/* Il ponte con il Logbook: prende le sedute come le legge l'app (la forma di
+ * seduteLogbook: { w, sc, ex: [{ n, np, cs: [[kg, reps, rpe, rir]] }] }) e ne fa
+ * righe per contaVolume. Una riga per esercizio, una cella per settimana.
+ *
+ * Regole dichiarate:
+ *  - le serie sono quelle CHIUSE (una voce in cs), non quelle prescritte: il
+ *    volume eseguito e' quello che e' stato fatto;
+ *  - le ripetizioni sono la somma di quelle vere, non una media: si scrive
+ *    ripetizioniTotali, perche' 8 + 8 + 10 non e' 3 x 9;
+ *  - una serie chiusa senza ripetizioni vale una serie e si dichiara mancante;
+ *  - la settimana e' quella che la seduta porta. Se non la porta, la cella va
+ *    nel secchio 0 (senza settimana): entra nel totale e resta fuori dalla
+ *    media. Una settimana non si inventa dal calendario.
+ * I distretti vengono dalla stessa mappa del volume (muscoliEsercizio): il
+ * Logbook non porta il gruppo muscolare.
+ */
+export function righeDalLogbook(voci) {
+  const elenco = Array.isArray(voci) ? voci : [];
+  const perNome = Object.create(null);
+  const out = [];
+  let seduteLette = 0;
+  let seduteUsate = 0;
+  let senzSettimana = 0;
+  let serieSenzaRip = 0;
+
+  elenco.forEach((s) => {
+    if (!s || typeof s !== "object") return;
+    seduteLette += 1;
+    const grezza = s.w != null ? s.w : primoCampo(s, CAMPI_VOLUME.numeroSettimana);
+    const settimana = numeroDaTesto(grezza);
+    const numero = settimana != null && settimana >= 0 ? Math.floor(settimana) : 0;
+    const esercizi = Array.isArray(s.ex) ? s.ex : Array.isArray(s.esercizi) ? s.esercizi : [];
+    let usata = false;
+    esercizi.forEach((e) => {
+      if (!e || typeof e !== "object") return;
+      const nome = testo(e.n != null ? e.n : primoCampo(e, CAMPI_VOLUME.nome));
+      if (!nome) return;
+      const chiuse = (Array.isArray(e.cs) ? e.cs : []).filter((cs) => Array.isArray(cs));
+      if (!chiuse.length) return;
+      const chiave = normalizzaNome(nome);
+      let riga = perNome[chiave];
+      if (!riga) {
+        const muscoli = muscoliEsercizio(nome, "");
+        riga = {
+          id: chiave,
+          nome,
+          primari: muscoli ? muscoli.primari.slice() : [],
+          secondari: muscoli ? muscoli.secondari.slice() : [],
+          fonte: muscoli ? muscoli.fonte : "",
+          settimane: [],
+          dentro: Object.create(null)
+        };
+        perNome[chiave] = riga;
+        out.push(riga);
+      }
+      let cella = riga.dentro[numero];
+      if (!cella) {
+        cella = { settimana: numero, serie: 0, ripetizioniTotali: 0, ripetizioniMancanti: 0 };
+        riga.dentro[numero] = cella;
+        riga.settimane.push(cella);
+      }
+      chiuse.forEach((cs) => {
+        cella.serie += 1;
+        const reps = Number(cs[1]);
+        if (Number.isFinite(reps) && reps > 0) cella.ripetizioniTotali += reps;
+        else {
+          cella.ripetizioniMancanti += 1;
+          serieSenzaRip += 1;
+        }
+      });
+      usata = true;
+    });
+    if (!usata) return;
+    seduteUsate += 1;
+    if (numero === 0) senzSettimana += 1;
+  });
+
+  out.forEach((r) => {
+    r.settimane.sort((a, b) => a.settimana - b.settimana);
+    delete r.dentro;
+  });
+
+  return {
+    righe: out,
+    dichiarazioni: { seduteLette, seduteUsate, senzSettimana, serieSenzaRip }
+  };
 }

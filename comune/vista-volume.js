@@ -1,13 +1,17 @@
-/* Barbell Diva B — la schermata «Riepilogo volume» legge il conto (B.14, B.14d).
+/* Barbell Diva B — la schermata «Riepilogo volume» legge il conto (B.14, B.14d, B.14e).
  *
  * Il conto sta in comune/volume-b.js; qui c'e' solo il disegno. Nessun numero
  * scritto a mano: se il conto dice «non registrato», la pagina dice lo stesso.
  *
  * B.14d: colonne Dirette / Indirette / Totale, switch Solo diretto /
  * Diretto + indiretto, mappa settimana x distretto, box Sinergie %.
+ * B.14e: due fonti, e uno switch le sceglie. «Dalla scheda» e' il lavoro
+ * scritto (la prescrizione). «Dal Logbook» e' il lavoro fatto: le serie chiuse,
+ * con le ripetizioni vere. Sono due conti diversi e restano diversi: la pagina
+ * non somma l'uno con l'altro e non spaccia l'uno per l'altro.
  */
 
-import { contaVolume, righeDalleSchede, formattaNumero, testoVolume, VOLUME_NON_REGISTRATO } from "./volume-b.js";
+import { contaVolume, righeDalleSchede, righeDalLogbook, formattaNumero, testoVolume, VOLUME_NON_REGISTRATO } from "./volume-b.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -47,7 +51,12 @@ function tabella(doc, intestazioni, righe) {
 }
 
 function numeroOTrattino(valore) {
-  return valore == null ? "\u2014" : formattaNumero(valore);
+  return valore == null ? "—" : formattaNumero(valore);
+}
+
+/* La settimana 0 non e' «S0»: e' il secchio di chi la settimana non la porta. */
+function nomeSettimana(numero) {
+  return numero > 0 ? "S" + numero : "senza sett.";
 }
 
 /* La scala dei colori della mappa: rosa con trasparenza crescente, cosi' legge
@@ -60,7 +69,7 @@ function tintaPeso(quota) {
 }
 
 /* Mappa settimana x distretto: una riga per distretto, una colonna per
- * settimana, il numero dentro la cella. `soloDiretto` decide cosa si legge. */
+ * settimana, il numero dentro la cella. soloDiretto decide cosa si legge. */
 function mappaSettimane(doc, conto, quante, soloDiretto) {
   const distretti = conto.distretti.map((d) => d.distretto);
   const settimane = [];
@@ -88,40 +97,63 @@ function mappaSettimane(doc, conto, quante, soloDiretto) {
     settimane.forEach((w) => {
       const c = perNumero[w];
       const v = c ? (soloDiretto ? c.dirette : c.totale) : 0;
-      const cella = n(doc, "div", "rv-hc" + (v ? "" : " vuoto"), v ? formattaNumero(v) : "\u2014");
+      const cella = n(doc, "div", "rv-hc" + (v ? "" : " vuoto"), v ? formattaNumero(v) : "—");
       cella.style.background = tintaPeso(v / massimo);
-      cella.title = d + " \u00b7 S" + w + " \u00b7 " + (v ? formattaNumero(v) : "niente di scritto")
+      cella.title = d + " · S" + w + " · " + (v ? formattaNumero(v) : "niente di scritto")
         + (c && !soloDiretto ? " (dirette " + formattaNumero(c.dirette) + ", indirette " + formattaNumero(c.indirette) + ")" : "");
       griglia.appendChild(cella);
     });
     const riga = conto.distretti.find((x) => x.distretto === d);
-    griglia.appendChild(n(doc, "div", "rv-ht", riga ? formattaNumero(soloDiretto ? riga.dirette : riga.totale) : "\u2014"));
+    griglia.appendChild(n(doc, "div", "rv-ht", riga ? formattaNumero(soloDiretto ? riga.dirette : riga.totale) : "—"));
   });
   return griglia;
 }
 
-/* Schede -> righe -> conto -> schermo. Lo switch ridisegna tutto: il conto
- * rifatto con soloDiretto, non un totale aggiustato a mano dopo. */
+/* Righe -> conto -> schermo. Due switch (fonte e cosa conta) rifanno il conto
+ * da capo: non aggiustano i numeri dopo. */
 export function renderVolume(doc, contenitore, schede, opzioni) {
   if (!doc || !contenitore) return null;
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   const quante = Number.isFinite(Number(o.quante)) && Number(o.quante) > 0 ? Math.floor(Number(o.quante)) : 8;
-  const righe = righeDalleSchede(schede);
+  const dalLogbook = righeDalLogbook(o.sedute);
+  const righeScheda = righeDalleSchede(schede);
+  const haLogbook = Array.isArray(o.sedute) && o.sedute.length > 0;
+  let fonte = o.fonte === "logbook" && haLogbook ? "logbook" : "scheda";
   let soloDiretto = o.soloDiretto === true;
 
   const disegna = () => {
+    const dalLog = fonte === "logbook";
+    const righe = dalLog ? dalLogbook.righe : righeScheda;
     const conto = contaVolume(righe, { quante, soloDiretto });
     contenitore.textContent = "";
 
     const testa = n(doc, "div", "rv-testa");
     const colonna = n(doc, "div");
-    colonna.appendChild(n(doc, "div", "v-occhiello", "Programmi \u00b7 Riepilogo volume"));
+    colonna.appendChild(n(doc, "div", "v-occhiello", "Programmi · Riepilogo volume"));
     const titolo = n(doc, "h2");
-    titolo.appendChild(doc.createTextNode("Quanto lavoro, "));
-    titolo.appendChild(n(doc, "i", "", "dove"));
+    titolo.appendChild(doc.createTextNode(dalLog ? "Quanto lavoro, " : "Quanto lavoro, "));
+    titolo.appendChild(n(doc, "i", "", dalLog ? "fatto" : "dove"));
     colonna.appendChild(titolo);
-    colonna.appendChild(n(doc, "p", "v-testo", "Serie per distretto, settimana per settimana. Il volume e' serie \u00d7 ripetizioni: il tonnellaggio non entra in questo conto."));
+    colonna.appendChild(n(doc, "p", "v-testo", dalLog
+      ? "Serie chiuse nel Logbook, settimana per settimana: quello che hai fatto davvero, non quello che c'era scritto. Il volume e' serie × ripetizioni."
+      : "Serie per distretto, settimana per settimana. Il volume e' serie × ripetizioni: il tonnellaggio non entra in questo conto."));
+
+    if (haLogbook) {
+      const fonti = n(doc, "div", "rv-seg");
+      fonti.setAttribute("role", "group");
+      fonti.setAttribute("aria-label", "da dove si legge il volume");
+      const f1 = n(doc, "button", dalLog ? "" : "on", "Dalla scheda");
+      const f2 = n(doc, "button", dalLog ? "on" : "", "Dal Logbook");
+      f1.setAttribute("type", "button");
+      f2.setAttribute("type", "button");
+      f1.onclick = () => { if (fonte !== "scheda") { fonte = "scheda"; disegna(); } };
+      f2.onclick = () => { if (fonte !== "logbook") { fonte = "logbook"; disegna(); } };
+      fonti.appendChild(f1);
+      fonti.appendChild(f2);
+      colonna.appendChild(fonti);
+    }
     testa.appendChild(colonna);
+
     const switchBox = n(doc, "div", "rv-seg");
     switchBox.setAttribute("role", "group");
     switchBox.setAttribute("aria-label", "cosa conta nel totale");
@@ -146,23 +178,26 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     kpi.appendChild(cartaKpi(doc, "Media settimana", numeroOTrattino(conto.mediaTotale), soloDiretto ? "serie dirette" : "serie efficaci"));
     kpi.appendChild(cartaKpi(
       doc, "Picco",
-      conto.picco ? "S" + conto.picco.numero : "\u2014",
+      conto.picco ? "S" + conto.picco.numero : "—",
       conto.picco ? formattaNumero(conto.picco.valore) + " serie" : "nessuna serie scritta"
     ));
     kpi.appendChild(cartaKpi(doc, "Dirette", numeroOTrattino(conto.totale.dirette), "al bersaglio, 1 punto"));
-    kpi.appendChild(cartaKpi(doc, "Indirette", soloDiretto ? "\u2014" : numeroOTrattino(conto.totale.indirette), soloDiretto ? "spente dallo switch" : "ai secondari, mezzo punto"));
-    kpi.appendChild(cartaKpi(doc, "Sinergie", conto.sinergiePct == null ? "\u2014" : formattaNumero(conto.sinergiePct) + "%", "del volume totale"));
+    kpi.appendChild(cartaKpi(doc, "Indirette", soloDiretto ? "—" : numeroOTrattino(conto.totale.indirette), soloDiretto ? "spente dallo switch" : "ai secondari, mezzo punto"));
+    kpi.appendChild(cartaKpi(doc, "Sinergie", conto.sinergiePct == null ? "—" : formattaNumero(conto.sinergiePct) + "%", "del volume totale"));
     contenitore.appendChild(kpi);
 
     if (!conto.righeContate) {
-      contenitore.appendChild(n(doc, "p", "pg-vuoto", "Nessuna riga da contare: le schede di questo programma non portano esercizi leggibili. Non si mettono zeri al posto loro."));
+      contenitore.appendChild(n(doc, "p", "pg-vuoto", dalLog
+        ? "Nessuna serie chiusa nel Logbook: non c'e' lavoro eseguito da contare. Gli zeri non si mettono al posto suo."
+        : "Nessuna riga da contare: le schede di questo programma non portano esercizi leggibili. Non si mettono zeri al posto loro."));
+      if (dalLog) dichiaraLogbook(doc, contenitore, dalLogbook);
       return conto;
     }
 
     const cardDistretti = n(doc, "div", "rv-card");
     const ch1 = n(doc, "div", "rv-ch");
     ch1.appendChild(n(doc, "h4", "", "Serie per distretto"));
-    ch1.appendChild(n(doc, "span", "", conto.righeContate + " righe contate \u00b7 " + conto.fuoriVolume + " fuori volume"));
+    ch1.appendChild(n(doc, "span", "", conto.righeContate + " righe contate · " + conto.fuoriVolume + " fuori volume"));
     cardDistretti.appendChild(ch1);
     if (!conto.distretti.length) {
       cardDistretti.appendChild(n(doc, "p", "pg-vuoto", "Nessun distretto riconosciuto: il documento non porta il gruppo muscolare e la mappa non conosce questi nomi. Il conto non lo inventa."));
@@ -173,7 +208,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
         conto.distretti.map((d) => [
           d.distretto,
           formattaNumero(d.dirette),
-          soloDiretto ? "\u2014" : formattaNumero(d.indirette),
+          soloDiretto ? "—" : formattaNumero(d.indirette),
           formattaNumero(soloDiretto ? d.dirette : d.totale)
         ])
       ));
@@ -182,7 +217,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
 
     const cardMappa = n(doc, "div", "rv-card");
     const ch2 = n(doc, "div", "rv-ch");
-    ch2.appendChild(n(doc, "h4", "", "Mappa settimana \u00d7 distretto"));
+    ch2.appendChild(n(doc, "h4", "", "Mappa settimana × distretto"));
     ch2.appendChild(n(doc, "span", "", soloDiretto ? "solo diretto" : "con le sinergie dentro"));
     cardMappa.appendChild(ch2);
     if (conto.distretti.length) cardMappa.appendChild(mappaSettimane(doc, conto, quante, soloDiretto));
@@ -198,17 +233,17 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
       doc,
       ["Sett.", "Serie", "Dirette", "Indirette", "Totale"],
       conto.settimane.map((s) => [
-        "S" + s.numero,
-        s.serie > 0 ? formattaNumero(s.serie) : "\u2014",
-        s.serie > 0 ? formattaNumero(s.dirette) : "\u2014",
-        soloDiretto || s.serie <= 0 ? "\u2014" : formattaNumero(s.indirette),
-        s.serie > 0 ? formattaNumero(soloDiretto ? s.dirette : s.totale) : "\u2014"
+        nomeSettimana(s.numero),
+        s.serie > 0 ? formattaNumero(s.serie) : "—",
+        s.serie > 0 ? formattaNumero(s.dirette) : "—",
+        soloDiretto || s.serie <= 0 ? "—" : formattaNumero(s.indirette),
+        s.serie > 0 ? formattaNumero(soloDiretto ? s.dirette : s.totale) : "—"
       ])
     ));
     contenitore.appendChild(cardSettimane);
 
     const nota = n(doc, "p", "rv-nota");
-    nota.appendChild(doc.createTextNode("Chi entra lo decide una regola sola: le tecniche di intensit\u00e0 contano sempre, anche le righe vecchie che portano il campo a false, ed ereditano distretto e secondari dall'esercizio a cui appartengono. "));
+    nota.appendChild(doc.createTextNode("Chi entra lo decide una regola sola: le tecniche di intensita' contano sempre, anche le righe vecchie che portano il campo a false, ed ereditano distretto e secondari dall'esercizio a cui appartengono. "));
     nota.appendChild(n(doc, "b", "", conto.righeSenzaSecondari + " esercizi su " + conto.righeContate));
     nota.appendChild(doc.createTextNode(" non hanno i secondari registrati: contano solo come diretti. Nessun indiretto a occhio."));
     contenitore.appendChild(nota);
@@ -221,8 +256,25 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
       box.appendChild(doc.createTextNode("Senza lo switch il totale e' diretto + indiretto; con lo switch resta il solo diretto."));
       contenitore.appendChild(box);
     }
+    if (dalLog) dichiaraLogbook(doc, contenitore, dalLogbook);
     return conto;
   };
 
   return disegna();
+}
+
+/* Cosa il Logbook ha dato e cosa non ha dato: quattro numeri, nessun giudizio. */
+function dichiaraLogbook(doc, contenitore, dalLogbook) {
+  const d = dalLogbook.dichiarazioni;
+  const nota = n(doc, "p", "rv-nota");
+  nota.appendChild(doc.createTextNode("Logbook: "));
+  nota.appendChild(n(doc, "b", "", d.seduteUsate + (d.seduteUsate === 1 ? " seduta con serie chiuse" : " sedute con serie chiuse")));
+  nota.appendChild(doc.createTextNode(" su " + d.seduteLette + " lette. Le serie sono quelle chiuse, le ripetizioni la somma di quelle vere (8 + 8 + 10, non 3 x 9). "));
+  if (d.senzSettimana) {
+    nota.appendChild(doc.createTextNode(d.senzSettimana + (d.senzSettimana === 1 ? " seduta non porta la settimana" : " sedute non portano la settimana") + ": entra nel totale e resta fuori dalla media. "));
+  }
+  if (d.serieSenzaRip) {
+    nota.appendChild(doc.createTextNode(d.serieSenzaRip + (d.serieSenzaRip === 1 ? " serie chiusa senza ripetizioni" : " serie chiuse senza ripetizioni") + ": contano come serie e si dichiarano mancanti."));
+  }
+  contenitore.appendChild(nota);
 }
