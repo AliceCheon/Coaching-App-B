@@ -1005,3 +1005,21 @@ Il volume legge anche il Logbook: le serie chiuse, settimana per settimana.
 - `tests/90-volume-logbook.test.mjs`: 9 prove nuove.
 - `desktop/index.html`: **nessuna riga toccata** in questo passo (lo switch nuovo
   riusa `.rv-seg`), quindi l'elenco dei blocchi qui sopra resta valido.
+## Passo B.14f — il volume è solo quello programmato (13/11/2026)
+
+Il Riepilogo volume mostra solo il lavoro scritto nelle schede. Lo switch
+«Dalla scheda / Dal Logbook» è uscito, e con lui la fonte eseguita: l'eseguito
+si vede nell'Overview atleta, dove sta il Logbook (che non è una pagina né una
+zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
+
+- `comune/volume-b.js`: via `righeDalLogbook()` (diff vero: 4 entrate, 92 uscite).
+  Il motore resta puro: entra qualunque origine, oggi solo la scheda.
+- `comune/vista-volume.js`: una fonte sola (25 entrate, 68 uscite). Via lo
+  switch delle fonti e la dichiarazione del Logbook; il testo di testa dice
+  «Il volume programmato… L'eseguito si legge nell'Overview atleta».
+- `desktop/app-v31.js`: `renderVolume` non riceve più `sedute` (2 entrate, 2 uscite).
+- `tests/90-volume-logbook.test.mjs` tolto (138 righe): la suite scende da 470 a 461.
+- Le ripetizioni restano nel motore, la pagina non le mostra: il riepilogo è
+  solo conteggio di serie (scelta di Alice, 13/11/2026).
+- `desktop/index.html`: nessuna riga toccata in questo passo (lo switch
+  «Solo diretto / Diretto + indiretto» riusa `.rv-seg`).

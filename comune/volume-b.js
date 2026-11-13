@@ -1,5 +1,5 @@
 /* Barbell Diva B — il volume conta davvero (passo B.14, 13/11/2026).
- * Aggiornato al passo B.14d: volume indiretto, e via il tonnellaggio.
+ * Aggiornato al passo B.14f: una fonte sola, la scheda (il programma).
  *
  * Cosa e': la funzione che trasforma righe di serie in numeri, raggruppati per
  * distretto e per settimana.
@@ -10,8 +10,8 @@
  *
  * Regole del filone:
  *  - funzione PURA: entrano righe, escono numeri. Niente DOM, niente rete;
- *  - entra qualunque origine: oggi la scheda, domani il Logbook. Il conto non
- *    sa da dove arrivano le righe;
+ *  - entra qualunque origine (dal B.14f solo la scheda): il conto non sa da
+ *    dove arrivano le righe;
  *  - chi entra lo decide SOLO contaNelVolume() di tecniche-b.js;
  *  - la regola delle sinergie: 1 punto al distretto bersaglio, 0,5 a ciascuno
  *    dei secondari. E' una costante sola, qui sotto;
@@ -22,7 +22,7 @@
  */
 
 import { contaNelVolume, eTecnica } from "./tecniche-b.js";
-import { muscoliEsercizio, normalizzaNome } from "./muscoli-b.js";
+import { muscoliEsercizio } from "./muscoli-b.js";
 
 /* La regola delle sinergie, in un punto solo. */
 export const PUNTO_BERSAGLIO = 1;
@@ -306,92 +306,4 @@ export function righeDalleSchede(schede) {
     });
   });
   return out;
-}
-
-/* Il ponte con il Logbook: prende le sedute come le legge l'app (la forma di
- * seduteLogbook: { w, sc, ex: [{ n, np, cs: [[kg, reps, rpe, rir]] }] }) e ne fa
- * righe per contaVolume. Una riga per esercizio, una cella per settimana.
- *
- * Regole dichiarate:
- *  - le serie sono quelle CHIUSE (una voce in cs), non quelle prescritte: il
- *    volume eseguito e' quello che e' stato fatto;
- *  - le ripetizioni sono la somma di quelle vere, non una media: si scrive
- *    ripetizioniTotali, perche' 8 + 8 + 10 non e' 3 x 9;
- *  - una serie chiusa senza ripetizioni vale una serie e si dichiara mancante;
- *  - la settimana e' quella che la seduta porta. Se non la porta, la cella va
- *    nel secchio 0 (senza settimana): entra nel totale e resta fuori dalla
- *    media. Una settimana non si inventa dal calendario.
- * I distretti vengono dalla stessa mappa del volume (muscoliEsercizio): il
- * Logbook non porta il gruppo muscolare.
- */
-export function righeDalLogbook(voci) {
-  const elenco = Array.isArray(voci) ? voci : [];
-  const perNome = Object.create(null);
-  const out = [];
-  let seduteLette = 0;
-  let seduteUsate = 0;
-  let senzSettimana = 0;
-  let serieSenzaRip = 0;
-
-  elenco.forEach((s) => {
-    if (!s || typeof s !== "object") return;
-    seduteLette += 1;
-    const grezza = s.w != null ? s.w : primoCampo(s, CAMPI_VOLUME.numeroSettimana);
-    const settimana = numeroDaTesto(grezza);
-    const numero = settimana != null && settimana >= 0 ? Math.floor(settimana) : 0;
-    const esercizi = Array.isArray(s.ex) ? s.ex : Array.isArray(s.esercizi) ? s.esercizi : [];
-    let usata = false;
-    esercizi.forEach((e) => {
-      if (!e || typeof e !== "object") return;
-      const nome = testo(e.n != null ? e.n : primoCampo(e, CAMPI_VOLUME.nome));
-      if (!nome) return;
-      const chiuse = (Array.isArray(e.cs) ? e.cs : []).filter((cs) => Array.isArray(cs));
-      if (!chiuse.length) return;
-      const chiave = normalizzaNome(nome);
-      let riga = perNome[chiave];
-      if (!riga) {
-        const muscoli = muscoliEsercizio(nome, "");
-        riga = {
-          id: chiave,
-          nome,
-          primari: muscoli ? muscoli.primari.slice() : [],
-          secondari: muscoli ? muscoli.secondari.slice() : [],
-          fonte: muscoli ? muscoli.fonte : "",
-          settimane: [],
-          dentro: Object.create(null)
-        };
-        perNome[chiave] = riga;
-        out.push(riga);
-      }
-      let cella = riga.dentro[numero];
-      if (!cella) {
-        cella = { settimana: numero, serie: 0, ripetizioniTotali: 0, ripetizioniMancanti: 0 };
-        riga.dentro[numero] = cella;
-        riga.settimane.push(cella);
-      }
-      chiuse.forEach((cs) => {
-        cella.serie += 1;
-        const reps = Number(cs[1]);
-        if (Number.isFinite(reps) && reps > 0) cella.ripetizioniTotali += reps;
-        else {
-          cella.ripetizioniMancanti += 1;
-          serieSenzaRip += 1;
-        }
-      });
-      usata = true;
-    });
-    if (!usata) return;
-    seduteUsate += 1;
-    if (numero === 0) senzSettimana += 1;
-  });
-
-  out.forEach((r) => {
-    r.settimane.sort((a, b) => a.settimana - b.settimana);
-    delete r.dentro;
-  });
-
-  return {
-    righe: out,
-    dichiarazioni: { seduteLette, seduteUsate, senzSettimana, serieSenzaRip }
-  };
 }

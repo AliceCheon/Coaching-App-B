@@ -585,8 +585,8 @@ export async function avvia(doc, win) {
       const ovSed = doc.getElementById("ov-sed");
       if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
     }
-    /* Passo B.14e: il volume sa leggere anche il Logbook — le serie chiuse. */
-    renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8, sedute: lb.sedute });
+    /* B.14f: il volume è solo quello programmato (le schede). */
+    renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8 });
     notaLogbook(doc, lb);
     rimettiScorrimento(doc, win, scorrimentoPrima);
     return { ridisegnato: true };
