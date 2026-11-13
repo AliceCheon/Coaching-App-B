@@ -950,7 +950,11 @@ function tabellaEsercizi(doc, scheda, r) {
 
   const corpo = n(doc, "tbody");
   elenco.forEach((e, indice) => {
-    const tr = n(doc, "tr", "p8-r");
+    /* Passo B.14h: l'unita' che alterna e' l'esercizio, non la riga: le figlie
+     * delle tecniche portano il tono del padre. Quando nasceranno i gruppi
+     * (B.16) bastera' calcolare il tono dall'indice del gruppo. */
+    const tono = indice % 2 === 0 ? "z-a" : "z-b";
+    const tr = n(doc, "tr", "p8-r " + tono);
     tr.setAttribute("data-js", String(indice + 1));
     tr.appendChild(n(doc, "td", "c-js", (scheda.codice || "") + (indice + 1)));
 
@@ -1108,7 +1112,7 @@ function tabellaEsercizi(doc, scheda, r) {
 
     tr.appendChild(n(doc, "td", "c-ult", ultimaVolta(r, scheda, e.nome)));
     corpo.appendChild(tr);
-    const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico);
+    const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico, tono);
     if (trTec) corpo.appendChild(trTec);
   });
   t.appendChild(corpo);
@@ -1464,9 +1468,9 @@ function nomeTecnicaCorsivo(id) {
   if (!parole.length) return "";
   return parole.map(function (p, i) { return i === 0 ? p.charAt(0).toUpperCase() + p.slice(1) : p; }).join(" ");
 }
-function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico) {
+function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico, tono) {
   if (!riga || riga.padreId !== String(padre.id || "") || !riga.tecnica) return null;
-  const tr = n(doc, "tr", "p8-r p8-tec");
+  const tr = n(doc, "tr", "p8-r p8-tec " + tono);
   tr.setAttribute("data-js", String(indice + 1));
   tr.setAttribute("data-tecnica", String(riga.id || ""));
   tr.appendChild(n(doc, "td", "c-js", "\u21b3"));

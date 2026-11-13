@@ -37,6 +37,8 @@ body[data-theme="light"] {
   --bg-secondary: #eadcf7;
   --surface: #fffafd;
   --surface-raised: #f8eafa;
+  --zebra-a: #fffafd;
+  --zebra-b: #f8eafa;
   --text-primary: #241238;
   --text-secondary: #705b82;
   --border-soft: rgba(105, 55, 145, .18);
@@ -64,6 +66,8 @@ body[data-theme="dark"] {
   --bg-secondary: #0d0d24;
   --surface: #15152f;
   --surface-raised: #211b3e;
+  --zebra-a: #15152f;
+  --zebra-b: #211b3e;
   --text-primary: #fff8fd;
   --text-secondary: #cbbbd7;
   --border-soft: rgba(202, 107, 225, .24);
@@ -7875,9 +7879,11 @@ html body #pag-programma-1 .p8-tab col.w-wk{width:72px}
 html body #pag-programma-1 .p8-tab col.w-ult{width:68px}
 html body #pag-programma-1 .p8-tab col.w-act{width:54px}
 
-/* ---- zebra: riga chiara / riga leggermente più scura ---- */
-html body #pag-programma-1 .p8-tab tbody tr.p8-r td{background:var(--card);border-bottom:1px solid var(--line)}
-html body #pag-programma-1 .p8-tab tbody tr.p8-r:nth-child(even) td{background:var(--card-2)}
+/* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+ * tema sono le variabili --zebra-a / --zebra-b, la riga tecnica eredita il
+ * tono del padre e il suo velo con !important vince comunque ---- */
+html body #pag-programma-1 .p8-tab tbody tr.p8-r td{background:var(--zebra-a);border-bottom:1px solid var(--line)}
+html body #pag-programma-1 .p8-tab tbody tr.p8-r.z-b td{background:var(--zebra-b)}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td.c-js{border-left:0}
 
 /* ---- cella esercizio ---- */

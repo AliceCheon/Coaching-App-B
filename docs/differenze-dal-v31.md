@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14d (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2909 - righe 2919 - righe 3699 - righe 3961 - righe 4670 - righe 4674 - righe 6524 - righe 7925 - righe 8381 - righe 8538 - righe 10576-10585 - righe 10696 - righe 10698 - righe 10700 - righe 10768-10772
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14h: - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535 - righe 2785 - righe 2799-2802 - righe 2816 - righe 2829 - righe 2842 - righe 2913 - righe 2923 - righe 3703 - righe 3965 - righe 4674 - righe 4678 - righe 6528 - righe 7882-7886 - righe 7931 - righe 8387 - righe 8544 - righe 10582-10591 - righe 10702 - righe 10704 - righe 10706 - righe 10774-10778
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -1046,3 +1046,34 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
   di forza, Database esercizi restano al loro posto, in attesa dei passi B.14k,
   B.14j e della pulizia B.14i).
 
+
+## Passo B.14h — la zebra alterna per esercizio (13/11/2026)
+
+- Diff vero (git diff --numstat, il test 90 e' un file nuovo):
+
+```
+8	4	comune/vista-programma.js
+9	3	desktop/index.html
+```
+
+- `desktop/index.html`: le due zone toccate sono i blocchi dei due temi e la
+  regola della zebra. I due toni per tema stanno in variabili, `--zebra-a` e
+  `--zebra-b`: scuro `#15152f` / `#211b3e` (gli attuali card / card-2), chiaro
+  `#fffafd` / `#f8eafa`. Nessun colore nuovo, nessun cambio di tinta: cambia solo
+  CHI prende il tono scuro. La regola `tr.p8-r:nth-child(even)` e' morta: al suo
+  posto `tr.p8-r.z-b td{background:var(--zebra-b)}`, la base legge
+  `var(--zebra-a)`. Il velo lavanda della riga tecnica (test 83) vince comunque,
+  a piena priorita'.
+- `comune/vista-programma.js`: l'unita' che alterna e' l'ESERCIZIO, non la riga.
+  Nel ciclo degli esercizi il tono (`z-a` / `z-b`) si calcola dall'indice
+  dell'esercizio; la riga tecnica figlia lo riceve come argomento e lo porta
+  uguale al padre (non ricalcolato). Quando nasceranno i gruppi del B.16 bastera'
+  calcolare il tono dall'indice del gruppo: le righe legate prenderanno un tono
+  unico. Le righe aggiunte o tolte con l'editor ridisegnano la pagina, quindi la
+  parita' si ricalcola da sola.
+- Test nuovo `tests/90-zebra-esercizio.test.mjs`: contrasto del testo su
+  ENTRAMBI i toni in ENTRAMBI i temi (minimo 4,5:1, calcolato come nel test 86),
+  toni diversi ma vicini (rapporto entro 1,25:1), niente piu' nth-child sulla
+  zebra, regole con le variabili, figlia col tono del padre.
+- Suite: 466 test e 466 verdi. Il 69.2 resta come
+  documentato al passo B.14g.
