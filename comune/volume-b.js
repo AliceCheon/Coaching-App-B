@@ -1,39 +1,44 @@
 /* Barbell Diva B — il volume conta davvero (passo B.14, 13/11/2026).
+ * Aggiornato al passo B.14d: volume indiretto, e via il tonnellaggio.
  *
- * Cosa e': la funzione che trasforma righe di serie in numeri — serie,
- * ripetizioni, tonnellaggio (serie x ripetizioni x peso) — raggruppati per
+ * Cosa e': la funzione che trasforma righe di serie in numeri, raggruppati per
  * distretto e per settimana.
  *
- * Regole del filone, scritte qui perche' valgono per sempre:
- *  - funzione PURA: entrano righe, escono totali. Niente DOM, niente rete,
- *    niente scritture;
- *  - entra qualunque origine: oggi la scheda (righeDalleSchede), domani il
- *    Logbook. Il conto non sa da dove arrivano le righe, e non deve saperlo:
- *    cambia solo chi le prepara;
- *  - chi entra nel volume lo decide SOLO contaNelVolume() di tecniche-b.js:
- *    le tecniche contano sempre (anche le righe vecchie con contaVolume
- *    false), il resto conta se il campo non dice il contrario;
- *  - una settimana non scritta NON vale zero: non entra nel conto. Lo zero e'
- *    un dato, il vuoto non lo e';
- *  - peso mancante: serie e ripetizioni contano, il tonnellaggio NO. La
- *    colonna dice «non registrato», mai zero (regola di casa, 13/11/2026).
+ * Il volume e' SERIE x RIPETIZIONI. Il tonnellaggio non c'e' piu' (Alice,
+ * 13/11/2026: «il tonnellaggio non serve, serve il volume settimanale che si fa
+ * in serie x ripetizioni»). Se un giorno torna, torna come campo a parte.
+ *
+ * Regole del filone:
+ *  - funzione PURA: entrano righe, escono numeri. Niente DOM, niente rete;
+ *  - entra qualunque origine: oggi la scheda, domani il Logbook. Il conto non
+ *    sa da dove arrivano le righe;
+ *  - chi entra lo decide SOLO contaNelVolume() di tecniche-b.js;
+ *  - la regola delle sinergie: 1 punto al distretto bersaglio, 0,5 a ciascuno
+ *    dei secondari. E' una costante sola, qui sotto;
+ *  - una settimana non scritta NON vale zero: non entra nel conto;
+ *  - peso e ripetizioni mancanti non fermano il conto delle serie: il volume e'
+ *    serie x ripetizioni, e quando le ripetizioni non ci sono la riga conta le
+ *    serie e dichiara le ripetizioni mancanti.
  */
 
 import { contaNelVolume, eTecnica } from "./tecniche-b.js";
+import { muscoliEsercizio, normalizzaNome } from "./muscoli-b.js";
+
+/* La regola delle sinergie, in un punto solo. */
+export const PUNTO_BERSAGLIO = 1;
+export const PUNTO_SECONDARIO = 0.5;
 
 export const VOLUME_NON_REGISTRATO = "non registrato";
 
-/* I nomi di campo che il conto accetta, in ordine di preferenza: se A li
- * cambia, si cambia una riga qui e la schermata resta ferma. */
 export const CAMPI_VOLUME = Object.freeze({
   id: Object.freeze(["id", "rigaId"]),
   padre: Object.freeze(["padreId", "parentId"]),
+  nome: Object.freeze(["nome", "name", "esercizio"]),
   distretto: Object.freeze(["distretto", "muscolo", "gruppoMuscolare", "gruppo", "muscle"]),
   settimane: Object.freeze(["settimane", "weeks", "elencoSettimane"]),
   numeroSettimana: Object.freeze(["settimana", "week", "weekNumber", "numero"]),
   serie: Object.freeze(["serie", "sets", "set"]),
-  ripetizioni: Object.freeze(["ripetizioni", "reps", "repsTesto"]),
-  peso: Object.freeze(["peso", "pesoKg", "kg", "carico", "weight", "load"])
+  ripetizioni: Object.freeze(["ripetizioni", "reps", "repsTesto"])
 });
 
 function primoCampo(oggetto, nomi) {
@@ -54,8 +59,7 @@ function testo(valore) {
   return String(valore).trim();
 }
 
-/* Un numero vero, o niente. «8-10» e «rest pause» non sono numeri: il conto
- * non li indovina e li tratta come vuoti. La virgola italiana vale. */
+/* Un numero vero, o niente. «8-10» e «rest pause» non sono numeri. */
 export function numeroDaTesto(valore) {
   const t = testo(valore).replace(",", ".");
   if (!t || !/^[+-]?\d+(\.\d+)?$/.test(t)) return null;
@@ -63,8 +67,7 @@ export function numeroDaTesto(valore) {
   return Number.isFinite(n) ? n : null;
 }
 
-/* I numeri come li legge un coach: migliaia col punto, decimali con la
- * virgola, e niente zeri appesi. */
+/* I numeri come li legge un coach: migliaia col punto, decimali con la virgola. */
 export function formattaNumero(valore) {
   const n = Number(valore);
   if (!Number.isFinite(n)) return VOLUME_NON_REGISTRATO;
@@ -80,13 +83,12 @@ export function formattaNumero(valore) {
   return segno + testoIntero + "," + coda;
 }
 
-/* Il tonnellaggio come va scritto: numero con «kg», oppure «non registrato».
- * Mai «0 kg» al posto di un peso che non c'e'. */
-export function testoTonnellaggio(valore) {
+/* Il volume come va scritto: numero o «non registrato». */
+export function testoVolume(valore) {
   if (valore == null) return VOLUME_NON_REGISTRATO;
   const n = Number(valore);
   if (!Number.isFinite(n)) return VOLUME_NON_REGISTRATO;
-  return formattaNumero(n) + " kg";
+  return formattaNumero(n);
 }
 
 function settimaneDellaRiga(riga) {
@@ -100,41 +102,47 @@ function settimaneDellaRiga(riga) {
   return [];
 }
 
-function distrettoDellaRiga(riga) {
-  return testo(primoCampo(riga, CAMPI_VOLUME.distretto));
+function cella() {
+  return { serie: 0, ripetizioni: 0, ripetizioniMancanti: 0, dirette: 0, indirette: 0 };
 }
 
-function nuovaCella() {
-  return { serie: 0, ripetizioni: 0, tonnellaggio: 0, conTonnellaggio: false, senzaTonnellaggio: 0 };
-}
-
-function aggiungi(cella, serie, ripetizioni, tonnellaggio) {
-  cella.serie += serie;
-  if (ripetizioni != null) cella.ripetizioni += ripetizioni * serie;
-  if (tonnellaggio == null) cella.senzaTonnellaggio += serie;
-  else {
-    cella.tonnellaggio += tonnellaggio;
-    cella.conTonnellaggio = true;
-  }
-}
-
-function chiudiCella(cella) {
+function chiudi(c) {
+  const dirette = Math.round(c.dirette * 100) / 100;
+  const indirette = Math.round(c.indirette * 100) / 100;
   return {
-    serie: cella.serie,
-    ripetizioni: cella.ripetizioni,
-    tonnellaggio: cella.conTonnellaggio ? Math.round(cella.tonnellaggio * 100) / 100 : null,
-    senzaTonnellaggio: cella.senzaTonnellaggio
+    serie: Math.round(c.serie * 100) / 100,
+    ripetizioni: Math.round(c.ripetizioni * 100) / 100,
+    ripetizioniMancanti: c.ripetizioniMancanti,
+    dirette,
+    indirette,
+    totale: Math.round((dirette + indirette) * 100) / 100
   };
 }
 
-/* Il conto. `righe` e' un elenco piatto di righe, ognuna con le sue settimane:
- *   { id, padreId?, tipo?: "tecnica", distretto?, contaVolume?, settimane: [
- *       { settimana?, serie, ripetizioni, peso? }, ... ] }
- * `opzioni.quante` aggiunge in fondo le settimane vuote che mancano (serve alla
- * schermata, che mostra sempre otto colonne: qui restano vuote, non a zero). */
+/* Somma una riga dentro una cella: le serie vanno sui primari a punto pieno,
+ * sui secondari a mezzo punto. Un distretto che e' gia' primario non prende
+ * anche il mezzo punto. */
+function sommaRiga(c, serie, ripetizioni, primari, secondari) {
+  c.serie += serie;
+  if (ripetizioni != null) c.ripetizioni += serie * ripetizioni;
+  else c.ripetizioniMancanti += serie;
+  c.dirette += PUNTO_BERSAGLIO * serie * primari.length;
+  const secondariUtili = secondari.filter((d) => primari.indexOf(d) === -1);
+  c.indirette += PUNTO_SECONDARIO * serie * secondariUtili.length;
+  return secondariUtili;
+}
+
+/* Il conto.
+ * `righe`: elenco piatto, ognuna con settimane, primari e secondari.
+ *   { id, padreId?, tipo?, distretto?, primari: [...], secondari: [...],
+ *     settimane: [{ settimana?, serie, ripetizioni }] }
+ * `opzioni.soloDiretto` = true: l'indiretto non entra nel totale (lo switch).
+ * `opzioni.quante` = quante colonne mostrare; le settimane mai scritte restano
+ * vuote, con serie 0 e nessuna diretta: non valgono zero, non valgono niente. */
 export function contaVolume(righe, opzioni) {
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   const quante = Number.isFinite(Number(o.quante)) && Number(o.quante) > 0 ? Math.floor(Number(o.quante)) : 0;
+  const soloDiretto = o.soloDiretto === true;
   const elenco = Array.isArray(righe) ? righe.filter((r) => r && typeof r === "object") : [];
   const perId = Object.create(null);
   elenco.forEach((r) => {
@@ -144,10 +152,17 @@ export function contaVolume(righe, opzioni) {
 
   const settimane = Object.create(null);
   const distretti = Object.create(null);
-  const totale = nuovaCella();
+  const mappa = Object.create(null);
+  const totale = cella();
   let fuoriVolume = 0;
   let contate = 0;
-  let righeSenzaDistretto = 0;
+  let senzaSecondari = 0;
+  let senzaDistretto = 0;
+
+  const cellaDistretto = (d) => {
+    if (!distretti[d]) { distretti[d] = cella(); mappa[d] = Object.create(null); }
+    return distretti[d];
+  };
 
   elenco.forEach((riga) => {
     if (!contaNelVolume(riga)) {
@@ -157,9 +172,21 @@ export function contaVolume(righe, opzioni) {
     contate += 1;
     const padreId = testo(primoCampo(riga, CAMPI_VOLUME.padre));
     const padre = padreId ? perId[padreId] || null : null;
-    let distretto = distrettoDellaRiga(riga);
-    if (!distretto && padre) distretto = distrettoDellaRiga(padre);
-    if (!distretto) righeSenzaDistretto += 1;
+    let primari = Array.isArray(riga.primari) ? riga.primari.slice() : [];
+    let secondari = Array.isArray(riga.secondari) ? riga.secondari.slice() : [];
+    if (!primari.length) {
+      const noto = testo(primoCampo(riga, CAMPI_VOLUME.distretto));
+      if (noto) primari = [noto];
+    }
+    if ((!primari.length || !secondari.length) && padre) {
+      if (!primari.length && Array.isArray(padre.primari)) primari = padre.primari.slice();
+      if (!secondari.length && Array.isArray(padre.secondari)) secondari = padre.secondari.slice();
+    }
+    if (!primari.length) {
+      senzaDistretto += 1;
+      return;
+    }
+    if (!secondari.length) senzaSecondari += 1;
 
     const suo = settimaneDellaRiga(riga);
     for (let k = 0; k < suo.length; k += 1) {
@@ -168,49 +195,78 @@ export function contaVolume(righe, opzioni) {
       const serie = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.serie));
       if (serie == null || serie <= 0) continue;
       const ripetizioni = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioni));
-      const peso = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.peso));
-      const tonnellaggio = ripetizioni != null && peso != null ? serie * ripetizioni * peso : null;
       const numeroGrezzo = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.numeroSettimana));
       const numero = numeroGrezzo != null && numeroGrezzo > 0 ? Math.floor(numeroGrezzo) : k + 1;
 
-      if (!settimane[numero]) settimane[numero] = nuovaCella();
-      aggiungi(settimane[numero], serie, ripetizioni, tonnellaggio);
-      if (distretto) {
-        if (!distretti[distretto]) distretti[distretto] = nuovaCella();
-        aggiungi(distretti[distretto], serie, ripetizioni, tonnellaggio);
-      }
-      aggiungi(totale, serie, ripetizioni, tonnellaggio);
+      if (!settimane[numero]) settimane[numero] = cella();
+      const utili = sommaRiga(settimane[numero], serie, ripetizioni, primari, secondari);
+      primari.forEach((d) => {
+        const c = cellaDistretto(d);
+        sommaRiga(c, serie, ripetizioni, [d], []);
+        if (!mappa[d][numero]) mappa[d][numero] = cella();
+        sommaRiga(mappa[d][numero], serie, ripetizioni, [d], []);
+      });
+      utili.forEach((d) => {
+        const c = cellaDistretto(d);
+        sommaRiga(c, serie, ripetizioni, [], [d]);
+        if (!mappa[d][numero]) mappa[d][numero] = cella();
+        sommaRiga(mappa[d][numero], serie, ripetizioni, [], [d]);
+      });
+      /* il totale del programma: una volta sola, con primari e secondari */
+      sommaRiga(totale, serie, ripetizioni, primari, secondari);
     }
   });
 
   const numeri = Object.keys(settimane).map(Number).sort((a, b) => a - b);
   const ultima = numeri.length ? numeri[numeri.length - 1] : 0;
-  for (let w = ultima + 1; w <= quante; w += 1) if (!settimane[w]) settimane[w] = nuovaCella();
-  const elencoSettimane = Object.keys(settimane).map(Number).sort((a, b) => a - b).map((n) => Object.assign({ numero: n }, chiudiCella(settimane[n])));
+  for (let w = ultima + 1; w <= quante; w += 1) if (!settimane[w]) settimane[w] = cella();
+  const elencoSettimane = Object.keys(settimane).map(Number).sort((a, b) => a - b).map((n) => Object.assign({ numero: n }, chiudi(settimane[n])));
 
   const elencoDistretti = Object.keys(distretti)
-    .map((codice) => Object.assign({ distretto: codice }, chiudiCella(distretti[codice])))
-    .sort((a, b) => b.serie - a.serie || a.distretto.localeCompare(b.distretto, "it"));
+    .map((d) => Object.assign({ distretto: d }, chiudi(distretti[d])))
+    .sort((a, b) => b.totale - a.totale || a.distretto.localeCompare(b.distretto, "it"));
 
-  const conSerie = elencoSettimane.filter((s) => s.serie > 0);
-  const picco = conSerie.reduce((max, s) => (max == null || s.serie > max.serie ? s : max), null);
-  const sommaSerie = Object.keys(settimane).map(Number).reduce((a, n) => a + settimane[n].serie, 0);
+  const perDistrettoSettimana = Object.create(null);
+  Object.keys(mappa).forEach((d) => {
+    perDistrettoSettimana[d] = Object.keys(mappa[d]).map(Number).sort((a, b) => a - b).map((n) => Object.assign({ numero: n }, chiudi(mappa[d][n])));
+  });
+
+  const chiuso = chiudi(totale);
+  const dirette = soloDiretto ? chiuso.dirette : chiuso.dirette;
+  const indirette = soloDiretto ? 0 : chiuso.indirette;
+  const settimaneViste = elencoSettimane.filter((s) => s.serie > 0);
+  const picco = settimaneViste.reduce((max, s) => {
+    const v = soloDiretto ? s.dirette : s.totale;
+    const m = max ? (soloDiretto ? max.dirette : max.totale) : -1;
+    return v > m ? s : max;
+  }, null);
+  const sommaDirette = settimaneViste.reduce((a, s) => a + s.dirette, 0);
+  const sommaIndirette = settimaneViste.reduce((a, s) => a + s.indirette, 0);
+  const sommaTotale = settimaneViste.reduce((a, s) => a + s.totale, 0);
 
   return {
-    totale: chiudiCella(totale),
-    settimane: elencoSettimane,
-    distretti: elencoDistretti,
-    settimaneContate: conSerie.length,
-    mediaSerie: conSerie.length ? Math.round((sommaSerie / conSerie.length) * 10) / 10 : null,
-    picco: picco ? { numero: picco.numero, serie: picco.serie } : null,
+    soloDiretto,
+    totale: { serie: chiuso.serie, ripetizioni: chiuso.ripetizioni, ripetizioniMancanti: chiuso.ripetizioniMancanti, dirette, indirette, totale: Math.round((dirette + indirette) * 100) / 100 },
+    settimane: elencoSettimane.map((s) => Object.assign({}, s, { totale: soloDiretto ? s.dirette : s.totale, indirette: soloDiretto ? 0 : s.indirette })),
+    distretti: elencoDistretti.map((d) => Object.assign({}, d, { totale: soloDiretto ? d.dirette : d.totale, indirette: soloDiretto ? 0 : d.indirette })),
+    perDistrettoSettimana,
+    settimaneContate: settimaneViste.length,
+    mediaDirette: settimaneViste.length ? Math.round((sommaDirette / settimaneViste.length) * 10) / 10 : null,
+    mediaTotale: settimaneViste.length ? Math.round(((soloDiretto ? sommaDirette : sommaTotale) / settimaneViste.length) * 10) / 10 : null,
+    sinergiePct: soloDiretto || !(sommaTotale > 0) ? (soloDiretto ? 0 : null) : Math.round((sommaIndirette / sommaTotale) * 1000) / 10,
+    picco: picco ? { numero: picco.numero, valore: soloDiretto ? picco.dirette : picco.totale } : null,
     righeContate: contate,
     fuoriVolume,
-    righeSenzaDistretto
+    righeSenzaSecondari: senzaSecondari,
+    righeSenzaDistretto: senzaDistretto
   };
 }
 
 /* Il ponte con la scheda: prende le schede come le legge l'app e ne fa righe
- * per contaVolume. È l'unico punto che sa com'è fatta una scheda: il conto no. */
+ * per contaVolume. E' l'unico punto che sa com'e' fatta una scheda: il conto no.
+ * Qui si aggancia anche la mappa dei muscoli: nome esercizio -> primari e
+ * secondari. Senza voce in mappa resta il distretto della scheda, e la riga
+ * conta solo come diretta. */
 export function righeDalleSchede(schede) {
   const out = [];
   const elenco = Array.isArray(schede) ? schede : [];
@@ -219,17 +275,25 @@ export function righeDalleSchede(schede) {
     const esercizi = Array.isArray(scheda.esercizi) ? scheda.esercizi : [];
     esercizi.forEach((e) => {
       if (!e || typeof e !== "object" || e.deletedAt) return;
+      const nome = testo(primoCampo(e, CAMPI_VOLUME.nome));
+      const distretto = testo(primoCampo(e, CAMPI_VOLUME.distretto));
+      const muscoli = muscoliEsercizio(nome, distretto);
       const comune = {
         id: testo(primoCampo(e, CAMPI_VOLUME.id)),
         padreId: testo(primoCampo(e, CAMPI_VOLUME.padre)),
-        distretto: distrettoDellaRiga(e),
+        nome,
+        distretto,
+        primari: muscoli ? muscoli.primari.slice() : [],
+        secondari: muscoli ? muscoli.secondari.slice() : [],
+        fonte: muscoli ? muscoli.fonte : "",
         contaVolume: e.contaVolume
       };
+      const settimane = settimaneDellaRiga(e);
       if (eTecnica(e)) {
-        out.push(Object.assign({}, comune, { tipo: "tecnica", tecnica: e.tecnica, settimane: settimaneDellaRiga(e) }));
+        out.push(Object.assign({}, comune, { tipo: "tecnica", tecnica: e.tecnica, settimane }));
         return;
       }
-      out.push(Object.assign({}, comune, { settimane: settimaneDellaRiga(e) }));
+      out.push(Object.assign({}, comune, { settimane }));
     });
   });
   return out;

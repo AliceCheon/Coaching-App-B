@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2920 - righe 3700 - righe 3962 - righe 4671 - righe 4675 - righe 6525 - righe 7926 - righe 8382 - righe 8539 - righe 10577-10586 - righe 10697 - righe 10699-10701 - righe 10769-10773
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14d (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2920 - righe 3700 - righe 3962 - righe 4671 - righe 4675 - righe 6525 - righe 7926 - righe 8382 - righe 8539 - righe 10577-10586 - righe 10697 - righe 10699-10701 - righe 10769-10773
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -965,4 +965,28 @@ blocchi resta quello qui sopra.
   disegno di `desktop/app-v31.js`.
 - test: `tests/88-volume.test.mjs`, sette prove con numeri scelti e verificati
   a mano (riga normale, riga tecnica, riga vecchia, peso vuoto).
+- blocchi `desktop/index.html` ricalcolati dal diff vero.
+
+## Passo B.14d  il volume indiretto (13/11/2026)
+
+- Le sinergie sono tornate, e non erano un numero inventato solo nel mockup: la regola che Alice
+  vuole e' **1 punto al distretto bersaglio, 0,5 a ciascuno dei secondari**, e vive in una costante
+  sola (`PUNTO_BERSAGLIO`, `PUNTO_SECONDARIO` in `comune/volume-b.js`).
+- Il tonnellaggio esce dal conto: il volume e' **serie x ripetizioni** (Alice, 13/11/2026).
+  Se un giorno torna, torna come campo a parte, non dentro il volume.
+- Nuovo `comune/muscoli-b.js`: la mappa esercizio -> primari e secondari. Fonte dichiarata voce per
+  voce: dieci esercizi da App A (backup del 4/11/2026, campi `primaryMuscles` e `secondaryMuscles`
+  dentro `biomechanics`), gli altri dalle risposte di Alice del 13/11/2026. Chi non e' in mappa resta
+  senza secondari e conta solo come diretto: la pagina scrive quanti sono.
+- La regola dell'accosciata e' codice, non tabella: se il nome contiene �glutei� comanda il gluteo con
+  il quadricipite di sponda, altrimenti comanda il quadricipite; i femorali non sono mai secondari in
+  un'accosciata. L'eccezione di �Affondo pesante triset� (primario glutei) e' un dato dichiarato, e il
+  dato non viene calpestato dalla regola.
+- La riga tecnica eredita distretto **e** secondari dal padre; lo switch �Solo diretto / Diretto +
+  indiretto� rifa' il conto, non aggiusta il totale a mano.
+- La pagina mostra Dirette / Indirette / Totale, la mappa settimana x distretto, il box sinergie in
+  percentuale e la riga in chiaro con la regola.
+- test: `tests/88` aggiornato (senza tonnellaggio), `tests/89` nuovo con la panca (3 serie: petto 3
+  dirette, spalle e tricipiti 1,5 indirette), la tecnica che eredita, l'esercizio senza secondari, lo
+  switch, la regola dell'accosciata e la copertura di tutti e 79 gli esercizi dei cinque programmi.
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
