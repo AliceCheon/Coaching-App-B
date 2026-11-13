@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-- Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.13 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 3732 - righe 3994 - righe 4703 - righe 4707 - righe 6557 - righe 7958 - righe 8414 - righe 8571 - righe 10609-10618 - righe 10729 - righe 10731 - righe 10732-10733 - righe 10801-10805
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2920 - righe 3700 - righe 3962 - righe 4671 - righe 4675 - righe 6525 - righe 7926 - righe 8382 - righe 8539 - righe 10577-10586 - righe 10697 - righe 10699-10701 - righe 10769-10773
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -948,3 +948,21 @@ volume passa da li', quindi vecchie e nuove tecniche pesano uguale.
 
 Nessuna riga di `desktop/index.html` cambiata in questo passo: l'elenco dei
 blocchi resta quello qui sopra.
+
+## Passo B.14  il volume conta davvero (13/11/2026)
+
+- nuovo `comune/volume-b.js`: `contaVolume(righe, opzioni)` e' puro  serie,
+  ripetizioni e tonnellaggio (serie x ripetizioni x peso) per settimana e per
+  distretto. Chi entra lo decide solo `contaNelVolume()`, quindi le tecniche
+  contano sempre, comprese le righe vecchie con il campo a false.
+- peso mancante: serie e ripetizioni contano, il tonnellaggio resta null e la
+  colonna dice �non registrato�, mai zero. Una settimana non scritta non entra
+  nel conto: lo zero e' un dato, il vuoto no.
+- `righeDalleSchede()` e' l'unico punto che conosce la forma della scheda: il
+  conto non sa da dove arrivano le righe, quindi il Logbook si aggancia li'.
+- la pagina �Riepilogo volume� non ha piu' numeri fissi: `comune/vista-volume.js`
+  disegna i KPI e le due tabelle dal risultato del conto, chiamato nel giro di
+  disegno di `desktop/app-v31.js`.
+- test: `tests/88-volume.test.mjs`, sette prove con numeri scelti e verificati
+  a mano (riga normale, riga tecnica, riga vecchia, peso vuoto).
+- blocchi `desktop/index.html` ricalcolati dal diff vero.

@@ -25,6 +25,7 @@ import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
+import { renderVolume } from "../comune/vista-volume.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
@@ -499,6 +500,8 @@ export async function avvia(doc, win) {
       stato.ridisegni += 1;
 
     }
+    /* Passo B.14: la pagina del volume legge il conto delle schede, non i numeri fissi. */
+    renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8 });
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
       modifica: {
         attivo: true,
