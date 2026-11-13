@@ -79,15 +79,24 @@ test("87.2 accanto c'e' la letterina del distretto, come sul padre", () => {
   assert.notEqual(lettera.textContent.trim(), "\u2014", "non deve restare il trattino");
 });
 
-test("87.3 sotto il nome c'e' la tecnica in corsivo, in forma leggibile", () => {
+test("87.3 la tecnica si legge in corsivo UNA volta sola, dentro la capsula", () => {
   const { doc } = schermo();
-  const corsivo = doc.querySelector("tr.p8-tec td.c-ese .tec-nome");
-  assert.ok(corsivo, "manca il nome della tecnica in corsivo");
-  assert.equal(corsivo.textContent, "Rest pause", "REST-PAUSE deve leggersi Rest pause");
-  assert.ok(foglio.indexOf("tr.p8-tec .tec-nome{font-style:italic") !== -1, "il foglio deve mettere il corsivo");
+  const tr = doc.querySelector("tr.p8-tec");
+  const capsula = tr.querySelector("td.c-ese button.tec-badge");
+  assert.ok(capsula, "manca la capsula della tecnica");
+  assert.equal(capsula.textContent, "Rest pause", "REST-PAUSE deve leggersi Rest pause");
+  assert.equal(tr.querySelector("td.c-ese .tec-nome"), null, "il corsivo sotto il nome non deve esserci piu'");
+  const pezzi = Array.from(tr.querySelectorAll("td.c-ese *"))
+    .filter((e) => e.children.length === 0)
+    .map((e) => e.textContent.trim().toLowerCase());
+  assert.equal(pezzi.filter((t) => t === "rest pause").length, 1,
+    "la tecnica si legge una volta sola nella riga");
 });
 
-test("87.4 il corsivo ha il colore giusto nei due temi", () => {
-  assert.ok(foglio.indexOf("tr.p8-tec .tec-nome{font-style:italic;font-size:11.5px;line-height:1.35;color:var(--lav)") !== -1, "nel scuro il corsivo e' lavanda");
-  assert.ok(foglio.indexOf('body[data-theme="light"] #pag-programma-1 tr.p8-tec .tec-nome{color:#7A34C4}') !== -1, "sul chiaro il corsivo e' viola scuro");
+test("87.4 il corsivo in capsula e il nome del padre hanno i colori dei due temi", () => {
+  assert.ok(foglio.indexOf("tr.p8-tec button.tec-badge{font-family:'Nunito Sans',sans-serif;font-style:italic") !== -1,
+    "la capsula deve portare il corsivo");
+  assert.ok(foglio.indexOf("tr.p8-tec .tec-padre{color:#E6D9F7") !== -1, "nel scuro il nome del padre e' chiaro");
+  assert.ok(foglio.indexOf('body[data-theme="light"] #pag-programma-1 tr.p8-tec .tec-padre{color:#3A2A4E}') !== -1,
+    "sul chiaro il nome del padre e' viola scuro");
 });

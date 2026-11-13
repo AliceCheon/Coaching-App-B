@@ -1455,8 +1455,8 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
 
 /* ---------- Fase 1: la riga della tecnica e il suo pannello --------------- */
 
-/* Passo B.11: il nome della tecnica come si legge, per la riga in corsivo: */
-/* "REST-PAUSE" diventa "Rest pause", "MYO-REPS" diventa "Myo reps".          */
+/* Passo B.11, spostato in capsula dal B.13: il nome della tecnica come si legge
+/* dentro la bolla: "REST-PAUSE" diventa "Rest pause", "MYO-REPS" "Myo reps". */
 function nomeTecnicaCorsivo(id) {
   const chiave = String(id == null ? "" : id).trim();
   if (!chiave) return "";
@@ -1482,9 +1482,10 @@ function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScari
   const p8ese = n(doc, "span", "p8-ese");
   /* Passo B.11: prima il nome dell'esercizio a cui la tecnica appartiene. */
   p8ese.appendChild(n(doc, "span", "p8-t tec-padre", nomePulito(padre["nome"])));
+  /* Passo B.13: la tecnica si legge UNA volta sola, in corsivo dentro la capsula. */
   const badge = mod
-    ? pulsanteVivo(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica", () => apriPannelloTecnica(doc, badge, scheda, padre, riga, mod))
-    : pulsanteSpento(doc, "tec-badge", nomeTecnica(riga.tecnica), "parametri della tecnica");
+    ? pulsanteVivo(doc, "tec-badge", nomeTecnicaCorsivo(riga.tecnica), "parametri della tecnica", () => apriPannelloTecnica(doc, badge, scheda, padre, riga, mod))
+    : pulsanteSpento(doc, "tec-badge", nomeTecnicaCorsivo(riga.tecnica), "parametri della tecnica");
   p8ese.appendChild(badge);
   /* Passo B.6: la X della figlia. Cancella la sola tecnica con la voce di
    * registro «cancella-riga» (la stessa del pannello), quindi Annulla la
@@ -1496,8 +1497,6 @@ function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScari
     }))
     : pulsanteSpento(doc, "tec-x", "✕", "cancella la riga della tecnica"));
   nome.appendChild(p8ese);
-  /* Passo B.11: sotto il nome, la tecnica in corsivo ("Rest pause").      */
-  nome.appendChild(n(doc, "div", "tec-nome", nomeTecnicaCorsivo(riga.tecnica)));
   ese.appendChild(nome);
 
   const chips = n(doc, "div", "ese-chips");

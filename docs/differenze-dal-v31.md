@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-- Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.11 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1481 · - righe 1532 · - righe 2782 · - righe 2796-2799 · - righe 2813 · - righe 2826 · - righe 2839 · - righe 3733 · - righe 3995 · - righe 4704 · - righe 4708 · - righe 6558 · - righe 7959 · - righe 8415 · - righe 8572 · - righe 10610-10619 · - righe 10730 · - righe 10732 · - righe 10734 · - righe 10802-10806
+- Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.13 (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 3732 - righe 3994 - righe 4703 - righe 4707 - righe 6557 - righe 7958 - righe 8414 - righe 8571 - righe 10609-10618 - righe 10729 - righe 10731 - righe 10732-10733 - righe 10801-10805
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -908,6 +908,30 @@ Nessun push.
 File toccati: comune/tecniche-b.js (nuovo), comune/modifiche-b.js, comune/schede-v2.js,
 comune/vista-programma.js, comune/editor-schede-b.js, desktop/app-v31.js,
 desktop/index.html (solo CSS del pannello), tests/81-tecniche-intensita.test.mjs (nuovo).
+
+## Passo B.13 — 13 novembre 2026 · la tecnica si legge una volta sola, in corsivo dentro la capsula
+
+Alice, 13/11/2026, con lo screenshot in mano: «togli un rest pause ce ne sono 2 xD
+Lascia il testo in corsivo però mettilo dentro una bolla come l'altro».
+
+Il B.11 aveva due scritture per la stessa cosa: la capsula a gradiente con la sigla
+maiuscola (`REST-PAUSE`) e, sotto, il corsivo `Rest pause`. Adesso la capsula porta la
+forma leggibile in corsivo e la riga sotto sparisce: una sola scrittura, che resta anche
+il bottone che apre i parametri.
+
+- `comune/vista-programma.js`: il testo della capsula passa da `nomeTecnica()` a
+ `nomeTecnicaCorsivo()` (le due varianti, viva e spenta); via il `div.tec-nome`.
+- `desktop/index.html`: 4 regole al posto delle 5 del B.11 — la capsula prende
+ `font-style:italic` con Nunito Sans a 11px e un filo di respiro orizzontale, il nome del
+ padre resta com'era. Il corsivo grigio sotto il nome non esiste più, e con lui la regola
+ del tema chiaro che lo colorava.
+- Il tema chiaro non ha bisogno di altro: la capsula ha già inchiostro scuro sul gradiente
+ chiaro (regola del B.10), quindi il corsivo si legge in entrambi i temi.
+- Nessuna priorità forzata nuova.
+- Prove: `tests/87`, 4 controlli — il terzo ora verifica che la capsula dica «Rest pause»,
+ che il `div.tec-nome` non ci sia più e che nella cella Esercizio il testo compaia **una
+ volta sola**.
+
 
 ## Passo B.12
 
