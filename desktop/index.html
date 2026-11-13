@@ -1459,6 +1459,14 @@ body[data-theme="light"] tr.p8-tec>td{background-color:rgba(168,85,247,.11) !imp
 html body[data-theme="light"] #pag-programma-1 tr.p8-tec .c-ser span,html body[data-theme="light"] #pag-programma-1 tr.p8-tec .c-reps span{color:#7A34C4}
 html body[data-theme="light"] #pag-programma-1 tr.p8-tec .p8-note{color:#553A70;border-left-color:rgba(168,85,247,.6)}
 body[data-theme="light"] tr.p8-tec>td:first-child:before{box-shadow:none}
+/* tema chiaro: la nota di tutte le righe era in lavanda fissa (#C9A7FF) e sul bianco spariva */
+body[data-theme="light"] #pag-programma-1 .p8-r .p8-note{color:#3A2A4E}
+body[data-theme="light"] #pag-programma-1 .p8-r .p8-note:empty::before{color:#6B5A7E;opacity:1}
+body[data-theme="light"] #pag-programma-1 .p8-r td.c-ser span,body[data-theme="light"] #pag-programma-1 .p8-r td.c-reps span{color:#241238}
+body[data-theme="light"] #pag-programma-1 .p8h.sub{color:#5E4A72}
+/* passo B.9: lo sfondo del riquadro del programma torna rosino lilla (scelta C di Alice) */
+html body[data-theme="light"] #pag-programma-1 .p8-box{background:var(--surface-raised) !important}
+html body[data-theme="light"] #pag-programma-1 .p8-scroll{background:var(--surface-raised) !important}
 button.tec-x{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;vertical-align:2px;padding:0;border:1px solid rgba(255,107,129,.40);border-radius:999px;background:transparent;color:#ff6b81;font:800 8px/1 'JetBrains Mono',monospace;cursor:pointer}
 button.tec-x:hover{background:rgba(255,107,129,.18);border-color:#ff6b81}button.tec-x:disabled{opacity:.42;cursor:default;pointer-events:none}
   </style>
