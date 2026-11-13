@@ -120,9 +120,9 @@ test("41.05 recupero in REC., scarico in evidenza, controlli spenti, nessuna fra
   assert.ok(wk[3].classList.contains("ph-scar"));
   assert.ok(doc.querySelectorAll("tbody td.sc-col").length > 0);
   assert.ok(doc.querySelector(".btn-prog"));
-  assert.equal(doc.querySelectorAll(".chchip").length, 16);
+  assert.equal(doc.querySelectorAll(".chchip").length, 12); /* T F R: dal B.14g non cè più la P */
   const bottoni = Array.from(doc.querySelectorAll(".p8-r button"));
-  assert.ok(bottoni.length >= 40);
+  assert.ok(bottoni.length >= 36); /* dal B.14g una P in meno per riga */
   assert.ok(bottoni.every((b) => b.disabled === true));
   assert.equal(doc.querySelectorAll(".p8-r .p8-note").length, 4);
   assert.ok(!doc.body.textContent.includes("[object Object]"));

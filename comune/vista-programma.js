@@ -886,7 +886,7 @@ function cerchioPiu(doc) {
  * TUT · S1…S8 con le sotto-colonne ser e reps · Ultima — stesse classi, stesse
  * due righe di testa, stessi testi. Cambiano solo i dati, che sono quelli di B.
  *
- * I controlli che scrivono (×, ⇄, +, le tecniche T F R P, il +, i due −/+ del
+ * I controlli che scrivono (×, ⇄, +, le tecniche T F R, il +, i due −/+ del
  * recupero, «Applica progressione») stanno al loro posto ma spenti: questa
  * pagina non salva. Sotto la tabella non c'è nessuna frase: nel v31 non c'è.
  * Dove un dato manca si scrive il trattino, come fa il v31. */
@@ -966,7 +966,7 @@ function tabellaEsercizi(doc, scheda, r) {
     ese.appendChild(nome);
 
     const chips = n(doc, "div", "ese-chips");
-    ["T", "F", "R", "P"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
+    ["T", "F", "R"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
         const tecnicaQui = tecnicheRiga[String(e.id || "")] || null;
     const piu = mod
       ? pulsanteVivo(doc, "chplus", "", "tecniche di intensità", () => apriPannelloTecnica(doc, piu, scheda, e, tecnicaQui, mod))

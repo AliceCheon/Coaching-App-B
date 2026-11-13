@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14d (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2920 - righe 3700 - righe 3962 - righe 4671 - righe 4675 - righe 6525 - righe 7926 - righe 8382 - righe 8539 - righe 10577-10586 - righe 10697 - righe 10699-10701 - righe 10769-10773
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14d (i numeri si ricalcolano dal diff, non si copiano): - righe 1437-1480 - righe 1531 - righe 2781 - righe 2795-2798 - righe 2812 - righe 2825 - righe 2838 - righe 2909 - righe 2919 - righe 3699 - righe 3961 - righe 4670 - righe 4674 - righe 6524 - righe 7925 - righe 8381 - righe 8538 - righe 10576-10585 - righe 10696 - righe 10698 - righe 10700 - righe 10768-10772
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -826,7 +826,7 @@ Richiesta Alice dopo l’analisi dei muscoli: il clic su un esercizio del selett
 Analisi di preparazione (sola lettura, backup barbell-diva-backup-A-2026-11-04.json, documenti in j.documenti): i campi muscle/som delle schede (3.971 valori) usano i 12 distretti del catalogo identici alla maiuscola per il 97%; dichiarati e lasciati dove stanno: Addome (32, il catalogo dice Addominali), Attivazione (36), Da classificare (20), Custom (20), Full body (1), gluteo medio (2, gia’ fuso in Glutei dal v31 a r.5861-5862), glutei minuscolo (3). Nessuna tabella di traduzione inventata: la riga nuova prende il distretto del catalogo cosi’ com’e’.
 
 Fatto: comune/modifiche-b.js — aggiungiEsercizio (riga in fondo con order = massimo+1 secondo la lettura della tabella, name, muscle verbatim se presente, progression.weeks con 8 settimane vuote {}, id nuovo bdb-ex-* verificato contro TUTTI gli id della scheda comprese le righe cancellate, generatore iniettabile per le prove, marchio aggiuntoInB con l’istante, versione +1, voce tipo aggiunta-riga con prima null e dopo {nome, muscolo}); annullaModifica/annullaProgressione con il ramo aggiunta-riga che TOGLIE la riga per id (non per posizione), ultimaAnnullabile aggiornata. comune/editor-schede-b.js — strada campo aggiunta-riga dentro la coda scritture, stesso flusso delle altre (rilettura, versione, salvaSchedaConVersione, voce di registro). comune/vista-programma.js — la scelta del selettore passa da mod.onCambia con l’id della scheda aperta letto dall’attributo data-scheda della tabella; senza editor acceso la scelta resta sola lettura.
-
+
 Rilancio in sequenza di 74, 76 e 63 (test-concurrency 1): 74 e 76 ORA VERDI, compresa 76.1 pulsante e Ctrl+Z sul registro B. La 63 resta rossa a livello di FILE (18,9 s, chiudo con «test failed» generico senza alcuna prova caduta dentro: 63.1 e 63.2 verdi, il processo del file crolla dopo, stessa firma del browser morto vista in suite) e va riprovata in una passata dedicata. Rosso dichiarato, non nascosto, non attribuito al codice del Passo B che la 63 non tocca.
 ## Passo B.2 — «+ Riga» apre il selettore Database esercizi (12/11/2026)
 
@@ -1023,3 +1023,26 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
   solo conteggio di serie (scelta di Alice, 13/11/2026).
 - `desktop/index.html`: nessuna riga toccata in questo passo (lo switch
   «Solo diretto / Diretto + indiretto» riusa `.rv-seg`).
+
+## Passo B.14g — via il tastino P, la pagina Progressioni dice la verità (13/11/2026)
+
+- Diff vero (git diff --numstat):
+
+```
+2	2	comune/vista-programma.js
+1	2	desktop/index.html
+```
+
+- `comune/vista-programma.js`: tolto il pulsantino spento «P» dall'array delle
+  tecniche della riga (riga 969): non comanda nulla, era solo decorativo. Restano
+  T F R, sempre spenti come prima. Aggiornato il commento di testa (T F R, senza P).
+- `desktop/index.html` (unica zona toccata in questo file): il sottotitolo della
+  pagina Progressioni non rimanda più al «tastino P di ogni esercizio» ma dice come
+  funziona davvero: «Per applicare una progressione alla singola riga usa il tasto
+  «Applica progressione» della riga stessa.»
+- Nessun test nominava la P (il test 66 parla del tastino «+», resta com'è):
+  Due test aggiornati a mano: il 41.05 conta ora 12 chips spente per riga (T F R, senza la P) e la riga dei blocchi dichiarati sopra ricalcolata (2920 → 2909, perché la frase nuova sta su una riga sola). Suite finale: 461 test e 461 verdi.
+- Nessun numero toccato altrove in `desktop/index.html` (Specializzazione, curve
+  di forza, Database esercizi restano al loro posto, in attesa dei passi B.14k,
+  B.14j e della pulizia B.14i).
+
