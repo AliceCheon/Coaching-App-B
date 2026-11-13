@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14i: - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535 - righe 2785 - righe 2799-2802 - righe 2816 - righe 2829 - righe 2842 - righe 2913 - righe 2923 - righe 3703 - righe 3965 - righe 4674 - righe 4678 - righe 6528 - righe 7882-7886 - righe 7931 - righe 8387 - righe 8544 - righe 10582-10591 - righe 10702 - righe 10704 - righe 10706 - righe 10774-10778
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14l:  - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3703-3703 - righe 3965-3965 - righe 4674-4674 - righe 4678-4678 - righe 5831-5839 - righe 6535-6535 - righe 7889-7893 - righe 7938-7938 - righe 8394-8394 - righe 8551-8551 - righe 10589-10598 - righe 10709-10709 - righe 10711-10711 - righe 10713-10713 - righe 10781-10785
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -1114,3 +1114,19 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
   verde senza blocchi nuovi.
 - Suite: 466 test e 466 verdi.
 
+## Passo B.14l — il nastro del dashboard non mostra più il tag (14/11/2026)
+
+- Il difetto, visto da Alice: nella barra in alto del dashboard si leggeva il
+  testo grezzo «35 esercizi · ultima seduta <span data-lb-kpi="ultima">…»:
+  desktop/index.html (riga 5832) assegnava a textContent una stringa con
+  dentro lo <span>, e app-v31.js (ripulisciNastroDestro) lo toglieva dopo,
+  con due replace a stringa.
+- Corretto: il nastro si costruisce a pezzi — il testo con textContent e la
+  data dentro uno <span> vero (createElement + setAttribute), stesso testo
+  finale a schermo. Il telefono non ha lo stesso difetto (verificato).
+- app-v31.js non toccato: ripulisciNastroDestro resta e non trova più markup
+  da togliere (esce subito).
+- Guardia nuova tests/91-nastro-pulito.test.mjs: 91.1 scansione degli
+  assegnamenti textContent con template literal (niente tag dentro), 91.2 il
+  nastro finisce con lo span vero di data-lb-kpi="ultima".
+- Righe cambiate di desktop/index.html (dal diff vero):  - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3703-3703 - righe 3965-3965 - righe 4674-4674 - righe 4678-4678 - righe 5831-5839 - righe 6535-6535 - righe 7889-7893 - righe 7938-7938 - righe 8394-8394 - righe 8551-8551 - righe 10589-10598 - righe 10709-10709 - righe 10711-10711 - righe 10713-10713 - righe 10781-10785.

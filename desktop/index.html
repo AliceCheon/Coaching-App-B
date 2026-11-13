@@ -5828,8 +5828,15 @@ document.querySelectorAll(".voce").forEach((v) => v.addEventListener("click", ()
   window.scrollTo({ top: 0, behavior: "smooth" });
 }));
 
-document.getElementById("fr-nastro").textContent =
-  `${lav.reduce((a, s) => a + s.lista.length, 0)} esercizi · ultima seduta <span data-lb-kpi="ultima">${window.BD_LB ? window.BD_LB.sedute[0].d : "…"}</span>`;
+{ /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si
+  vedeva grezzo e app-v31 lo ripuliva dopo con due replace. */
+  const frn = document.getElementById("fr-nastro");
+  frn.textContent = `${lav.reduce((a, s) => a + s.lista.length, 0)} esercizi · ultima seduta `;
+  const kpiUltima = document.createElement("span");
+  kpiUltima.setAttribute("data-lb-kpi", "ultima");
+  kpiUltima.textContent = window.BD_LB ? window.BD_LB.sedute[0].d : "…";
+  frn.appendChild(kpiUltima);
+}
 
 disegna();
 
