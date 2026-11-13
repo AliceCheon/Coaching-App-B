@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14h: - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535 - righe 2785 - righe 2799-2802 - righe 2816 - righe 2829 - righe 2842 - righe 2913 - righe 2923 - righe 3703 - righe 3965 - righe 4674 - righe 4678 - righe 6528 - righe 7882-7886 - righe 7931 - righe 8387 - righe 8544 - righe 10582-10591 - righe 10702 - righe 10704 - righe 10706 - righe 10774-10778
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14i: - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535 - righe 2785 - righe 2799-2802 - righe 2816 - righe 2829 - righe 2842 - righe 2913 - righe 2923 - righe 3703 - righe 3965 - righe 4674 - righe 4678 - righe 6528 - righe 7882-7886 - righe 7931 - righe 8387 - righe 8544 - righe 10582-10591 - righe 10702 - righe 10704 - righe 10706 - righe 10774-10778
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -949,9 +949,9 @@ volume passa da li', quindi vecchie e nuove tecniche pesano uguale.
 Nessuna riga di `desktop/index.html` cambiata in questo passo: l'elenco dei
 blocchi resta quello qui sopra.
 
-## Passo B.14  il volume conta davvero (13/11/2026)
+## Passo B.14 — il volume conta davvero (13/11/2026)
 
-- nuovo `comune/volume-b.js`: `contaVolume(righe, opzioni)` e' puro  serie,
+- nuovo `comune/volume-b.js`: `contaVolume(righe, opzioni)` e' puro — serie,
   ripetizioni e tonnellaggio (serie x ripetizioni x peso) per settimana e per
   distretto. Chi entra lo decide solo `contaNelVolume()`, quindi le tecniche
   contano sempre, comprese le righe vecchie con il campo a false.
@@ -967,7 +967,7 @@ blocchi resta quello qui sopra.
   a mano (riga normale, riga tecnica, riga vecchia, peso vuoto).
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
 
-## Passo B.14d  il volume indiretto (13/11/2026)
+## Passo B.14d — il volume indiretto (13/11/2026)
 
 - Le sinergie sono tornate, e non erano un numero inventato solo nel mockup: la regola che Alice
   vuole e' **1 punto al distretto bersaglio, 0,5 a ciascuno dei secondari**, e vive in una costante
@@ -991,7 +991,7 @@ blocchi resta quello qui sopra.
   switch, la regola dell'accosciata e la copertura di tutti e 79 gli esercizi dei cinque programmi.
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
 
-## Passo B.14e
+## Passo B.14e — il volume legge anche il Logbook (13/11/2026)
 
 Il volume legge anche il Logbook: le serie chiuse, settimana per settimana.
 
@@ -1077,3 +1077,40 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
   zebra, regole con le variabili, figlia col tono del padre.
 - Suite: 466 test e 466 verdi. Il 69.2 resta come
   documentato al passo B.14g.
+
+## Passo B.14i — pulizia e documento di consegna (13/11/2026)
+
+- Diff vero (git diff --cached --numstat, il documento di consegna e' un file
+  nuovo, 12 script di servizio escono dal repo, nessun file dell'app toccato):
+
+```
+0	16	crop.mjs
+51	0	docs/consegna-fase-b14.md
+0	37	misura31.mjs
+0	67	scatta-2-3.mjs
+0	68	scatta-2-4.mjs
+0	114	scatta-2-5-bis.mjs
+0	76	scatta-2-5.mjs
+0	108	scatta-prog-conf.mjs
+0	22	scatta-robot.mjs
+0	117	scatta-settimane.mjs
+0	95	scatta-tabella-v31.mjs
+0	58	scatta-tema.mjs
+0	194	scatta-vera-60.mjs
+```
+
+- Pulizia: via dalla radice gli script e i log di servizio (patch, fix,
+  diario, scatta, misura, log). Di questi, 12 erano tracciati e ora escono
+  dal repo: crop, misura31 e i dieci scatta. Gli altri erano file non
+  tracciati e spariscono senza lasciare traccia nel diff.
+- Documento nuovo `docs/consegna-fase-b14.md`: la consegna della fase con la
+  tabella dei passi (B.14 → B.14i, con i commit) e le quattro cose da sapere:
+  il 69.2 e' instabile sotto carico ma NON rotto (da solo e' sempre 7/7);
+  il Quadro atleta e' una pagina con NUMERI FINTI del v31, non vuota; i
+  secondari hanno DUE fonti che possono non concordare (pallini statici del
+  Database, 179 esercizi, e muscoli-b.js, 79); il Logbook non e' una pagina,
+  e' quello che Alice scrive sull'APK e che arriva in Overview atleta.
+- Nessuna riga dell'app toccata: il desktop non cambia, la guardia 42 resta
+  verde senza blocchi nuovi.
+- Suite: 466 test e 466 verdi.
+

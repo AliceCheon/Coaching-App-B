@@ -1,3 +1,5 @@
+> Archiviato, non aggiornato dopo il 5/11/2026.
+
 # Riepilogo per la nuova chat — Barbell Diva B
 
 **Data:** 5 novembre 2026, ore 01:50 (Europe/Rome)

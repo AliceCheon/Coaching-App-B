@@ -1,3 +1,5 @@
+> Archiviato, non aggiornato dopo il 5/11/2026.
+
 # Barbell Diva B — registro dei lavori (memory bank)
 
 ## b0.1-fase0 — fase 0: dashboard di sola lettura (2 novembre 2026, pomeriggio)
