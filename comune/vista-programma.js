@@ -993,13 +993,28 @@ function tabellaEsercizi(doc, scheda, r) {
   const supAttiviQui = supAttivi(elenco);
   let supUltimoId = "";
   elenco.forEach((e) => { if (e && typeof e === "object" && !e.deletedAt && !String(e.padreId || "")) supUltimoId = String(e.id || ""); });
+  /* Passo B.16b: l'unita' che alterna e' l'esercizio SINGOLO o il GRUPPO di
+   * fila (righe vive consecutive con lo stesso sup): la zebra del B.14h
+   * conta il gruppo come UNA unita'. Le figlie tecniche portano il tono del
+   * padre, come dal B.14h. */
+  const unita = [];
+  let contatoreUnita = -1;
+  let supPrecedente = null;
+  elenco.forEach((e) => {
+    const viva = e && typeof e === "object" && !e.deletedAt && !String(e.padreId || "");
+    if (!viva) { unita.push(null); return; }
+    const sup = String(e.sup || "");
+    if (sup && sup === supPrecedente) unita.push(contatoreUnita);
+    else { contatoreUnita += 1; unita.push(contatoreUnita); }
+    supPrecedente = sup;
+  });
   const corpo = n(doc, "tbody");
   elenco.forEach((e, indice) => {
     /* Passo B.14h: l'unita' che alterna e' l'esercizio, non la riga: le figlie
      * delle tecniche portano il tono del padre. Quando nasceranno i gruppi
      * (B.16) bastera' calcolare il tono dall'indice del gruppo. */
-    const tono = indice % 2 === 0 ? "z-a" : "z-b";
-    const tr = n(doc, "tr", "p8-r " + tono);
+    const tono = unita[indice] % 2 === 0 ? "z-a" : "z-b";
+    const tr = n(doc, "tr", "p8-r " + tono + (supAttiviQui[String(e.id || "")] ? " z-gruppo" : ""));
     tr.setAttribute("data-js", String(indice + 1));
     tr.appendChild(n(doc, "td", "c-js", (scheda.codice || "") + (indice + 1)));
 

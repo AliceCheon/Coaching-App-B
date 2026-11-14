@@ -649,7 +649,6 @@ devDependencies (installato senza browser scaricati: usa il Chrome di sistema).
 
 Spinto main su GitHub. Verdi: 69.0-69.2, 69.5, 69.6 (cella a mano, verde quando corre da sola), 70.1-70.7, 71.1-71.6, 72.1-72.3. Rossi: 69.3 (timeout del TEST sulla voce Range 8-10 -> 8-8 nel pannello di scheda; nessun difetto della pagina dimostrato) e 69.4 (ripristino dopo ricarica, da verificare). Dettagli in suite69.log alla radice del repo.
 
-
 ## Passo 25 — le ripetizioni sono un testo (11/11/2026)
 
 **Il sintomo (Alice, sul sito).** Rimettere la progressione vera di «Pendulum focus
@@ -697,7 +696,6 @@ caratteri di controllo no; 73.4 `tre` nelle serie viene ancora rifiutato.
 Nessun commit e nessun push in questo passo: il lavoro è pronto sul disco e
 aspetta la parola di Alice.
 
-
 ## Passo 26 — scorrimento interno del pannello progressioni (11/11/2026)
 
 Richiesta di Alice: il + apre il pannello; lo scroll interno verso il basso non deve chiuderlo. Commit richiesto, nessun push.
@@ -709,7 +707,6 @@ Prova 74 sulla pagina vera con Firestore finto: + apre, rotella interna sposta s
 Verifica finale: suite tranne 63, 354 verdi e 4 rossi (64.4, 69.3, 69.4, 69.6, gli stessi quattro segnalati nel passo 25). La nuova 74 passa sia nella suite completa sia isolata: scrollTop 0 -> 151, pannello visibile, touchmove non annullato, clic fuori chiude. Non si dichiara la suite tutta verde. Il commit e richiesto esplicitamente da Alice; nessun push.
 
 Prova 63 eseguita separatamente dopo la suite finale: 5 verdi, 0 rossi. Guardia 42 verificata con git diff --exit-code su desktop/index.html; nessun Map/Set aggiunto.
-
 
 ## Passo 27 — registro progressioni compatibile con Firestore (11/11/2026)
 
@@ -727,7 +724,6 @@ Controllo browser aggiuntivo: 69.0/69.1/69.2/69.5, nella sequenza originale, 4 v
 
 Autorizzazione di Alice, 11/11/2026 ore 16:03: pubblicare solo la correzione per azioni e modifiche future. La scheda è già stata corretta da Alice: NON sovrascrivere. Nessuna migrazione, riparazione retroattiva o scrittura nel database viene eseguita dalla pubblicazione; il codice interviene solo quando viene richiesta una nuova azione.
 
-
 ## Passo 28 — Applica progressione al posto del + (11/11/2026)
 
 Vincoli di Alice: «se premo applica progressione si deve aprire il popup con tutte le progressioni»; «se premo il + per ora nulla»; le superserie sono rimandate. Il + della riga è disabilitato e non ha più il collegamento alle progressioni. Applica progressione conserva le 21 voci e la stessa applicazione alla singola riga. Nessuna superserie introdotta, nessun accesso ai dati reali, nessun ripristino.
@@ -741,7 +737,6 @@ Esiti verificati: suite tranne 63, 357 verdi e i quattro rossi già presenti (64
 Prova 63 separata conclusa: 5 verdi, 0 rossi (suite63-passo28-separata.log). Vincoli ricontrollati: popup con tutte le 21 progressioni su Applica progressione; + inattivo senza scritture; nessuna funzione superserie introdotta.
 
 Autorizzazione di Alice, 11/11/2026 ore 23:31 Europe/Rome: «fai commit e push per favore», dopo il riepilogo degli esiti (357 verdi, quattro rossi già noti, 63 separata 5/5). Pubblicazione limitata al passo 28; nessuna scrittura sui dati reali o sovrascrittura delle schede.
-
 
 ## Passo 29 — Ctrl+Z usa il registro B (11/11/2026)
 
@@ -932,7 +927,6 @@ il bottone che apre i parametri.
  che il `div.tec-nome` non ci sia più e che nella cella Esercizio il testo compaia **una
  volta sola**.
 
-
 ## Passo B.12
 
 **Il volume.** Le serie con la tecnica di intensita' contano nel volume.
@@ -1046,7 +1040,6 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
  di forza, Database esercizi restano al loro posto, in attesa dei passi B.14k,
  B.14j e della pulizia B.14i).
 
-
 ## Passo B.14h — la zebra alterna per esercizio (13/11/2026)
 
 - Diff vero (git diff --numstat, il test 90 e' un file nuovo):
@@ -1141,7 +1134,7 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 - Guardia nuova tests/92-specializzazione.test.mjs: numeri scelti a mano e scansioni statiche.
 - Righe cambiate di desktop/index.html (dal diff vero):.
 
-- Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42):  - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3138-3138 - righe 3138-3139 - righe 3684-3684 - righe 3946-3946 - righe 4655-4655 - righe 4659-4659 - righe 5812-5820 - righe 6516-6516 - righe 7870-7874 - righe 7919-7919 - righe 8375-8375 - righe 8532-8532 - righe 10570-10579 - righe 10690-10690 - righe 10692-10692 - righe 10693-10694 - righe 10762-10766.
+- Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42):                            .
 
 ## Passo B.15 — Sostituisci esercizio (14/11/2026)
 
@@ -1194,35 +1187,57 @@ tests/94-superserie.test.mjs (nuovo).
 
 ## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16a-2)
 
-- righe 40-43
-- righe 71-74
-- righe 1445-1488
-- righe 1539-1539
-- righe 2789-2789
-- righe 2803-2806
-- righe 2820-2820
-- righe 2833-2833
-- righe 2846-2846
-- righe 2917-2917
-- righe 2927-2927
-- righe 3142-3143
-- righe 3688-3688
-- righe 3808-3808
-- righe 3950-3950
-- righe 4659-4659
-- righe 4663-4663
-- righe 5816-5824
-- righe 6520-6520
-- righe 6895-6899
-- righe 7849-7850
-- righe 7877-7882
-- righe 7927-7927
-- righe 7972-7973
-- righe 8023-8024
-- righe 8375-8375
-- righe 8532-8532
-- righe 9840-9840
-- righe 10570-10579
-- righe 10690-10690
-- righe 10692-10694
-- righe 10762-10766
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16b)
+
+## Passo B.16b — il tono del gruppo e la zebra marcata (14/11/2026)
+
+La zebra del B.14h adesso conta il GRUPPO come una unita' sola: le righe
+di fila con lo stesso sup condividono il tono (unita' calcolate in
+vista-programma.js: un esercizio singolo vale uno, un gruppo di fila vale
+uno, le figlie tecniche portano il tono del padre). Le righe del gruppo
+prendono il fondo --sup-fondo (classe z-gruppo): #4a2a5e (tinta rosa) nel
+tema scuro, #fce7f3 nel chiaro — distinto da entrambi i toni zebra (almeno
+1,1) e con il testo leggibile (4,5:1), controllato dal test 90.6. La zebra
+scura e' piu' marcata come chiesto da Alice: --zebra-a #15152f → #14132d e
+--zebra-b #211b3e → #30265a (rapporto 1,34); il tema chiaro NON si tocca
+(#fffafd / #f8eafa, distacco leggero entro 1,25). Il test 90 e' ricalcolato
+e il test 96 (nuovo) controlla le unita' a schermo.
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16b)
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16b)
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16b)
+
+- righe 40-44
+- righe 72-76
+- righe 1447-1490
+- righe 1541-1541
+- righe 2791-2791
+- righe 2805-2808
+- righe 2822-2822
+- righe 2835-2835
+- righe 2848-2848
+- righe 2919-2919
+- righe 2929-2929
+- righe 3144-3145
+- righe 3690-3690
+- righe 3810-3810
+- righe 3952-3952
+- righe 4661-4661
+- righe 4665-4665
+- righe 5818-5826
+- righe 6522-6522
+- righe 6897-6901
+- righe 7851-7852
+- righe 7879-7886
+- righe 7931-7931
+- righe 7976-7977
+- righe 8027-8028
+- righe 8379-8379
+- righe 8536-8536
+- righe 9844-9844
+- righe 10574-10583
+- righe 10694-10694
+- righe 10696-10698
+- righe 10766-10770

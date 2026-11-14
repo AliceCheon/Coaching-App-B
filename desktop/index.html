@@ -41,6 +41,7 @@ body[data-theme="light"] {
   --zebra-b: #f8eafa;
   --test-parola: #a43369;
   --test-pallino: #a43369;
+  --sup-fondo: #f9d8ef;
   --text-primary: #241238;
   --text-secondary: #705b82;
   --border-soft: rgba(105, 55, 145, .18);
@@ -68,10 +69,11 @@ body[data-theme="dark"] {
   --bg-secondary: #0d0d24;
   --surface: #15152f;
   --surface-raised: #211b3e;
-  --zebra-a: #15152f;
-  --zebra-b: #211b3e;
+  --zebra-a: #14132d;
+  --zebra-b: #30265a;
   --test-parola: #ffdcf0;
   --test-pallino: var(--pink);
+  --sup-fondo: #4a2a5e;
   --text-primary: #fff8fd;
   --text-secondary: #cbbbd7;
   --border-soft: rgba(202, 107, 225, .24);
@@ -7880,6 +7882,8 @@ html body #pag-programma-1 .p8-tab col.w-act{width:54px}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td{background:var(--zebra-a);border-bottom:1px solid var(--line)}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r.z-b td{background:var(--zebra-b)}
 tr.p8-r.in-sup td:first-child{border-left:3px solid #FF2D95}
+tr.p8-r.z-gruppo td{background:var(--sup-fondo)}
+tr.p8-tec.in-sup>td:first-child:before{background:#FF2D95;box-shadow:none}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td.c-js{border-left:0}
 
 /* ---- cella esercizio ---- */

@@ -1,13 +1,9 @@
-/* tests/90-zebra-esercizio.test.mjs — la zebra per esercizio (B.14h, 13/11/2026).
- *
- * Alice, 13/11/2026: «una riga chiara e una leggermente più scura, alternate per
- * esercizio; le figlie delle tecniche hanno il tono del padre». Il distacco è
- * leggero (pochi punti di luminosità, non un cambio di colore) e i due toni per
- * tema stanno in variabili CSS (--zebra-a / --zebra-b), niente colori sparsi.
- * Qui si controlla che il testo si legga su entrambi i toni in entrambi i temi
- * (minimo 4,5:1, calcolato come nel test 86), che i toni siano diversi ma
- * vicini, che la vecchia zebra per riga (nth-child) sia sparita e che la riga
- * tecnica erediti il tono del padre.
+/* tests/90-zebra-esercizio.test.mjs — la zebra per esercizio (B.14h) e, dal
+ * B.16b, il gruppo come UNA unita' con il suo tono (--sup-fondo). Dal 14/11
+ * la zebra scura e' piu' marcata su richiesta di Alice: nel tema scuro il
+ * rapporto fra i due toni sta fra 1,25 e 1,5; nel chiaro resta un distacco
+ * leggero (entro 1,25). Il testo si legge su tutti i toni (4,5:1) e il tono
+ * del gruppo si distingue dai due toni zebra (almeno 1,1) in entrambi i temi.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -17,7 +13,6 @@ import { dirname, join } from "node:path";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 const foglio = readFileSync(join(radice, "desktop", "index.html"), "utf8").replace(/\r/g, "");
-const righe = foglio.split("\n");
 const vista = readFileSync(join(radice, "comune", "vista-programma.js"), "utf8").replace(/\r/g, "");
 
 const lum = (h) => {
@@ -31,11 +26,12 @@ const contrasto = (a, b) => {
 };
 
 const tema = (nome) => {
+  const righe = foglio.split("\n");
   const apri = righe.findIndex((l) => l.indexOf('body[data-theme="' + nome + '"] {') !== -1);
   assert.ok(apri !== -1, "manca il blocco del tema " + nome);
   const t = {};
   for (let i = apri; i < righe.length && righe[i].indexOf("}") !== 0; i += 1) {
-    const m = /^ {2}--(zebra-a|zebra-b|text-primary): (#[0-9A-Fa-f]{6});/.exec(righe[i]);
+    const m = /^ {2}--(zebra-a|zebra-b|text-primary|sup-fondo): (#[0-9A-Fa-f]{6});/.exec(righe[i]);
     if (m) t[m[1]] = m[2];
   }
   return t;
@@ -43,8 +39,8 @@ const tema = (nome) => {
 
 test("90.1 le variabili zebra esistono nei due temi e valgono quelli scelti", () => {
   const scuro = tema("dark"), chiaro = tema("light");
-  assert.equal(scuro["zebra-a"], "#15152f");
-  assert.equal(scuro["zebra-b"], "#211b3e");
+  assert.equal(scuro["zebra-a"], "#14132d");
+  assert.equal(scuro["zebra-b"], "#30265a");
   assert.equal(chiaro["zebra-a"], "#fffafd");
   assert.equal(chiaro["zebra-b"], "#f8eafa");
 });
@@ -59,14 +55,13 @@ test("90.2 il testo si legge su entrambi i toni, in entrambi i temi (4,5:1)", ()
   }
 });
 
-test("90.3 i due toni sono diversi ma vicini (distacco leggero)", () => {
-  for (const nome of ["dark", "light"]) {
-    const t = tema(nome);
-    assert.notEqual(t["zebra-a"], t["zebra-b"], nome + ": i due toni sono uguali");
-    const r = contrasto(t["zebra-a"], t["zebra-b"]);
-    assert.ok(r > 1.0, nome + ": i due toni non si distinguono");
-    assert.ok(r <= 1.25, nome + ": il distacco e' troppo forte (" + r.toFixed(2) + ":1)");
-  }
+test("90.3 il distacco dei toni: leggero nel chiaro, marcato nel scuro", () => {
+  const chiaro = tema("light");
+  const rChiaro = contrasto(chiaro["zebra-a"], chiaro["zebra-b"]);
+  assert.ok(rChiaro > 1.0 && rChiaro <= 1.25, "chiaro: distacco " + rChiaro.toFixed(2) + ":1 (entro 1,25)");
+  const scuro = tema("dark");
+  const rScuro = contrasto(scuro["zebra-a"], scuro["zebra-b"]);
+  assert.ok(rScuro >= 1.25 && rScuro <= 1.5, "scuro: distacco " + rScuro.toFixed(2) + ":1 (fra 1,25 e 1,5)");
 });
 
 test("90.4 la zebra non e' piu' per riga: regole con le variabili, niente nth-child", () => {
@@ -75,8 +70,22 @@ test("90.4 la zebra non e' piu' per riga: regole con le variabili, niente nth-ch
   assert.ok(foglio.indexOf("tr.p8-r td{background:var(--zebra-a)") !== -1, "la base deve leggere var(--zebra-a)");
 });
 
-test("90.5 l'unita' che alterna e' l'esercizio e la figlia porta il tono del padre", () => {
-  assert.ok(vista.indexOf('const tono = indice % 2 === 0 ? "z-a" : "z-b";') !== -1, "il tono non viene dall'indice dell'esercizio");
-  assert.ok(vista.indexOf('const tr = n(doc, "tr", "p8-r " + tono);') !== -1, "il padre non prende il tono");
+test("90.5 l'unita' che alterna e' l'esercizio o il gruppo (B.16b)", () => {
+  assert.ok(vista.indexOf('const tono = unita[indice] % 2 === 0 ? "z-a" : "z-b";') !== -1, "il tono non viene dall'unita'");
+  assert.ok(vista.indexOf('" z-gruppo"') !== -1, "il gruppo non prende la sua classe");
   assert.ok(vista.indexOf('"p8-r p8-tec " + tono') !== -1, "la riga tecnica non eredita il tono del padre");
+});
+
+test("90.6 il tono del gruppo si legge e si distingue, in entrambi i temi", () => {
+  for (const nome of ["dark", "light"]) {
+    const t = tema(nome);
+    const g = t["sup-fondo"];
+    assert.ok(g, "manca --sup-fondo nel tema " + nome);
+    const testo = contrasto(t["text-primary"], g);
+    assert.ok(testo >= 4.5, nome + ": testo sul gruppo fa " + testo.toFixed(2) + ":1");
+    for (const k of ["zebra-a", "zebra-b"]) {
+      const r = contrasto(g, t[k]);
+      assert.ok(r >= 1.1, nome + ": il gruppo si confonde con " + k + " (" + r.toFixed(2) + ":1)");
+    }
+  }
 });
