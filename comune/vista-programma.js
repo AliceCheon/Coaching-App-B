@@ -1594,6 +1594,12 @@ function aggiornaCornici(doc, box) {
     while (x && x !== box) { y += Number(x.offsetTop) || 0; x = x.offsetParent; }
     return y;
   };
+  const sinistraNelBox = (el) => {
+    let x = 0;
+    let q = el;
+    while (q && q !== box) { x += Number(q.offsetLeft) || 0; q = q.offsetParent; }
+    return x;
+  };
   const larghezza = Number(t.offsetWidth) || 0;
   let quante = 0;
   for (let i = 0; i < tratti.length; i += 1) {
@@ -1614,10 +1620,21 @@ function aggiornaCornici(doc, box) {
       const sotto = giunzioni[g][1];
       const linea = topNelBox(sopra) + (Number(sopra.offsetHeight) || 0);
       const centro = (linea + topNelBox(sotto)) / 2;
+      /* Passo B.19: il cerchio sta AL POSTO del bottone ab-sup della riga
+       * di sopra (quello che collega e scollega), nascosto dal CSS quando
+       * la sup e' attiva: centro orizzontale sul bottone, cliccabile come
+       * lui. Bottone non misurabile: resta sul bordo sinistro. */
+      const bSup = sopra.querySelector(".ab-sup");
+      const centroX = bSup && (Number(bSup.offsetWidth) || 0) > 0
+        ? sinistraNelBox(bSup) + (Number(bSup.offsetWidth) || 0) / 2
+        : null;
       const c = n(doc, "div", "sup-giunzione" + (grad ? " sup-giunzione-grad" : ""));
       c.style.top = (centro - 10) + "px";
-      c.style.left = "1px";
-      c.style.pointerEvents = "none";
+      c.style.left = (centroX == null ? 1 : centroX - 10) + "px";
+      c.style.pointerEvents = "auto";
+      c.setAttribute("role", "button");
+      c.setAttribute("title", "superserie: collega o scollega l'esercizio sotto");
+      c.addEventListener("click", () => { if (bSup && !bSup.disabled) bSup.click(); });
       c.appendChild(iconaRipeti(doc));
       box.appendChild(c);
     }

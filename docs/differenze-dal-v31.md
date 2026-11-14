@@ -1215,8 +1215,11 @@ Su richiesta di Alice la superserie si vede con una CORNICE sfumata rosa -> lill
 
 ## B.18 — il cerchietto della giunzione (14 novembre)
 
-Fra due esercizi collegati della superserie, sul punto di contatto, un cerchietto di 20px con l'icona «ripeti» del Material (lo stesso SVG del tasto, fill currentColor) che ruota lentamente: un giro in 8 secondi, animazione SOLO su transform, ferma con prefers-reduced-motion: reduce. Una giunzione per ogni coppia di esercizi di fila nel tratto (2 esercizi = una, 3 = due), centrata sulla linea di confine fra l'ultima riga di sopra (figlia tecnica compresa) e la prima di sotto, con il bordo sinistro tangente al bordo della cornice: centro a 11px dal bordo sinistro della tabella, perche' mezzo cerchio fuori sarebbe tagliato dallo scorrimento orizzontale di .p8-scroll. Stesso overlay della cornice (pointer-events:none, misure vere, ricalcolo con ridisegno e ResizeObserver, rimozione insieme alla cornice). Fondo var(--card), anello sfumato rosa -> lilla con la tecnica a maschera (fallback bordo pieno rosa), alone leggero; stessi colori della cornice nei due temi, contrasto del simbolo sul fondo del cerchio almeno 3:1. Test nuovo 98.
+Fra due esercizi collegati della superserie, sul punto di contatto, un cerchietto di 20px con l'icona «ripeti» del Material (lo stesso SVG del tasto, fill currentColor) che ruota lentamente: un giro in 8 secondi, animazione SOLO su transform, ferma con prefers-reduced-motion: reduce. Una giunzione per ogni coppia di esercizi di fila nel tratto (2 esercizi = una, 3 = due), centrata sulla linea di confine fra l'ultima riga di sopra (figlia tecnica compresa) e la prima di sotto. Passo B.19: con la sup attiva il cerchio sta AL POSTO del bottone ab-sup della riga di sopra (quello che collega e scollega, nascosto dal CSS con visibility:hidden che tiene la misura in riga), centro orizzontale sul bottone e cliccabile come lui (role button, stesso onCambia per lo scollegamento); senza bottone misurabile resta sul bordo sinistro. Stesso overlay della cornice ( misure vere, ricalcolo con ridisegno e ResizeObserver, rimozione insieme alla cornice). Fondo var(--card), anello sfumato rosa -> lilla con la tecnica a maschera (fallback bordo pieno rosa), alone leggero; stessi colori della cornice nei due temi, contrasto del simbolo sul fondo del cerchio almeno 3:1. Test nuovo 98.
 
+## B.19 \u2014 il cerchio al posto dei bottoni (14 novembre)
+
+Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spariscono (visibility:hidden, misura in riga) e al loro posto sta il cerchio rotante della giunzione: centro orizzontale sull'ultimo bottone della riga di sopra, sempre centrato sulla linea di confine. Cliccabile come il bottone che sostituisce: role button, titolo, stesso onCambia, quindi lo scollegamento si fa dal cerchio stesso. Fuori dal gruppo (sup non attiva) i bottoni tornano come sempre.
 - righe 40-44
 - righe 46-48
 - righe 75-79
@@ -1240,14 +1243,14 @@ Fra due esercizi collegati della superserie, sul punto di contatto, un cerchiett
 - righe 6528
 - righe 6903-6907
 - righe 7857-7858
-- righe 7885-7909
-- righe 7954
-- righe 7999-8000
-- righe 8050-8051
-- righe 8402
-- righe 8559
-- righe 9867
-- righe 10597-10606
-- righe 10717
-- righe 10719-10721
-- righe 10789-10793
+- righe 7885-7912
+- righe 7957
+- righe 8002-8003
+- righe 8053-8054
+- righe 8405
+- righe 8562
+- righe 9870
+- righe 10600-10609
+- righe 10720
+- righe 10722-10724
+- righe 10792-10796

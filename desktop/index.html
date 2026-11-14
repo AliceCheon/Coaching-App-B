@@ -7901,10 +7901,13 @@ tr.p8-r.z-gruppo td{background:var(--sup-fondo)}
  * var(--card), anello sfumato rosa -> lilla (stessa tecnica a maschera
  * della cornice; senza supporto, bordo pieno rosa), icona «ripeti» che
  * ruota lentamente: SOLO transform, e ferma con reduced-motion. */
-.sup-giunzione{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;background:var(--card);box-shadow:0 0 8px var(--sup-cornice-alone);z-index:7}
+.sup-giunzione{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:auto;cursor:pointer;background:var(--card);box-shadow:0 0 8px var(--sup-cornice-alone);z-index:7}
 .sup-giunzione-ic{color:var(--sup-cornice-a);animation:sup-ruota 8s linear infinite}
 .sup-giunzione-grad::before{content:"";position:absolute;inset:0;border:2px solid transparent;border-radius:50%;background:linear-gradient(135deg,var(--sup-cornice-a),var(--sup-cornice-b)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask-composite:exclude}
 .sup-giunzione:not(.sup-giunzione-grad)::before{content:"";position:absolute;inset:0;border:2px solid var(--sup-cornice-a);border-radius:50%}
+/* Passo B.19: con la sup attiva i bottoni ab-sup spariscono (restano in
+ * riga per la misura); il cerchio della giunzione prende il loro posto. */
+.p8-tab tr.in-sup .ab-sup{visibility:hidden}
 @keyframes sup-ruota{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.sup-giunzione-ic{animation:none}}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td.c-js{border-left:0}

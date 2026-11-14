@@ -2,8 +2,10 @@
  * fra due esercizi collegati. Due esercizi = una freccia, tre = due;
  * la giunzione e' calcolata sulle righe vere, figlie tecniche comprese
  * (il confine sta SOTTO la figlia, non sotto il padre). Gruppo spezzato:
- * nessuna freccia al confine. pointer-events none; sparisce con la
- * cornice quando si scollega o dopo Annulla. Colori variabili per tema,
+ * nessuna freccia al confine. B.19: il cerchio sta al posto del bottone
+ * ab-sup della riga di sopra (nascosto dal CSS quando la sup e' attiva),
+ * cliccabile come lui; sparisce con la cornice quando si scollega o dopo
+ * Annulla. Colori variabili per tema,
  * simbolo leggibile (3:1 sul fondo del cerchio), animazione solo
  * transform e ferma con reduced-motion. */
 import { test } from "node:test";
@@ -50,18 +52,25 @@ function misura(el, cima, alta) {
 }
 const larghezza = (s) => Object.defineProperty(s.tabella, "offsetWidth", { configurable: true, value: 800 });
 
-test("98.1 due esercizi collegati: una freccia sulla linea di confine, a sinistra", () => {
+test("98.1 due esercizi collegati: una freccia sulla linea di confine, al posto del bottone", () => {
   const s = schermoCon([ESE("A"), ESE("B", "ss-1"), ESE("C", "ss-1"), ESE("D")]);
   larghezza(s);
   s.righe.forEach((r, i) => misura(r, i * 40, 40));
+  /* il bottone ab-sup della riga di sopra sta a 250 dal bordo, largo 28 */
+  const bSup = s.righe[1].querySelector(".ab-sup");
+  Object.defineProperty(bSup, "offsetLeft", { configurable: true, value: 250 });
+  Object.defineProperty(bSup, "offsetWidth", { configurable: true, value: 28 });
+  Object.defineProperty(bSup, "offsetParent", { configurable: true, value: null });
   corniciScheda(s.box);
   const frecce = s.box.querySelectorAll(".sup-giunzione");
   assert.equal(frecce.length, 1);
   /* confine fra riga 1 (40..80) e riga 2 (80..120): centro a 80 */
   assert.equal(frecce[0].style.top, "70px");
-  assert.equal(frecce[0].style.left, "1px");
-  assert.equal(frecce[0].style.pointerEvents, "none");
+  /* centro orizzontale del bottone: 250 + 14 = 264, cerchio a 264 - 10 */
+  assert.equal(frecce[0].style.left, "254px");
+  assert.equal(frecce[0].style.pointerEvents, "auto");
   assert.ok(frecce[0].querySelector("svg"), "manca l'icona");
+  assert.equal(frecce[0].getAttribute("role"), "button");
 });
 
 test("98.2 tre esercizi collegati: due frecce; il confine conta le figlie tecniche", () => {
@@ -152,7 +161,7 @@ test("98.6 colori per tema, simbolo leggibile (3:1), animazione solo transform e
     assert.ok(r >= 3, nome + ": il simbolo sul cerchio fa " + r.toFixed(2) + ":1 (servono 3)");
   }
   /* il cerchio ha fondo scheda, alone, pointer-events none */
-  assert.ok(foglio.indexOf(".sup-giunzione{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;background:var(--card)") !== -1);
+  assert.ok(foglio.indexOf(".sup-giunzione{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:auto;cursor:pointer;background:var(--card)") !== -1);
   /* l'animazione: SOLO transform, 8 secondi, e ferma con reduced-motion */
   const chiave = foglio.indexOf("@keyframes sup-ruota{");
   assert.ok(chiave !== -1, "manca l'animazione di rotazione");
@@ -164,4 +173,9 @@ test("98.6 colori per tema, simbolo leggibile (3:1), animazione solo transform e
   assert.ok(/@media \(prefers-reduced-motion: reduce\)\{\.sup-giunzione-ic\{animation:none\}\}/.test(foglio), "manca la regola reduced-motion");
   /* fallback a bordo pieno rosa quando la maschera non c'e' */
   assert.ok(foglio.indexOf(".sup-giunzione:not(.sup-giunzione-grad)::before{content:\"\";position:absolute;inset:0;border:2px solid var(--sup-cornice-a);border-radius:50%}") !== -1);
+});
+
+test("98.7 con la sup attiva i bottoni ab-sup spariscono: il cerchio prende il loro posto", () => {
+  assert.ok(foglio.indexOf(".p8-tab tr.in-sup .ab-sup{visibility:hidden}") !== -1,
+    "manca la regola che nasconde i bottoni delle superserie");
 });
