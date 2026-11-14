@@ -327,6 +327,7 @@ export function esercizioNormalizzato(esercizio, indice) {
     id: testo(e.id),
     nome: testo(primoCampo(e, CAMPI_ESERCIZIO.nome)) || NON,
     muscolo: testo(primoCampo(e, CAMPI_ESERCIZIO.muscolo)),
+    sup: testo(e.sup),
     nota: testo(primoCampo(e, CAMPI_ESERCIZIO.nota)),
     ordine: numero(primoCampo(e, CAMPI_ESERCIZIO.ordine)) == null ? indice : numero(primoCampo(e, CAMPI_ESERCIZIO.ordine)),
     prescrizione: prescrizione(e)

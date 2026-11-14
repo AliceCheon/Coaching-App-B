@@ -1141,7 +1141,7 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 - Guardia nuova tests/92-specializzazione.test.mjs: numeri scelti a mano e scansioni statiche.
 - Righe cambiate di desktop/index.html (dal diff vero):.
 
-- Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42): - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3138-3138 - righe 3138-3139 - righe 3684-3684 - righe 3946-3946 - righe 4655-4655 - righe 4659-4659 - righe 5812-5820 - righe 6516-6516 - righe 7870-7874 - righe 7919-7919 - righe 8375-8375 - righe 8532-8532 - righe 10570-10579 - righe 10690-10690 - righe 10692-10692 - righe 10693-10694 - righe 10762-10766.
+- Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42):  - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3138-3138 - righe 3138-3139 - righe 3684-3684 - righe 3946-3946 - righe 4655-4655 - righe 4659-4659 - righe 5812-5820 - righe 6516-6516 - righe 7870-7874 - righe 7919-7919 - righe 8375-8375 - righe 8532-8532 - righe 10570-10579 - righe 10690-10690 - righe 10692-10692 - righe 10693-10694 - righe 10762-10766.
 
 ## Passo B.15 — Sostituisci esercizio (14/11/2026)
 
@@ -1185,3 +1185,44 @@ Toccati: modifiche-b.js (supAttivi, cambiaSuperserie, annulla, lista
 annullabili), editor-schede-b.js (campo «superserie»), vista-programma.js
 (anello, barretta, import), app-v31.js (messaggi, sync, ripristinabili),
 tests/94-superserie.test.mjs (nuovo).
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16a-2)
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16a-2)
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16a-2)
+
+## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16a-2)
+
+- righe 40-43
+- righe 71-74
+- righe 1445-1488
+- righe 1539-1539
+- righe 2789-2789
+- righe 2803-2806
+- righe 2820-2820
+- righe 2833-2833
+- righe 2846-2846
+- righe 2917-2917
+- righe 2927-2927
+- righe 3142-3143
+- righe 3688-3688
+- righe 3808-3808
+- righe 3950-3950
+- righe 4659-4659
+- righe 4663-4663
+- righe 5816-5824
+- righe 6520-6520
+- righe 6895-6899
+- righe 7849-7850
+- righe 7877-7882
+- righe 7927-7927
+- righe 7972-7973
+- righe 8023-8024
+- righe 8375-8375
+- righe 8532-8532
+- righe 9840-9840
+- righe 10570-10579
+- righe 10690-10690
+- righe 10692-10694
+- righe 10762-10766

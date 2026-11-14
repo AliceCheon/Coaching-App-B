@@ -915,27 +915,17 @@ function cerchioPiu(doc) {
 /* L'anello rettangolare del tasto «ripeti» (passo B.16a): come il cerchio
  * del piu', SVG con currentColor, stessa misura degli altri tasti di riga. */
 function anelloRipeti(doc) {
+  /* Passo B.16a-2: il simbolo «ripeti» del Material (due frecce che formano
+   * un rettangolo), come chiesto da Alice: 24x24, fill currentColor. */
   const s = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-  s.setAttribute("viewBox", "0 0 16 16");
-  s.setAttribute("width", "12");
-  s.setAttribute("height", "12");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("width", "14");
+  s.setAttribute("height", "14");
+  s.setAttribute("fill", "currentColor");
   s.setAttribute("aria-hidden", "true");
-  const q = doc.createElementNS("http://www.w3.org/2000/svg", "rect");
-  q.setAttribute("x", "3.2");
-  q.setAttribute("y", "3.2");
-  q.setAttribute("width", "9.6");
-  q.setAttribute("height", "9.6");
-  q.setAttribute("rx", "2.8");
-  q.setAttribute("fill", "none");
-  q.setAttribute("stroke", "currentColor");
-  q.setAttribute("stroke-width", "1.5");
-  const f = doc.createElementNS("http://www.w3.org/2000/svg", "path");
-  f.setAttribute("d", "M12.8 5.4V3.2h-2.2");
-  f.setAttribute("fill", "none");
-  f.setAttribute("stroke", "currentColor");
-  f.setAttribute("stroke-width", "1.5");
-  s.appendChild(q);
-  s.appendChild(f);
+  const p = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z");
+  s.appendChild(p);
   return s;
 }
 
@@ -1025,7 +1015,7 @@ function tabellaEsercizi(doc, scheda, r) {
     ese.appendChild(nome);
 
     const chips = n(doc, "div", "ese-chips");
-    ["T", "F", "R"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
+    ["F", "R"].forEach((lettera) => chips.appendChild(pulsanteSpento(doc, "chchip ch-" + lettera, lettera, "tecnica " + lettera)));
         const tecnicaQui = tecnicheRiga[String(e.id || "")] || null;
     const piu = mod
       ? pulsanteVivo(doc, "chplus", "", "tecniche di intensità", () => apriPannelloTecnica(doc, piu, scheda, e, tecnicaQui, mod))
@@ -1059,11 +1049,23 @@ function tabellaEsercizi(doc, scheda, r) {
     ese.appendChild(chips);
 
     const chips2 = n(doc, "div", "ese-chips2");
-    chips2.appendChild(n(doc, "span", "chlat", "\u21c4 DX/SX"));
-    const test = n(doc, "span", "tb-test");
-    test.appendChild(n(doc, "i"));
-    test.appendChild(n(doc, "span", "", "Test"));
-    chips2.appendChild(test);
+    /* Passo B.16a-2: la spia «Test» e' viva solo se nelle celle delle
+     * settimane c'e' «test» (maiuscolo o minuscolo). Spia, non tasto. */
+    const settimaneTest = [];
+    (perRiga[indice] || []).forEach((s, k) => {
+      const cella = String(s.serie == null ? "" : s.serie) + " " + String(s.ripetizioni == null ? "" : s.ripetizioni);
+      if (cella.toLowerCase().indexOf("test") !== -1) settimaneTest.push(k + 1);
+    });
+    if (settimaneTest.length) {
+      const test = n(doc, "span", "tb-test on");
+      test.appendChild(n(doc, "i"));
+      test.appendChild(n(doc, "span", "tb-test-parola", "Test"));
+      test.title = "Test in " + settimaneTest.map((x) => "S" + x).join(", ");
+      chips2.appendChild(test);
+    } else {
+      /* la riga e' rimasta senza contenuti: niente spazio vuoto */
+      chips2.style.display = "none";
+    }
     ese.appendChild(chips2);
 
     const prog = mod
@@ -1178,7 +1180,7 @@ function tabellaEsercizi(doc, scheda, r) {
     });
 
     tr.appendChild(n(doc, "td", "c-ult", ultimaVolta(r, scheda, e.nome)));
-    if (supAttiviQui[String(e.id || "")]) tr.style.boxShadow = "inset 3px 0 0 0 #FF2D95";
+    if (supAttiviQui[String(e.id || "")]) tr.className = tr.className + " in-sup";
     corpo.appendChild(tr);
     const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico, tono, supAttiviQui[String(e.id || "")] === true);
     if (trTec) corpo.appendChild(trTec);
@@ -1539,7 +1541,7 @@ function nomeTecnicaCorsivo(id) {
 function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico, tono, nelGruppo) {
   if (!riga || riga.padreId !== String(padre.id || "") || !riga.tecnica) return null;
   const tr = n(doc, "tr", "p8-r p8-tec " + tono);
-  if (nelGruppo === true) tr.style.boxShadow = "inset 3px 0 0 0 #FF2D95";
+  if (nelGruppo === true) tr.className = tr.className + " in-sup";
   tr.setAttribute("data-js", String(indice + 1));
   tr.setAttribute("data-tecnica", String(riga.id || ""));
   tr.appendChild(n(doc, "td", "c-js", "\u21b3"));
@@ -1575,6 +1577,7 @@ function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScari
   const chips = n(doc, "div", "ese-chips");
   ese.appendChild(chips);
   const chips2 = n(doc, "div", "ese-chips2");
+  chips2.style.display = "none";
   ese.appendChild(chips2);
   tr.appendChild(ese);
 
