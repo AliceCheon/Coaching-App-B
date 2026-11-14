@@ -7896,6 +7896,17 @@ tr.p8-r.z-gruppo td{background:var(--sup-fondo)}
  * rosa -> lilla. Deve restare sopra il velo lavanda e sopra la zebra. */
 .sup-cornice{position:absolute;pointer-events:none;border-radius:10px;z-index:6;border:2px solid var(--sup-cornice-a);box-shadow:0 0 10px var(--sup-cornice-alone)}
 .sup-cornice-grad{background:linear-gradient(135deg,var(--sup-cornice-a),var(--sup-cornice-b)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask-composite:exclude}
+/* B.18: il cerchietto della giunzione fra due esercizi collegati, a
+ * cavallo della linea di confine sul bordo sinistro della cornice. Fondo
+ * var(--card), anello sfumato rosa -> lilla (stessa tecnica a maschera
+ * della cornice; senza supporto, bordo pieno rosa), icona «ripeti» che
+ * ruota lentamente: SOLO transform, e ferma con reduced-motion. */
+.sup-giunzione{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;background:var(--card);box-shadow:0 0 8px var(--sup-cornice-alone);z-index:7}
+.sup-giunzione-ic{color:var(--sup-cornice-a);animation:sup-ruota 8s linear infinite}
+.sup-giunzione-grad::before{content:"";position:absolute;inset:0;border:2px solid transparent;border-radius:50%;background:linear-gradient(135deg,var(--sup-cornice-a),var(--sup-cornice-b)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask-composite:exclude}
+.sup-giunzione:not(.sup-giunzione-grad)::before{content:"";position:absolute;inset:0;border:2px solid var(--sup-cornice-a);border-radius:50%}
+@keyframes sup-ruota{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.sup-giunzione-ic{animation:none}}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td.c-js{border-left:0}
 
 /* ---- cella esercizio ---- */

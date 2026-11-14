@@ -1213,6 +1213,10 @@ e il test 96 (nuovo) controlla le unita' a schermo.
 
 Su richiesta di Alice la superserie si vede con una CORNICE sfumata rosa -> lilla che avvolge ogni tratto di fila (2 o più righe con lo stesso sup, figlie tecniche comprese), per tutta la larghezza della tabella. È un overlay div.sup-cornice dentro .p8-scroll (position:relative), misurato sulle righe vere, pointer-events:none, angoli 10px, alone leggero, ricalcolato a ogni disegno e a ogni cambio di misura con ResizeObserver. Bordo di 2px: sfumatura con mask-composite (classe sup-cornice-grad solo se supportata), fallback a bordo pieno rosa. Variabili per tema: scuro #FF4FA3 -> #C9A7FF, chiaro #D6247F -> #7A3FD1. Via la barretta sulla prima cella e la spina rosa delle figlie: la cornice ne prende il posto. Il tono del gruppo resta (--sup-fondo), nel scuro alleggerito a #57346c, nel chiaro invariato #f9d8ef. Test nuovo 97 (cornici, misure, colori, scollegamento); 90.6 riconfermato sui nuovi valori.
 
+## B.18 — il cerchietto della giunzione (14 novembre)
+
+Fra due esercizi collegati della superserie, sul punto di contatto, un cerchietto di 20px con l'icona «ripeti» del Material (lo stesso SVG del tasto, fill currentColor) che ruota lentamente: un giro in 8 secondi, animazione SOLO su transform, ferma con prefers-reduced-motion: reduce. Una giunzione per ogni coppia di esercizi di fila nel tratto (2 esercizi = una, 3 = due), centrata sulla linea di confine fra l'ultima riga di sopra (figlia tecnica compresa) e la prima di sotto, con il bordo sinistro tangente al bordo della cornice: centro a 11px dal bordo sinistro della tabella, perche' mezzo cerchio fuori sarebbe tagliato dallo scorrimento orizzontale di .p8-scroll. Stesso overlay della cornice (pointer-events:none, misure vere, ricalcolo con ridisegno e ResizeObserver, rimozione insieme alla cornice). Fondo var(--card), anello sfumato rosa -> lilla con la tecnica a maschera (fallback bordo pieno rosa), alone leggero; stessi colori della cornice nei due temi, contrasto del simbolo sul fondo del cerchio almeno 3:1. Test nuovo 98.
+
 - righe 40-44
 - righe 46-48
 - righe 75-79
@@ -1236,14 +1240,14 @@ Su richiesta di Alice la superserie si vede con una CORNICE sfumata rosa -> lill
 - righe 6528
 - righe 6903-6907
 - righe 7857-7858
-- righe 7885-7898
-- righe 7943
-- righe 7988-7989
-- righe 8039-8040
-- righe 8391
-- righe 8548
-- righe 9856
-- righe 10586-10595
-- righe 10706
-- righe 10708-10710
-- righe 10778-10782
+- righe 7885-7909
+- righe 7954
+- righe 7999-8000
+- righe 8050-8051
+- righe 8402
+- righe 8559
+- righe 9867
+- righe 10597-10606
+- righe 10717
+- righe 10719-10721
+- righe 10789-10793

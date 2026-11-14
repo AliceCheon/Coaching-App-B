@@ -1534,12 +1534,31 @@ function trattiCornice(corpo) {
     if (nome.indexOf("in-sup") === -1) { chiudi(); continue; }
     const sup = r.getAttribute("data-sup") || "";
     if (corrente && corrente.sup !== sup) chiudi();
-    if (!corrente) corrente = { sup: sup, padri: 0, prima: r, ultima: r };
-    if (nome.indexOf("p8-tec") === -1) corrente.padri += 1;
+    if (!corrente) corrente = { sup: sup, padri: 0, prima: r, ultima: r, giunzioni: [] };
+    if (nome.indexOf("p8-tec") === -1) {
+      if (corrente.padri > 0) corrente.giunzioni.push([corrente.ultima, r]);
+      corrente.padri += 1;
+    }
     corrente.ultima = r;
   }
   chiudi();
   return tratti;
+}
+
+/* L'icona «ripeti» del Material, quella del tasto: la usa il cerchietto
+ * della giunzione, colorata dal CSS con var(--sup-cornice-a). */
+function iconaRipeti(doc) {
+  const s = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("class", "sup-giunzione-ic");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("width", "12");
+  s.setAttribute("height", "12");
+  s.setAttribute("aria-hidden", "true");
+  s.setAttribute("fill", "currentColor");
+  const p = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z");
+  s.appendChild(p);
+  return s;
 }
 
 /* Ridisegna (o toglie) le cornici dentro il contenitore .p8-scroll: un
@@ -1553,7 +1572,8 @@ function aggiornaCornici(doc, box) {
   if (!t) return 0;
   const vecchie = [];
   for (let i = 0; i < box.children.length; i += 1) {
-    if (String(box.children[i].className || "").indexOf("sup-cornice") !== -1) vecchie.push(box.children[i]);
+    const nome2 = String(box.children[i].className || "");
+    if (nome2.indexOf("sup-cornice") !== -1 || nome2.indexOf("sup-giunzione") !== -1) vecchie.push(box.children[i]);
   }
   for (let i = 0; i < vecchie.length; i += 1) box.removeChild(vecchie[i]);
   const corpo = t.querySelector("tbody");
@@ -1588,6 +1608,19 @@ function aggiornaCornici(doc, box) {
     f.style.pointerEvents = "none";
     box.appendChild(f);
     quante += 1;
+    const giunzioni = tratti[i].giunzioni || [];
+    for (let g = 0; g < giunzioni.length; g += 1) {
+      const sopra = giunzioni[g][0];
+      const sotto = giunzioni[g][1];
+      const linea = topNelBox(sopra) + (Number(sopra.offsetHeight) || 0);
+      const centro = (linea + topNelBox(sotto)) / 2;
+      const c = n(doc, "div", "sup-giunzione" + (grad ? " sup-giunzione-grad" : ""));
+      c.style.top = (centro - 10) + "px";
+      c.style.left = "1px";
+      c.style.pointerEvents = "none";
+      c.appendChild(iconaRipeti(doc));
+      box.appendChild(c);
+    }
   }
   return quante;
 }
