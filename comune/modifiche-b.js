@@ -731,6 +731,69 @@ export function aggiungiEsercizio(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce, id: id };
 }
 
+/* --- La sostituzione di un esercizio (passo B.15, 14/11/2026) -------------
+ * Il tasto ⇄ della riga apre il selettore del Database esercizi: alla scelta
+ * la STESSA riga cambia nome e distretto. Restano id, ordine e tutti i
+ * carichi gia' scritti (serie, ripetizioni, Rec, TUT, progression): chi
+ * sostituisce tiene lo schema del posto e ricalibra a mano solo se serve.
+ * Le righe tecniche figlie restano attaccate (puntano a padreId, che non
+ * cambia): conto solo quante sono, per la voce del registro. Il Logbook non
+ * si tocca: le sedute vecchie restano col nome di allora.
+ * Richiesta: { idScheda, idEsercizio, esercizio: nome attuale (per il
+ * ripescaggio senza id), nuovo: nome scelto dal selettore, muscolo:
+ * distretto del catalogo }. */
+export function sostituisciEsercizio(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const nome = testo(r.nuovo || r.esercizio).replace(/\s+/g, " ");
+  if (!nome) return { ok: false, motivo: "il selettore non ha passato nessun nome di esercizio: non ho scritto niente" };
+  if (nome.length > 80) return { ok: false, motivo: "il nome dell'esercizio sta in 80 caratteri: non ho scritto niente" };
+  const muscolo = testo(r.muscolo).replace(/\s+/g, " ");
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const esercizio = elenco[indice];
+  if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
+  if (esercizio.deletedAt) return { ok: false, motivo: "la riga e' tolta: non si sostituisce" };
+  const nomeVecchio = nomeDi(esercizio);
+  const muscoloVecchio = testo(esercizio.muscle || esercizio.muscolo || "");
+  const figli = [];
+  elenco.forEach((e) => {
+    if (e && typeof e === "object" && !e.deletedAt && String(e.padreId || "") === String(esercizio.id || "")) figli.push(testo(e.id));
+  });
+  const copia = Object.assign({}, esercizio);
+  copia.name = nome;
+  if (muscolo) copia.muscle = muscolo;
+  else delete copia.muscle;
+  copia.sostituitoInB = quando;
+  const nuovoElenco = elenco.map((e, i) => (i === indice ? copia : e));
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "riga");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "sostituzione-riga",
+    figli: figli,
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nome,
+    idEsercizio: testo(esercizio.id),
+    settimana: null,
+    campo: "riga",
+    prima: { nome: nomeVecchio, muscolo: muscoloVecchio },
+    dopo: { nome: nome, muscolo: muscolo },
+    dopoTesto: "esercizio sostituito",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
+
 /* "Applica progressione a tutta la scheda" (r.3771, r.9965-10024): le otto
  * settimane di TUTTE le righe, e una voce sola con tutte le righe dentro. */
 export function applicaProgressioneScheda(dati, richiesta, opzioni) {
@@ -906,6 +969,29 @@ export function annullaModifica(dati, voce, opzioni) {
   if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga" || tipo === "aggiunta-riga" || tipo === "modifica-tecnica") {
     return annullaProgressione(dati, v, quando, o.uid);
   }
+  /* Passo B.15: la sostituzione si annulla ri-sostituendo: stessa strada
+   * (idEsercizio), nome e distretto di prima, una voce sola in piu'. */
+  if (tipo === "sostituzione-riga") {
+    const prima = v.prima && typeof v.prima === "object" ? v.prima : {};
+    if (!testo(prima.nome)) return { ok: false, motivo: "la voce del registro non dice quale nome rimettere" };
+    const richiesta = {
+      idScheda: v.scheda,
+      idEsercizio: v.idEsercizio,
+      esercizio: testo(prima.nome),
+      nuovo: testo(prima.nome),
+      muscolo: testo(prima.muscolo || "")
+    };
+    const esito = sostituisciEsercizio(dati, richiesta, { quando: quando, uid: o.uid });
+    if (!esito.ok) return esito;
+    const voce2 = Object.assign({}, esito.voce, {
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(v.idVoce || ""),
+      prima: esito.voce.prima,
+      dopo: esito.voce.dopo
+    });
+    return { ok: true, dati: esito.dati, voce: voce2 };
+  }
   const campo = testo(v.campo);
   const aSettimana = campo === "serie" || campo === "ripetizioni";
   const aEsercizio = campo === "recupero" || campo === "tempo";
@@ -942,7 +1028,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;

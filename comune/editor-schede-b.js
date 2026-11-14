@@ -29,6 +29,7 @@ import {
   applicaProgressione,
   applicaProgressioneScheda,
   cancellaEsercizio,
+  sostituisciEsercizio,
   aggiungiEsercizio,
   aggiungiTecnica,
   scriviTecnica,
@@ -203,6 +204,8 @@ export function creaEditorSchede(opzioni) {
         esito = scriviTecnica(letto.dati, richiestaTecnica, { quando: quando(), uid: uid });
       } else if (campo === "riga") {
         esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "sostituzione-riga") {
+        esito = sostituisciEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else {
         return { ok: false, motivo: "campo non riconosciuto: non ho scritto niente" };
       }

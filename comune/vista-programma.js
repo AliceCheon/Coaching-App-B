@@ -676,6 +676,27 @@ function apriSelettoreRigaB(doc, mod) {
   }).apri();
 }
 
+/* Passo B.15 (14/11/2026): il ⇄ della riga apre lo stesso selettore del
+ * Database esercizi. Alla scelta la riga NON nasce nuova: tiene id, ordine e
+ * carichi e cambia solo nome e distretto (sostituisciEsercizio in
+ * modifiche-b.js). Le figlie tecniche restano attaccate: puntano a padreId. */
+function apriSelettoreSostituzioneB(doc, mod, scheda, riga, nomeVecchio) {
+  creaSelettoreEserciziB(doc, {
+    allaScelta: (scelta) => {
+      const m = mod || null;
+      if (!m || typeof m.onCambia !== "function") return;
+      m.onCambia({
+        idScheda: scheda.id,
+        idEsercizio: riga.id,
+        esercizio: nomeVecchio,
+        campo: "sostituzione-riga",
+        nuovo: scelta.n,
+        muscolo: scelta.g
+      });
+    }
+  }).apri();
+}
+
 /* ---------- carta 1: il programma ---------------------------------------- */
 
 function cartaProgramma(doc, r) {
@@ -983,7 +1004,9 @@ function tabellaEsercizi(doc, scheda, r) {
         idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "riga"
       }))
       : pulsanteSpento(doc, "ab", "\u2715", "cancella riga"));
-    gruppo.appendChild(pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
+    gruppo.appendChild(mod
+      ? pulsanteVivo(doc, "ab", "\u21c4", "sostituisci esercizio", () => apriSelettoreSostituzioneB(doc, mod, scheda, e, nomePulito(e.nome)))
+      : pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
     // Passo 28: il + resta inattivo, riservato alle future superserie.
     /* Passo B.2: il ＋ grigio («inserisci progressione sotto» nel v31) e' stato
      * tolto da Alice: resta solo il ⊕ rotondo, spento, per le future tecniche

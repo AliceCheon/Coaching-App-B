@@ -1142,3 +1142,24 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 - Righe cambiate di desktop/index.html (dal diff vero):.
 
 - Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42): - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3138-3138 - righe 3138-3139 - righe 3684-3684 - righe 3946-3946 - righe 4655-4655 - righe 4659-4659 - righe 5812-5820 - righe 6516-6516 - righe 7870-7874 - righe 7919-7919 - righe 8375-8375 - righe 8532-8532 - righe 10570-10579 - righe 10690-10690 - righe 10692-10692 - righe 10693-10694 - righe 10762-10766.
+
+## Passo B.15 — Sostituisci esercizio (14/11/2026)
+
+Il ⇄ sulla riga (fino ad oggi spento) apre lo stesso selettore del Database
+esercizi (179 voci, ricerca piu' menu dei gruppi): alla scelta la riga cambia
+nome e distretto e basta. Tengono: id, ordine, posizione, i carichi gia'
+scritti (serie, ripetizioni, Rec, TUT, progression — scelta di Alice:
+restano), e le righe tecniche figlie, che puntano a padreId e non si toccano
+(la voce di registro conta solo quante sono). Il Logbook non si tocca: le
+sedute vecchie restano col nome di allora. Una voce sola nel registro
+(«sostituzione-riga», campo «riga», prima e dopo con nome e distretto): un
+Annulla solo riporta nome e distretto. Il tasto resta spento: senza editor
+acceso, sulle righe tolte, quando la riga non si ritrova.
+
+Toccati: comune/modifiche-b.js (sostituisciEsercizio, annulla della
+sostituzione, lista delle voci annullabili), comune/editor-schede-b.js
+(smistamento del campo «sostituzione-riga»), comune/vista-programma.js (tasto
+⇄ vivo e apriSelettoreSostituzioneB), desktop/app-v31.js (messaggi,
+risincronizzazione, voci ripristinabili), tests/93-sostituzione.test.mjs
+(nuovo, 8 test). desktop/index.html NON toccato in questo passo: nessun
+blocco nuovo per la guardia 42.
