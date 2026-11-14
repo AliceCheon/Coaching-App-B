@@ -120,8 +120,8 @@ test("95.7 l'icona e' il «ripeti» del Material e «⇄ DX/SX» e' sparita", ()
   assert.equal(foglio.indexOf('class="chlat"'), -1, "lo span DX/SX e' rimasto nella pagina");
 });
 
-test("95.8 la barretta rosa e' un bordo sulla prima cella delle righe del gruppo", () => {
-  assert.ok(foglio.indexOf("tr.p8-r.in-sup td:first-child{border-left:3px solid #FF2D95}") !== -1, "manca la regola della barretta");
+test("95.8 la barretta rosa e' andata: la cornice avvolge il gruppo (B.17)", () => {
+  assert.equal(foglio.indexOf("tr.p8-r.in-sup td:first-child{border-left:3px solid #FF2D95}"), -1, "la barretta e' rimasta");
   const doc = schermo();
   /* due esercizi di prova, in gruppo */
   const due = JSON.parse(JSON.stringify(docs));

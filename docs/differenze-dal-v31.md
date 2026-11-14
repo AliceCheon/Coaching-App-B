@@ -1209,35 +1209,41 @@ e il test 96 (nuovo) controlla le unita' a schermo.
 
 ## I blocchi delle differenze pc → desktop (ricalcolati al passo B.16b)
 
+## B.17 — la cornice delle superserie (14 novembre)
+
+Su richiesta di Alice la superserie si vede con una CORNICE sfumata rosa -> lilla che avvolge ogni tratto di fila (2 o più righe con lo stesso sup, figlie tecniche comprese), per tutta la larghezza della tabella. È un overlay div.sup-cornice dentro .p8-scroll (position:relative), misurato sulle righe vere, pointer-events:none, angoli 10px, alone leggero, ricalcolato a ogni disegno e a ogni cambio di misura con ResizeObserver. Bordo di 2px: sfumatura con mask-composite (classe sup-cornice-grad solo se supportata), fallback a bordo pieno rosa. Variabili per tema: scuro #FF4FA3 -> #C9A7FF, chiaro #D6247F -> #7A3FD1. Via la barretta sulla prima cella e la spina rosa delle figlie: la cornice ne prende il posto. Il tono del gruppo resta (--sup-fondo), nel scuro alleggerito a #57346c, nel chiaro invariato #f9d8ef. Test nuovo 97 (cornici, misure, colori, scollegamento); 90.6 riconfermato sui nuovi valori.
+
 - righe 40-44
-- righe 72-76
-- righe 1447-1490
-- righe 1541-1541
-- righe 2791-2791
-- righe 2805-2808
-- righe 2822-2822
-- righe 2835-2835
-- righe 2848-2848
-- righe 2919-2919
-- righe 2929-2929
-- righe 3144-3145
-- righe 3690-3690
-- righe 3810-3810
-- righe 3952-3952
-- righe 4661-4661
-- righe 4665-4665
-- righe 5818-5826
-- righe 6522-6522
-- righe 6897-6901
-- righe 7851-7852
-- righe 7879-7886
-- righe 7931-7931
-- righe 7976-7977
-- righe 8027-8028
-- righe 8379-8379
-- righe 8536-8536
-- righe 9844-9844
-- righe 10574-10583
-- righe 10694-10694
-- righe 10696-10698
-- righe 10766-10770
+- righe 46-48
+- righe 75-79
+- righe 81-83
+- righe 1453-1496
+- righe 1547
+- righe 2797
+- righe 2811-2814
+- righe 2828
+- righe 2841
+- righe 2854
+- righe 2925
+- righe 2935
+- righe 3150-3151
+- righe 3696
+- righe 3816
+- righe 3958
+- righe 4667
+- righe 4671
+- righe 5824-5832
+- righe 6528
+- righe 6903-6907
+- righe 7857-7858
+- righe 7885-7898
+- righe 7943
+- righe 7988-7989
+- righe 8039-8040
+- righe 8391
+- righe 8548
+- righe 9856
+- righe 10586-10595
+- righe 10706
+- righe 10708-10710
+- righe 10778-10782

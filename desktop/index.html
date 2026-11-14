@@ -43,6 +43,9 @@ body[data-theme="light"] {
   --test-pallino: #a43369;
   --sup-fondo: #f9d8ef;
   --text-primary: #241238;
+  --sup-cornice-a: #D6247F;
+  --sup-cornice-b: #7A3FD1;
+  --sup-cornice-alone: rgba(214, 36, 127, 0.14);
   --text-secondary: #705b82;
   --border-soft: rgba(105, 55, 145, .18);
   --bg: var(--bg-main);
@@ -73,8 +76,11 @@ body[data-theme="dark"] {
   --zebra-b: #30265a;
   --test-parola: #ffdcf0;
   --test-pallino: var(--pink);
-  --sup-fondo: #4a2a5e;
+  --sup-fondo: #57346c;
   --text-primary: #fff8fd;
+  --sup-cornice-a: #FF4FA3;
+  --sup-cornice-b: #C9A7FF;
+  --sup-cornice-alone: rgba(255, 79, 163, 0.25);
   --text-secondary: #cbbbd7;
   --border-soft: rgba(202, 107, 225, .24);
   --bg: var(--bg-main);
@@ -7881,9 +7887,15 @@ html body #pag-programma-1 .p8-tab col.w-act{width:54px}
  * tono del padre e il suo velo con !important vince comunque ---- */
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td{background:var(--zebra-a);border-bottom:1px solid var(--line)}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r.z-b td{background:var(--zebra-b)}
-tr.p8-r.in-sup td:first-child{border-left:3px solid #FF2D95}
 tr.p8-r.z-gruppo td{background:var(--sup-fondo)}
-tr.p8-tec.in-sup>td:first-child:before{background:#FF2D95;box-shadow:none}
+.p8-scroll{position:relative}
+/* B.17: la cornice sfumata avvolge ogni tratto della superserie: overlay
+ * nel .p8-scroll, misurato sulle righe vere (pointer-events none, non
+ * blocca clic ne' modifica, non tocca l'altezza della tabella). Bordo
+ * pieno rosa = fallback; con mask-composite il bordo e' la sfumatura
+ * rosa -> lilla. Deve restare sopra il velo lavanda e sopra la zebra. */
+.sup-cornice{position:absolute;pointer-events:none;border-radius:10px;z-index:6;border:2px solid var(--sup-cornice-a);box-shadow:0 0 10px var(--sup-cornice-alone)}
+.sup-cornice-grad{background:linear-gradient(135deg,var(--sup-cornice-a),var(--sup-cornice-b)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask-composite:exclude}
 html body #pag-programma-1 .p8-tab tbody tr.p8-r td.c-js{border-left:0}
 
 /* ---- cella esercizio ---- */

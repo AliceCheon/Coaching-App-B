@@ -1015,6 +1015,7 @@ function tabellaEsercizi(doc, scheda, r) {
      * (B.16) bastera' calcolare il tono dall'indice del gruppo. */
     const tono = unita[indice] % 2 === 0 ? "z-a" : "z-b";
     const tr = n(doc, "tr", "p8-r " + tono + (supAttiviQui[String(e.id || "")] ? " z-gruppo" : ""));
+    tr.setAttribute("data-sup", String((e && e.sup) || ""));
     tr.setAttribute("data-js", String(indice + 1));
     tr.appendChild(n(doc, "td", "c-js", (scheda.codice || "") + (indice + 1)));
 
@@ -1514,6 +1515,98 @@ function schede(doc, r) {
 
 /* La vista riceve il riepilogo già calcolato da comune/programma.js: schede ed
  * esercizi arrivano dai documenti v2, i numeri dai logbook. */
+/* ---------- B.17: la cornice delle superserie ----------------------------- */
+
+/* I tratti di fila della superserie, letti dalle righe della tabella: una
+ * corsa di righe consecutive marcate in-sup con lo stesso sup. Contano solo
+ * gli esercizi (le figlie tecniche stanno nella cornice del padre) e servono
+ * almeno due: un tratto di una riga sola non ha cornice. */
+function trattiCornice(corpo) {
+  const tratti = [];
+  let corrente = null;
+  const chiudi = () => {
+    if (corrente && corrente.padri >= 2) tratti.push(corrente);
+    corrente = null;
+  };
+  for (let i = 0; i < corpo.children.length; i += 1) {
+    const r = corpo.children[i];
+    const nome = String(r.className || "");
+    if (nome.indexOf("in-sup") === -1) { chiudi(); continue; }
+    const sup = r.getAttribute("data-sup") || "";
+    if (corrente && corrente.sup !== sup) chiudi();
+    if (!corrente) corrente = { sup: sup, padri: 0, prima: r, ultima: r };
+    if (nome.indexOf("p8-tec") === -1) corrente.padri += 1;
+    corrente.ultima = r;
+  }
+  chiudi();
+  return tratti;
+}
+
+/* Ridisegna (o toglie) le cornici dentro il contenitore .p8-scroll: un
+ * div.sup-cornice per tratto, misurato sulle righe vere, larga tutta la
+ * tabella, con 2px di margine fra cornici vicine. Scheda non visibile o
+ * riga non trovata: nessuna cornice, nessun errore. Restituisce quante
+ * cornici ha disegnato. */
+function aggiornaCornici(doc, box) {
+  if (!box || typeof box.querySelector !== "function") return 0;
+  const t = box.querySelector(".p8-tab");
+  if (!t) return 0;
+  const vecchie = [];
+  for (let i = 0; i < box.children.length; i += 1) {
+    if (String(box.children[i].className || "").indexOf("sup-cornice") !== -1) vecchie.push(box.children[i]);
+  }
+  for (let i = 0; i < vecchie.length; i += 1) box.removeChild(vecchie[i]);
+  const corpo = t.querySelector("tbody");
+  if (!corpo) return 0;
+  const tratti = trattiCornice(corpo);
+  if (!tratti.length) return 0;
+  if (!t.offsetWidth) return 0; /* scheda non visibile: niente cornici */
+  const Vista = doc && doc.defaultView ? doc.defaultView : null;
+  let grad = false;
+  if (Vista && Vista.CSS && typeof Vista.CSS.supports === "function") {
+    try {
+      grad = Vista.CSS.supports("mask-composite", "exclude") || Vista.CSS.supports("-webkit-mask-composite", "xor");
+    } catch (err) { grad = false; }
+  }
+  const topNelBox = (el) => {
+    let y = 0;
+    let x = el;
+    while (x && x !== box) { y += Number(x.offsetTop) || 0; x = x.offsetParent; }
+    return y;
+  };
+  const larghezza = Number(t.offsetWidth) || 0;
+  let quante = 0;
+  for (let i = 0; i < tratti.length; i += 1) {
+    const cima = topNelBox(tratti[i].prima) + 2;
+    const fondo = topNelBox(tratti[i].ultima) + (Number(tratti[i].ultima.offsetHeight) || 0) - 2;
+    if (fondo - cima <= 0) continue;
+    const f = n(doc, "div", "sup-cornice" + (grad ? " sup-cornice-grad" : ""));
+    f.style.top = cima + "px";
+    f.style.left = "0px";
+    f.style.width = larghezza + "px";
+    f.style.height = (fondo - cima) + "px";
+    f.style.pointerEvents = "none";
+    box.appendChild(f);
+    quante += 1;
+  }
+  return quante;
+}
+
+/* La cornice si ricalcola da sola: la prima volta dopo il montaggio della
+ * scheda, poi a ogni cambio di misura del contenitore (testo che va a capo,
+ * tecnica aggiunta, finestra ridimensionata, scheda che si accende). */
+export function corniciScheda(box) {
+  if (!box || typeof box.querySelector !== "function") return 0;
+  const doc = box.ownerDocument;
+  const quante = aggiornaCornici(doc, box);
+  const Vista = doc && doc.defaultView ? doc.defaultView : null;
+  if (Vista && typeof Vista.ResizeObserver === "function" && !box.__supObs) {
+    box.__supObs = new Vista.ResizeObserver(() => { aggiornaCornici(doc, box); });
+    box.__supObs.observe(box);
+  }
+  return quante;
+}
+
 export function renderProgramma(doc, contenitore, modello, calcoli) {
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const r = calcoli || {};
@@ -1539,6 +1632,8 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
   contenitore.appendChild(tre);
   contenitore.appendChild(cartaStato(doc, pieno));
   contenitore.appendChild(schede(doc, Object.assign({}, pieno, { prestazioni: r.prestazioni })));
+  const scatole = contenitore.querySelectorAll(".p8-scroll");
+  for (let i = 0; i < scatole.length; i += 1) corniciScheda(scatole[i]);
   return contenitore;
 }
 
@@ -1557,6 +1652,7 @@ function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScari
   if (!riga || riga.padreId !== String(padre.id || "") || !riga.tecnica) return null;
   const tr = n(doc, "tr", "p8-r p8-tec " + tono);
   if (nelGruppo === true) tr.className = tr.className + " in-sup";
+  tr.setAttribute("data-sup", String((padre && padre.sup) || ""));
   tr.setAttribute("data-js", String(indice + 1));
   tr.setAttribute("data-tecnica", String(riga.id || ""));
   tr.appendChild(n(doc, "td", "c-js", "\u21b3"));
