@@ -1163,3 +1163,25 @@ sostituzione, lista delle voci annullabili), comune/editor-schede-b.js
 risincronizzazione, voci ripristinabili), tests/93-sostituzione.test.mjs
 (nuovo, 8 test). desktop/index.html NON toccato in questo passo: nessun
 blocco nuovo per la guardia 42.
+
+## Passo B.16a — Superserie: dato, logica, registro, tasto anello, barretta (14/11/2026)
+
+Il legame sta nel campo sup di ogni riga del gruppo (stesso valore, «ss-…»):
+nasce col tasto anello della riga, che collega o scollega l'esercizio con
+quello SUBITO sotto (tolte e figlie tecniche si saltano; ultimo esercizio:
+tasto spento). Un clic = una voce di registro («superserie», prima e dopo con
+id e nome delle righe cambiate) = un Annulla. Scollegare toglie il campo alla
+riga premuta; una riga rimasta sola perde il campo (nessun gruppo di una
+riga sola); due gruppi di fila che si toccano si fondono. Lo spostamento non
+toca il campo; il disegno (supAttivi in modifiche-b.js, esportata) guarda
+solo i tratti di fila da due in su: mai barre a buchi. La cancellazione non
+tocca il campo delle altre; la sostituzione (B.15) non guarda il campo.
+A schermo: l'anello rettangolare «ripeti» in SVG currentColor accanto a ✕ e
+⇄, e la barretta rosa #FF2D95 sul bordo sinistro delle righe del gruppo
+(inset box-shadow sulla riga; le figlie tecniche la prendono dal padre, il
+velo lavanda resta). Il tono del gruppo e la zebra per gruppo unita': B.16b.
+desktop/index.html NON toccato: nessun blocco nuovo per la guardia 42.
+Toccati: modifiche-b.js (supAttivi, cambiaSuperserie, annulla, lista
+annullabili), editor-schede-b.js (campo «superserie»), vista-programma.js
+(anello, barretta, import), app-v31.js (messaggi, sync, ripristinabili),
+tests/94-superserie.test.mjs (nuovo).

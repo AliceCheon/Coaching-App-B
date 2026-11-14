@@ -28,6 +28,7 @@ import {
 import { nomePulito } from "./nome-pulito.js";
 import { PROG, PRG } from "./progressioni-b.js";
 import { creaSelettoreEserciziB } from "./selettore-esercizi-b.js";
+import { supAttivi } from "./modifiche-b.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -911,6 +912,33 @@ function cerchioPiu(doc) {
  * recupero, «Applica progressione») stanno al loro posto ma spenti: questa
  * pagina non salva. Sotto la tabella non c'è nessuna frase: nel v31 non c'è.
  * Dove un dato manca si scrive il trattino, come fa il v31. */
+/* L'anello rettangolare del tasto «ripeti» (passo B.16a): come il cerchio
+ * del piu', SVG con currentColor, stessa misura degli altri tasti di riga. */
+function anelloRipeti(doc) {
+  const s = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 16 16");
+  s.setAttribute("width", "12");
+  s.setAttribute("height", "12");
+  s.setAttribute("aria-hidden", "true");
+  const q = doc.createElementNS("http://www.w3.org/2000/svg", "rect");
+  q.setAttribute("x", "3.2");
+  q.setAttribute("y", "3.2");
+  q.setAttribute("width", "9.6");
+  q.setAttribute("height", "9.6");
+  q.setAttribute("rx", "2.8");
+  q.setAttribute("fill", "none");
+  q.setAttribute("stroke", "currentColor");
+  q.setAttribute("stroke-width", "1.5");
+  const f = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+  f.setAttribute("d", "M12.8 5.4V3.2h-2.2");
+  f.setAttribute("fill", "none");
+  f.setAttribute("stroke", "currentColor");
+  f.setAttribute("stroke-width", "1.5");
+  s.appendChild(q);
+  s.appendChild(f);
+  return s;
+}
+
 function tabellaEsercizi(doc, scheda, r) {
   const mod = r && r.modifica && r.modifica.attivo === true ? r.modifica : null;
   const elenco = scheda.esercizi || [];
@@ -969,6 +997,12 @@ function tabellaEsercizi(doc, scheda, r) {
   thead.appendChild(r2);
   t.appendChild(thead);
 
+  /* Passo B.16a: i gruppi delle superserie. Attivi = le righe di fila (al
+   * meno due, esercizi vivi) con lo stesso campo sup: solo un tratto di
+   * fila disegna, mai a buchi. L'ultimo esercizio vivo non ha il tasto vivo. */
+  const supAttiviQui = supAttivi(elenco);
+  let supUltimoId = "";
+  elenco.forEach((e) => { if (e && typeof e === "object" && !e.deletedAt && !String(e.padreId || "")) supUltimoId = String(e.id || ""); });
   const corpo = n(doc, "tbody");
   elenco.forEach((e, indice) => {
     /* Passo B.14h: l'unita' che alterna e' l'esercizio, non la riga: le figlie
@@ -1007,6 +1041,16 @@ function tabellaEsercizi(doc, scheda, r) {
     gruppo.appendChild(mod
       ? pulsanteVivo(doc, "ab", "\u21c4", "sostituisci esercizio", () => apriSelettoreSostituzioneB(doc, mod, scheda, e, nomePulito(e.nome)))
       : pulsanteSpento(doc, "ab", "\u21c4", "sostituisci esercizio"));
+    const eUltimo = String(e.id || "") === supUltimoId;
+    /* Passo B.16a: l'anello delle superserie. Un clic collega o scollega
+     * l'esercizio con quello sotto; sull'ultimo esercizio resta spento. */
+    const bSup = mod && !eUltimo
+      ? pulsanteVivo(doc, "ab ab-sup", "", "superserie: collega o scollega l'esercizio sotto", () => mod.onCambia({
+        idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "superserie"
+      }))
+      : pulsanteSpento(doc, "ab ab-sup", "", "superserie: collega o scollega l'esercizio sotto");
+    bSup.appendChild(anelloRipeti(doc));
+    gruppo.appendChild(bSup);
     // Passo 28: il + resta inattivo, riservato alle future superserie.
     /* Passo B.2: il ＋ grigio («inserisci progressione sotto» nel v31) e' stato
      * tolto da Alice: resta solo il ⊕ rotondo, spento, per le future tecniche
@@ -1134,8 +1178,9 @@ function tabellaEsercizi(doc, scheda, r) {
     });
 
     tr.appendChild(n(doc, "td", "c-ult", ultimaVolta(r, scheda, e.nome)));
+    if (supAttiviQui[String(e.id || "")]) tr.style.boxShadow = "inset 3px 0 0 0 #FF2D95";
     corpo.appendChild(tr);
-    const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico, tono);
+    const trTec = rigaTecnicaVista(doc, scheda, e, tecnicaQui, indice, mod, numero, inScarico, tono, supAttiviQui[String(e.id || "")] === true);
     if (trTec) corpo.appendChild(trTec);
   });
   t.appendChild(corpo);
@@ -1491,9 +1536,10 @@ function nomeTecnicaCorsivo(id) {
   if (!parole.length) return "";
   return parole.map(function (p, i) { return i === 0 ? p.charAt(0).toUpperCase() + p.slice(1) : p; }).join(" ");
 }
-function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico, tono) {
+function rigaTecnicaVista(doc, scheda, padre, riga, indice, mod, numero, inScarico, tono, nelGruppo) {
   if (!riga || riga.padreId !== String(padre.id || "") || !riga.tecnica) return null;
   const tr = n(doc, "tr", "p8-r p8-tec " + tono);
+  if (nelGruppo === true) tr.style.boxShadow = "inset 3px 0 0 0 #FF2D95";
   tr.setAttribute("data-js", String(indice + 1));
   tr.setAttribute("data-tecnica", String(riga.id || ""));
   tr.appendChild(n(doc, "td", "c-js", "\u21b3"));

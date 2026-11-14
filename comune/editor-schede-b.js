@@ -30,6 +30,7 @@ import {
   applicaProgressioneScheda,
   cancellaEsercizio,
   sostituisciEsercizio,
+  cambiaSuperserie,
   aggiungiEsercizio,
   aggiungiTecnica,
   scriviTecnica,
@@ -206,6 +207,8 @@ export function creaEditorSchede(opzioni) {
         esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "sostituzione-riga") {
         esito = sostituisciEsercizio(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "superserie") {
+        esito = cambiaSuperserie(letto.dati, r, { quando: quando(), uid: uid });
       } else {
         return { ok: false, motivo: "campo non riconosciuto: non ho scritto niente" };
       }

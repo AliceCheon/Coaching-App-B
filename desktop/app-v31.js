@@ -345,6 +345,9 @@ export function testoEsito(richiesta, esito) {
   if (r.campo === "progressione-scheda") {
     return "progressione «" + (v.nomeProgressione || r.progressione || "") + "» applicata alle 8 settimane di tutte le righe · Annulla per annullare";
   }
+  if (r.campo === "superserie") {
+    return "superserie: " + (v.dopoTesto || "gruppo aggiornato") + " · Annulla per rimetterla";
+  }
   if (r.campo === "sostituzione-riga") {
     return "esercizio sostituito: «" + nomePulito((v.prima || {}).nome || "") + "» con «" + nomePulito(v.esercizio || "") + "» · Annulla per rimetterlo";
   }
@@ -557,7 +560,7 @@ export async function avvia(doc, win) {
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
              * senza rileggere, a schermo non cambierebbe niente. */
-            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "sostituzione-riga")) {
+            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie")) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };
@@ -620,6 +623,7 @@ export async function avvia(doc, win) {
     if (t === "modifica-progressione-scheda") return "progressione «" + (v.nomeProgressione || "") + "» su " + ((v.righe || []).length) + " righe";
     if (t === "cancella-riga") return "riga tolta: " + nome;
     if (t === "sostituzione-riga") return "sostituzione: " + nome;
+    if (t === "superserie") return "superserie: " + nome;
     if (t === "modifica-serie-ripetizioni") return "S" + (v.settimana || "?") + " " + String(v.campo || "") + " di " + nome;
     if (t === "modifica-rec-tut") return (v.campo === "recupero" ? "Rec" : "TUT") + " di " + nome;
     return t || "voce";
@@ -747,7 +751,7 @@ export async function avvia(doc, win) {
   });
 }
 
-const TIPI_RIPRISTINABILI = ["modifica-serie-ripetizioni", "modifica-rec-tut", "modifica-progressione", "modifica-progressione-scheda", "cancella-riga", "sostituzione-riga"];
+const TIPI_RIPRISTINABILI = ["modifica-serie-ripetizioni", "modifica-rec-tut", "modifica-progressione", "modifica-progressione-scheda", "cancella-riga", "sostituzione-riga", "superserie"];
 
 if (typeof document !== "undefined" && typeof window !== "undefined") {
   avvia(document, window).catch((e) => { if (typeof console !== "undefined") console.warn("avvio: ", e); });
@@ -770,6 +774,7 @@ function doveVoce(voce) {
     if (v.campo === "riga") return "la riga «" + nomePulito(v.esercizio || "") + "» rimessa";
     if (v.campo === "progressione") return "progressione di " + nomePulito(v.esercizio || "") + " riportata indietro";
     if (v.campo === "progressione-scheda") return "progressione di scheda riportata indietro";
+    if (v.campo === "superserie") return "superserie rimessa come prima";
   }
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";

@@ -731,6 +731,31 @@ export function aggiungiEsercizio(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce, id: id };
 }
 
+/* --- I gruppi veri (passo B.16a, 14/11/2026) ------------------------------
+ * supAttivi restituisce gli id degli esercizi che stanno in un GRUPPO vero:
+ * un tratto di fila di almeno DUE esercizi vivi con lo stesso campo sup. Le
+ * righe tolte e le figlie delle tecniche non rompono la fila (sono
+ * trasparenti) ma non contano come gruppo. Disegna solo chi e' nel tratto:
+ * spostando una riga il campo resta, ma con un buco si vedono solo i tratti
+ * da due in su, mai barre a buchi. */
+export function supAttivi(elenco) {
+  const attivi = {};
+  let corrente = "";
+  let tratto = [];
+  const chiudi = () => {
+    if (tratto.length >= 2) tratto.forEach((e) => { attivi[String(e.id || "")] = true; });
+    tratto = [];
+  };
+  (Array.isArray(elenco) ? elenco : []).forEach((e) => {
+    if (!e || typeof e !== "object" || e.deletedAt || String(e.padreId || "")) return;
+    const sup = String(e.sup || "");
+    if (sup && sup === corrente) tratto.push(e);
+    else { chiudi(); corrente = sup; tratto = sup ? [e] : []; }
+  });
+  chiudi();
+  return attivi;
+}
+
 /* --- La sostituzione di un esercizio (passo B.15, 14/11/2026) -------------
  * Il tasto ⇄ della riga apre il selettore del Database esercizi: alla scelta
  * la STESSA riga cambia nome e distretto. Restano id, ordine e tutti i
@@ -788,6 +813,122 @@ export function sostituisciEsercizio(dati, richiesta, opzioni) {
     prima: { nome: nomeVecchio, muscolo: muscoloVecchio },
     dopo: { nome: nome, muscolo: muscolo },
     dopoTesto: "esercizio sostituito",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
+
+/* --- Le superserie (passo B.16a, 14/11/2026) ------------------------------
+ * Il tasto anello sulla riga collega o scollega l'esercizio con quello
+ * SUBITO sotto: le righe tolte e le figlie delle tecniche si saltano. Un
+ * clic = UNA voce di registro = un Annulla. Il legame sta nel campo sup di
+ * OGNI riga del gruppo (stesso valore). Scollegare toglie il campo alla
+ * riga premuta; se una riga resta sola, il gruppo non esiste piu' e il
+ * campo va via anche a lei. Due gruppi di fila che si toccano si fondono.
+ * Lo spostamento non tocca il campo: il disegno guarda solo i tratti di
+ * fila (supAttivi). La cancellazione (B.15 compresa) non tocca il campo
+ * delle altre righe: se ne resta una sola, il tratto sparisce da solo.
+ * Richiesta: { idScheda, idEsercizio, esercizio }. */
+export function cambiaSuperserie(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const riga = elenco[indice];
+  if (!riga || typeof riga !== "object" || riga.deletedAt) return { ok: false, motivo: "la riga non e' un esercizio vivo: il tasto superserie non agisce qui" };
+  if (testo(riga.padreId)) return { ok: false, motivo: "la riga e' di una tecnica: il tasto superserie sta solo sugli esercizi" };
+  let vicino = null;
+  for (let i = indice + 1; i < elenco.length; i += 1) {
+    const e = elenco[i];
+    if (e && typeof e === "object" && !e.deletedAt && !testo(e.padreId)) { vicino = e; break; }
+  }
+  if (!vicino) return { ok: false, motivo: "e' l'ultimo esercizio della scheda: non c'e' nessun esercizio sotto da collegare" };
+  const supA = testo(riga.sup);
+  const supB = testo(vicino.sup);
+  const cambi = {};
+  let stacca = false;
+  if (supA && supA === supB) { stacca = true; cambi[testo(riga.id)] = ""; }
+  else if (supA && supB) { elenco.forEach((e) => { if (e && typeof e === "object" && testo(e.sup) === supB) cambi[testo(e.id)] = supA; }); }
+  else if (supA) { cambi[testo(vicino.id)] = supA; }
+  else if (supB) { cambi[testo(riga.id)] = supB; }
+  else {
+    const nuovo = "ss-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+    const gia = elenco.some((e) => e && typeof e === "object" && testo(e.sup) === nuovo);
+    const id = gia ? nuovo + "-" + Math.random().toString(36).slice(2, 6) : nuovo;
+    cambi[testo(riga.id)] = id;
+    cambi[testo(vicino.id)] = id;
+  }
+  const copiaRiga = (e) => {
+    const id = testo(e.id);
+    if (Object.prototype.hasOwnProperty.call(cambi, id)) {
+      const c = Object.assign({}, e);
+      if (cambi[id]) c.sup = cambi[id]; else delete c.sup;
+      return c;
+    }
+    return e;
+  };
+  let nuovoElenco = elenco.map(copiaRiga);
+  /* Le righe rimaste sole non sono un gruppo: campo via. Le tolte e le
+   * figlie sono trasparenti: non rompono la fila e non contano. */
+  const cambi2 = {};
+  let corrente = "";
+  let lunghezza = 0;
+  let singola = null;
+  nuovoElenco.forEach((e) => {
+    const viva = e && typeof e === "object" && !e.deletedAt && !testo(e.padreId);
+    if (!viva) return;
+    const sup = testo(e.sup);
+    if (sup && sup === corrente) { lunghezza += 1; singola = null; }
+    else {
+      if (lunghezza === 1 && singola) cambi2[testo(singola.id)] = "";
+      corrente = sup;
+      lunghezza = sup ? 1 : 0;
+      singola = sup ? e : null;
+    }
+  });
+  if (lunghezza === 1 && singola) cambi2[testo(singola.id)] = "";
+  if (Object.keys(cambi2).length) {
+    nuovoElenco = nuovoElenco.map((e) => {
+      const id = testo(e.id);
+      if (Object.prototype.hasOwnProperty.call(cambi2, id)) { const c = Object.assign({}, e); delete c.sup; return c; }
+      return e;
+    });
+  }
+  const prima = [];
+  const dopo = [];
+  elenco.forEach((e, i) => {
+    const dopo2 = testo(nuovoElenco[i].sup);
+    const prima2 = testo(e.sup);
+    if (prima2 !== dopo2) {
+      prima.push({ id: testo(e.id), sup: prima2, nome: nomeDi(e) });
+      dopo.push({ id: testo(e.id), sup: dopo2, nome: nomeDi(e) });
+    }
+  });
+  if (!prima.length) return { ok: false, motivo: "non c'e' niente da cambiare: non ho scritto niente" };
+  const nuovo = chiudiDocumento(dati, f, chiave, nuovoElenco, quando, o.uid, "riga");
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "superserie",
+    figli: [],
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nomeDi(riga),
+    con: nomeDi(vicino),
+    idEsercizio: testo(riga.id),
+    settimana: null,
+    campo: "superserie",
+    prima: prima,
+    dopo: dopo,
+    dopoTesto: (stacca ? "scollegate " : "collegate ") + nomeDi(riga) + " e " + nomeDi(vicino),
     versionePrima: versioneDi(dati),
     versioneDopo: nuovo.versione
   };
@@ -971,6 +1112,45 @@ export function annullaModifica(dati, voce, opzioni) {
   }
   /* Passo B.15: la sostituzione si annulla ri-sostituendo: stessa strada
    * (idEsercizio), nome e distretto di prima, una voce sola in piu'. */
+  /* Passo B.16a: l'annullamento di una superserie rimette il campo sup
+   * alle righe toccate, com'era nella voce. */
+  if (tipo === "superserie") {
+    const prima = Array.isArray(v.prima) ? v.prima : [];
+    if (!prima.length) return { ok: false, motivo: "la voce del registro non dice quali righe rimettere" };
+    const f2 = foglioDi(dati);
+    const chiave2 = f2 ? chiaveEsercizi(f2) : "";
+    if (!chiave2) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+    const elenco2 = f2[chiave2];
+    const nuovoElenco = elenco2.map((e) => {
+      const id = testo(e.id);
+      const tro = prima.find((p) => p && String(p.id || "") === id);
+      if (!tro) return e;
+      const c = Object.assign({}, e);
+      if (tro.sup) c.sup = String(tro.sup); else delete c.sup;
+      return c;
+    });
+    const nuovo = chiudiDocumento(dati, f2, chiave2, nuovoElenco, quando, o.uid, "riga");
+    const voce2 = {
+      idVoce: idVoceRegistro(quando),
+      quando: quando,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(v.idVoce || ""),
+      scheda: testo(v.scheda),
+      codice: codiceScheda(nuovo),
+      esercizio: testo(v.esercizio),
+      idEsercizio: testo(v.idEsercizio),
+      settimana: null,
+      campo: "superserie",
+      prima: v.dopo,
+      dopo: v.prima,
+      dopoTesto: "superserie rimessa come prima",
+      versionePrima: versioneDi(dati),
+      versioneDopo: nuovo.versione
+    };
+    return { ok: true, dati: nuovo, voce: voce2 };
+  }
+
   if (tipo === "sostituzione-riga") {
     const prima = v.prima && typeof v.prima === "object" ? v.prima : {};
     if (!testo(prima.nome)) return { ok: false, motivo: "la voce del registro non dice quale nome rimettere" };
@@ -1028,7 +1208,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
