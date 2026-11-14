@@ -70,7 +70,7 @@ durata, giorni, schede). Si toglie dal sito appena i nomi giusti sono a posto.
 - `desktop/diagnosi.html` tolta dal sito (era temporanea): la sua sezione qui sopra resta come memoria.
 - La striscia di diagnosi `?diagnosi=1` (`comune/diagnosi-b.js`, 9-10/11/2026) e' RIMOSSA dal sito il 10/11/2026, finito il suo lavoro: con lei sono usciti il modulo, l'import, le due righe di stato e il blocco della striscia in `desktop/app-v31.js`, i tre attributi `data-id-scheda`, `data-id-ese`, `data-indice` in `comune/vista-programma.js` e la sua sezione qui sopra. Senza quel parametro la pagina era gia' identica: adesso non c'e' piu' nessun codice che la costruisca.
 - Cosa resta demo / effetti dichiarati: le Curve di forza restano demo (il v31 lo dice da sé: «antanea, non collegata al logbook»); la nota RPE della Dashboard (calcolata sul diario del seme) ora mostra «—», perché il diario non è nei dati letti; i chip «Ultime sedute registrate» e i conteggi `data-lb-kpi` del v31 si accendono coi dati veri (sono già logbook-driven); il catalogo EXCAT resta nel file com’era (mappa nome→distretto, non è un dato di seduta).
-Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14l:  - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3703-3703 - righe 3965-3965 - righe 4674-4674 - righe 4678-4678 - righe 5831-5839 - righe 6535-6535 - righe 7889-7893 - righe 7938-7938 - righe 8394-8394 - righe 8551-8551 - righe 10589-10598 - righe 10709-10709 - righe 10711-10711 - righe 10713-10713 - righe 10781-10785
+Righe di desktop/index.html diverse da pc/index.html, elenco ricalcolato dal diff vero al passo B.14l: 
 ## Passo B.11 — 13 novembre 2026 · la riga della tecnica dice a chi appartiene
 
 - Alice, 13/11/2026: «quando aggiungo una tecnica di intensità mi deve comparire il nome dell'esercizio, la letterina accanto (per esempio D) e poi sotto al nome dell'esercizio il nome della tecnica di intensità, per esempio rest pause, in corsivo».
@@ -141,45 +141,45 @@ legge piu' `barbellDivaAccounts`; la sola pagina che continua a leggere A e' la
 pagina Copia, che serve a copiare.
 
 - `comune/lettura-b.js` (nuovo): `programmiDaDocumenti`, `seduteDaDocumenti`,
-  `schedeDaDocumenti`, `statoZonaB`, `leggiZonaBCompleta`. Non scrive niente:
-  legge passando da `scritture-b.js`.
+ `schedeDaDocumenti`, `statoZonaB`, `leggiZonaBCompleta`. Non scrive niente:
+ legge passando da `scritture-b.js`.
 - `desktop/app-v31.js`: `leggi()` chiede una sola cosa a `leggiZonaBCompleta` e
-  si ferma se `stato.completa` e' falso. `mostraZonaBIncompleta` scrive il
-  messaggio in `#programma-attivo`, `#archivio-corpo` e `#lb-nota-b`, e svuota
-  il Logbook invece di lasciargli il seme di esempio. Nessun ripiego su A.
+ si ferma se `stato.completa` e' falso. `mostraZonaBIncompleta` scrive il
+ messaggio in `#programma-attivo`, `#archivio-corpo` e `#lb-nota-b`, e svuota
+ il Logbook invece di lasciargli il seme di esempio. Nessun ripiego su A.
 - I numeri non cambiano: 126 sedute senza esclusioni, 121 con le cinque
-  esclusioni di Alice (`tests/54-fonte-b.test.mjs`, su dati di prova).
+ esclusioni di Alice (`tests/54-fonte-b.test.mjs`, su dati di prova).
 
 ## Passo 9 — le schede si modificano in B, e la Copia non sovrascrive (8/11/2026)
 
 Cosa cambia rispetto al v31, riga per riga.
 
 - `comune/modifiche-b.js` (nuovo, puro): `cambiaSerieRipetizioni` tocca SOLO
-  `sets` e `reps` di una settimana di un esercizio che c'e' gia'; `annullaModifica`
-  rimette il valore di prima; `ultimaAnnullabile` legge il registro;
-  `protezioneCopia` e `differenzeScheda` dicono quali schede non vanno sovrascritte
-  e cosa cambia; `misuraPeso` conta i byte; `creaCoda` accoda per scheda.
+ `sets` e `reps` di una settimana di un esercizio che c'e' gia'; `annullaModifica`
+ rimette il valore di prima; `ultimaAnnullabile` legge il registro;
+ `protezioneCopia` e `differenzeScheda` dicono quali schede non vanno sovrascritte
+ e cosa cambia; `misuraPeso` conta i byte; `creaCoda` accoda per scheda.
 - `comune/editor-schede-b.js` (nuovo): mappa codice scheda verso documento, coda
-  per scheda, rilettura prima di scrivere, versione, voce nel registro.
+ per scheda, rilettura prima di scrivere, versione, voce nel registro.
 - `comune/scritture-b.js`: aggiunte `leggiSchedaB`, `salvaSchedaConVersione` e
-  `ErroreVersione`. Resta l'unico modulo che scrive, e scrive solo nella zona B.
+ `ErroreVersione`. Resta l'unico modulo che scrive, e scrive solo nella zona B.
 - `comune/vista-programma.js`: le celle ser e reps diventano scrivibili quando il
-  modello porta `modifica` (prima erano sempre testo). Il pulsante «Annulla
-  ctrl z» si accende e chiama `onAnnulla`; resta spento quando non c'e' niente da
-  annullare. Nessun altro comando si accende: Rec. resta spento, e cosi' TUT,
-  nota, tecniche, sostituzione, aggiungi/togli.
+ modello porta `modifica` (prima erano sempre testo). Il pulsante «Annulla
+ ctrl z» si accende e chiama `onAnnulla`; resta spento quando non c'e' niente da
+ annullare. Nessun altro comando si accende: Rec. resta spento, e cosi' TUT,
+ nota, tecniche, sostituzione, aggiungi/togli.
 - `desktop/app-v31.js`: legge schede e registro dalla zona B, crea l'editor,
-  passa il modello alla vista e mostra la riga di stato `#modifica-stato`
-  (salvato, rifiutato, peso della radice e della scheda) fuori dal contenitore
-  del Programma, cosi' il ridisegno non la cancella.
+ passa il modello alla vista e mostra la riga di stato `#modifica-stato`
+ (salvato, rifiutato, peso della radice e della scheda) fuori dal contenitore
+ del Programma, cosi' il ridisegno non la cancella.
 - `desktop/copia-b.js` e `desktop/copia-b.html`: al conteggio si leggono le
-  schede gia' in B; quelle con il marchio `modificatoInB` si dichiarano in
-  `#protette` e la copia le salta. Il confronto finale le segnala come diverse:
-  ed e' scritto a schermo che deve succedere.
+ schede gia' in B; quelle con il marchio `modificatoInB` si dichiarano in
+ `#protette` e la copia le salta. Il confronto finale le segnala come diverse:
+ ed e' scritto a schermo che deve succedere.
 - `tests/55-modifiche-schede.test.mjs` (nuovo): modifica che resta dopo la
-  rilettura, due modifiche di fila con una scrittura alla volta, versione diversa
-  rifiutata, copia che non sovrascrive, annulla che riporta il valore di prima,
-  peso sotto il limite.
+ rilettura, due modifiche di fila con una scrittura alla volta, versione diversa
+ rifiutata, copia che non sovrascrive, annulla che riporta il valore di prima,
+ peso sotto il limite.
 
 ## Correzione dell'8 novembre 2026 · la tabella e la scheda si parlano per id
 
@@ -192,17 +192,17 @@ aprire. Il legame ora passa dall'id della scheda, lo stesso con cui Programma
 attivo legge il documento.
 
 - `comune/editor-schede-b.js`: nuova `mappaSchede`, che lega l'id della scheda
-  (`dati.sheetId` oppure `sheet.id`) all'id del documento in B; le schede
-  archiviate e i documenti degli esercizi sciolti restano fuori. `modifica` e
-  `annulla` usano solo quell'id, e quando la scheda non si trova il messaggio
-  dice quale id si e' cercato. `mappaCodici` resta per la prova 55.8, non e' piu'
-  il legame della tabella.
+ (`dati.sheetId` oppure `sheet.id`) all'id del documento in B; le schede
+ archiviate e i documenti degli esercizi sciolti restano fuori. `modifica` e
+ `annulla` usano solo quell'id, e quando la scheda non si trova il messaggio
+ dice quale id si e' cercato. `mappaCodici` resta per la prova 55.8, non e' piu'
+ il legame della tabella.
 - `comune/vista-programma.js`: le celle serie e ripetizioni passano `idScheda`
-  (l'id della scheda) accanto al codice, che resta solo per il testo a schermo.
+ (l'id della scheda) accanto al codice, che resta solo per il testo a schermo.
 - `tests/56-collegamento-schede.test.mjs` (nuovo): documenti nel formato vero di
-  B (`program-v2-sheet-p1__s1`, `program-v2-archived-p1__s1`,
-  `program-v2-exercise-p1__s1__e1`); la modifica arriva alla scheda attiva e non
-  all'archiviata, la lettera da sola non basta piu', il rifiuto dice l'id cercato.
+ B (`program-v2-sheet-p1__s1`, `program-v2-archived-p1__s1`,
+ `program-v2-exercise-p1__s1__e1`); la modifica arriva alla scheda attiva e non
+ all'archiviata, la lettera da sola non basta piu', il rifiuto dice l'id cercato.
 - `tests/55-modifiche-schede.test.mjs`: le prove passano l'id della scheda.
 
 ## Passo 10 dell'8 novembre 2026 · recupero e TUT si scrivono dalla tabella
@@ -214,30 +214,30 @@ mostra, quindi cambiarlo vale per tutte le settimane. A puo' scrivere un `rec`
 dentro la singola settimana: quello resta com'e' e non si tocca.
 
 - `comune/tut-rec.js`: le due tendine (`REC_TENDINA`, `TUT_TENDINA`), il lettore
-  del tempo (`secondiRecupero`), il testo (`testoSecondi`) e il passo di 30"
-  (`passoRecupero`) fra 30" e 3'. Su una frase libera il passo torna vuoto e
-  nessuno tocca la cella.
+ del tempo (`secondiRecupero`), il testo (`testoSecondi`) e il passo di 30"
+ (`passoRecupero`) fra 30" e 3'. Su una frase libera il passo torna vuoto e
+ nessuno tocca la cella.
 - `comune/modifiche-b.js`: nuova `cambiaRecTempo` (recupero e TUT, una sola
-  cella, marchio, `versione` +1, voce nel registro con prima e dopo);
-  `annullaModifica` e `ultimaAnnullabile` valgono per i due passi;
-  `differenzeScheda` guarda anche recupero e TUT, cosi' la Copia non dice
-  «identica ad A» a una scheda col recupero cambiato.
+ cella, marchio, `versione` +1, voce nel registro con prima e dopo);
+ `annullaModifica` e `ultimaAnnullabile` valgono per i due passi;
+ `differenzeScheda` guarda anche recupero e TUT, cosi' la Copia non dice
+ «identica ad A» a una scheda col recupero cambiato.
 - `comune/editor-schede-b.js`: `modifica` sceglie la strada dal campo (
-  serie/ripetizioni sulla settimana, recupero/TUT sull'esercizio).
+ serie/ripetizioni sulla settimana, recupero/TUT sull'esercizio).
 - `comune/vista-programma.js`: la cella Rec ha testo libero, i pulsantini
-  −/+ vivi (30", non piu' 15) e la freccetta con 30", 1', 1'30", 2', 2'30",
-  3', «1'30" e cambio gamba», «1'30" e cambio braccio»; la cella TUT ha il
-  testo libero e la freccetta con 2-0-2, 2-1-0, 0-1-2, 3-0-1, 3-1-1, 4-0-1.
-  Con l'editor acceso la cella mostra il testo intero (e' quello che si
-  modifica); in sola lettura la frase di coach torna spostata in Descr./Setup.
+ −/+ vivi (30", non piu' 15) e la freccetta con 30", 1', 1'30", 2', 2'30",
+ 3', «1'30" e cambio gamba», «1'30" e cambio braccio»; la cella TUT ha il
+ testo libero e la freccetta con 2-0-2, 2-1-0, 0-1-2, 3-0-1, 3-1-1, 4-0-1.
+ Con l'editor acceso la cella mostra il testo intero (e' quello che si
+ modifica); in sola lettura la frase di coach torna spostata in Descr./Setup.
 - `comune/dashboard-b.css`: solo la freccia e il taglio con i puntini.
 - `desktop/app-v31.js`: il messaggio dice dove e' finita la modifica
-  («S3 serie» oppure «rec di Panca piana»).
+ («S3 serie» oppure «rec di Panca piana»).
 - `tests/57-rec-tut.test.mjs` (nuovo): documenti nel formato vero di B
-  (`program-v2-sheet-p1__s1`, `recupero` sull'esercizio, TUT dentro
-  `prescription`); recupero e TUT scritti dove stanno, settimane e altri campi
-  intatti, testo libero e svuotamento, tendine e passo di 30", annulla, e la
-  Copia che vede la differenza.
+ (`program-v2-sheet-p1__s1`, `recupero` sull'esercizio, TUT dentro
+ `prescription`); recupero e TUT scritti dove stanno, settimane e altri campi
+ intatti, testo libero e svuotamento, tendine e passo di 30", annulla, e la
+ Copia che vede la differenza.
 
 ## Passo 10 bis dell'8 novembre 2026 · la freccetta di Rec e TUT non copre più le settimane
 
@@ -278,9 +278,9 @@ lettera. Qui si correggono tutti e due.
 **La regola di colonna.** Nelle celle Rec e TUT stanno solo i valori:
 
 - TUT: la sequenza di tre o quattro numeri uniti da trattini (`2-0-1`,
-  `3-1-1`, `2-1-0-1`); la barra si accetta e si mostra con i trattini.
+ `3-1-1`, `2-1-0-1`); la barra si accetta e si mostra con i trattini.
 - REC: `2-3'`, `120-180 sec`, `90"`, `1'30"`, `2'30"`, `1'-2'`; la virgola
-  del v31 (`1,30'`) si mostra come `1'30"`.
+ del v31 (`1,30'`) si mostra come `1'30"`.
 
 Tutto il resto del testo e' la frase del coach e va in Descr./Setup con
 l'etichetta davanti (`REC: ...`, `TUT: ...`), sia in sola lettura sia con
@@ -317,21 +317,21 @@ acceso mostra il solo valore e la frase in Descr./Setup una volta sola.
 Decisioni di Alice, applicate qui:
 
 - **TUT: la X non c'e' piu'.** In cella vanno solo numeri uniti dai trattini:
-  `2-0-1`, `3-1-1`, `2-1-0-1`. Quindi `30X1` e `3010` non sono valori: non e'
-  una prova indebolita, e' la regola nuova. Le prove 43 lo dicono nero su bianco.
+ `2-0-1`, `3-1-1`, `2-1-0-1`. Quindi `30X1` e `3010` non sono valori: non e'
+ una prova indebolita, e' la regola nuova. Le prove 43 lo dicono nero su bianco.
 - **Rec: la tendina ha sei voci** — `30"`, `1'`, `1'30"`, `2'`, `2'30"`, `3'`.
-  Tolte «1'30" e cambio gamba» e «1'30" e cambio braccio». Nella cella
-  Rec stanno solo valori numerici.
+ Tolte «1'30" e cambio gamba» e «1'30" e cambio braccio». Nella cella
+ Rec stanno solo valori numerici.
 - **Rec e TUT si scrivono a mano**, oltre che con la freccetta. Mentre si
-  scrive la casella si allarga quanto il testo, la colonna cresce e le celle
-  vicine non vengono coperte: se la tabella non ci sta, scorre in orizzontale
-  (`.p8-scroll{overflow-x:auto}`). Quello che si scrive finisce nel **valore**;
-  la frase in Descr./Setup non si tocca.
+ scrive la casella si allarga quanto il testo, la colonna cresce e le celle
+ vicine non vengono coperte: se la tabella non ci sta, scorre in orizzontale
+ (`.p8-scroll{overflow-x:auto}`). Quello che si scrive finisce nel **valore**;
+ la frase in Descr./Setup non si tocca.
 - **Quello che non e' un valore non entra**: se si scrive una frase, o la X,
-  la cella torna com'era e il dato resta quello di prima
-  (`recuperoScrittoValido`, `tempoScrittoValido`).
+ la cella torna com'era e il dato resta quello di prima
+ (`recuperoScrittoValido`, `tempoScrittoValido`).
 - Nel registro delle modifiche va il **testo intero** di prima e di dopo: cosi'
-  l'annulla rimette la frase esattamente com'era.
+ l'annulla rimette la frase esattamente com'era.
 
 Prove: aggiornate 43, 57, 58, 59 alla regola nuova; aggiunte le prove della
 scrittura a mano. Suite verde, guardie 02, 42, 44.03 e 47 comprese.
@@ -357,20 +357,20 @@ persa — la coda delle scritture c'era e funziona (prove 55).
 **Le correzioni.**
 
 - comune/vista-programma.js: il legame porta il nome ORIGINALE
-  (esercizio: String(e.nome ...).trim()), come vuole la regola di casa di
-  nome-pulito.js ("chiavi e ricerche usano l'originale"). A schermo i nomi
-  restano puliti: doveVoce in desktop/app-v31.js pulisce solo dove si stampa.
+ (esercizio: String(e.nome ...).trim()), come vuole la regola di casa di
+ nome-pulito.js ("chiavi e ricerche usano l'originale"). A schermo i nomi
+ restano puliti: doveVoce in desktop/app-v31.js pulisce solo dove si stampa.
 - desktop/app-v31.js: dopo ogni salvataggio NON si rilegge piu' niente subito.
-  La riga di stato dice "salvato alle HH:MM · scheda · rec/TUT di ...: valore",
-  e la sincronizzazione (una rilettura completa) parte UNA sola volta quando
-  le scritture della coda sono tutte finite; se una cella e' in scrittura si
-  rimanda, per non rubarle il focus. Cosi' la tabella si ridisegna SOLO con i
-  dati letti dopo l'ack: mai piu' uno stato vecchio sopra una modifica fresca.
-  Anche "Annulla" usa la stessa via.
+ La riga di stato dice "salvato alle HH:MM · scheda · rec/TUT di ...: valore",
+ e la sincronizzazione (una rilettura completa) parte UNA sola volta quando
+ le scritture della coda sono tutte finite; se una cella e' in scrittura si
+ rimanda, per non rubarle il focus. Cosi' la tabella si ridisegna SOLO con i
+ dati letti dopo l'ack: mai piu' uno stato vecchio sopra una modifica fresca.
+ Anche "Annulla" usa la stessa via.
 - Colonna Rec a 170 px (era 136), min-width della tabella 1500 (era 1470) e
-  a riposo il valore di Rec e TUT sta su una riga (white-space:nowrap, con i
-  puntini se non ci sta): 2-3', 120-180 sec, 1'30" si leggono senza
-  spezzature, con la freccetta e i pulsantini - e + accanto.
+ a riposo il valore di Rec e TUT sta su una riga (white-space:nowrap, con i
+ puntini se non ci sta): 2-3', 120-180 sec, 1'30" si leggono senza
+ spezzature, con la freccetta e i pulsantini - e + accanto.
 
 **La prova.** Nuovo tests/60-coda-scritture-rec-tut.test.mjs: la sequenza di
 Alice (+ tre volte di fila, scrittura a mano e uscita dalla cella, freccetta
@@ -419,21 +419,21 @@ Chi poteva far ripartire `leggi()` o il disegno, cercato in
 `desktop/app-v31.js` e in `comune/`:
 
 - `onAuthStateChanged` (`comune/accesso.js:46`, l'unico ascoltatore di B):
-  **scatta da solo**, e torna anche quando l'SDK rinnova il token con lo
-  stesso utente. Ogni giro rifaceva `leggi()` da zero.
+ **scatta da solo**, e torna anche quando l'SDK rinnova il token con lo
+ stesso utente. Ogni giro rifaceva `leggi()` da zero.
 - `sincronizza()` dopo ogni salvataggio: `onCambia` la chiamava anche quando
-  la scrittura era andata bene, quindi ogni modifica finiva con una rilettura
-  completa e un ridisegno.
+ la scrittura era andata bene, quindi ogni modifica finiva con una rilettura
+ completa e un ridisegno.
 - il `setTimeout(..., 300)` dentro `sincronizza`: se una cella era in
-  scrittura si riprovava ogni 300 ms, all'infinito finche' la cella restava
-  aperta. Era l'unico timer dell'app: non c'e' nessun `setInterval`.
+ scrittura si riprovava ogni 300 ms, all'infinito finche' la cella restava
+ aperta. Era l'unico timer dell'app: non c'e' nessun `setInterval`.
 - nessun `onSnapshot`: le letture di B sono `get()` una volta sola
-  (`comune/lettura-dati.js`, `comune/lettura-b.js`). Nessun
-  `visibilitychange`, `focus` o `online` sull'app.
+ (`comune/lettura-dati.js`, `comune/lettura-b.js`). Nessun
+ `visibilitychange`, `focus` o `online` sull'app.
 - `modificheInVolo`, `sincronizzazione` e gli altri contatori stavano
-  **dentro** `leggi()`: ogni ridisegno li azzerava, quindi una scrittura
-  partita prima del ridisegno diventava invisibile al controllo che doveva
-  aspettarla.
+ **dentro** `leggi()`: ogni ridisegno li azzerava, quindi una scrittura
+ partita prima del ridisegno diventava invisibile al controllo che doveva
+ aspettarla.
 
 Quanti ridisegni in 30 secondi con la pagina ferma? Adesso zero (prova 63.3).
 Prima: uno per ogni giro di sessione, uno per ogni salvataggio, piu' i
@@ -442,16 +442,16 @@ tentativi ogni 300 ms con una cella aperta.
 Cosa cambia:
 
 1. Dopo un salvataggio la cella tiene il valore appena scritto: niente
-   rilettura e niente ridisegno. Si rilegge solo se la scrittura fallisce.
+ rilettura e niente ridisegno. Si rilegge solo se la scrittura fallisce.
 2. Il ridisegno automatico non parte se una cella e' aperta o se c'e' una
-   scrittura in coda o in corso: si rimanda e si riprova quando la cella si
-   chiude (un solo ascolto `focusout`, nessun timer che rigira).
+ scrittura in coda o in corso: si rimanda e si riprova quando la cella si
+ chiude (un solo ascolto `focusout`, nessun timer che rigira).
 3. Si ridisegna solo se l'impronta dei dati letti (struttura: programmi,
-   schede con i loro esercizi in ordine, sedute, voci del registro) e' diversa
-   da quella a schermo. I valori di serie/reps/rec/TUT non entrano
-   nell'impronta: li aggiorna la cella che li scrive.
+ schede con i loro esercizi in ordine, sedute, voci del registro) e' diversa
+ da quella a schermo. I valori di serie/reps/rec/TUT non entrano
+ nell'impronta: li aggiorna la cella che li scrive.
 4. Il ridisegno prende e rimette la posizione di scorrimento (finestra e
-   contenitori che scorrono, ritrovati dal percorso di tag e classi).
+ contenitori che scorrono, ritrovati dal percorso di tag e classi).
 5. `window.BD_B_STATO` conta i ridisegni veri, le letture e i rinvii.
 
 Prove: `tests/63-ridisegno-automatico.test.mjs` (63.1-63.5), con il finto
@@ -473,21 +473,21 @@ campo vuoto poteva nascondere quello accanto che il valore ce l'aveva.
 Correzioni:
 
 1. uscire da una cella che non ha cambiato niente e' un no-op: nessuna
-   scrittura, nessun ridisegno (il testo si confronta con quello di quando la
-   cella si e' aperta);
+ scrittura, nessun ridisegno (il testo si confronta con quello di quando la
+ cella si e' aperta);
 2. una scrittura rifiutata o fallita non ridisegna mai la pagina: il motivo si
-   legge sotto la cella (`.errore-cella`) e il resto resta com'e';
+ legge sotto la cella (`.errore-cella`) e il resto resta com'e';
 3. la cella Rec/TUT contiene solo il valore (TUT `2-0-1`, Rec `2-3'`), ed e'
-   vuota quando il valore non c'e': la frase sta solo in Descr./Setup;
+ vuota quando il valore non c'e': la frase sta solo in Descr./Setup;
 4. il limite dei 24 caratteri (40 per il recupero) vale per il VALORE, non per
-   la frase del coach;
+ la frase del coach;
 5. la lettura prende il primo campo che un valore ce l'ha davvero: un campo
-   vuoto non nasconde piu' quello accanto, e la scrittura va su tutti i campi
-   che esistono, cosi' campo letto e campo scritto coincidono.
+ vuoto non nasconde piu' quello accanto, e la scrittura va su tutti i campi
+ che esistono, cosi' campo letto e campo scritto coincidono.
 
 6. l impronta dei dati non conta piu le voci del registro: ogni scrittura ne
-   aggiunge una, e contarle faceva ridisegnare la pagina subito dopo un
-   salvataggio riuscito.
+ aggiunge una, e contarle faceva ridisegnare la pagina subito dopo un
+ salvataggio riuscito.
 
 Prove: `tests/64-rec-tut-campo-vero.test.mjs` usa la forma vera del documento
 (campo grezzo diverso da `prescription.tempo`): la modifica resta dopo la
@@ -540,20 +540,20 @@ Richieste di Alice (`docs/lista-modifiche-programmi.md`, punto 3): il «+» sott
 ### Passo 22 — la frase delle archiviate dice la verità (10 novembre 2026)
 
 - Il passo 19 toglie dalla schermata Programma il disegno delle archiviate, ma
-  lascia appesa la frase del `pr-hint` nel ramo «programma senza schede attive»
-  di `comune/vista-programma.js` (r.1275): «Schede archiviate di questo
-  programma: N — si vedono nella tabella qui sotto». Falsa due volte: la carta
-  finisce lì, di tabella non c'e' niente, e dal passo 19 le archiviate non si
-  disegnano più.
+ lascia appesa la frase del `pr-hint` nel ramo «programma senza schede attive»
+ di `comune/vista-programma.js` (r.1275): «Schede archiviate di questo
+ programma: N — si vedono nella tabella qui sotto». Falsa due volte: la carta
+ finisce lì, di tabella non c'e' niente, e dal passo 19 le archiviate non si
+ disegnano più.
 - Ora la frase dice: «Schede archiviate di questo programma: N — restano nei
-  dati, la pagina non le disegna più». Il conto resta (`r.archiviate` è ancora
-  nel riepilogo, come vuole il passo 19); cambia solo la promessa, che era una
-  bugia. Nessun'altra riga toccata: CSS e `desktop/index.html` intatti (guardia 42).
+ dati, la pagina non le disegna più». Il conto resta (`r.archiviate` è ancora
+ nel riepilogo, come vuole il passo 19); cambia solo la promessa, che era una
+ bugia. Nessun'altra riga toccata: CSS e `desktop/index.html` intatti (guardia 42).
 - Il v31 non ha nessuna di queste frasi: in `pc/index.html` «archiviate» non
-  compare. La frase nasce con B e la differenza resta dichiarata qui.
+ compare. La frase nasce con B e la differenza resta dichiarata qui.
 - Prova nuova: `tests/68-frase-archiviate.test.mjs` (68.1-68.3): nel ramo vuoto
-  la frase conta e nega invece di promettere; senza archiviate non c'e' frase; con
-  le schede attive la frase non esiste (come il 65.1).
+ la frase conta e nega invece di promettere; senza archiviate non c'e' frase; con
+ le schede attive la frase non esiste (come il 65.1).
 
 ### Passo 23 — il guasto del 10/11 sul sito vero: ripristino, feedback vivo, Annulla (10-11 novembre 2026)
 
@@ -568,56 +568,56 @@ l'ha mostrata.
 
 Diagnosi, sette difetti tutti veri:
 1. desktop/app-v31.js: onCambia non aveva un .catch: un rifiuto di
-   editor.modifica (la voce di registro mai scritta, o l'SDK fermo) lasciava
-   modificheInVolo > 0 e ogni sincronizzazione dopo si auto-rifiutava: pagina
-   ghiacciata, senza messaggi, per sempre.
+ editor.modifica (la voce di registro mai scritta, o l'SDK fermo) lasciava
+ modificheInVolo > 0 e ogni sincronizzazione dopo si auto-rifiutava: pagina
+ ghiacciata, senza messaggi, per sempre.
 2. Il ramo di errore tornava senza rileggere: il commento del passo 16 diceva
-   «qui si rilegge» ma il codice no. La versione a schermo restava vecchia e i
-   tentativi dopo rifiutavano «la scheda e' cambiata nel frattempo».
+ «qui si rilegge» ma il codice no. La versione a schermo restava vecchia e i
+ tentativi dopo rifiutavano «la scheda e' cambiata nel frattempo».
 3. Voce di registro mai scritta = registro vuoto = Annulla «non c'e' nessuna
-   modifica da annullare», anche dopo ricarica.
+ modifica da annullare», anche dopo ricarica.
 4. comune/modifiche-b.js: la coppia dei valori di prima leggeva
-   serie/ripetizioni dove le settimane portano sets/reps: la voce di
-   progressione nasceva con i valori di prima VUOTI, e un Annulla avrebbe
-   cancellato le settimane invece di rimetterle.
+ serie/ripetizioni dove le settimane portano sets/reps: la voce di
+ progressione nasceva con i valori di prima VUOTI, e un Annulla avrebbe
+ cancellato le settimane invece di rimetterle.
 5. comune/editor-schede-b.js: l'id della voce era il solo millisecondo: due
-   modifiche nello stesso istante si sfacciavano la voce nel registro (l'ultima
-   sovrascriveva la prima). Ora l'id porta anche il numero d'ordine.
+ modifiche nello stesso istante si sfacciavano la voce nel registro (l'ultima
+ sovrascriveva la prima). Ora l'id porta anche il numero d'ordine.
 6. Le prove 66-67 provavano le funzioni pure: nessuna cliccava i pulsanti sulla
-   pagina (la prova 69, passo 24, lo fa ora).
+ pagina (la prova 69, passo 24, lo fa ora).
 7. Il caso Pendulum: le voci nate col difetto 4 portano i valori di prima
-   VUOTI: il loro ripristino CANCELLEREBBE le settimane. Da qui la guardia.
+ VUOTI: il loro ripristino CANCELLEREBBE le settimane. Da qui la guardia.
 
 Riparazioni:
 - comune/scritture-b.js: senzaUndefined — Firestore vero rifiuta i campi
-  undefined (il finto li ingoiava): ogni voce e scheda esce pulita.
+ undefined (il finto li ingoiava): ogni voce e scheda esce pulita.
 - comune/editor-schede-b.js: ogni scrittura ha una scadenza di 8 secondi
-  (conScadenza, in prova si accorcia con scadenzaVoceMs): un SDK fermo non
-  ghiaccia più la pagina. La voce di registro si riprova una volta e, se non
-  passa, il salvataggio resta valido con avvisoRegistro che torna a schermo.
-  annullaVoce(idVoce): il ripristino mirato della voce DETTA (non dell'ultima);
-  rifiuta una voce già annullata o assente.
+ (conScadenza, in prova si accorcia con scadenzaVoceMs): un SDK fermo non
+ ghiaccia più la pagina. La voce di registro si riprova una volta e, se non
+ passa, il salvataggio resta valido con avvisoRegistro che torna a schermo.
+ annullaVoce(idVoce): il ripristino mirato della voce DETTA (non dell'ultima);
+ rifiuta una voce già annullata o assente.
 - comune/modifiche-b.js: la coppia dei valori di prima legge ENTRAMBE le forme
-  delle settimane (sets/reps e serie/ripetizioni): l'Annulla rimette i valori
-  veri di prima, non li cancella. E una voce con i valori di prima VUOTI viene
-  RIFIUTATA dal ripristino (le celle si rimettono a mano): nessun ripristino
-  puo' cancellare le settimane di Pendulum.
+ delle settimane (sets/reps e serie/ripetizioni): l'Annulla rimette i valori
+ veri di prima, non li cancella. E una voce con i valori di prima VUOTI viene
+ RIFIUTATA dal ripristino (le celle si rimettono a mano): nessun ripristino
+ puo' cancellare le settimane di Pendulum.
 - comune/vista-programma.js: il pulsante vivo non esplode più quando nasce
-  senza azione (l'Annulla lo costruisce così: ogni clic partiva un errore a
-  pagina); il pannello delle progressioni si posiziona restando nel riquadro
-  visibile e sopravvive allo scorrimento PROGRAMMATO del ridisegno (lo
-  scorrimento di Alice lo chiude, come nel v31).
+ senza azione (l'Annulla lo costruisce così: ogni clic partiva un errore a
+ pagina); il pannello delle progressioni si posiziona restando nel riquadro
+ visibile e sopravvive allo scorrimento PROGRAMMATO del ridisegno (lo
+ scorrimento di Alice lo chiude, come nel v31).
 - desktop/app-v31.js: .catch su onCambia e onAnnulla (mai più pagine mute); dopo
-  un rifiuto la pagina si RILEGGE davvero (forza), come il commento diceva dal
-  passo 16; mentre un pannello è aperto il ridisegno non riposiziona lo
-  scorrimento. Messaggi nuovi: «progressione «X» applicata alle 8 settimane ·
-  Annulla per annullare» (di riga e di scheda), «riga tolta · Annulla per
-  rimetterla»; le celle restano a «salvato alle…» (testoEsito, provata in
-  71.1-71.4). Il ripristino si lancia con l'indirizzo: desktop/?ripristina=
-  apre l'elenco delle voci ancora annullabili lette dal registro su Firestore
-  (dalla più recente), ?ripristina=<id voce> apre quella sola; ogni ripristino
-  chiede conferma, riscrive i valori di prima con una voce nuova (versione +1,
-  annullaDi) e rilegge la pagina. Niente dati scritti a mano.
+ un rifiuto la pagina si RILEGGE davvero (forza), come il commento diceva dal
+ passo 16; mentre un pannello è aperto il ridisegno non riposiziona lo
+ scorrimento. Messaggi nuovi: «progressione «X» applicata alle 8 settimane ·
+ Annulla per annullare» (di riga e di scheda), «riga tolta · Annulla per
+ rimetterla»; le celle restano a «salvato alle…» (testoEsito, provata in
+ 71.1-71.4). Il ripristino si lancia con l'indirizzo: desktop/?ripristina=
+ apre l'elenco delle voci ancora annullabili lette dal registro su Firestore
+ (dalla più recente), ?ripristina=<id voce> apre quella sola; ogni ripristino
+ chiede conferma, riscrive i valori di prima con una voce nuova (versione +1,
+ annullaDi) e rilegge la pagina. Niente dati scritti a mano.
 
 Prove: tests/70 (70.1-70.7) e tests/71 (messaggi + misura dei danni: le 21 voci
 di riga e le 13 di scheda toccano SOLO serie e ripetizioni delle 8 settimane —
@@ -662,11 +662,11 @@ la riparazione del caso Pendulum.
 
 **La causa, due difetti.**
 1. `comune/modifiche-b.js`, `cambiaSerieRipetizioni`: le ripetizioni erano
-   validate con `/^\d{1,3}([-\u2013/]\d{1,3})?$/` — solo `8` e `8-10`. Tutto
-   il resto veniva rifiutato.
+ validate con `/^\d{1,3}([-\u2013/]\d{1,3})?$/` — solo `8` e `8-10`. Tutto
+ il resto veniva rifiutato.
 2. Sempre lì, il valore digitato passava per `.replace(/\s+/g, "")`: gli spazi
-   sparivano, quindi `Test 12rm, poi 1x8` sarebbe stato scritto `Test12rm,poi1x8`.
-   Fino a oggi non si vedeva solo perché il controllo del punto 1 rifiutava prima.
+ sparivano, quindi `Test 12rm, poi 1x8` sarebbe stato scritto `Test12rm,poi1x8`.
+ Fino a oggi non si vedeva solo perché il controllo del punto 1 rifiutava prima.
 
 **La correzione.** Le ripetizioni sono un TESTO, come sono nei dati: si accetta
 quello che Alice scrive, con gli spazi normalizzati a uno solo, fino a 40
@@ -685,14 +685,14 @@ caratteri di controllo no; 73.4 `tre` nelle serie viene ancora rifiutato.
 
 **Stato della suite a fine passo (suite.log).** 352 verdi, 4 rossi:
 - 64.4 — «la scrittura rifiutata ha ridisegnato la pagina»: ROSSA ANCHE SENZA
-  questa correzione (verificato mettendo da parte `comune/modifiche-b.js` e
-  rilanciando la 64). È l'aspettativa vecchia contro la rilettura forzata dopo un
-  rifiuto, voluta nel passo 23: la prova va riallineata, non l'app.
+ questa correzione (verificato mettendo da parte `comune/modifiche-b.js` e
+ rilanciando la 64). È l'aspettativa vecchia contro la rilettura forzata dopo un
+ rifiuto, voluta nel passo 23: la prova va riallineata, non l'app.
 - 69.3 e 69.4 — già note dal passo 24 (la voce `.prog-item` di scheda e il
-  ripristino dopo ricarica).
+ ripristino dopo ricarica).
 - 69.6 — cade per la scia della 69.3 nello stesso browser (la cella non è
-  visibile quando la pagina resta col pannello aperto): da riverificare a 69.3
-  chiusa, non un difetto nuovo.
+ visibile quando la pagina resta col pannello aperto): da riverificare a 69.3
+ chiusa, non un difetto nuovo.
 
 Nessun commit e nessun push in questo passo: il lavoro è pronto sul disco e
 aspetta la parola di Alice.
@@ -867,18 +867,18 @@ struttura NUOVA di B, invisibile al v31.
 
 Cosa è vivo (Fase 1, scelte di Alice):
 - Solo la riga della tecnica: Rest-Pause, Myo-Reps, Drop Set. La riga VOLUME collegata è
-  Fase 2; «+ Riga» resta com'è.
+ Fase 2; «+ Riga» resta com'è.
 - Il ⊕ apre un pannello con le tre voci; se la tecnica c'è già mostra ✓, i parametri, la
-  nota e «✕ Rimuovi tecnica». Cambiare tecnica tiene le settimane e rinegozia i parametri.
+ nota e «✕ Rimuovi tecnica». Cambiare tecnica tiene le settimane e rinegozia i parametri.
 - I parametri si aprono dal badge della riga figlia. Attivazione e RIR Myo-Reps accettano
-  l'intervallo («12-15», «3-4»); Drop Set porta una percentuale per scalata (nascita [20, 40]).
+ l'intervallo («12-15», «3-4»); Drop Set porta una percentuale per scalata (nascita [20, 40]).
 - Nota a due livelli: auto (composta dai parametri) e manuale (vince sempre); cambiare un
-  parametro NON tocca la nota a mano; «ripristina automatica» = manuale a null.
+ parametro NON tocca la nota a mano; «ripristina automatica» = manuale a null.
 - Settimane modificabili: serie e reps della riga figlia, una cella per settimana, con le
-  regole delle celle (serie 1-99, reps testo ≤ 40).
+ regole delle celle (serie 1-99, reps testo ≤ 40).
 - Il Rec della figlia è solo vista («3 resp.», «20-25″», «senza pausa»): NON passa dal
-  validatore delle celle e non ha freccette. Verificato: `recuperoScrittoValido("3 resp.")`
-  è falso — per questo nessuna cella della figlia è scrivibile in Rec.
+ validatore delle celle e non ha freccette. Verificato: `recuperoScrittoValido("3 resp.")`
+ è falso — per questo nessuna cella della figlia è scrivibile in Rec.
 
 Struttura dati — riga figlia dentro l'elenco esercizi della scheda, subito sotto il padre:
 `{ tipo:"tecnica", id, padreId, tecnica, settimane:[{serie,reps}], parametri, nota:{auto,manuale}, contaVolume:false }`.
@@ -886,19 +886,19 @@ Struttura dati — riga figlia dentro l'elenco esercizi della scheda, subito sot
 Impatto sulle altre funzioni (verificato in lettura e per prova):
 - Applica progressione (riga): sulla figlia rifiuta e non scrive niente (prova 81.5).
 - Applica progressione (scheda): salta le figlie nel ciclo delle righe vive; il padre
-  cambia, la figlia resta intatta anche nell'annullamento (prova 81.6).
+ cambia, la figlia resta intatta anche nell'annullamento (prova 81.6).
 - Conteggio esercizi: `eserciziDi` in schede-v2.js esclude le figlie — numeroEsercizi,
-  Archivio e conti restano al numero dei padri (prova 81.11).
+ Archivio e conti restano al numero dei padri (prova 81.11).
 - ✕ sull'esercizio: `cancellaEsercizio` marca tolte anche le figlie (voce `figli`) e
-  l'Annulla le rimette ENTRAMBE (prova 81.4).
+ l'Annulla le rimette ENTRAMBE (prova 81.4).
 - Annulla e Ctrl+Z: l'aggiunta della tecnica nasce come voce «aggiunta-riga» (l'Annulla la
-  toglie, prova 81.3); la voce nuova «modifica-tecnica» porta la riga INTERA di prima e
-  l'Annulla la rimette (prova 81.10); `ultimaAnnullabile` la riconosce.
+ toglie, prova 81.3); la voce nuova «modifica-tecnica» porta la riga INTERA di prima e
+ l'Annulla la rimette (prova 81.10); `ultimaAnnullabile` la riconosce.
 - Copia e Archivio: lavorano a livello documento/intera scheda — la figlia viaggia dentro
-  la scheda del padre, nessun codice toccato; i conti dell'Archivio passano da eserciziDi.
+ la scheda del padre, nessun codice toccato; i conti dell'Archivio passano da eserciziDi.
 - Logbook: legge le sedute, non le schede — nessun impatto.
 - Svuota scheda / Svuota tutto / ↻ ripristina: nella barra reale di B restano SPENTI
-  (`pulsanteSpento`); l'svuota cablato nel v31 statico opera sul DOM della demo, mai toccato.
+ (`pulsanteSpento`); l'svuota cablato nel v31 statico opera sul DOM della demo, mai toccato.
 
 Scritture solo su bdB_atleti (documento scheda + voce registro). Schede senza tecniche:
 output di `ricostruisciSchede` identico (prova 81.11). Suite: 356 prove, 4 rossi
@@ -952,43 +952,43 @@ blocchi resta quello qui sopra.
 ## Passo B.14 — il volume conta davvero (13/11/2026)
 
 - nuovo `comune/volume-b.js`: `contaVolume(righe, opzioni)` e' puro — serie,
-  ripetizioni e tonnellaggio (serie x ripetizioni x peso) per settimana e per
-  distretto. Chi entra lo decide solo `contaNelVolume()`, quindi le tecniche
-  contano sempre, comprese le righe vecchie con il campo a false.
+ ripetizioni e tonnellaggio (serie x ripetizioni x peso) per settimana e per
+ distretto. Chi entra lo decide solo `contaNelVolume()`, quindi le tecniche
+ contano sempre, comprese le righe vecchie con il campo a false.
 - peso mancante: serie e ripetizioni contano, il tonnellaggio resta null e la
-  colonna dice �non registrato�, mai zero. Una settimana non scritta non entra
-  nel conto: lo zero e' un dato, il vuoto no.
+ colonna dice �non registrato�, mai zero. Una settimana non scritta non entra
+ nel conto: lo zero e' un dato, il vuoto no.
 - `righeDalleSchede()` e' l'unico punto che conosce la forma della scheda: il
-  conto non sa da dove arrivano le righe, quindi il Logbook si aggancia li'.
+ conto non sa da dove arrivano le righe, quindi il Logbook si aggancia li'.
 - la pagina �Riepilogo volume� non ha piu' numeri fissi: `comune/vista-volume.js`
-  disegna i KPI e le due tabelle dal risultato del conto, chiamato nel giro di
-  disegno di `desktop/app-v31.js`.
+ disegna i KPI e le due tabelle dal risultato del conto, chiamato nel giro di
+ disegno di `desktop/app-v31.js`.
 - test: `tests/88-volume.test.mjs`, sette prove con numeri scelti e verificati
-  a mano (riga normale, riga tecnica, riga vecchia, peso vuoto).
+ a mano (riga normale, riga tecnica, riga vecchia, peso vuoto).
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
 
 ## Passo B.14d — il volume indiretto (13/11/2026)
 
 - Le sinergie sono tornate, e non erano un numero inventato solo nel mockup: la regola che Alice
-  vuole e' **1 punto al distretto bersaglio, 0,5 a ciascuno dei secondari**, e vive in una costante
-  sola (`PUNTO_BERSAGLIO`, `PUNTO_SECONDARIO` in `comune/volume-b.js`).
+ vuole e' **1 punto al distretto bersaglio, 0,5 a ciascuno dei secondari**, e vive in una costante
+ sola (`PUNTO_BERSAGLIO`, `PUNTO_SECONDARIO` in `comune/volume-b.js`).
 - Il tonnellaggio esce dal conto: il volume e' **serie x ripetizioni** (Alice, 13/11/2026).
-  Se un giorno torna, torna come campo a parte, non dentro il volume.
+ Se un giorno torna, torna come campo a parte, non dentro il volume.
 - Nuovo `comune/muscoli-b.js`: la mappa esercizio -> primari e secondari. Fonte dichiarata voce per
-  voce: dieci esercizi da App A (backup del 4/11/2026, campi `primaryMuscles` e `secondaryMuscles`
-  dentro `biomechanics`), gli altri dalle risposte di Alice del 13/11/2026. Chi non e' in mappa resta
-  senza secondari e conta solo come diretto: la pagina scrive quanti sono.
+ voce: dieci esercizi da App A (backup del 4/11/2026, campi `primaryMuscles` e `secondaryMuscles`
+ dentro `biomechanics`), gli altri dalle risposte di Alice del 13/11/2026. Chi non e' in mappa resta
+ senza secondari e conta solo come diretto: la pagina scrive quanti sono.
 - La regola dell'accosciata e' codice, non tabella: se il nome contiene �glutei� comanda il gluteo con
-  il quadricipite di sponda, altrimenti comanda il quadricipite; i femorali non sono mai secondari in
-  un'accosciata. L'eccezione di �Affondo pesante triset� (primario glutei) e' un dato dichiarato, e il
-  dato non viene calpestato dalla regola.
+ il quadricipite di sponda, altrimenti comanda il quadricipite; i femorali non sono mai secondari in
+ un'accosciata. L'eccezione di �Affondo pesante triset� (primario glutei) e' un dato dichiarato, e il
+ dato non viene calpestato dalla regola.
 - La riga tecnica eredita distretto **e** secondari dal padre; lo switch �Solo diretto / Diretto +
-  indiretto� rifa' il conto, non aggiusta il totale a mano.
+ indiretto� rifa' il conto, non aggiusta il totale a mano.
 - La pagina mostra Dirette / Indirette / Totale, la mappa settimana x distretto, il box sinergie in
-  percentuale e la riga in chiaro con la regola.
+ percentuale e la riga in chiaro con la regola.
 - test: `tests/88` aggiornato (senza tonnellaggio), `tests/89` nuovo con la panca (3 serie: petto 3
-  dirette, spalle e tricipiti 1,5 indirette), la tecnica che eredita, l'esercizio senza secondari, lo
-  switch, la regola dell'accosciata e la copertura di tutti e 79 gli esercizi dei cinque programmi.
+ dirette, spalle e tricipiti 1,5 indirette), la tecnica che eredita, l'esercizio senza secondari, lo
+ switch, la regola dell'accosciata e la copertura di tutti e 79 gli esercizi dei cinque programmi.
 - blocchi `desktop/index.html` ricalcolati dal diff vero.
 
 ## Passo B.14e — il volume legge anche il Logbook (13/11/2026)
@@ -996,15 +996,15 @@ blocchi resta quello qui sopra.
 Il volume legge anche il Logbook: le serie chiuse, settimana per settimana.
 
 - `comune/volume-b.js`: `righeDalLogbook()` (le serie chiuse, le ripetizioni vere)
-  e la cella che porta `ripetizioniTotali` / `ripetizioniMancanti`; la settimana 0
-  e' il secchio «senza settimana», entra nel totale e resta fuori dalla media.
+ e la cella che porta `ripetizioniTotali` / `ripetizioniMancanti`; la settimana 0
+ e' il secchio «senza settimana», entra nel totale e resta fuori dalla media.
 - `comune/vista-volume.js`: secondo switch «Dalla scheda / Dal Logbook», che rifa'
-  il conto invece di aggiustare i numeri.
+ il conto invece di aggiustare i numeri.
 - `desktop/app-v31.js`: `renderVolume` riceve `sedute: lb.sedute` e viene chiamato
-  dopo il Logbook (una riga spostata, niente altro).
+ dopo il Logbook (una riga spostata, niente altro).
 - `tests/90-volume-logbook.test.mjs`: 9 prove nuove.
 - `desktop/index.html`: **nessuna riga toccata** in questo passo (lo switch nuovo
-  riusa `.rv-seg`), quindi l'elenco dei blocchi qui sopra resta valido.
+ riusa `.rv-seg`), quindi l'elenco dei blocchi qui sopra resta valido.
 ## Passo B.14f — il volume è solo quello programmato (13/11/2026)
 
 Il Riepilogo volume mostra solo il lavoro scritto nelle schede. Lo switch
@@ -1013,16 +1013,16 @@ si vede nell'Overview atleta, dove sta il Logbook (che non è una pagina né una
 zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 
 - `comune/volume-b.js`: via `righeDalLogbook()` (diff vero: 4 entrate, 92 uscite).
-  Il motore resta puro: entra qualunque origine, oggi solo la scheda.
+ Il motore resta puro: entra qualunque origine, oggi solo la scheda.
 - `comune/vista-volume.js`: una fonte sola (25 entrate, 68 uscite). Via lo
-  switch delle fonti e la dichiarazione del Logbook; il testo di testa dice
-  «Il volume programmato… L'eseguito si legge nell'Overview atleta».
+ switch delle fonti e la dichiarazione del Logbook; il testo di testa dice
+ «Il volume programmato… L'eseguito si legge nell'Overview atleta».
 - `desktop/app-v31.js`: `renderVolume` non riceve più `sedute` (2 entrate, 2 uscite).
 - `tests/90-volume-logbook.test.mjs` tolto (138 righe): la suite scende da 470 a 461.
 - Le ripetizioni restano nel motore, la pagina non le mostra: il riepilogo è
-  solo conteggio di serie (scelta di Alice, 13/11/2026).
+ solo conteggio di serie (scelta di Alice, 13/11/2026).
 - `desktop/index.html`: nessuna riga toccata in questo passo (lo switch
-  «Solo diretto / Diretto + indiretto» riusa `.rv-seg`).
+ «Solo diretto / Diretto + indiretto» riusa `.rv-seg`).
 
 ## Passo B.14g — via il tastino P, la pagina Progressioni dice la verità (13/11/2026)
 
@@ -1034,17 +1034,17 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 ```
 
 - `comune/vista-programma.js`: tolto il pulsantino spento «P» dall'array delle
-  tecniche della riga (riga 969): non comanda nulla, era solo decorativo. Restano
-  T F R, sempre spenti come prima. Aggiornato il commento di testa (T F R, senza P).
+ tecniche della riga (riga 969): non comanda nulla, era solo decorativo. Restano
+ T F R, sempre spenti come prima. Aggiornato il commento di testa (T F R, senza P).
 - `desktop/index.html` (unica zona toccata in questo file): il sottotitolo della
-  pagina Progressioni non rimanda più al «tastino P di ogni esercizio» ma dice come
-  funziona davvero: «Per applicare una progressione alla singola riga usa il tasto
-  «Applica progressione» della riga stessa.»
+ pagina Progressioni non rimanda più al «tastino P di ogni esercizio» ma dice come
+ funziona davvero: «Per applicare una progressione alla singola riga usa il tasto
+ «Applica progressione» della riga stessa.»
 - Nessun test nominava la P (il test 66 parla del tastino «+», resta com'è):
-  Due test aggiornati a mano: il 41.05 conta ora 12 chips spente per riga (T F R, senza la P) e la riga dei blocchi dichiarati sopra ricalcolata (2920 → 2909, perché la frase nuova sta su una riga sola). Suite finale: 461 test e 461 verdi.
+ Due test aggiornati a mano: il 41.05 conta ora 12 chips spente per riga (T F R, senza la P) e la riga dei blocchi dichiarati sopra ricalcolata (2920 → 2909, perché la frase nuova sta su una riga sola). Suite finale: 461 test e 461 verdi.
 - Nessun numero toccato altrove in `desktop/index.html` (Specializzazione, curve
-  di forza, Database esercizi restano al loro posto, in attesa dei passi B.14k,
-  B.14j e della pulizia B.14i).
+ di forza, Database esercizi restano al loro posto, in attesa dei passi B.14k,
+ B.14j e della pulizia B.14i).
 
 
 ## Passo B.14h — la zebra alterna per esercizio (13/11/2026)
@@ -1057,31 +1057,31 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 ```
 
 - `desktop/index.html`: le due zone toccate sono i blocchi dei due temi e la
-  regola della zebra. I due toni per tema stanno in variabili, `--zebra-a` e
-  `--zebra-b`: scuro `#15152f` / `#211b3e` (gli attuali card / card-2), chiaro
-  `#fffafd` / `#f8eafa`. Nessun colore nuovo, nessun cambio di tinta: cambia solo
-  CHI prende il tono scuro. La regola `tr.p8-r:nth-child(even)` e' morta: al suo
-  posto `tr.p8-r.z-b td{background:var(--zebra-b)}`, la base legge
-  `var(--zebra-a)`. Il velo lavanda della riga tecnica (test 83) vince comunque,
-  a piena priorita'.
+ regola della zebra. I due toni per tema stanno in variabili, `--zebra-a` e
+ `--zebra-b`: scuro `#15152f` / `#211b3e` (gli attuali card / card-2), chiaro
+ `#fffafd` / `#f8eafa`. Nessun colore nuovo, nessun cambio di tinta: cambia solo
+ CHI prende il tono scuro. La regola `tr.p8-r:nth-child(even)` e' morta: al suo
+ posto `tr.p8-r.z-b td{background:var(--zebra-b)}`, la base legge
+ `var(--zebra-a)`. Il velo lavanda della riga tecnica (test 83) vince comunque,
+ a piena priorita'.
 - `comune/vista-programma.js`: l'unita' che alterna e' l'ESERCIZIO, non la riga.
-  Nel ciclo degli esercizi il tono (`z-a` / `z-b`) si calcola dall'indice
-  dell'esercizio; la riga tecnica figlia lo riceve come argomento e lo porta
-  uguale al padre (non ricalcolato). Quando nasceranno i gruppi del B.16 bastera'
-  calcolare il tono dall'indice del gruppo: le righe legate prenderanno un tono
-  unico. Le righe aggiunte o tolte con l'editor ridisegnano la pagina, quindi la
-  parita' si ricalcola da sola.
+ Nel ciclo degli esercizi il tono (`z-a` / `z-b`) si calcola dall'indice
+ dell'esercizio; la riga tecnica figlia lo riceve come argomento e lo porta
+ uguale al padre (non ricalcolato). Quando nasceranno i gruppi del B.16 bastera'
+ calcolare il tono dall'indice del gruppo: le righe legate prenderanno un tono
+ unico. Le righe aggiunte o tolte con l'editor ridisegnano la pagina, quindi la
+ parita' si ricalcola da sola.
 - Test nuovo `tests/90-zebra-esercizio.test.mjs`: contrasto del testo su
-  ENTRAMBI i toni in ENTRAMBI i temi (minimo 4,5:1, calcolato come nel test 86),
-  toni diversi ma vicini (rapporto entro 1,25:1), niente piu' nth-child sulla
-  zebra, regole con le variabili, figlia col tono del padre.
+ ENTRAMBI i toni in ENTRAMBI i temi (minimo 4,5:1, calcolato come nel test 86),
+ toni diversi ma vicini (rapporto entro 1,25:1), niente piu' nth-child sulla
+ zebra, regole con le variabili, figlia col tono del padre.
 - Suite: 466 test e 466 verdi. Il 69.2 resta come
-  documentato al passo B.14g.
+ documentato al passo B.14g.
 
 ## Passo B.14i — pulizia e documento di consegna (13/11/2026)
 
 - Diff vero (git diff --cached --numstat, il documento di consegna e' un file
-  nuovo, 12 script di servizio escono dal repo, nessun file dell'app toccato):
+ nuovo, 12 script di servizio escono dal repo, nessun file dell'app toccato):
 
 ```
 0	16	crop.mjs
@@ -1100,33 +1100,45 @@ zona: è ciò che Alice scrive sull'APK e che arriva sul PC).
 ```
 
 - Pulizia: via dalla radice gli script e i log di servizio (patch, fix,
-  diario, scatta, misura, log). Di questi, 12 erano tracciati e ora escono
-  dal repo: crop, misura31 e i dieci scatta. Gli altri erano file non
-  tracciati e spariscono senza lasciare traccia nel diff.
+ diario, scatta, misura, log). Di questi, 12 erano tracciati e ora escono
+ dal repo: crop, misura31 e i dieci scatta. Gli altri erano file non
+ tracciati e spariscono senza lasciare traccia nel diff.
 - Documento nuovo `docs/consegna-fase-b14.md`: la consegna della fase con la
-  tabella dei passi (B.14 → B.14i, con i commit) e le quattro cose da sapere:
-  il 69.2 e' instabile sotto carico ma NON rotto (da solo e' sempre 7/7);
-  il Quadro atleta e' una pagina con NUMERI FINTI del v31, non vuota; i
-  secondari hanno DUE fonti che possono non concordare (pallini statici del
-  Database, 179 esercizi, e muscoli-b.js, 79); il Logbook non e' una pagina,
-  e' quello che Alice scrive sull'APK e che arriva in Overview atleta.
+ tabella dei passi (B.14 → B.14i, con i commit) e le quattro cose da sapere:
+ il 69.2 e' instabile sotto carico ma NON rotto (da solo e' sempre 7/7);
+ il Quadro atleta e' una pagina con NUMERI FINTI del v31, non vuota; i
+ secondari hanno DUE fonti che possono non concordare (pallini statici del
+ Database, 179 esercizi, e muscoli-b.js, 79); il Logbook non e' una pagina,
+ e' quello che Alice scrive sull'APK e che arriva in Overview atleta.
 - Nessuna riga dell'app toccata: il desktop non cambia, la guardia 42 resta
-  verde senza blocchi nuovi.
+ verde senza blocchi nuovi.
 - Suite: 466 test e 466 verdi.
 
 ## Passo B.14l — il nastro del dashboard non mostra più il tag (14/11/2026)
 
 - Il difetto, visto da Alice: nella barra in alto del dashboard si leggeva il
-  testo grezzo «35 esercizi · ultima seduta <span data-lb-kpi="ultima">…»:
-  desktop/index.html (riga 5832) assegnava a textContent una stringa con
-  dentro lo <span>, e app-v31.js (ripulisciNastroDestro) lo toglieva dopo,
-  con due replace a stringa.
+ testo grezzo «35 esercizi · ultima seduta <span data-lb-kpi="ultima">…»:
+ desktop/index.html (riga 5832) assegnava a textContent una stringa con
+ dentro lo <span>, e app-v31.js (ripulisciNastroDestro) lo toglieva dopo,
+ con due replace a stringa.
 - Corretto: il nastro si costruisce a pezzi — il testo con textContent e la
-  data dentro uno <span> vero (createElement + setAttribute), stesso testo
-  finale a schermo. Il telefono non ha lo stesso difetto (verificato).
+ data dentro uno <span> vero (createElement + setAttribute), stesso testo
+ finale a schermo. Il telefono non ha lo stesso difetto (verificato).
 - app-v31.js non toccato: ripulisciNastroDestro resta e non trova più markup
-  da togliere (esce subito).
+ da togliere (esce subito).
 - Guardia nuova tests/91-nastro-pulito.test.mjs: 91.1 scansione degli
-  assegnamenti textContent con template literal (niente tag dentro), 91.2 il
-  nastro finisce con lo span vero di data-lb-kpi="ultima".
-- Righe cambiate di desktop/index.html (dal diff vero):  - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3703-3703 - righe 3965-3965 - righe 4674-4674 - righe 4678-4678 - righe 5831-5839 - righe 6535-6535 - righe 7889-7893 - righe 7938-7938 - righe 8394-8394 - righe 8551-8551 - righe 10589-10598 - righe 10709-10709 - righe 10711-10711 - righe 10713-10713 - righe 10781-10785.
+ assegnamenti textContent con template literal (niente tag dentro), 91.2 il
+ nastro finisce con lo span vero di data-lb-kpi="ultima".
+- Righe cambiate di desktop/index.html: la lista e’ ricalcolata dal diff vivo a ogni passo, sta nel blocco B.14k qui sotto.
+
+## Passo B.14k — la Specializzazione conta davvero (14/11/2026)
+
+- Via i numeri scritti a mano (Spalle 20.5, Media 10.8, classifica, avvisi): la pagina si riempie da comune/vista-specializzazione.js, che passa da contaVolume con la stessa regola e lo stesso switch del Riepilogo volume (1 punto al bersaglio, 0,5 ai secondari da muscoli-b.js).
+- Se il programma attivo non c’e’ o non porta esercizi leggibili, la pagina dice «nessun programma attivo» e non mostra numeri (richiesta di Alice).
+- Il guscio resta (testata, guida); dentro un contenitore id="sp-corpo" che la vista riempie a pezzi (createElement, niente tag nel testo).
+- Dichiarato in pagina quanti esercizi non hanno i secondari in muscoli-b.js: contano solo come diretti.
+- Radar, Quadro atleta e Curve di forza restano a numeri finti: ancora da collegare (le Curve sono il passo B.14j).
+- Guardia nuova tests/92-specializzazione.test.mjs: numeri scelti a mano e scansioni statiche.
+- Righe cambiate di desktop/index.html (dal diff vero):.
+
+- Righe cambiate di desktop/index.html, ricalcolate dal diff vivo al passo B.14k (lista unica, stessa formula della guardia 42): - righe 40-41 - righe 69-70 - righe 1441-1484 - righe 1535-1535 - righe 2785-2785 - righe 2799-2802 - righe 2816-2816 - righe 2829-2829 - righe 2842-2842 - righe 2913-2913 - righe 2923-2923 - righe 3138-3138 - righe 3138-3139 - righe 3684-3684 - righe 3946-3946 - righe 4655-4655 - righe 4659-4659 - righe 5812-5820 - righe 6516-6516 - righe 7870-7874 - righe 7919-7919 - righe 8375-8375 - righe 8532-8532 - righe 10570-10579 - righe 10690-10690 - righe 10692-10692 - righe 10693-10694 - righe 10762-10766.

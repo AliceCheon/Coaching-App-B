@@ -26,6 +26,7 @@ import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { renderVolume } from "../comune/vista-volume.js";
+import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
@@ -587,6 +588,8 @@ export async function avvia(doc, win) {
     }
     /* B.14f: il volume è solo quello programmato (le schede). */
     renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8 });
+    /* B.14k: la Specializzazione conta dal programma attivo, stessa regola del Riepilogo volume. */
+    renderSpecializzazione(doc, doc.querySelector("#sp-corpo"), rp.schede, { quante: 8 });
     notaLogbook(doc, lb);
     rimettiScorrimento(doc, win, scorrimentoPrima);
     return { ridisegnato: true };
