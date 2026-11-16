@@ -740,3 +740,9 @@ body[data-theme="light"] .bd-diva[data-tono] .bd-figura {
 .pr-conf-avviso { font-size: .86em; opacity: .75; }
 .pr-conf-fila { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .pr-conf-fila .pr-btn { min-width: 92px; }
+
+/* B.21 commit 2 — il campo del nome (dentro la pagina) e la riga dell'esito. */
+.pr-conf-etichetta { display: block; margin: 6px 0 4px; font-size: .9em; font-weight: 600; }
+.pr-conf-in { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--bd-bordo, #d8d2c4); border-radius: 10px; background: #fff; font: inherit; }
+.pr-esito { margin: 8px 0 0; padding: 8px 10px; border: 1px solid var(--bd-bordo, #d8d2c4); border-radius: 10px; background: var(--bd-carta, #fbf9f4); }
+.pr-esito[data-esito="non-salvato"] { border-color: #b3261e; font-weight: 600; }

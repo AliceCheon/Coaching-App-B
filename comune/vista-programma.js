@@ -1253,7 +1253,8 @@ function barraStrumenti(doc) {
       (pid) => modificaCorrente.onCambia({ idScheda: idScheda, campo: "progressione-scheda", progressione: pid }));
   });
   bar.appendChild(btProgScheda);
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Salva come scheletro", "salva la scheda come scheletro"));
+  const btScheletro = pulsanteVivo(doc, "pr-btn", "Salva come scheletro", "salva la struttura di questa scheda come scheletro", () => apriSalvaScheletro(doc, btScheletro));
+  bar.appendChild(btScheletro);
   /* B.21 — i tre comandi dell'igiene: vivi, ma nessuno scrive senza un
    * secondo clic nel riquadro qui sotto. */
   const btSvuota = pulsanteVivo(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda", () => apriSvuotaScheda(doc, btSvuota));
@@ -2397,6 +2398,17 @@ function chiediConferma(doc, opzioni) {
   if (o.titolo) box.appendChild(n(doc, "p", "pr-conf-titolo", o.titolo));
   (Array.isArray(o.righe) ? o.righe : []).forEach((riga) => box.appendChild(n(doc, "p", "", riga)));
   if (o.avviso) box.appendChild(n(doc, "p", "pr-conf-avviso", o.avviso));
+  /* Un solo campo di testo, quando serve un nome (B.21: lo scheletro).
+   * Sta dentro la pagina, non in una finestrella del browser. */
+  let campoNome = null;
+  if (o.campo) {
+    box.appendChild(n(doc, "span", "pr-conf-etichetta", o.campo.etichetta || "nome"));
+    campoNome = n(doc, "input", "pr-conf-in");
+    campoNome.type = "text";
+    campoNome.value = String(o.campo.valore == null ? "" : o.campo.valore);
+    campoNome.setAttribute("aria-label", o.campo.etichetta || "nome");
+    box.appendChild(campoNome);
+  }
   const fila = n(doc, "div", "pr-conf-fila");
   const annulla = pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => {
     chiudiConferma(box);
@@ -2407,7 +2419,7 @@ function chiediConferma(doc, opzioni) {
   if (o.conferma) {
     const conferma = pulsanteVivo(doc, "pr-btn" + (o.rosso ? " danger" : ""), o.conferma, o.titolo || "conferma", () => {
       chiudiConferma(box);
-      if (typeof o.onConferma === "function") o.onConferma();
+      if (typeof o.onConferma === "function") o.onConferma(campoNome ? String(campoNome.value == null ? "" : campoNome.value).trim() : undefined);
     });
     conferma.setAttribute("data-igiene", o.segno || "conferma");
     fila.appendChild(conferma);
@@ -2419,8 +2431,54 @@ function chiediConferma(doc, opzioni) {
     if (ev.key === "Escape" || ev.keyCode === 27) { if (ev.preventDefault) ev.preventDefault(); chiudiConferma(box); }
   });
   barra.appendChild(box);
-  if (annulla.focus) annulla.focus();
+  if (campoNome && campoNome.focus) campoNome.focus();
+  else if (annulla.focus) annulla.focus();
   return box;
+}
+
+import { nomeProposto } from "./scheletri.js";
+
+/* B.21 commit 2 — «Salva come scheletro»: la struttura di QUESTA scheda,
+ * senza lettera e senza carichi. Il nome lo sceglie Alice qui dentro.
+ * Se la scrittura non passa, la pagina lo dice: mai «salvato» per sbaglio. */
+function apriSalvaScheletro(doc, bottone) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  const id = idSchedaVicino(bottone);
+  const c = typeof mod.conta === "function" ? mod.conta(id) : null;
+  const proposto = nomeProposto((c && c.codice) || "", new Date());
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Salva come scheletro",
+    righe: ["Prendo la struttura di questa scheda: esercizi, distretto, serie, ripetizioni, nota, righe tecniche e superserie. Niente carichi e niente Logbook. Non porta la lettera: si potrà applicare a qualunque scheda."],
+    campo: { etichetta: "Nome dello scheletro", valore: proposto },
+    avviso: "La pagina Scheletri non è ancora collegata: per ora lo scheletro resta in B.",
+    conferma: "Salva",
+    segno: "salva-scheletro",
+    onConferma: (scelto) => {
+      const nome = String(scelto == null ? "" : scelto).trim() || proposto;
+      Promise.resolve(mod.onCambia({ idScheda: id, campo: "salva-scheletro", nome: nome }))
+        .then((esito) => mostraEsitoScheletro(doc, bottone, esito, nome))
+        .catch((e) => mostraEsitoScheletro(doc, bottone, { ok: false, motivo: (e && e.message) || "errore" }, nome));
+    }
+  });
+}
+
+function mostraEsitoScheletro(doc, bottone, esito, nome) {
+  const barra = bottone && bottone.parentNode ? bottone.parentNode : null;
+  if (!barra) return null;
+  let riga = barra.querySelector(".pr-esito");
+  if (!riga) { riga = n(doc, "p", "pr-esito"); barra.appendChild(riga); }
+  let testo;
+  if (esito && esito.ok === true) {
+    testo = String(esito.testo || "").trim() || ("Scheletro «" + nome + "» salvato");
+  } else {
+    const m = String((esito && (esito.motivo || esito.testo)) || "").trim();
+    testo = /^Scheletro non salvato/.test(m) ? m : ("Scheletro non salvato: " + (m || "motivo non dichiarato"));
+  }
+  riga.textContent = testo;
+  riga.setAttribute("data-esito", esito && esito.ok === true ? "salvato" : "non-salvato");
+  return riga;
 }
 
 function senzaEditor(doc, bottone) {

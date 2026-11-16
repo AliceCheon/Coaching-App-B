@@ -37,6 +37,7 @@ import {
   rimuoviTecnica
 } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
+import { salvaScheletroDaScheda } from "./scheletri.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -189,6 +190,13 @@ export function creaEditorSchede(opzioni) {
       /* serie e ripetizioni stanno sulla settimana, recupero e TUT
        * sull'esercizio: la tabella dice il campo, qui si sceglie la strada. */
       const campo = String(r.campo == null ? "" : r.campo);
+      /* B.21 commit 2 — lo scheletro non tocca la scheda: legge la struttura e
+       * scrive nella sua raccolta. Nessuna voce nel registro, nessun Annulla. */
+      if (campo === "salva-scheletro") {
+        const sk = await salvaScheletroDaScheda(letto.dati, r, { db: db, uid: uid, quando: quando() });
+        if (!sk.ok) return { ok: false, motivo: sk.messaggio };
+        return { ok: true, testo: sk.messaggio, scheletro: sk.id, nome: sk.nome };
+      }
       let esito = null;
       if (campo === "serie" || campo === "ripetizioni") {
         esito = cambiaSerieRipetizioni(letto.dati, r, { quando: quando(), uid: uid });

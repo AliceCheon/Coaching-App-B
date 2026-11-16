@@ -25,7 +25,8 @@ const AMMESSE = Object.freeze([
   SOTTO_B.esercizi,
   SOTTO_B.sedute,
   SOTTO_B.esclusioni,
-  SOTTO_B.registro
+  SOTTO_B.registro,
+  SOTTO_B.scheletri
 ]);
 
 /* uid e id ammessi: testo non vuoto, senza barre (niente percorsi dentro). */
@@ -224,4 +225,27 @@ export async function salvaSchedaConVersione(db, uid, id, dati, versioneAttesa) 
       " invece di " + attesa + "): non ho scritto niente");
   }
   return riferimentoB(db, uid, SOTTO_B.schede, id).set(senzaUndefined(dati));
+}
+
+/* ---------- Scheletri (B.21 commit 2) ------------------------------------
+ * Uno scheletro e' la struttura di UNA scheda, senza carichi e senza
+ * Logbook: si applichera' a qualunque scheda, quindi NON porta la lettera
+ * A/B/C. La versione avanza come per le schede, cosi' due salvataggi sullo
+ * stesso scheletro non si sovrascrivono in silenzio.
+ */
+export function leggiScheletroB(db, uid, id) {
+  const rif = riferimentoB(db, uid, SOTTO_B.scheletri, id);
+  return rif.get().then((istantanea) => {
+    if (!istantanea || !istantanea.exists) return { id: String(id), esiste: false, dati: null };
+    return { id: String(id), esiste: true, dati: (istantanea.data && istantanea.data()) || {} };
+  });
+}
+
+export async function salvaScheletroConVersione(db, uid, id, dati) {
+  const letto = await leggiScheletroB(db, uid, id);
+  const prima = letto.esiste ? Number(letto.dati.versione) || 0 : 0;
+  const versione = prima + 1;
+  const documento = Object.assign({}, dati, { versione: versione, aggiornatoIl: new Date().toISOString() });
+  await riferimentoB(db, uid, SOTTO_B.scheletri, id).set(senzaUndefined(documento));
+  return { id: String(id), versione: versione };
 }

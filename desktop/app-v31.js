@@ -354,6 +354,9 @@ export function testoEsito(richiesta, esito) {
   if (r.campo === "riga") {
     return "riga tolta · Annulla per rimetterla";
   }
+  if (r.campo === "salva-scheletro") {
+    return (esito && esito.testo) || "scheletro salvato";
+  }
   return "salvato alle " + oraBreve(new Date().toISOString()) + " · scheda " + v.codice + " · " + doveVoce(v) + ": " + ((v.dopoTesto || v.dopo) || "vuoto") +
     " · peso radice " + kb((esito.peso || {}).radice) + ", scheda " + kb((esito.peso || {}).scheda);
 }
