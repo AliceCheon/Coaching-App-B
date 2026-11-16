@@ -1208,6 +1208,16 @@ function tabellaEsercizi(doc, scheda, r) {
 
 /* ---------- la barra degli strumenti della scheda ----------------------- */
 
+/* I due tasti di stampa come li vuole la barra vera: vivi, col segno data-stampa che il
+ * gancio cerca, e gia' legati al loro foglio. Prima erano `pulsanteSpento`:
+ * senza segno e col tooltip «spento: questa pagina non scrive», quindi il gancio
+ * non li trovava e Alice vedeva la stampa spenta (passo B.20c). */
+function pulsanteStampa(doc, testo, titolo, tipo) {
+  const b = pulsanteVivo(doc, "pr-btn", testo, titolo, () => apriFinestraStampa(doc, tipo));
+  b.setAttribute("data-stampa", tipo);
+  return b;
+}
+
 /* La fila del v31, nell'ordine del v31. Tutti spenti: sono comandi che
  * scrivono (o che aprono finestre di modifica), tranne le due stampe, che
  * sarebbero letture e si accenderanno quando Alice lo dice. */
@@ -1229,8 +1239,8 @@ function barraStrumenti(doc) {
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Periodizzazione", "apre la periodizzazione"));
   bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "Copia/Sposta esercizi", "demo", "copia o sposta esercizi"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Stampa Compatta", "stampa la scheda così com'è"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Stampa da Compilare", "stampa la scheda con le caselle vuote"));
+  bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
+  bar.appendChild(pulsanteStampa(doc, "Stampa da Compilare", "stampa una settimana con le caselle vuote da spuntare a mano", "compilare"));
   const sug = pulsanteSpento(doc, "pr-btn on", "Suggerimenti: ON", "accende o spegne i suggerimenti");
   bar.appendChild(sug);
   const btProgScheda = pulsanteVivo(doc, "pr-btn", "Applica progressione a tutta la scheda",
@@ -2292,29 +2302,45 @@ function apriFinestraStampa(doc, tipo) {
 /* Il gancio a fine renderProgramma: tiene l'ultimo riepilogo e collega i due
  * tasti UNA volta sola per documento. Senza programma attivo i tasti lo dicono
  * e non aprono niente. */
+function tastoStampaPerTesto(doc, etichetta) {
+  const tasti = doc.querySelectorAll("button");
+  for (let i = 0; i < tasti.length; i += 1) {
+    const testo = String(tasti[i].textContent || "").trim();
+    if (testo === etichetta || testo.indexOf(etichetta + " —") === 0) return tasti[i];
+  }
+  return null;
+}
+
 function stampeCollegate(doc, r) {
   stampaRiepilogo = r;
   const attivo = Boolean(r && r.profilo && r.profilo.presente && (r.schede || []).length);
-  [["pr-print1", "Stampa Compatta"], ["pr-print2", "Stampa da Compilare"]].forEach(([id, etichetta]) => {
-    const b = doc.getElementById(id);
-    if (!b) return;
-    if (!attivo) {
-      b.textContent = etichetta + " \u2014 nessun programma attivo";
-      b.disabled = true;
-    } else {
-      b.textContent = etichetta;
-      b.disabled = false;
+  const titoli = { compatta: "stampa la scheda come sta adesso, tutte le settimane in fila", compilare: "stampa una settimana con le caselle vuote da spuntare a mano" };
+  const dove = [["pr-print1", "Stampa Compatta", "compatta"], ["pr-print2", "Stampa da Compilare", "compilare"]];
+  dove.forEach(([id, etichetta, tipo]) => {
+    /* Ogni scheda ha la sua barra: i tasti col segno data-stampa possono essere
+     * piu' d'uno e si accendono TUTTI. Il ripiego per id regge i documenti
+     * vecchi (e i test), quello per parola e' l'ultima spiaggia. */
+    const tasti = Array.from(doc.querySelectorAll('[data-stampa="' + tipo + '"]'));
+    const perId = doc.getElementById(id);
+    if (perId && tasti.indexOf(perId) === -1) tasti.push(perId);
+    if (!tasti.length) {
+      const perTesto = tastoStampaPerTesto(doc, etichetta);
+      if (perTesto) tasti.push(perTesto);
     }
+    tasti.forEach((b) => {
+      b.textContent = attivo ? etichetta : etichetta + " \u2014 nessun programma attivo";
+      b.disabled = !attivo;
+      if (attivo) b.removeAttribute("aria-disabled");
+      b.title = attivo ? titoli[tipo] : "nessun programma attivo";
+      if (!b.__bdStampaTipo) {
+        b.__bdStampaTipo = tipo;
+        b.addEventListener("click", () => apriFinestraStampa(doc, tipo));
+      }
+    });
   });
   if (doc.__bdStampeVive) return;
   doc.__bdStampeVive = true;
   const win = doc.defaultView;
-  const collega = (id, tipo) => {
-    const b = doc.getElementById(id);
-    if (b) b.addEventListener("click", () => apriFinestraStampa(doc, tipo));
-  };
-  collega("pr-print1", "compatta");
-  collega("pr-print2", "compilare");
   if (win && win.addEventListener) {
     win.addEventListener("keydown", (ev) => {
       if (ev.key !== "Escape" && ev.key !== "Esc") return;
