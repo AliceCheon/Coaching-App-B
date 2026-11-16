@@ -1519,6 +1519,10 @@ body[data-theme="light"] #pag-programma-1 tr.p8-tec .tec-padre{color:#3A2A4E}
   .st-nome { font-weight: 700; }
   .st-setup { font-size: .8em; }
   .st-tecnica, .st-test { font-style: italic; }
+  .st-compilare .st-caselle { white-space: normal; }
+  .st-compilare .st-casella { display: inline-block; width: 14mm; height: 8mm; border: 1px solid #000000; margin: 0 1mm 1mm 0; vertical-align: middle; }
+  .st-compilare .st-note-cella { height: 8mm; }
+  .st-compilare .st-nota-modulo { font-size: .78em; margin-top: 1mm; }
   #bd-stampa .st-test i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #000000; margin-right: 3px; }
 }
 </style>
@@ -8975,16 +8979,8 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   /* ---------- spiegazioni / stampe ---------- */
   var sp = $('#pr-spiega');
   if(sp) sp.addEventListener('click', function(){ openM('pr-mspiega'); });
-  /* Passo B.20: la Stampa Compatta vive in comune/vista-programma.js
-  * (finestra di scelta + contenitore di stampa). Il tasto da Compilare
-  * resta col comportamento vecchio finche' il passo B.20b lo raccoglie. */
-  ['#pr-print2'].forEach(function(id){
-    var b = $(id);
-    if(b) b.addEventListener('click', function(){
-      toast('Stampa: si apre la finestra di stampa del browser.');
-      setTimeout(function(){ window.print(); }, 350);
-    });
-  });
+  /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+  * (foglio con caselle vuote da spuntare a mano). Qui non resta nessun gestore. */
 
   /* ---------- suggerimenti ---------- */
   var sg = $('#pr-sugg');

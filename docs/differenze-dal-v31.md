@@ -13,39 +13,39 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - righe 46-48
 - righe 75-79
 - righe 81-83
-- righe 1452-1523
-- righe 1575
-- righe 2825
-- righe 2839-2842
-- righe 2856
-- righe 2869
-- righe 2882
-- righe 2953
-- righe 2963
-- righe 3178
-- righe 3179-3178
-- righe 3724
-- righe 3844
-- righe 3986
-- righe 4695
+- righe 1452-1527
+- righe 1579
+- righe 2829
+- righe 2843-2846
+- righe 2860
+- righe 2873
+- righe 2886
+- righe 2957
+- righe 2967
+- righe 3182
+- righe 3183-3182
+- righe 3728
+- righe 3848
+- righe 3990
 - righe 4699
-- righe 5852-5860
-- righe 6556
-- righe 6931-6935
-- righe 7886-7885
-- righe 7913-7940
-- righe 7985
-- righe 8031-8030
-- righe 8081-8082
-- righe 8433
-- righe 8590
-- righe 8978-8981
-- righe 9901
-- righe 10631-10640
-- righe 10751
-- righe 10753
-- righe 10755-10754
-- righe 10823-10827
+- righe 4703
+- righe 5856-5864
+- righe 6560
+- righe 6935-6939
+- righe 7890-7889
+- righe 7917-7944
+- righe 7989
+- righe 8035-8034
+- righe 8085-8086
+- righe 8437
+- righe 8594
+- righe 8982-8983
+- righe 9897
+- righe 10627-10636
+- righe 10747
+- righe 10749
+- righe 10751-10750
+- righe 10819-10823
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
 : La sezione Programma 1 apre il contenitore dinamico #programma-attivo e nasconde l'editor statico dentro #programma-strumenti (hidden): i dati di esempio non si vedono più; il resto del blocco resta nel file, intatto.
@@ -1267,3 +1267,13 @@ Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spa
 - Bianco e nero anche col tema scuro: in `@media print` il resto della pagina si nasconde e il contenitore prende fondo bianco e inchiostro nero; niente sfumature ne' immagini di sfondo. Nessuna forzatura di CSS: il contenitore sta fuori dalla gerarchia della pagina, le regole del blocco di stampa non hanno rivali.
 - Senza programma attivo i tasti dicono «nessun programma attivo» e non aprono niente.
 - Prove: `tests/99-stampa-compatta.test.mjs`, 8 controlli (finestra, foglio con S1..S8, accorciamento, SS e figlia, spia Test, riduzione a 7pt, tasti spenti senza programma, bianco e nero nel foglio).
+
+## Passo B.20b — 16 novembre 2026 · la Stampa da Compilare vive (caselle vuote da spuntare a mano e colonna Note)
+
+- Anche il secondo tasto di stampa non e' piu' decorativo: «Stampa da Compilare» apre la stessa finestrella di scelta della compatta (solo le schede esistenti, la prima spuntata quando nessuna linguetta e' aperta) con in piu' il selettore della settimana S1…S8, che parte da S1.
+- Al clic su «Stampa» il contenitore `#bd-stampa` porta `costruisciCompilare`: una pagina per scheda spuntata, SOLO la settimana scelta, con le colonne JS, DIST., ESERCIZIO, REC., TUT, PRESCR. S<n>, SERIE FATTE e NOTE.
+- Ogni riga ha una fila di caselle VUOTE, una per serie prescritta (il primo numero della cella di quella settimana, al massimo dieci prima di mandare la fila a capo): caselle da 14x8 mm col bordo nero, da spuntare a penna. La colonna delle note e' alta 8 mm per riga.
+- Sotto la tabella una riga di spiegazione del modulo (una casella per serie prescritta, la colonna Note per carico, sensazioni e recuperi).
+- Valgono le stesse regole della compatta: Descr./Setup accorciata a 60 caratteri, etichette SS1/SS2 nella colonna JS, figlia tecnica sotto il padre con la freccetta e il nome in corsivo, spia Test col pallino, bianco e nero anche col tema scuro, riduzione del corpo fino a 7pt prima di mandare qualcosa in seconda pagina.
+- Il vecchio gestore inline del tasto (avviso a schermo e `window.print()` immediato) e' stato tolto: ora il tasto passa dal solo `stampeCollegate`, come la compatta. La stampa continua a non scrivere niente nei dati (confronto del riepilogo prima/dopo nei test).
+- Prove: `tests/100-stampa-compilare.test.mjs`, 6 controlli (selettore S1…S8 e settimana giusta nel foglio, una casella per serie con la misura 14x8 mm, superserie e figlia tecnica, colonne del modulo, due schede = due pagine senza toccare i dati, spia Test).

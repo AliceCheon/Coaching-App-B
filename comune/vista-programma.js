@@ -2079,6 +2079,124 @@ function costruisciCompatta(doc, r, codici) {
   return box.children.length ? box : null;
 }
 
+/* ---------- Stampa da compilare (passo B.20b, richiesta di Alice) -------- */
+
+/* Il foglio da portare in palestra: UNA settimana (quella scelta nella
+ * finestrella), una pagina per scheda, e per ogni riga una fila di caselle
+ * VUOTE da spuntare a mano (una per serie prescritta, mai meno di 14x8 mm)
+ * piu' una colonna Note da scrivere di pugno. Come la compatta legge soltanto:
+ * il contenitore si costruisce al clic e si toglie dopo la stampa. */
+const ST_CASELLA_MAX = 10; /* oltre dieci serie la fila va a capo invece di stringersi */
+
+/* La prescrizione della settimana scelta, in forma corta: 4x10-8. */
+function prescrizioneSettimana(sett) {
+  const serie = nomePulito(sett && sett.serie);
+  const reps = nomePulito(sett && sett.ripetizioni);
+  if (!serie && !reps) return "";
+  if (!serie) return reps;
+  if (!reps) return serie;
+  return serie + "\u00d7" + reps;
+}
+
+/* Le caselle da spuntare: una per serie, tutte vuote. */
+/* Quante caselle: le serie della settimana scelta; una tecnica che non le
+ * porta eredita quelle del padre (e' una variante della stessa serie). */
+function quanteSerie(sett, seriePadre) {
+  const scritto = String((sett && sett.serie) || "").trim();
+  if (scritto) return serieDaCella(scritto);
+  return Math.max(1, Number(seriePadre) || 1);
+}
+
+function caselleDaCompilare(doc, quante) {
+  const cella = n(doc, "td", "st-caselle", "");
+  const numero = Math.min(ST_CASELLA_MAX, Math.max(1, Number(quante) || 1));
+  for (let i = 0; i < numero; i += 1) cella.appendChild(n(doc, "span", "st-casella", ""));
+  return cella;
+}
+
+function rigaCompilare(doc, e, perRiga, etichettaJs, figlia, settimana, seriePadre) {
+  const tr = n(doc, "tr", figlia ? "st-riga st-figlia" : "st-riga", "");
+  tr.appendChild(n(doc, "td", "st-js", etichettaJs));
+  tr.appendChild(n(doc, "td", "st-dist", codiceDistretto(e.muscolo)));
+  const ese = n(doc, "td", "st-ese", "");
+  if (figlia) {
+    ese.appendChild(n(doc, "span", "st-tecnica", "\u21b3 " + nomeTecnicaCorsivo(e.tecnica)));
+  } else {
+    ese.appendChild(n(doc, "span", "st-nome", nomePulito(e.nome)));
+    const setup = accorciaSetup(nomePulito(e.nota));
+    if (setup) ese.appendChild(n(doc, "div", "st-setup", setup));
+  }
+  tr.appendChild(ese);
+  const recTesto = String((e.prescrizione && e.prescrizione.recupero) || "").trim();
+  const tutTesto = String((e.prescrizione && e.prescrizione.tempo) || "").trim();
+  const recMostrato = nomePulito(separaRecupero(recTesto).valore);
+  const tutMostrato = nomePulito(separaTempo(tutTesto).valore);
+  tr.appendChild(n(doc, "td", "st-rec", recMostrato ? recuperoVisibile(recMostrato).testo : "\u2014"));
+  tr.appendChild(n(doc, "td", "st-tut", tutMostrato || "\u2014"));
+  const sett = (perRiga || [])[settimana - 1] || {};
+  const presc = n(doc, "td", "st-presc", "");
+  const testoPresc = prescrizioneSettimana(sett);
+  presc.appendChild(n(doc, "span", "st-presc-testo", testoPresc || "\u2014"));
+  if (haTest([sett])) {
+    presc.appendChild(n(doc, "span", "st-test", "")).appendChild(n(doc, "i", "", "")).parentNode.appendChild(n(doc, "span", "st-test-parola", "Test"));
+  }
+  tr.appendChild(presc);
+  tr.appendChild(caselleDaCompilare(doc, quanteSerie(sett, seriePadre)));
+  tr.appendChild(n(doc, "td", "st-note-cella", ""));
+  return tr;
+}
+
+function costruisciCompilare(doc, r, codici, settimana) {
+  if (!r || !(r.schede || []).length) return null;
+  const scelta = Math.min(8, Math.max(1, Number(settimana) || 1));
+  const box = n(doc, "div", "st-box", "");
+  (r.schede || []).forEach((scheda) => {
+    if (!scheda || !scheda.codice || codici.indexOf(scheda.codice) === -1) return;
+    const numero = numeroSettimane(scheda);
+    const pagina = n(doc, "div", "st-pagina st-compilare", "");
+    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "") + " \u00b7 Settimana S" + scelta));
+    const t = n(doc, "table", "st-tab st-tab-compilare", "");
+    const cg = n(doc, "colgroup", "", "");
+    ["11mm", "13mm", "46mm", "11mm", "10mm", "18mm"].forEach((larghezza) => {
+      const c = n(doc, "col", "", "");
+      c.style.width = larghezza;
+      cg.appendChild(c);
+    });
+    cg.appendChild(n(doc, "col", "", "")); /* le caselle prendono lo spazio che resta */
+    const cn = n(doc, "col", "", "");
+    cn.style.width = "22mm";
+    cg.appendChild(cn);
+    t.appendChild(cg);
+    const thead = n(doc, "thead", "", "");
+    const rigaH = n(doc, "tr", "", "");
+    ["JS", "DIST.", "ESERCIZIO", "REC.", "TUT", "PRESCR. S" + scelta, "SERIE FATTE (spunta a mano)", "NOTE"].forEach((testo) => rigaH.appendChild(n(doc, "th", "", testo)));
+    thead.appendChild(rigaH);
+    t.appendChild(thead);
+    const corpo = n(doc, "tbody", "", "");
+    const etichette = etichetteSup(scheda.esercizi || []);
+    let indice = 0;
+    const tecniche = scheda.tecniche || [];
+    (scheda.esercizi || []).forEach((e) => {
+      if (!e || typeof e !== "object" || e.deletedAt) return;
+      indice += 1;
+      const sett = settimanePerTabella((e.prescrizione && e.prescrizione.elencoSettimane) || [], numero);
+      const seriePadre = serieDaCella((sett[scelta - 1] || {}).serie);
+      corpo.appendChild(rigaCompilare(doc, e, sett, etichette[String(e.id || "")] || (scheda.codice || "") + indice, false, scelta, seriePadre));
+      /* le figlie tecniche del padre, sotto il padre, col nome in corsivo */
+      tecniche.forEach((riga) => {
+        if (!riga || String(riga.padreId || "") !== String(e.id || "")) return;
+        const settTecnica = settimanePerTabella(riga.settimane || [], numero);
+        corpo.appendChild(rigaCompilare(doc, { muscolo: e.muscolo, tecnica: riga.tecnica, prescrizione: { recupero: "", tempo: "", elencoSettimane: riga.settimane || [] } }, settTecnica, "\u21b3", true, scelta, seriePadre));
+      });
+    });
+    t.appendChild(corpo);
+    pagina.appendChild(t);
+    pagina.appendChild(n(doc, "div", "st-nota-modulo", "Una casella per serie prescritta: si spunta a penna a serie fatta. La colonna Note serve per carico, sensazioni e recuperi."));
+    box.appendChild(pagina);
+  });
+  return box.children.length ? box : null;
+}
+
 /* Il contenitore di stampa: costruito, attaccato al corpo, ridotto per stare
  * in pagina, dato in pasto a window.print(), tolto dopo. I dati non cambiano. */
 function eseguiStampa(doc, win, tipo, codici, settimana) {
