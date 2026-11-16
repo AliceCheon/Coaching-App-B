@@ -827,7 +827,7 @@ function cartaStato(doc, r) {
 
 
   const atti = n(doc, "div", "pr-acts");
-  atti.appendChild(pulsanteSpento(doc, "pr-btn pri", "Attiva", "mette il programma come attivo"));
+  atti.appendChild(tastoAttiva(doc, r));
   atti.appendChild(pulsanteSpento(doc, "pr-btn", "Cambia", "cambia il programma"));
   atti.appendChild(pulsanteSpento(doc, "pr-btn", "Confronta con…", "confronta con un altro programma"));
   atti.appendChild(pulsanteSpento(doc, "pr-btn", "Copia da Prog…", "copia da un altro programma"));
@@ -835,6 +835,47 @@ function cartaStato(doc, r) {
   c.appendChild(atti);
 
   return c;
+}
+
+/* B.21 PASSO 2a — «Attiva» vivo. Scrive SOLO in B (bdB_atleti): il telefono
+ * di oggi legge la zona A, e la conferma lo dice prima di scrivere. Senza
+ * editor collegato (pagine non vive) resta il tasto spento di prima. */
+function tastoAttiva(doc, r) {
+  const mod = modificaCorrente;
+  const gia = Boolean(r && r.profilo && r.profilo.segno === "vivo");
+  if (!mod || typeof mod.onAttiva !== "function") {
+    return pulsanteSpento(doc, "pr-btn pri", "Attiva", "mette il programma come attivo");
+  }
+  if (gia) {
+    const spento = pulsanteSpento(doc, "pr-btn pri", "Attivo", "questo e' gia' il programma attivo in B");
+    spento.setAttribute("aria-pressed", "true");
+    return spento;
+  }
+  const t = pulsanteVivo(doc, "pr-btn pri", "Attiva", "rende attivo questo programma in B", () => apriConfermaAttiva(doc, t, r));
+  return t;
+}
+
+/* La riga che Alice ha chiesto, parola per parola: si dice che si scrive in B
+ * e che il telefono di oggi legge A. Niente promesse sul telefono di oggi. */
+function apriConfermaAttiva(doc, bottone, r) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.onAttiva !== "function") { senzaEditor(doc, bottone); return; }
+  const profilo = (r && r.profilo) || {};
+  const nome = nomePulito(profilo.nome) || "questo programma";
+  const righe = [
+    "Rendi attivo «" + nome + "» in B?",
+    "Il telefono di oggi legge ancora i programmi di A: lo vedrà dal giorno del cambio."
+  ];
+  if (profilo.segno === "bozza") righe.push("Era in bozza: da adesso, in B, e' il programma attivo.");
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Rendere attivo un programma",
+    righe: righe,
+    avviso: "Scrive solo in bdB_atleti. In A non cambia niente.",
+    conferma: "Sì, rendi attivo",
+    segno: "attiva",
+    onConferma: () => { mod.onAttiva(String(profilo.id || "")); }
+  });
 }
 
 /* ---------- il distretto ------------------------------------------------ */
@@ -1665,6 +1706,7 @@ export function corniciScheda(box) {
 }
 
 export function renderProgramma(doc, contenitore, modello, calcoli) {
+  modificaCorrente = (calcoli && calcoli.modifica) || (modello && modello.modifica) || modificaCorrente;
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const r = calcoli || {};
   const pieno = {

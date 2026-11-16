@@ -241,6 +241,33 @@ export function leggiScheletroB(db, uid, id) {
   });
 }
 
+/* ---------- Programmi (B.21 PASSO 2a) ------------------------------------
+ * Il programma attivo e' un campo del documento, non una scheda: la scrittura
+ * segue la stessa regola delle schede (versione attesa) e aggiunge `versione`,
+ * che nella zona B tiene il conto delle scritture di B.
+ */
+export function leggiProgrammaB(db, uid, id) {
+  const rif = riferimentoB(db, uid, SOTTO_B.programmi, id);
+  return rif.get().then((istantanea) => {
+    if (!istantanea || !istantanea.exists) return { id: String(id), esiste: false, dati: null };
+    return { id: String(id), esiste: true, dati: (istantanea.data && istantanea.data()) || {} };
+  });
+}
+
+export async function salvaProgrammaConVersione(db, uid, id, dati, versioneAttesa) {
+  const letto = await leggiProgrammaB(db, uid, id);
+  if (!letto.esiste) throw new ErroreVersione("il programma non e' ancora in B: fai prima la copia");
+  const sulDisco = Number(letto.dati.versione) || 0;
+  const attesa = Number(versioneAttesa) || 0;
+  if (sulDisco !== attesa) {
+    throw new ErroreVersione("il programma e' cambiato nel frattempo (versione " + sulDisco +
+      " invece di " + attesa + "): non ho scritto niente");
+  }
+  const documento = Object.assign({}, dati, { versione: attesa + 1 });
+  await riferimentoB(db, uid, SOTTO_B.programmi, id).set(senzaUndefined(documento));
+  return { id: String(id), versione: attesa + 1 };
+}
+
 export async function salvaScheletroConVersione(db, uid, id, dati) {
   const letto = await leggiScheletroB(db, uid, id);
   const prima = letto.esiste ? Number(letto.dati.versione) || 0 : 0;

@@ -78,3 +78,51 @@ Restano apposta: «Attiva» (spento: diventa vivo al PASSO 2), il secondo
 Test: `tests/104-pulizia-demo.test.mjs` (5 test sulla pagina vera) +
 `tests/77` aggiornato: non pretende più la Libreria Coach spenta, ora
 pretende che non ci sia.
+
+## PASSO 2a (16/11/2026) — «Attiva» vivo, e scrive solo in B
+
+Un commit solo. Il pulsante «Attiva» della carta di stato smette di essere spento e diventa
+vivo, ma la scrittura tocca **soltanto** `bdB_atleti`. In A non entra niente: il telefono di
+oggi continua a leggere i programmi di A come prima.
+
+Righe del diff vero (`git diff --numstat`, prima del commit):
+
+- `comune/attiva-programma.js` — **nuovo**. La parte pura: `pianificaAttivazione(programmi, idScelto, {quando, idVoce})`
+  mette `status: "active"` sul prescelto (messo **per ultimo** nell'elenco), spegne gli altri
+  su entrambi i campi (`status` **e** `active`, per non cadere nella trappola dei due modi di
+  essere attivo), rifiuta un programma archiviato, e scrive **una** voce di registro con
+  `prima`/`dopo`/`campo: "programma"`. `pianificaRipristino` rifà il giro al contrario per
+  l'Annulla. `gia: true` quando non c'è niente da cambiare.
+- `comune/scritture-b.js` — 27 righe aggiunte, 0 tolte: `leggiProgrammaB` e
+  `salvaProgrammaConVersione` (errore `ErroreVersione` se il documento è cambiato sotto i piedi,
+  campo `versione`).
+- `comune/editor-schede-b.js` — 83 righe aggiunte, 1 tolta: `attivaProgramma(id)` e
+  `annullaAttivazione(voce)`, in coda `"programma"` come le altre scritture; `annulla()` ora
+  devia per tipo di voce.
+- `comune/modifiche-b.js` — 1 riga aggiunta, 1 tolta: `ultimaAnnullabile` accetta anche
+  `attiva-programma`.
+- `comune/vista-programma.js` — 43 righe aggiunte, 1 tolta: `tastoAttiva` e
+  `apriConfermaAttiva`, più `modificaCorrente` assegnato in testa a `renderProgramma`. Se non
+  c'è un editor collegato resta il tasto spento di prima.
+- `desktop/app-v31.js` — 21 righe aggiunte, 1 tolta: `onAttiva` chiama `editor.attivaProgramma`,
+  poi `sincronizza(utente, {forza: true})` e offre l'Annulla con il messaggio «programma attivo
+  rimesso com'era».
+- `tests/105-attiva-programma.test.mjs` — **nuovo**, 8 test sulla pagina vera, con un database
+  finto che controlla la strada scritta (`bdB_atleti/<uid>/<sotto>/<id>`), una sola voce di
+  registro e l'Annulla dopo la ricarica.
+
+La conferma è un riquadro **dentro la pagina**, non la finestrella del browser, e dice parola
+per parola: «Rendi attivo «NOME» in B? Il telefono di oggi legge ancora i programmi di A: lo
+vedrà dal giorno del cambio.» Sotto, in avviso: «Scrive solo in bdB_atleti. In A non cambia
+niente.» Se il programma era in bozza lo dice: «Era in bozza: da adesso, in B, e' il programma
+attivo.» Una voce di registro, un solo Annulla.
+
+Suite chiusa prima del commit, tre fette e totale: veloce `pass 452 fail 0 file 62`,
+6x `pass 56 fail 0 file 10`, 7x `pass 57 fail 0 file 10`,
+**TOTALE pass 565 fail 0 file 82/82** (i 105 file di test sono entrati da soli nella fetta
+veloce: 61 + 1).
+
+Nota di percorso: la guardia `tests/44.03` (nessuna vista disegna un testo dei dati senza
+passare da `nomePulito`) ha preso una riga nuova della conferma, `profilo.nome` usato crudo. È
+stata corretta in `nomePulito(profilo.nome)` e la guardia è tornata verde: era la sua unica
+ragione di esistere.

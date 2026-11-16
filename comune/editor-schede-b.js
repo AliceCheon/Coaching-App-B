@@ -15,11 +15,14 @@ import {
   leggiSchedaB,
   salvaSchedaConVersione,
   scriviVoceRegistro,
-  leggiZonaB
+  leggiZonaB,
+  leggiProgrammaB,
+  salvaProgrammaConVersione
 } from "./scritture-b.js";
 import {
   cambiaSerieRipetizioni,
   cambiaRecTempo,
+  idVoceRegistro,
   annullaModifica,
   ultimaAnnullabile,
   versioneDi,
@@ -38,6 +41,7 @@ import {
 } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
+import { pianificaAttivazione, pianificaRipristino, TIPO_VOCE_ATTIVA } from "./attiva-programma.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -266,6 +270,9 @@ export function creaEditorSchede(opzioni) {
         ultima = null;
         return { ok: false, motivo: "non c'e' nessuna modifica da annullare" };
       }
+      /* B.21 PASSO 2a — l'attivazione di un programma si annulla come una
+       * modifica di scheda: la voce porta i valori di prima di ogni documento. */
+      if (String(voce.tipo || "") === TIPO_VOCE_ATTIVA) return annullaAttivazione(voce);
       /* B.21 — una voce che tocca più schede (svuota il programma): si
        * rimettono tutte, e il registro prende una voce sola anche qui. */
       if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
@@ -415,10 +422,85 @@ export function creaEditorSchede(opzioni) {
     return { ok: true, voce: voceNuova, quante: scritte.length, avvisoRegistro: avvisoVoce };
   }
 
+  /* B.21 PASSO 2a — «Attiva»: il programma scelto diventa attivo in B e
+   * l'altro attivo smette di esserlo. Si scrive SOLO in bdB_atleti: il
+   * telefono di oggi legge A, e la conferma in pagina lo dichiara. La
+   * scrittura del prescelto e' l'ultima (vedi pianificaAttivazione): se
+   * qualcosa si ferma prima, non restano due attivi. */
+  function attivaProgramma(idProgramma) {
+    return coda.esegui("programma", async () => {
+      const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
+      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+      const piano = pianificaAttivazione(elenco, idProgramma, { quando: quando() });
+      if (!piano.ok) return piano;
+      if (piano.gia) return { ok: true, gia: true, testo: piano.testo, nome: piano.nome };
+      const scritti = [];
+      for (let i = 0; i < piano.daScrivere.length; i += 1) {
+        const t = piano.daScrivere[i];
+        const letto = await conScadenza(leggiProgrammaB(db, uid, t.id), "la lettura del programma");
+        if (!letto || !letto.esiste) {
+          return { ok: false, motivo: "il programma " + t.id + " non e' piu' in B: non ho scritto niente oltre a " + scritti.length + " programmi" };
+        }
+        try {
+          await conScadenza(salvaProgrammaConVersione(db, uid, t.id, t.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+        } catch (e) {
+          return { ok: false, motivo: (e && e.message ? e.message : "scrittura non riuscita") + " · fermato dopo " + scritti.length + " programmi: la voce di registro non e' scritta" };
+        }
+        scritti.push(t.id);
+      }
+      const avvisoVoce = await scriviVoceSicura(piano.voce);
+      ultima = piano.voce;
+      return { ok: true, gia: false, nome: piano.nome, altri: piano.altri, voce: piano.voce, avvisoRegistro: avvisoVoce, testo: piano.testo };
+    });
+  }
+
+  /* L'annulla dell'attivazione: si rimettono i programmi come stavano, e la
+   * storia prende una voce nuova (niente si cancella). */
+  async function annullaAttivazione(voce) {
+    const quandoOra = quando();
+    const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
+    const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+    const piano = pianificaRipristino(voce, elenco);
+    if (!piano.ok) return { ok: false, motivo: "i programmi da rimettere non sono piu' in B: non ho scritto niente" };
+    const scritti = [];
+    for (let i = 0; i < piano.daScrivere.length; i += 1) {
+      const t = piano.daScrivere[i];
+      const letto = await conScadenza(leggiProgrammaB(db, uid, t.id), "la lettura del programma");
+      if (!letto || !letto.esiste) continue;
+      try {
+        await conScadenza(salvaProgrammaConVersione(db, uid, t.id, t.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      scritti.push(t.id);
+    }
+    if (!scritti.length) return { ok: false, motivo: "non c'e' nessun programma da rimettere com'era" };
+    const voceNuova = {
+      idVoce: idVoceRegistro(quandoOra),
+      quando: quandoOra,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(voce.idVoce || ""),
+      scheda: "",
+      codice: "",
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "programma",
+      prima: null,
+      dopo: null,
+      dopoTesto: "programma attivo rimesso com'era"
+    };
+    const avvisoVoce = await scriviVoceSicura(voceNuova);
+    ultima = voceNuova;
+    return { ok: true, voce: voceNuova, quante: scritti.length, avvisoRegistro: avvisoVoce };
+  }
+
   return {
     attivo: true,
     conta: conta,
     svuotaProgramma: svuotaProgrammaIntero,
+    attivaProgramma: attivaProgramma,
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,

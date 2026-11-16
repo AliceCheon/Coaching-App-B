@@ -553,10 +553,30 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "igiene non riuscita" });
           });
         },
+        /* B.21 PASSO 2a — «Attiva»: scrive in B e rilegge. La riga di stato
+         * dice cosa e' successo, e se l'altro programma ha smesso di esserlo. */
+        onAttiva: (idProgramma) => {
+          modificheInVolo += 1;
+          return editor.attivaProgramma(idProgramma).then((esito) => {
+            modificheInVolo -= 1;
+            if (esito && esito.ok) {
+              segnalaModifica(esito.gia
+                ? esito.testo
+                : esito.testo + (esito.altri && esito.altri.length ? " · non e' piu' attivo: «" + esito.altri.join("», «") + "»" : "") + (esito.avvisoRegistro ? " · MA: " + esito.avvisoRegistro : ""), "ok");
+            } else {
+              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente, { forza: true, motivo: "programma attivo" });
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("attivazione non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "attivazione non riuscita" });
+          });
+        },
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
-              ? "annullato \u00b7 " + doveVoce(esito.voce) + (esito.voce && ["serie", "ripetizioni", "recupero", "tempo"].indexOf(String(esito.voce.campo || "")) !== -1 ? " torna a " + String(esito.voce.dopo == null ? "vuoto" : esito.voce.dopo) : "")
+              ? "annullato \u00b7 " + ((esito.voce && esito.voce.campo === "programma") ? "programma attivo rimesso com'era" : doveVoce(esito.voce)) + (esito.voce && ["serie", "ripetizioni", "recupero", "tempo"].indexOf(String(esito.voce.campo || "")) !== -1 ? " torna a " + String(esito.voce.dopo == null ? "vuoto" : esito.voce.dopo) : "")
               : (esito.motivo || "non c'e' niente da annullare"), esito.ok ? "ok" : "errore");
             return sincronizza(utente, { forza: true, motivo: "annulla" });
           }, (e) => {
