@@ -126,3 +126,33 @@ Nota di percorso: la guardia `tests/44.03` (nessuna vista disegna un testo dei d
 passare da `nomePulito`) ha preso una riga nuova della conferma, `profilo.nome` usato crudo. È
 stata corretta in `nomePulito(profilo.nome)` e la guardia è tornata verde: era la sua unica
 ragione di esistere.
+
+## PASSO 2b — il telefono non ripiega su una bozza (16 novembre 2026)
+
+**Cosa cambia nel codice.** `programmaAttivo` in `comune/lettura-dati.js` prende un secondo argomento facoltativo: `programmaAttivo(programmi, opzioni)`. Con `opzioni.escludiBozze === true` una bozza esplicita — `status: "draft"` — non e' un candidato: non vince come esplicito e non si usa come ripiego. La regola tocca **solo** `status` uguale a `"draft"`: un programma con `status` assente o `"available"` resta candidato come prima, e `archived` continua a stare fuori in tutti e due i modi.
+
+**Chi lo chiede.** Solo il telefono: `mobile/app.js` passa `escludiBozze: true` dentro `riepilogoDati`, e `riepilogoDati` lo gira a `programmaAttivo`. Il desktop chiama `programmaAttivo(programmi)` a una sola argomento (`desktop/app-v31.js:515`) e non sa che l'opzione esiste: **per il desktop non cambia niente**, ne' la scelta del programma attivo ne' la possibilita' di vedere e modificare una bozza.
+
+**Il buco chiuso.** Il ripiego finale era `disponibili.slice().sort(...)[0] || ordinati[0] || null`: se tutto usciva dai disponibili, tornava il primo documento in elenco, anche una bozza. Con le bozze fuori quel ritorno non e' piu' ammesso — `bozzeFuori ? null : ordinati[0]` — cosi' il telefono, quando non resta niente, dice il vuoto invece di mostrare una bozza.
+
+**Cosa vede Alice sul telefono.** Nessun attivo e nessun ripiegabile: la carta «Programma attivo» scrive «nessun programma attivo» e una riga che spiega il motivo («un programma in bozza non compare qui: lo vedi e lo attivi dal desktop»). Nessun errore, nessun nome inventato: il conteggio dei documenti letti resta quello vero.
+
+**I quattro test** (`tests/106-programma-attivo-bozze.test.mjs`):
+
+1. `106.01` bozza sola: telefono → `null`; desktop → ripiego sulla bozza come prima (esplicito `false`, ripiego `true`).
+2. `106.02` bozza piu' recente di un attivo esplicito: vince l'attivo in entrambe le modalita'; e una bozza con `active === true` (dato incoerente di A) non passa comunque al telefono.
+3. `106.03` `status` assente e `"available"` non sono bozze; l'archiviato resta fuori; bozza accanto a un archiviato → `null`, senza riesumare la bozza.
+4. `106.04` `riepilogoDati`: col telefono `programma: null` e `numeroProgrammi: 1` (il documento esiste, manca solo l'attivo); senza opzione torna il nome della bozza; e il filo e' verificato sul sorgente — `mobile/app.js` contiene `escludiBozze: true`, `desktop/app-v31.js` non contiene la parola.
+
+**File toccati (diff vero):**
+
+| File | +/- |
+|---|---|
+| `comune/lettura-dati.js` | +10 / -4 |
+| `mobile/app.js` | +4 / -1 |
+| `suite.sh` | +11 / -4 |
+| `tests/106-programma-attivo-bozze.test.mjs` | nuovo, 4 test |
+
+**Suite.** TOTALE pass 569 fail 0 file 83/83 — nessun test saltato: i file di test sul disco sono 83 e il totale ne copre 83.
+
+**Nota sullo strumento di test.** Con il file 106 la fetta unica `veloce` (63 file) non sta piu' nei 45 secondi del comando sul computer: `suite.sh` ora la divide in `veloce1` (32 file) e `veloce2` (31 file), e `totale` somma quattro fette — `veloce1`, `veloce2`, `6x`, `7x` — controllando che la somma dei file coperti sia quella dei file sul disco. Non cambia un solo test: cambia solo come vengono raggruppati.

@@ -346,15 +346,21 @@ export function ultimoCheckin(stato) {
  * Per questo l'elenco viene prima ordinato per id: se due programmi fossero
  * entrambi «active», vince l'id minore, e la scelta resta la stessa a ogni
  * lettura. Con un solo attivo — il caso normale — il risultato è identico ad A. */
-export function programmaAttivo(programmi) {
+/* B.21 PASSO 2b — `opzioni.escludiBozze === true`: una bozza esplicita
+ * (status "draft") non e' un candidato, ne' esplicito ne' di ripiego. Serve
+ * al telefono, che deve mostrare il programma vero o niente. Tutto il resto
+ * e' com'era: status assente o "available" restano candidati, il desktop non
+ * passa opzioni e non cambia una riga. */
+export function programmaAttivo(programmi, opzioni) {
   const elenco = Array.isArray(programmi) ? programmi.filter((p) => p && typeof p === "object") : [];
   const perId = (a, b) => confrontaTesto(String(a.id || ""), String(b.id || ""));
   const ordinati = elenco.slice().sort(perId);
-  const disponibili = ordinati.filter((p) => !p.archivedAt && String(p.status || "") !== "archived");
+  const bozzeFuori = Boolean(opzioni && opzioni.escludiBozze === true);
+  const disponibili = ordinati.filter((p) => !p.archivedAt && String(p.status || "") !== "archived" && !(bozzeFuori && String(p.status || "") === "draft"));
   const esplicito = disponibili.find((p) => String(p.status || "") === "active") || disponibili.find((p) => p.active === true) || null;
   if (esplicito) return { programma: esplicito, esplicito: true, ripiego: false };
   const perAggiornamento = (a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")) || perId(a, b);
-  const ripiego = disponibili.slice().sort(perAggiornamento)[0] || ordinati[0] || null;
+  const ripiego = disponibili.slice().sort(perAggiornamento)[0] || (bozzeFuori ? null : ordinati[0]) || null;
   return ripiego ? { programma: ripiego, esplicito: false, ripiego: true } : null;
 }
 
@@ -389,7 +395,7 @@ export function riepilogoDati(letture) {
   const sedute = elencoSedute(l.sedute);
   const programmi = Array.isArray(l.programmi) ? l.programmi.filter((p) => p && typeof p === "object") : [];
   const ultima = ultimaSeduta(sedute);
-  const attivo = programmaAttivo(programmi);
+  const attivo = programmaAttivo(programmi, { escludiBozze: l.escludiBozze === true });
   const checkin = presente ? ultimoCheckin(stato) : null;
   const peso = presente ? pesoCorrente(stato) : null;
 

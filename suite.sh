@@ -74,7 +74,7 @@ fetta() {
 totale() {
   local P=0 F=0 NF=0 mancanti="" nome linea p f nf sudisco
   sudisco=$(ls tests/*.test.mjs 2>/dev/null | wc -l | tr -d ' ')
-  for nome in veloce 6x 7x; do
+  for nome in veloce1 veloce2 6x 7x; do
     linea=$(grep "^fetta $nome:" log-suite.txt | tail -1)
     if [ -z "$linea" ]; then
       mancanti="$mancanti $nome"
@@ -98,18 +98,25 @@ totale() {
   echo "TOTALE pass $P fail $F file $NF/$sudisco"
 }
 
-VELOCE=$(ls tests/*.test.mjs | grep -v "tests/6" | grep -v "tests/7" | tr '\n' ' ')
+VELOCE=$(ls tests/*.test.mjs | grep -v "tests/6" | grep -v "tests/7" | tr "
+" " ")
+read -r -a VELOCE_ARR <<< "$VELOCE"
+METAV=$(( (${#VELOCE_ARR[@]} + 1) / 2 ))
+VELOCE1=("${VELOCE_ARR[@]:0:$METAV}")
+VELOCE2=("${VELOCE_ARR[@]:$METAV}")
 
 case "$1" in
   nodo) echo "node vero: $NODE" ;;
   azzera) : > log-suite.txt ;;
-  veloce) fetta veloce $VELOCE ;;
+  veloce1) fetta veloce1 "${VELOCE1[@]}" ;;
+  veloce2) fetta veloce2 "${VELOCE2[@]}" ;;
   6x) fetta 6x tests/6*.test.mjs ;;
   7x) fetta 7x tests/7*.test.mjs ;;
   totale) totale ;;
   "")
     : > log-suite.txt
-    fetta veloce $VELOCE
+    fetta veloce1 "${VELOCE1[@]}"
+    fetta veloce2 "${VELOCE2[@]}"
     fetta 6x tests/6*.test.mjs
     fetta 7x tests/7*.test.mjs
     totale ;;

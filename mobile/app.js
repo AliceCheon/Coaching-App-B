@@ -86,7 +86,8 @@ function righeProgramma(modello) {
     righe.push({ testo: "programmi mancanti nel cloud", classe: "valore" });
     righe.push({ testo: "la radice dichiara " + controllo.radice + " programmi (programCount) ma nei documenti-programma non ne resta nessuno: come A, «cloud programs missing» — nessun nome inventato.", classe: "errore" });
   } else {
-    righe.push({ testo: NON_REGISTRATO, classe: "valore" });
+    righe.push({ testo: "nessun programma attivo", classe: "valore" });
+    righe.push({ testo: "un programma in bozza non compare qui: lo vedi e lo attivi dal desktop (B.21 PASSO 2b)" });
   }
   if (modello.numeroProgrammi != null) {
     righe.push({ testo: "programmi letti dai documenti-programma: " + modello.numeroProgrammi + " su " + (modello.documentiProgrammi == null ? "?" : modello.documentiProgrammi) + " documenti" });
@@ -209,6 +210,8 @@ export async function avvia(doc, win) {
         programmiNonLetti = true;
       }
       const modello = riepilogoDati({
+        /* B.21 PASSO 2b: il telefono non ripiega su una bozza; il desktop la vede ancora. */
+        escludiBozze: true,
         stato: radice.stato,
         sedute: sedute.sedute,
         documentiSedute: sedute.documenti,
