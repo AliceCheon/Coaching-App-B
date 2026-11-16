@@ -16,7 +16,7 @@
  *  77.4 Esc chiude senza scegliere; la x pure; alla riapertura la ricerca
  *       riparte pulita; nessuna scrittura su localStorage;
  *  77.5 (aggiornata al passo B.2) il pulsante Database esercizi della testa
- *       NON esiste piu' (tolto da Alice: la porta e' «+ Riga»); Libreria Coach resta spenta.
+ *       NON esiste piu' (tolto da Alice: la porta e' «+ Riga»); Libreria Coach spenta non c e piu.
  */
 
 import { test } from "node:test";
@@ -124,8 +124,8 @@ test("77.4 Esc chiude senza scegliere; la x pure; riapertura pulita; nessuna scr
   assert.equal(d.defaultView.localStorage.length, 0);
 });
 
-test("77.5 il pulsante Database esercizi della testa non esiste piu'; Libreria Coach resta spenta", () => {
+test("77.5 il pulsante Database esercizi della testa non esiste piu'; Libreria Coach spenta non c e piu", () => {
   const sorg = readFileSync(join(radice, "comune", "vista-programma.js"), "utf8");
   assert.ok(!/pg-lib pg-lib-db/.test(sorg), "il pulsante Database esercizi in testata e' stato tolto (passo B.2): la porta e' «+ Riga», prova 79");
-  assert.ok(/pulsanteSpento\(doc, "pg-lib pg-lib-c"/.test(sorg), "Libreria Coach deve restare spenta");
+  assert.ok(!/pulsanteSpento\(doc, "pg-lib pg-lib-c"/.test(sorg), "Libreria Coach spenta tolta al PASSO 1");
 });

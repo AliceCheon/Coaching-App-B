@@ -656,8 +656,9 @@ function testata(doc, modifica) {
 
   /* Passo B.2 (12/11/2026): il pulsante Database esercizi della testa e' stato
    * TOLTO da Alice: non serviva piu', ora che anche «+ Riga» apre il selettore.
-   * La porta di aggiunta e' solo «+ Riga» nella barra strumenti. */
-  top.appendChild(pulsanteSpento(doc, "pg-lib pg-lib-c", "\ud83d\udcda Libreria Coach", "apre la Libreria Coach"));
+   * B.21 passo 1 (16/11/2026): tolto anche il «📚 Libreria Coach» spento di qui:
+   * il tasto vero e vivo sta in pg-top (Database esercizi / Libreria Coach).
+   * La porta di aggiunta resta «+ Riga» nella barra strumenti. */
   c.appendChild(top);
   return c;
 }
@@ -720,10 +721,6 @@ function cartaProgramma(doc, r) {
   due.appendChild(campo(doc, "Messaggio per l'atleta (all'apertura)", nomePulito(r.profilo.messaggio), "area"));
   c.appendChild(due);
 
-  const fine = n(doc, "div", "pr-row-end");
-  fine.appendChild(pulsanteSpento(doc, "pr-btn pr-pdf", "⬆ Importa da PDF", "un PDF di scheda diventa una scheda nuova"));
-  fine.appendChild(n(doc, "span", "pr-hint", "Un PDF di scheda già fatta diventa una nuova scheda del programma."));
-  c.appendChild(fine);
   return c;
 }
 
@@ -828,10 +825,6 @@ function cartaStato(doc, r) {
   stato.appendChild(n(doc, "b", "", nomePulito(r.profilo.stato) || NON));
   c.appendChild(stato);
 
-  const vis = n(doc, "div", "pr-vis");
-  vis.appendChild(campo(doc, "Visibile all'atleta dal", "", "data"));
-  vis.appendChild(pulsanteSpento(doc, "pr-btn", "Cambia", "cambia la data di visibilità"));
-  c.appendChild(vis);
 
   const atti = n(doc, "div", "pr-acts");
   atti.appendChild(pulsanteSpento(doc, "pr-btn pri", "Attiva", "mette il programma come attivo"));
@@ -1234,8 +1227,6 @@ function barraStrumenti(doc) {
   cerca.appendChild(n(doc, "span", "pr-hint", "🔍 Cerca"));
   bar.appendChild(cerca);
   bar.appendChild(pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, modificaCorrente)));
-  bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "+ Nuova progressione", "demo", "nuova progressione"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Progressioni", "apre le progressioni"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Periodizzazione", "apre la periodizzazione"));
   bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "Copia/Sposta esercizi", "demo", "copia o sposta esercizi"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));

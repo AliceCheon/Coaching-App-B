@@ -54,3 +54,27 @@ Nessuna modifica di codice. L'elenco dei controlli accesi, spenti e demo della p
 Programma, con quello che nessun test copre sulla pagina vera, sta nella risposta in chat del
 16/11/2026; il passo 1 toglierà i due pulsanti demo, le due pagine «Programma 2» e
 «Programma 3» e — solo se il telefono non li usa — «Cambia» e il campo data di visibilità.
+
+## PASSO 1 (16/11/2026) — via i controlli che non fanno niente
+
+Un commit solo. Nessuna scrittura nuova, nessun dato toccato: si tolgono
+solo bottoni che non facevano niente e una pagina finta. Righe del diff
+vero (`git diff -U0`), prima del taglio:
+
+- `comune/vista-programma.js`
+  - righe 659-660 — commento riscritto + tolto `pulsanteSpento(doc, "pg-lib pg-lib-c", "📚 Libreria Coach")`: il tasto vero (pg-top) resta.
+  - righe 723-726 — tolto il riquadro `pr-row-end` con «⬆ Importa da PDF» e la sua riga di spiegazione.
+  - righe 831-834 — tolto `.pr-vis`: il campo «Visibile all'atleta dal» (finto: `visibleFrom` non esiste in nessun file) e il suo «Cambia».
+  - righe 1237-1238 — tolti «+ Nuova progressione (demo)» e «Progressioni» spento (faceva già lo stesso «Applica progressione a tutta la scheda», vivo).
+- `desktop/index.html`
+  - righe 1580-1581 — tolte le voci di menu «Programma 2» e «Programma 3».
+  - righe 3990-4022 — tolte le due pagine segnaposto `#pag-programma-2` e `#pag-programma-3` (compresi i due `.pa-dyn`).
+
+Restano apposta: «Attiva» (spento: diventa vivo al PASSO 2), il secondo
+«Cambia» della carta (title «cambia il programma»), «Confronta con…»,
+«Copia da Prog…», «⭐ Salva in Libreria», «Copia/Sposta esercizi»,
+«Periodizzazione», «Spiegazioni (4/4)», «Suggerimenti: ON».
+
+Test: `tests/104-pulizia-demo.test.mjs` (5 test sulla pagina vera) +
+`tests/77` aggiornato: non pretende più la Libreria Coach spenta, ora
+pretende che non ci sia.
