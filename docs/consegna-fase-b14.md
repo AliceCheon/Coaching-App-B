@@ -15,7 +15,17 @@ la copia buona sta qui.
 | B.14f | `924b452` | il riepilogo volume legge solo il programmato |
 | B.14g | `04ec5ab` | via il tastino P, la pagina Progressioni dice la verità |
 | B.14h | `36047a5` | la zebra alterna per esercizio |
-| B.14i | questo passo | pulizia (file di servizio, cartelle b0.39, zip), regole aggiornate, archivio, diario corretto, elenco delle 22 pagine |
+| B.14i | `7a45589` | pulizia (file di servizio, cartelle b0.39, zip), regole aggiornate, archivio, diario corretto, elenco delle 22 pagine |
+| B.14l | `0439836` | il nastro del dashboard costruisce il testo a pezzi, via il tag grezzo (span vero, guardia 91) |
+| B.14k | `07ac934` | la Specializzazione conta davvero (contaVolume, stesso switch del Riepilogo volume, nessun programma attivo dichiarato, guardia 92) |
+| B.15 | `4a1b75e` | sostituisci esercizio col tasto cambio (stesso selettore del Database, carichi e righe tecniche restano, una voce di registro, guardia 93) |
+| B.16a | `9dd3039` | superserie — campo sup, tasto anello che collega o scollega collesercizio sotto, barretta rosa sul gruppo, una voce di registro (guardia 94) |
+| B.16a-2 | `c7ffc22` | la superserie si vede — barretta rosa sulla prima cella, icona ripeti del Material, via DX/SX e via la T, spia Test viva (guardia 95) |
+| B.16b | `545f06e` | il gruppo vale una unità nella zebra, tono del gruppo con tinta rosa nei due temi, zebra scura più marcata (guardia 90 e 96) |
+| B.17 | `8de2e0b` | la cornice sfumata avvolge i gruppi delle superserie nei due temi, via barretta e spina rosa (guardia 97) |
+| B.18 | `634270d` | il cerchietto della giunzione fra gli eserciti delle superserie, icona ripeti che ruota (ferma con reduced-motion) |
+| B.19 | `abedc40` | il cerchio rotante della giunzione sta al posto dei bottoni ab-sup quando la sup è attiva, e lì si scollega |
+| B.19b | `c2b9e32` | l'icona del cerchio è centrata con flex, non più spostata a sinistra |
 
 Poi: B.14j (curve di forza) e B.14k (Specializzazione), quindi le fasi
 B.15–B.20.
