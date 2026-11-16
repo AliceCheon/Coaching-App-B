@@ -1684,6 +1684,7 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
   contenitore.appendChild(schede(doc, Object.assign({}, pieno, { prestazioni: r.prestazioni })));
   const scatole = contenitore.querySelectorAll(".p8-scroll");
   for (let i = 0; i < scatole.length; i += 1) corniciScheda(scatole[i]);
+  stampeCollegate(doc, r);
   return contenitore;
 }
 
@@ -1917,3 +1918,291 @@ function apriPannelloTecnica(doc, ancora, scheda, padre, riga, mod) {
   doc.addEventListener("mousedown", chiudi, true);
   return p;
 }
+
+/* ---------- Stampa compatta (passo B.20, richiesta di Alice) -------------- */
+
+/* La stampa NON scrive niente nei dati: legge il programma attivo e costruisce
+ * un contenitore di stampa al clic, tolto dopo (afterprint con ripiego a tempo).
+ * Il CSS vive in desktop/index.html (#bd-stampa + @media print): a schermo il
+ * contenitore non si vede, in stampa escono fogli A4 ORIZZONTALI in bianco e
+ * nero, una pagina per scheda, tutte le settimane in fila. */
+
+const ST_LIMITE_PX = 718; /* A4 orizzontale: 190mm stampabili a 96dpi */
+const ST_CORPO_MAX = 11;  /* corpo iniziale dei fogli, in pt */
+const ST_CORPO_MIN = 7;   /* minimo prima di passare a una seconda pagina */
+const ST_SETUP_MAX = 60;  /* la Descr./Setup si accorcia a 60 caratteri */
+
+/* La Descr./Setup accorciata: conteggio dei caratteri (String.length), taglio
+ * a 60 con ecmds finale sulla parola; se entra, resta intatta. */
+function accorciaSetup(testo, massima) {
+  const t = nomePulito(testo);
+  const max = massima || ST_SETUP_MAX;
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1).replace(/\s+\S*$/, "") + "\u2026";
+}
+
+/* Le etichette delle superserie sulla carta: gruppi di almeno due esercizi vivi
+ * di fila con lo stesso campo sup = SS1, SS2... nell'ordine dello schermo. */
+function etichetteSup(elenco) {
+  const etichette = Object.create(null);
+  const vive = (elenco || []).filter((e) => e && typeof e === "object" && !e.deletedAt && !String(e.padreId || ""));
+  let numero = 0;
+  let k = 0;
+  while (k < vive.length) {
+    const sup = String(vive[k].sup || "");
+    let fine = k + 1;
+    while (fine < vive.length && sup && String(vive[fine].sup || "") === sup) fine += 1;
+    if (sup && fine - k >= 2) {
+      numero += 1;
+      for (let i = k; i < fine; i += 1) etichette[String(vive[i].id || "")] = "SS" + numero;
+    }
+    k = fine;
+  }
+  return etichette;
+}
+
+/* Quante serie prescritte in una cella: il primo numero della cella (3 serie =
+ * 3 caselle); senza numero, una sola. */
+function serieDaCella(testo) {
+  const m = String(testo == null ? "" : testo).match(/\d+/);
+  if (!m) return 1;
+  return Math.min(10, Math.max(1, parseInt(m[0], 10)));
+}
+
+function haTest(perRiga) {
+  return (perRiga || []).some((s) => (nomePulito(s.serie) + " " + nomePulito(s.ripetizioni)).toLowerCase().indexOf("test") !== -1);
+}
+
+/* Un foglio deve stare in UNA pagina: si abbassa il corpo per gradi fino al
+ * minimo di 7pt prima di mandare niente in seconda pagina. */
+function tagliaCorpo(pagina, limite) {
+  let corpo = ST_CORPO_MAX;
+  pagina.style.fontSize = corpo + "pt";
+  while (pagina.scrollHeight > (limite || ST_LIMITE_PX) && corpo > ST_CORPO_MIN) {
+    corpo = Math.max(ST_CORPO_MIN, corpo - 0.5);
+    pagina.style.fontSize = corpo + "pt";
+  }
+  return corpo;
+}
+
+function numeroSettimane(scheda) {
+  return Math.max(8, ...(scheda.esercizi || []).map((e) => ((e.prescrizione && e.prescrizione.elencoSettimane) || []).length));
+}
+
+function dataStampa() {
+  return new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function testaStampa(doc, r, titolo) {
+  const testa = n(doc, "div", "st-testa", "");
+  testa.appendChild(n(doc, "h1", "st-prog", nomePulito(r.profilo && r.profilo.nome) || NON));
+  testa.appendChild(n(doc, "h2", "st-scheda", titolo));
+  testa.appendChild(n(doc, "span", "st-data", "Stampa del " + dataStampa()));
+  return testa;
+}
+
+function rigaCompatta(doc, scheda, e, perRiga, numero, etichettaJs, figlia) {
+  const tr = n(doc, "tr", figlia ? "st-riga st-figlia" : "st-riga", "");
+  tr.appendChild(n(doc, "td", "st-js", etichettaJs));
+  tr.appendChild(n(doc, "td", "st-dist", figlia ? codiceDistretto(e.muscolo) : codiceDistretto(e.muscolo)));
+  const ese = n(doc, "td", "st-ese", "");
+  if (figlia) {
+    ese.appendChild(n(doc, "span", "st-tecnica", "\u21b3 " + nomeTecnicaCorsivo(e.tecnica)));
+  } else {
+    ese.appendChild(n(doc, "span", "st-nome", nomePulito(e.nome)));
+    const setup = accorciaSetup(nomePulito(e.nota));
+    if (setup) ese.appendChild(n(doc, "div", "st-setup", setup));
+    if (haTest(perRiga)) ese.appendChild(n(doc, "span", "st-test", "")).appendChild(n(doc, "i", "", "")).parentNode.appendChild(n(doc, "span", "st-test-parola", "Test"));
+  }
+  tr.appendChild(ese);
+  const recTesto = String((e.prescrizione && e.prescrizione.recupero) || "").trim();
+  const tutTesto = String((e.prescrizione && e.prescrizione.tempo) || "").trim();
+  const recParti = separaRecupero(recTesto);
+  const tutParti = separaTempo(tutTesto);
+  const recMostrato = nomePulito(recParti.valore);
+  const tutMostrato = nomePulito(tutParti.valore);
+  tr.appendChild(n(doc, "td", "st-rec", recMostrato ? recuperoVisibile(recMostrato).testo : "\u2014"));
+  tr.appendChild(n(doc, "td", "st-tut", tutMostrato || "\u2014"));
+  (perRiga || []).forEach((s) => {
+    tr.appendChild(n(doc, "td", "st-ser", nomePulito(s.serie) || "\u2014"));
+    tr.appendChild(n(doc, "td", "st-reps", nomePulito(s.ripetizioni) || "\u2014"));
+  });
+  return tr;
+}
+
+function costruisciCompatta(doc, r, codici) {
+  if (!r || !(r.schede || []).length) return null;
+  const box = n(doc, "div", "st-box", "");
+  (r.schede || []).forEach((scheda) => {
+    if (!scheda || !scheda.codice || codici.indexOf(scheda.codice) === -1) return;
+    const numero = numeroSettimane(scheda);
+    const pagina = n(doc, "div", "st-pagina", "");
+    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "")));
+    const t = n(doc, "table", "st-tab st-compatta", "");
+    const cg = n(doc, "colgroup", "", "");
+    ["st-w-js", "st-w-dist", "st-w-ese", "st-w-rec", "st-w-tut"].forEach(() => cg.appendChild(n(doc, "col", "", "")));
+    for (let i = 0; i < numero; i += 1) { cg.appendChild(n(doc, "col", "", "")); cg.appendChild(n(doc, "col", "", "")); }
+    t.appendChild(cg);
+    const thead = n(doc, "thead", "", "");
+    const rigaH = n(doc, "tr", "", "");
+    ["JS", "DIST.", "ESERCIZIO", "REC.", "TUT"].forEach((testo) => rigaH.appendChild(n(doc, "th", "", testo)));
+    for (let i = 0; i < numero; i += 1) {
+      const th = n(doc, "th", "st-wk", "S" + (i + 1));
+      th.colSpan = 2;
+      rigaH.appendChild(th);
+    }
+    thead.appendChild(rigaH);
+    const rigaH2 = n(doc, "tr", "", "");
+    for (let i = 0; i < numero; i += 1) { rigaH2.appendChild(n(doc, "th", "st-sub", "ser")); rigaH2.appendChild(n(doc, "th", "st-sub", "reps")); }
+    thead.appendChild(rigaH2);
+    t.appendChild(thead);
+    const corpo = n(doc, "tbody", "", "");
+    const etichette = etichetteSup(scheda.esercizi || []);
+    let indice = 0;
+    const tecniche = scheda.tecniche || [];
+    (scheda.esercizi || []).forEach((e) => {
+      if (!e || typeof e !== "object" || e.deletedAt) return;
+      indice += 1;
+      const sett = settimanePerTabella((e.prescrizione && e.prescrizione.elencoSettimane) || [], numero);
+      corpo.appendChild(rigaCompatta(doc, scheda, e, sett, numero, etichette[String(e.id || "")] || (scheda.codice || "") + indice, false));
+      /* le figlie tecniche del padre, sotto il padre, col nome in corsivo */
+      tecniche.forEach((riga) => {
+        if (!riga || String(riga.padreId || "") !== String(e.id || "")) return;
+        const settTecnica = settimanePerTabella(riga.settimane || [], numero);
+        corpo.appendChild(rigaCompatta(doc, scheda, { muscolo: e.muscolo, tecnica: riga.tecnica, prescrizione: { recupero: "", tempo: "", elencoSettimane: riga.settimane || [] } }, settTecnica, numero, "\u21b3", true));
+      });
+    });
+    t.appendChild(corpo);
+    pagina.appendChild(t);
+    box.appendChild(pagina);
+  });
+  return box.children.length ? box : null;
+}
+
+/* Il contenitore di stampa: costruito, attaccato al corpo, ridotto per stare
+ * in pagina, dato in pasto a window.print(), tolto dopo. I dati non cambiano. */
+function eseguiStampa(doc, win, tipo, codici, settimana) {
+  const vecchio = doc.getElementById("bd-stampa");
+  if (vecchio) vecchio.remove();
+  const box = tipo === "compilare"
+    ? costruisciCompilare(doc, stampaRiepilogo, codici, settimana)
+    : costruisciCompatta(doc, stampaRiepilogo, codici);
+  if (!box) return;
+  box.id = "bd-stampa";
+  doc.body.appendChild(box);
+  Array.from(box.querySelectorAll(".st-pagina")).forEach((p) => tagliaCorpo(p, ST_LIMITE_PX));
+  const via = () => {
+    const v = doc.getElementById("bd-stampa");
+    if (v) v.remove();
+    if (win.removeEventListener) win.removeEventListener("afterprint", via);
+  };
+  if (win.addEventListener) win.addEventListener("afterprint", via);
+  if (typeof win.print === "function") win.print();
+  if (win.setTimeout) win.setTimeout(via, 5000);
+}
+
+/* La finestrella di scelta: solo le schede esistenti, spuntata quella aperta
+ * in quel momento; Stampa spento se nessuna spuntata; Annulla chiude (Esc). */
+let stampaRiepilogo = null;
+function apriFinestraStampa(doc, tipo) {
+  const r = stampaRiepilogo;
+  if (!r || !r.profilo || !r.profilo.presente || !(r.schede || []).length) return null;
+  const vecchia = doc.querySelector(".st-finestra");
+  if (vecchia) vecchia.remove();
+  const win = doc.defaultView;
+  const f = n(doc, "div", "st-finestra", "");
+  const carta = n(doc, "div", "st-finestra-carta", "");
+  f.appendChild(carta);
+  carta.appendChild(n(doc, "h3", "st-titolo", tipo === "compilare" ? "Stampa da compilare" : "Stampa compatta"));
+  const aperta = doc.querySelector(".pr-ntab.on");
+  const schedaAperta = aperta && aperta.getAttribute ? String(aperta.getAttribute("data-tab") || "") : "";
+  const scelte = n(doc, "div", "st-scelte", "");
+  (r.schede || []).forEach((scheda) => {
+    if (!scheda || !scheda.codice) return;
+    const et = n(doc, "label", "st-scelta", "");
+    const cb = doc.createElement("input");
+    cb.type = "checkbox";
+    cb.value = scheda.codice;
+    cb.checked = scheda.codice === schedaAperta;
+    et.appendChild(cb);
+    et.appendChild(doc.createTextNode("Scheda " + scheda.codice));
+    scelte.appendChild(et);
+  });
+  carta.appendChild(scelte);
+  let settimana = 1;
+  if (tipo === "compilare") {
+    const et = n(doc, "label", "st-scelta st-settimana", "");
+    et.appendChild(doc.createTextNode("Settimana "));
+    const sel = doc.createElement("select");
+    for (let s = 1; s <= 8; s += 1) {
+      const op = doc.createElement("option");
+      op.value = String(s);
+      op.textContent = "S" + s;
+      sel.appendChild(op);
+    }
+    sel.addEventListener("change", () => { settimana = Number(sel.value); });
+    et.appendChild(sel);
+    carta.appendChild(et);
+  }
+  const azioni = n(doc, "div", "st-azioni", "");
+  const stampa = doc.createElement("button");
+  stampa.type = "button";
+  stampa.className = "st-bottone";
+  stampa.textContent = "Stampa";
+  const annulla = doc.createElement("button");
+  annulla.type = "button";
+  annulla.className = "st-bottone st-annulla";
+  annulla.textContent = "Annulla";
+  const aggiorna = () => { stampa.disabled = Array.from(scelte.querySelectorAll("input")).filter((cb) => cb.checked).length === 0; };
+  scelte.addEventListener("change", aggiorna);
+  aggiorna();
+  stampa.addEventListener("click", () => {
+    const codici = Array.from(scelte.querySelectorAll("input:checked")).map((cb) => cb.value);
+    if (!codici.length) return;
+    f.remove();
+    eseguiStampa(doc, win, tipo, codici, settimana);
+  });
+  annulla.addEventListener("click", () => f.remove());
+  azioni.appendChild(stampa);
+  azioni.appendChild(annulla);
+  carta.appendChild(azioni);
+  doc.body.appendChild(f);
+  return f;
+}
+
+/* Il gancio a fine renderProgramma: tiene l'ultimo riepilogo e collega i due
+ * tasti UNA volta sola per documento. Senza programma attivo i tasti lo dicono
+ * e non aprono niente. */
+function stampeCollegate(doc, r) {
+  stampaRiepilogo = r;
+  const attivo = Boolean(r && r.profilo && r.profilo.presente && (r.schede || []).length);
+  [["pr-print1", "Stampa Compatta"], ["pr-print2", "Stampa da Compilare"]].forEach(([id, etichetta]) => {
+    const b = doc.getElementById(id);
+    if (!b) return;
+    if (!attivo) {
+      b.textContent = etichetta + " \u2014 nessun programma attivo";
+      b.disabled = true;
+    } else {
+      b.textContent = etichetta;
+      b.disabled = false;
+    }
+  });
+  if (doc.__bdStampeVive) return;
+  doc.__bdStampeVive = true;
+  const win = doc.defaultView;
+  const collega = (id, tipo) => {
+    const b = doc.getElementById(id);
+    if (b) b.addEventListener("click", () => apriFinestraStampa(doc, tipo));
+  };
+  collega("pr-print1", "compatta");
+  collega("pr-print2", "compilare");
+  if (win && win.addEventListener) {
+    win.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape" && ev.key !== "Esc") return;
+      const f = doc.querySelector(".st-finestra");
+      if (f) f.remove();
+    });
+  }
+}
+
+export { accorciaSetup, etichetteSup, serieDaCella, tagliaCorpo, apriFinestraStampa, stampeCollegate };

@@ -8,6 +8,44 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - i dati di esempio del Programma attivo non si vedono più (editor statico nascosto); `window.BD_LB_SEED` resta nel file: lo usano le schermate non ancora collegate (Dashboard, Overview, Riepilogo volume…)
 
 ## Le righe cambiate (numeri del file attuale, desktop/index.html)
+: Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
+- righe 40-44
+- righe 46-48
+- righe 75-79
+- righe 81-83
+- righe 1452-1523
+- righe 1575
+- righe 2825
+- righe 2839-2842
+- righe 2856
+- righe 2869
+- righe 2882
+- righe 2953
+- righe 2963
+- righe 3178
+- righe 3179-3178
+- righe 3724
+- righe 3844
+- righe 3986
+- righe 4695
+- righe 4699
+- righe 5852-5860
+- righe 6556
+- righe 6931-6935
+- righe 7886-7885
+- righe 7913-7940
+- righe 7985
+- righe 8031-8030
+- righe 8081-8082
+- righe 8433
+- righe 8590
+- righe 8978-8981
+- righe 9901
+- righe 10631-10640
+- righe 10751
+- righe 10753
+- righe 10755-10754
+- righe 10823-10827
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
 : La sezione Programma 1 apre il contenitore dinamico #programma-attivo e nasconde l'editor statico dentro #programma-strumenti (hidden): i dati di esempio non si vedono più; il resto del blocco resta nel file, intatto.
@@ -744,7 +782,6 @@ Richiesta: prima diagnosi senza modifiche, poi Ctrl+Z identico al pulsante; test
 
 Diagnosi: il pulsante della vista chiama mod.onAnnulla in desktop/app-v31.js, poi editor.annulla(), leggiZonaB(registro) e ultimaAnnullabile. Ctrl+Z era intercettato in window/cattura da doUndo(), con stack/redo e snapshot delle celle data-k; un altro listener document usa annulla() con HIST/REDO. La vista B non usa data-k: nessuna delle due pile storiche legge il registro B.
 
-righe 10582-10593
 Inserite solo sette righe nel gestore storico: con Programma B visibile, Ctrl+Z/Cmd+Z senza Shift/Alt chiama click() sullo stesso button.pg-undo. preventDefault e stopImmediatePropagation evitano sia undo nativo sia i vecchi gestori. Pulsante disabilitato resta inerte, come il clic. Fuori da B, Ctrl+Shift+Z e Ctrl+Y restano sul comportamento storico: non viene introdotto Rifai per B. I numeri dei blocchi successivi sono aggiornati di sette righe; pc/index.html resta congelato.
 
 In desktop/app-v31.js, dopo un salvataggio riuscito, lo stato disabled del pulsante viene riallineato a editor.annullabile, senza ridisegnare. La prova ha evidenziato che dopo aver esaurito gli annullamenti e modificato una cella il pulsante altrimenti restava disabilitato. Nessuna modifica al modello, al CSS o alle funzioni di scrittura; nessun accesso ai dati reali.
@@ -1220,37 +1257,13 @@ Fra due esercizi collegati della superserie, sul punto di contatto, un cerchiett
 ## B.19 \u2014 il cerchio al posto dei bottoni (14 novembre)
 
 Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spariscono (visibility:hidden, misura in riga) e al loro posto sta il cerchio rotante della giunzione: centro orizzontale sull'ultimo bottone della riga di sopra, sempre centrato sulla linea di confine. Cliccabile come il bottone che sostituisce: role button, titolo, stesso onCambia, quindi lo scollegamento si fa dal cerchio stesso. Fuori dal gruppo (sup non attiva) i bottoni tornano come sempre.
-- righe 40-44
-- righe 46-48
-- righe 75-79
-- righe 81-83
-- righe 1453-1496
-- righe 1547
-- righe 2797
-- righe 2811-2814
-- righe 2828
-- righe 2841
-- righe 2854
-- righe 2925
-- righe 2935
-- righe 3150-3151
-- righe 3696
-- righe 3816
-- righe 3958
-- righe 4667
-- righe 4671
-- righe 5824-5832
-- righe 6528
-- righe 6903-6907
-- righe 7857-7858
-- righe 7885-7912
-- righe 7957
-- righe 8002-8003
-- righe 8053-8054
-- righe 8405
-- righe 8562
-- righe 9870
-- righe 10600-10609
-- righe 10720
-- righe 10722-10724
-- righe 10792-10796
+
+## Passo B.20 — 16 novembre 2026 · la Stampa Compatta vive (finestra di scelta, foglio A4 orizzontale in bianco e nero)
+
+- I due tasti di stampa non sono piu' decorativi: «Stampa Compatta» apre la finestrella con le sole schede esistenti del programma attivo, spuntata solo quella aperta in quel momento; «Stampa» resta spento finche' nessuna spuntata, «Annulla» (ed Esc) chiude. «Stampa da Compilare» resta col comportamento vecchio finche' il passo B.20b lo raccoglie.
+- La finestra non scrive niente nei dati: al clic su «Stampa» si costruisce `#bd-stampa`, un contenitore a parte figlio diretto del corpo, si da' in pasto a `window.print()` e si toglie dopo (`afterprint`, con ripiego a tempo). Il confronto del riepilogo prima/dopo e' guardia nei test.
+- Il foglio: A4 orizzontale (`@page`), una pagina per scheda, tutte le settimane in fila (colonne JS, DIST., ESERCIZIO, REC., TUT, poi SER/REPS per S1..S8). Descr./Setup accorciata a 60 caratteri con puntini (conteggio dei caratteri: oltre 60 si taglia sulla parola). Superserie = etichette SS1, SS2 nella colonna JS (gruppi di almeno due di fila con lo stesso campo sup, ordine dello schermo); la figlia tecnica resta sotto il padre con la freccetta e il nome in corsivo; la spia Test compare anche in carta.
+- Il foglio che non ci sta si stringe per gradi da 11pt fino a 7pt prima di mandare niente in seconda pagina (altezza stampabile 190mm a 96dpi = 718px).
+- Bianco e nero anche col tema scuro: in `@media print` il resto della pagina si nasconde e il contenitore prende fondo bianco e inchiostro nero; niente sfumature ne' immagini di sfondo. Nessuna forzatura di CSS: il contenitore sta fuori dalla gerarchia della pagina, le regole del blocco di stampa non hanno rivali.
+- Senza programma attivo i tasti dicono «nessun programma attivo» e non aprono niente.
+- Prove: `tests/99-stampa-compatta.test.mjs`, 8 controlli (finestra, foglio con S1..S8, accorciamento, SS e figlia, spia Test, riduzione a 7pt, tasti spenti senza programma, bianco e nero nel foglio).
