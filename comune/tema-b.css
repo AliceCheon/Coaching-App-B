@@ -731,3 +731,12 @@ body[data-theme="light"] .bd-diva[data-tono] .bd-figura {
 /* Sul telefono la Diva sta un filo più vicina al bordo, ma sempre fuori dal
    flusso: sotto di lei ci sono i 250 px di respiro di `.maino`. */
 @media (max-width:980px){ .diva { right: 14px; bottom: 12px; } }
+
+/* B.21 — il riquadro di conferma dei comandi distruttivi: sta DENTRO la pagina
+ * (niente window.confirm), col tasto rosso a destra e «Annulla» a sinistra. */
+.pr-conf { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--bd-bordo, #d8d2c4); border-radius: 12px; background: var(--bd-carta, #fbf9f4); }
+.pr-conf-titolo { margin: 0 0 6px; font-weight: 700; }
+.pr-conf p { margin: 0 0 6px; line-height: 1.35; }
+.pr-conf-avviso { font-size: .86em; opacity: .75; }
+.pr-conf-fila { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.pr-conf-fila .pr-btn { min-width: 92px; }

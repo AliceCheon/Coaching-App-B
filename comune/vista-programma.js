@@ -1254,9 +1254,14 @@ function barraStrumenti(doc) {
   });
   bar.appendChild(btProgScheda);
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Salva come scheletro", "salva la scheda come scheletro"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn danger", "Svuota tutto il programma", "svuota tutto il programma"));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "↺ ripristina scheda", "riporta la scheda a com'era"));
+  /* B.21 — i tre comandi dell'igiene: vivi, ma nessuno scrive senza un
+   * secondo clic nel riquadro qui sotto. */
+  const btSvuota = pulsanteVivo(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda", () => apriSvuotaScheda(doc, btSvuota));
+  bar.appendChild(btSvuota);
+  const btSvuotaTutto = pulsanteVivo(doc, "pr-btn danger", "Svuota tutto il programma", "svuota tutto il programma", () => apriSvuotaProgramma(doc, btSvuotaTutto));
+  bar.appendChild(btSvuotaTutto);
+  const btRipristina = pulsanteVivo(doc, "pr-btn", "↺ ripristina scheda", "riporta la scheda a com'era all'apertura", () => apriRipristinaScheda(doc, btRipristina));
+  bar.appendChild(btRipristina);
   return bar;
 }
 
@@ -2351,3 +2356,148 @@ function stampeCollegate(doc, r) {
 }
 
 export { accorciaSetup, etichetteSup, serieDaCella, tagliaCorpo, apriFinestraStampa, stampeCollegate };
+
+/* ---------- B.21 · l'igiene della scheda -------------------------------- */
+
+/* L'id della scheda a cui appartiene un tasto: si cerca la tabella più
+ * vicina salendo, così nessuno deve passare l'id dalla barra. */
+function idSchedaVicino(bottone) {
+  let nodo = bottone;
+  for (let i = 0; i < 8 && nodo; i += 1) {
+    if (nodo.querySelector) {
+      const t = nodo.querySelector(".p8-tab[data-scheda]");
+      if (t) return String(t.getAttribute("data-scheda") || "");
+    }
+    nodo = nodo.parentNode;
+  }
+  return "";
+}
+
+function quanti(n, singolare, plurale) {
+  return (Number(n) === 1 ? "1 " + singolare : String(n) + " " + plurale);
+}
+
+function chiudiConferma(box) {
+  if (box && box.parentNode) box.parentNode.removeChild(box);
+}
+
+/* Il riquadro di conferma DENTRO la pagina: niente window.confirm. Il fuoco
+ * parte da «Annulla» e Invio non conferma niente: si conferma solo col
+ * clic sul tasto rosso. Esc chiude. */
+function chiediConferma(doc, opzioni) {
+  const o = opzioni || {};
+  const bottone = o.bottone;
+  const barra = bottone && bottone.parentNode ? bottone.parentNode : null;
+  if (!barra) return null;
+  const vecchio = barra.querySelector(".pr-conf");
+  if (vecchio) chiudiConferma(vecchio);
+  const box = n(doc, "div", "pr-conf");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", o.titolo || "conferma");
+  if (o.titolo) box.appendChild(n(doc, "p", "pr-conf-titolo", o.titolo));
+  (Array.isArray(o.righe) ? o.righe : []).forEach((riga) => box.appendChild(n(doc, "p", "", riga)));
+  if (o.avviso) box.appendChild(n(doc, "p", "pr-conf-avviso", o.avviso));
+  const fila = n(doc, "div", "pr-conf-fila");
+  const annulla = pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => {
+    chiudiConferma(box);
+    if (typeof o.onAnnulla === "function") o.onAnnulla();
+  });
+  annulla.setAttribute("data-igiene", "annulla");
+  fila.appendChild(annulla);
+  if (o.conferma) {
+    const conferma = pulsanteVivo(doc, "pr-btn" + (o.rosso ? " danger" : ""), o.conferma, o.titolo || "conferma", () => {
+      chiudiConferma(box);
+      if (typeof o.onConferma === "function") o.onConferma();
+    });
+    conferma.setAttribute("data-igiene", o.segno || "conferma");
+    fila.appendChild(conferma);
+  }
+  box.appendChild(fila);
+  box.addEventListener("keydown", (ev) => {
+    if (!ev) return;
+    if (ev.key === "Enter" || ev.keyCode === 13) { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); return; }
+    if (ev.key === "Escape" || ev.keyCode === 27) { if (ev.preventDefault) ev.preventDefault(); chiudiConferma(box); }
+  });
+  barra.appendChild(box);
+  if (annulla.focus) annulla.focus();
+  return box;
+}
+
+function senzaEditor(doc, bottone) {
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Questa scheda non si può ancora svuotare",
+    righe: ["La pagina non ha un editor collegato a questa scheda: non ho fatto niente."],
+    conferma: "Chiudi"
+  });
+}
+
+function apriSvuotaScheda(doc, bottone) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  const id = idSchedaVicino(bottone);
+  const c = typeof mod.conta === "function" ? mod.conta(id) : null;
+  if (c && !c.righe) {
+    chiediConferma(doc, {
+      bottone: bottone,
+      titolo: "Scheda già vuota",
+      righe: ["La scheda " + (c.codice || "") + " non ha nessun esercizio da togliere: non ho scritto niente."],
+      conferma: "Chiudi"
+    });
+    return;
+  }
+  const codice = (c && c.codice) || "questa scheda";
+  const conto = c ? (quanti(c.esercizi, "esercizio", "esercizi") + " e " + quanti(c.tecniche, "riga tecnica", "righe tecnica")) : "";
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Svuota la scheda",
+    righe: ["Svuoti la scheda " + codice + (conto ? ": " + conto : "") + "?"],
+    avviso: "Puoi annullare solo finché questa pagina resta aperta.",
+    conferma: "Svuota",
+    rosso: true,
+    segno: "svuota",
+    onConferma: () => mod.onCambia({ idScheda: id, campo: "svuota-scheda" })
+  });
+}
+
+function apriSvuotaProgramma(doc, bottone) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.svuotaProgramma !== "function") { senzaEditor(doc, bottone); return; }
+  const c = typeof mod.conta === "function" ? mod.conta("") : null;
+  if (c && !c.schede) {
+    chiediConferma(doc, {
+      bottone: bottone,
+      titolo: "Programma già vuoto",
+      righe: ["Nessuna scheda ha esercizi da togliere: non ho scritto niente."],
+      conferma: "Chiudi"
+    });
+    return;
+  }
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Svuota tutto il programma",
+    righe: ["Svuoti il programma: " + (c ? (quanti(c.schede, "scheda", "schede") + ", " + quanti(c.esercizi, "esercizio", "esercizi") + ", " + quanti(c.tecniche, "riga tecnica", "righe tecnica")) : "") + "?"],
+    avviso: "Puoi annullare solo finché questa pagina resta aperta.",
+    conferma: "Svuota",
+    rosso: true,
+    segno: "svuota-programma",
+    onConferma: () => mod.svuotaProgramma()
+  });
+}
+
+function apriRipristinaScheda(doc, bottone) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  const id = idSchedaVicino(bottone);
+  const c = typeof mod.conta === "function" ? mod.conta(id) : null;
+  const codice = (c && c.codice) || "questa scheda";
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Ripristina la scheda",
+    righe: ["Riporti la scheda " + codice + " a com'era quando hai aperto la pagina? " + (c ? ("Perdi " + quanti(c.modifiche, "modifica", "modifiche") + ".") : "")],
+    avviso: "Puoi annullare solo finché questa pagina resta aperta.",
+    conferma: "Ripristina",
+    segno: "ripristina",
+    onConferma: () => mod.onCambia({ idScheda: id, campo: "ripristina-scheda" })
+  });
+}

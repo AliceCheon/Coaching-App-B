@@ -400,6 +400,12 @@ export async function avvia(doc, win) {
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
   let editorCorrente = null;
+  /* B.21 — la fotografia di APERTURA delle schede: si prende una volta sola,
+   * alla prima lettura riuscita della sessione, e non si rinfresca più.
+   * Dopo ogni scrittura la pagina rilegge (sincronizza -> leggi): se la
+   * fotografia si aggiornasse, coinciderebbe sempre con lo stato attuale e
+   * «Ripristina scheda» non farebbe mai niente. */
+  const aperturaSchede = Object.create(null);
   const stato = (win.BD_B_STATO = win.BD_B_STATO || { ridisegni: 0, letture: 0, rimandati: 0, impronta: null });
 
   const leggi = async (utente, opzioni) => {
@@ -429,6 +435,22 @@ export async function avvia(doc, win) {
     const schedeGrezze = await leggiZonaB(db, utente.uid, "schede");
     const registroB = await leggiZonaB(db, utente.uid, "registro");
     const fotografiaB = await leggiFotografia(db, utente.uid);
+    /* B.21 — la fotografia di apertura, presa adesso se manca. Chi c'e' non
+     * si tocca: la prima vince, per tutta la sessione. */
+    (Array.isArray(schedeGrezze) ? schedeGrezze : []).forEach((d) => {
+      const id = String((d && d.id) || "");
+      if (!id || aperturaSchede[id] !== undefined) return;
+      const dati = (d && d.dati) || {};
+      const f = dati.sheet && typeof dati.sheet === "object" ? dati.sheet : null;
+      if (!f) return;
+      const chiave = Array.isArray(f.exercises) ? "exercises" : (Array.isArray(f.esercizi) ? "esercizi" : "");
+      if (!chiave) return;
+      aperturaSchede[id] = {
+        scheda: String(f.code || f.codice || f.letter || f.id || ""),
+        elenco: JSON.parse(JSON.stringify(f[chiave])),
+        quando: new Date().toISOString()
+      };
+    });
     /* Passo 16 — l'impronta dei dati letti: se e' la stessa che sta a schermo
      * non c'e' niente da ridisegnare (ed e' il caso normale di un giro di
      * sessione o di un controllo dopo un salvataggio). */
@@ -447,6 +469,7 @@ export async function avvia(doc, win) {
       uid: utente.uid,
       documenti: schedeGrezze,
       fotografia: fotografiaB,
+      fotografiaApertura: aperturaSchede,
       ultimaVoce: ultimaAnnullabile(registroB)
     });
     editorCorrente = editor;
@@ -511,6 +534,22 @@ export async function avvia(doc, win) {
       modifica: {
         attivo: true,
         annullabile: editor.annullabile,
+        /* B.21 — i conti per la conferma e lo svuotamento del programma. */
+        conta: (idScheda) => editor.conta(idScheda),
+        svuotaProgramma: () => {
+          modificheInVolo += 1;
+          return editor.svuotaProgramma().then((esito) => {
+            modificheInVolo -= 1;
+            segnalaModifica(esito.ok
+              ? "programma svuotato \u00b7 " + esito.quanto.schede + " schede, " + esito.quanto.esercizi + " esercizi, " + esito.quanto.tecniche + " righe tecnica"
+              : (esito.motivo || "non ho scritto niente"), esito.ok ? "ok" : "errore");
+            return sincronizza(utente, { forza: true, motivo: "igiene" });
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("svuotamento non riuscito: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "igiene non riuscita" });
+          });
+        },
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
@@ -560,7 +599,7 @@ export async function avvia(doc, win) {
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
              * senza rileggere, a schermo non cambierebbe niente. */
-            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie")) {
+            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie" || richiesta.campo === "svuota-scheda" || richiesta.campo === "ripristina-scheda")) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };

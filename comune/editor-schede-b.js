@@ -36,6 +36,7 @@ import {
   scriviTecnica,
   rimuoviTecnica
 } from "./modifiche-b.js";
+import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -98,6 +99,9 @@ export function creaEditorSchede(opzioni) {
   const SCADENZA_MS = Number(o.scadenzaVoceMs) || 8000;
   const versioni = Object.create(null);
   const documenti = Array.isArray(o.documenti) ? o.documenti : [];
+  /* B.21 — la fotografia di APERTURA: la prende app-v31 alla prima lettura
+   * della sessione e non la rinfresca più. Qui si legge soltanto. */
+  const apertura = o.fotografiaApertura && typeof o.fotografiaApertura === "object" ? o.fotografiaApertura : Object.create(null);
   const mappe = mappaSchede(documenti);
   const perIdScheda = mappe.perId;
   const doppiScheda = mappe.doppi;
@@ -209,6 +213,11 @@ export function creaEditorSchede(opzioni) {
         esito = sostituisciEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "superserie") {
         esito = cambiaSuperserie(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "svuota-scheda") {
+        esito = svuotaScheda(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "ripristina-scheda") {
+        const foto = apertura[idScheda] && Array.isArray(apertura[idScheda].elenco) ? apertura[idScheda].elenco : null;
+        esito = ripristinaScheda(letto.dati, Object.assign({}, r, { fotografia: foto }), { quando: quando(), uid: uid });
       } else {
         return { ok: false, motivo: "campo non riconosciuto: non ho scritto niente" };
       }
@@ -249,6 +258,9 @@ export function creaEditorSchede(opzioni) {
         ultima = null;
         return { ok: false, motivo: "non c'e' nessuna modifica da annullare" };
       }
+      /* B.21 — una voce che tocca più schede (svuota il programma): si
+       * rimettono tutte, e il registro prende una voce sola anche qui. */
+      if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
       const idScheda = documentoScheda(voce.scheda);
       if (!idScheda) {
         return { ok: false, motivo: "la voce del registro non porta a una scheda di B · " + schedaNonTrovata(voce.scheda) };
@@ -302,8 +314,103 @@ export function creaEditorSchede(opzioni) {
     });
   }
 
+  /* Il conto che si legge nella conferma. Senza id: tutto il programma. */
+  function conta(idScheda) {
+    const k = String(idScheda == null ? "" : idScheda).trim();
+    if (k) {
+      const idDoc = documentoScheda(k);
+      const d = documenti.filter((x) => x && String(x.id || "") === idDoc)[0] || null;
+      return contaScheda(d ? d.dati : null, apertura[idDoc] || null);
+    }
+    const tot = { codice: "", schede: 0, esercizi: 0, tecniche: 0, righe: 0, modifiche: 0 };
+    documenti.forEach((x) => {
+      const c = contaScheda(x && x.dati, apertura[String((x && x.id) || "")] || null);
+      if (!c.righe) return;
+      tot.schede += 1;
+      tot.esercizi += c.esercizi;
+      tot.tecniche += c.tecniche;
+      tot.righe += c.righe;
+      tot.modifiche += c.modifiche;
+    });
+    return tot;
+  }
+
+  /* «Svuota tutto il programma»: una voce sola per tutte le schede. Se una
+   * scrittura si ferma a metà lo dice e non scrive la voce: le schede già
+   * svuotate restano senza annulla, e questo si dichiara invece di tacere. */
+  function svuotaProgrammaIntero() {
+    return coda.esegui("registro", async () => {
+      const quandoOra = quando();
+      const letti = [];
+      for (let i = 0; i < documenti.length; i += 1) {
+        const id = String((documenti[i] && documenti[i].id) || "");
+        if (!id) continue;
+        const letto = await leggiSchedaB(db, uid, id);
+        if (letto && letto.esiste) letti.push({ id: id, dati: letto.dati });
+      }
+      const esito = svuotaProgramma(letti, {}, { quando: quandoOra, uid: uid });
+      if (!esito.ok) return esito;
+      const scritte = [];
+      for (let i = 0; i < esito.schede.length; i += 1) {
+        const t = esito.schede[i];
+        try {
+          await conScadenza(salvaSchedaConVersione(db, uid, t.documento, t.dati, t.versionePrima), "la scrittura della scheda");
+        } catch (e) {
+          return { ok: false, motivo: (e && e.message ? e.message : "scrittura non riuscita") + " · fermato dopo " + scritte.length + " schede su " + esito.schede.length + ": la voce di registro non e' scritta" };
+        }
+        versioni[t.documento] = versioneDi(t.dati);
+        scritte.push(t.documento);
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      ultima = esito.voce;
+      return { ok: true, voce: esito.voce, quanto: esito.quanto, avvisoRegistro: avvisoVoce };
+    });
+  }
+
+  /* L'annulla di una voce che tocca più schede. */
+  async function annullaPiuSchede(voce) {
+    const quandoOra = quando();
+    const scritte = [];
+    for (let i = 0; i < voce.schede.length; i += 1) {
+      const s = voce.schede[i];
+      const letto = await leggiSchedaB(db, uid, s.documento);
+      if (!letto || !letto.esiste) continue;
+      const esito = annullaModifica(letto.dati, { tipo: "svuota-programma", prima: s.prima, idVoce: voce.idVoce, scheda: s.scheda, campo: "scheda" }, { quando: quandoOra, uid: uid });
+      if (!esito.ok) continue;
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, s.documento, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      versioni[s.documento] = versioneDi(esito.dati);
+      scritte.push(s.documento);
+    }
+    if (!scritte.length) return { ok: false, motivo: "non c'e' nessuna scheda da rimettere com'era" };
+    const voceNuova = {
+      idVoce: idVoceRegistro(quandoOra),
+      quando: quandoOra,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(voce.idVoce || ""),
+      scheda: "",
+      codice: "",
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "programma",
+      prima: null,
+      dopo: null,
+      dopoTesto: "programma rimesso com'era"
+    };
+    const avvisoVoce = await scriviVoceSicura(voceNuova);
+    ultima = voceNuova;
+    return { ok: true, voce: voceNuova, quante: scritte.length, avvisoRegistro: avvisoVoce };
+  }
+
   return {
     attivo: true,
+    conta: conta,
+    svuotaProgramma: svuotaProgrammaIntero,
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,

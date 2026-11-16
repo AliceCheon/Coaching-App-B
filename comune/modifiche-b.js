@@ -122,7 +122,7 @@ export function foglioDi(dati) {
 
 /* La chiave dell'elenco esercizi: A usa "exercises", i documenti vecchi
  * "esercizi". Si legge quella che c'e', non si inventa. */
-function chiaveEsercizi(foglio) {
+export function chiaveEsercizi(foglio) {
   if (Array.isArray(foglio.exercises)) return "exercises";
   if (Array.isArray(foglio.esercizi)) return "esercizi";
   return "";
@@ -514,7 +514,7 @@ function scriviCoppie(esercizio, coppie) {
 }
 
 /* Il documento nuovo: una versione in piu' e il marchio che ferma la Copia. */
-function chiudiDocumento(dati, foglio, chiave, elenco, quando, uid, ultima) {
+export function chiudiDocumento(dati, foglio, chiave, elenco, quando, uid, ultima) {
   const nuovoFoglio = Object.assign({}, foglio);
   nuovoFoglio[chiave] = elenco;
   const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio });
@@ -534,7 +534,7 @@ function indicePerId(elenco, id) {
 /* Fase 1 — la riga figlia della tecnica. E' legata al padre SOLO da padreId:
  * niente nome, niente distretto. Nei conti NON esiste, con la progressione
  * NON si mescola: se la tocchiamo e' un errore, non un campo vuoto. */
-function eFigliaTecnica(e) {
+export function eFigliaTecnica(e) {
   return Boolean(e) && typeof e === "object"
     && (e.tipo === "tecnica" || (e.padreId != null && String(e.padreId) !== ""));
 }
@@ -1106,6 +1106,13 @@ export function annullaModifica(dati, voce, opzioni) {
   const o = opzioni || {};
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
   const tipo = testo(v.tipo);
+  /* B.21 — i comandi dell'igiene portano l'elenco INTERO di prima:
+   * l'annullamento lo rimette in blocco, una volta sola, e con lui tornano
+   * esercizi, righe figlie della tecnica, superserie e le otto settimane
+   * (che stanno dentro le righe). */
+  if (tipo === "svuota-scheda" || tipo === "ripristina-scheda" || tipo === "svuota-programma") {
+    return rimettiElenco(dati, v, quando, o.uid);
+  }
   /* Passo 20: progressione di una riga, riga tolta, progressione di scheda. */
   if (tipo === "modifica-progressione" || tipo === "modifica-progressione-scheda" || tipo === "cancella-riga" || tipo === "aggiunta-riga" || tipo === "modifica-tecnica") {
     return annullaProgressione(dati, v, quando, o.uid);
@@ -1516,4 +1523,37 @@ export function rimuoviTecnica(dati, richiesta, opzioni) {
     versioneDopo: nuovo.versione
   };
   return { ok: true, dati: nuovo, voce: voce };
+}
+
+/* --- B.21 · l'annullamento dell'igiene ---------------------------------- */
+
+/* La voce porta `prima` = l'elenco intero com'era. Qui si rimette quello e
+ * nient'altro: una voce nuova cita quella annullata, la storia resta intera. */
+function rimettiElenco(dati, voce, quando, uid) {
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const prima = Array.isArray(voce.prima) ? voce.prima : null;
+  if (!prima) return { ok: false, motivo: "la voce del registro non porta l'elenco di prima" };
+  const nuovo = chiudiDocumento(dati, f, chiave, prima, quando, uid, "riga");
+  const voce2 = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "annulla-modifica",
+    origine: "annullamento-in-B",
+    annullaDi: String(voce.idVoce || ""),
+    scheda: testo(voce.scheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "scheda",
+    prima: null,
+    dopo: null,
+    dopoTesto: "scheda rimessa com'era",
+    versionePrima: versioneDi(dati),
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce2 };
 }
