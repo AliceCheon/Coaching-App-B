@@ -2128,6 +2128,7 @@ function apriFinestraStampa(doc, tipo) {
     et.appendChild(doc.createTextNode("Scheda " + scheda.codice));
     scelte.appendChild(et);
   });
+  if (!scelte.querySelector("input:checked")) { const prima = scelte.querySelector("input"); if (prima) prima.checked = true; }
   carta.appendChild(scelte);
   let settimana = 1;
   if (tipo === "compilare") {

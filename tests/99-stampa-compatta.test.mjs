@@ -164,3 +164,17 @@ test("99.8 la stampa esce in bianco e nero anche col tema scuro: @media print fo
   assert.ok(foglio.indexOf("color: #000000") !== -1, "testo nero");
   assert.ok(foglio.indexOf("size: A4 landscape") !== -1, "A4 orizzontale");
 });
+
+test("99.9 senza linguetta aperta la prima scheda parte spuntata: Stampa acceso subito", () => {
+  const s = schermoCon([
+    schedaDoc("A", [ESE("Rematore bilanciere")]),
+    schedaDoc("B", [ESE("Trazioni")])
+  ], "");
+  const b = s.doc.getElementById("pr-print1");
+  b.click();
+  const f = s.doc.querySelector(".st-finestra");
+  assert.ok(f, "la finestra si apre");
+  const spunte = Array.from(f.querySelectorAll("input[type=checkbox]"));
+  assert.deepEqual(spunte.map((c) => c.checked), [true, false], "la prima scheda parte spuntata");
+  assert.equal(f.querySelector(".st-bottone").disabled, false, "Stampa acceso subito");
+});
