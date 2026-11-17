@@ -789,3 +789,5 @@ td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
   color:#c9a7ff;border:1px solid color-mix(in srgb,#c9a7ff 70%,transparent);
   border-radius:5px;padding:0 4px;margin-left:6px;opacity:.9}
 body[data-theme="light"] .pr-arrivo{color:#7b4bbf;border-color:#7b4bbf;opacity:1;font-weight:800}
+/* Passo 3b: la riga che il filtro per distretto nasconde. */
+.f-nascosta{display:none}

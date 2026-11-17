@@ -243,3 +243,41 @@ Questa e' la decisione di Alice sulla versione telefono, scritta una volta e val
 
 **Quello che non ho guardato.** Non ho aperto la pagina a occhio: la prova e' sulla pagina vera caricata nei test (`desktop/index.html`), non su uno screenshot. Il lilla della pillola sul tema chiaro e' scritto in `dashboard-b.css` ma non l'ho visto renderizzato.
 
+## PASSO 3b (17/11/2026) — le pillole dei distretti, e le sigle giuste
+
+**Le sigle (decisione di Alice).** La tabella che traduce in sigla il distretto scritto nella scheda (`codiceDistretto`, in `comune/vista-programma.js`) cambia in tre punti:
+
+| Distretto | Prima | Adesso |
+|---|---|---|
+| Polpacci | `C` | **`Z`** |
+| Adduttori | `—` (non tradotto) | **`Q`** |
+| Tricipiti | `T` | `T`, invariato |
+| Cardio | `CA` | `CA`, invariato |
+| Femorali | `E` | `E`, invariato |
+
+Gli altri restano come prima: `P`, `D`, `CS`, `Q`, `S`, `G`, `B`, `A`. La parola «gambe» continua a finire in `Q`: è la trappola che avevi segnalato, non l'ho toccata.
+
+**Adduttori: sigla `Q`, volume separato.** La sigla li unisce ai quadricipiti nella colonna DIST. e nella pillola, ma **nel motore restano un distretto a sé**: `comune/muscoli-b.js` li conosce come muscolo e `comune/volume-b.js` raggruppa per **nome** del distretto, non per sigla. Quindi **nel Riepilogo volume compaiono come riga separata**, non dentro i Quadricipiti. Quando deciderai di unirli anche nei conteggi si cambia il motore: oggi non l'ho toccato, come avevi chiesto.
+
+**Dove stava `C` come sigla dei polpacci** (grep su tutto il repo):
+
+| File | Riga | Cosa |
+|---|---|---|
+| `comune/vista-programma.js` | 949 | `[["polpacci", "polpaccio", "calf"], "C"]` → `"Z"` |
+| `comune/vista-programma.js` | 937 | commento della tabella: «C Polpacci» → «Z Polpacci» |
+| `tests/41-settimane-tabella.test.mjs` | 90 | l'assert si aspettava `"C"` → ora `"Z"`, più due assert nuovi per gli adduttori |
+
+Tutti gli altri «C» del repo sono codici di **scheda** (la rotazione A/B/C/D) o nomi di test: non c'entrano. «C» non era usata nemmeno per il core: il core finisce in `A` (addominali).
+
+**`desktop/index.html`: nessuna riga cambiata.** Non è un file che ho toccato: la sigla della colonna la decide `codiceDistretto` in `comune/vista-programma.js`. Il foglio del v31 ha già la regola di colore `[data-cod="Z"]` (riga 959) e non ne ha una per `C`, quindi la sigla nuova cade su un colore che esisteva già.
+
+**Le pillole.** «Tutti» più una pillola per **ogni sigla presente nella scheda aperta**, in **ordine di prima comparsa** (la pillola del primo esercizio è la prima), con il tooltip che dice il nome intero («Polpacci», «Tricipiti», «Quadricipiti», «Cardio»…). La pillola `Q` prende anche gli adduttori, che portano la stessa sigla. La riga con un distretto che l'app non sa tradurre prende la pillola `—` col tooltip «distretto non riconosciuto». **Nessuna pillola per una sigla che in scheda non ha esercizi.** Al cambio scheda le pillole si ricostruiscono e si riparte da «Tutti».
+
+**Il filtro.** È solo una classe (`f-nascosta`) messa sulle righe: i dati non si toccano. Le figlie tecniche seguono il padre (portano la sua sigla nel `td.c-dist`), la **zebra si ricalcola su quello che si vede**, e la **cornice della superserie resta solo se il gruppo si vede tutto** — gruppo spezzato, niente cornice. La stampa è un'altra finestra e ricostruisce le righe dai dati: resta quella di prima.
+
+**I test.** `tests/109-filtro-distretti.test.mjs`, 8 test: scheda con 3 distretti = «Tutti» + 3 pillole in ordine; polpacci con `Z` in colonna e pillola `Z` che filtra; adduttori con `Q` che si vedono con la pillola `Q` insieme ai quadricipiti; riga non riconosciuta con la pillola `—`; filtro che nasconde le righe giuste comprese le figlie tecniche; zebra ricalcolata; cornice solo col gruppo intero; dati interi e stampa intatta.
+
+**Suite.** TOTALE FALLITO pass 23 fail 0 file 4/86 . fette mancanti: veloce1-1 veloce1-2 veloce1-3 veloce1-4 veloce1-5 veloce2-1 veloce2-2 veloce2-3 veloce2-4 veloce2-5 6x-1 6x-2 6x-3 6x-4 6x-5 7x-1 7x-2 7x-3.
+
+**Quello che non ho guardato.** Non ho aperto la pagina a occhio: la prova è sulla pagina disegnata nei test, non su uno screenshot. La cornice ridisegnata dopo il filtro non l'ho vista a schermo: ho verificato che le righe del gruppo perdano e riprendano i segni `in-sup`/`z-gruppo`, che sono quelli da cui la cornice nasce.
+

@@ -932,7 +932,7 @@ function apriConfermaBozza(doc, bottone, r) {
 
 /* I codici del distretto sono quelli del Database esercizi del v31:
  * D Dorsali · CS Centro schiena · S Spalle · G Glutei · E Femorali ·
- * B Bicipiti · T Tricipiti · P Petto · Q Quadricipiti · C Polpacci ·
+ * B Bicipiti · T Tricipiti · P Petto · Q Quadricipiti e adduttori · Z Polpacci ·
  * A Addominali · CA Cardio. Il documento di B porta il nome del gruppo, non la
  * lettera: si traduce con questa tabella, e quello che non si riconosce resta
  * un trattino invece di una lettera inventata. */
@@ -945,8 +945,9 @@ const DISTRETTI = [
   [["bicipiti", "bicipite", "brachiali", "brachiale"], "B"],
   [["tricipiti", "tricipite"], "T"],
   [["pettorali", "pettorale", "petto"], "P"],
+  [["adduttori", "adduttore"], "Q"],
   [["quadricipiti", "quadricipite", "gambe"], "Q"],
-  [["polpacci", "polpaccio", "calf"], "C"],
+  [["polpacci", "polpaccio", "calf"], "Z"],
   [["addominali", "addominale", "addome", "core"], "A"],
   [["cardio"], "CA"]
 ];
@@ -1099,6 +1100,7 @@ function tabellaEsercizi(doc, scheda, r) {
      * (B.16) bastera' calcolare il tono dall'indice del gruppo. */
     const tono = unita[indice] % 2 === 0 ? "z-a" : "z-b";
     const tr = n(doc, "tr", "p8-r " + tono + (supAttiviQui[String(e.id || "")] ? " z-gruppo" : ""));
+    tr.setAttribute("data-sup", String(e.sup || ""));
     tr.setAttribute("data-sup", String((e && e.sup) || ""));
     tr.setAttribute("data-js", String(indice + 1));
     tr.appendChild(n(doc, "td", "c-js", (scheda.codice || "") + (indice + 1)));
@@ -1348,11 +1350,93 @@ function barraStrumenti(doc) {
   return bar;
 }
 
-/* I filtri per distretto del v31: si vedono, non filtrano. */
-function filtriDistretti(doc) {
+/* I filtri per distretto (passo 3b). Le pillole non sono piu la lista fissa
+ * del v31: nascono dai distretti che la scheda aperta contiene davvero, in
+ * ordine di prima comparsa, con la sigla della colonna DIST. (codiceDistretto).
+ * Tutti e sempre la prima. La pillola con il trattino compare solo se in scheda
+ * ce almeno una riga con un distretto che lapp non sa tradurre. La pillola Q
+ * prende anche gli adduttori, che portano la sigla Q. */
+const NOMI_DISTRETTO = {
+  P: "Pettorali", D: "Dorsali", CS: "Centro schiena", Q: "Quadricipiti", E: "Femorali",
+  S: "Spalle", G: "Glutei", B: "Bicipiti", T: "Tricipiti", A: "Addominali",
+  Z: "Polpacci", CA: "Cardio", "—": "distretto non riconosciuto"
+};
+
+/* Dopo un filtro la zebra si ricalcola su quello che si vede, e la cornice
+ * della superserie resta solo se il gruppo si vede tutto. Il tono si assegna
+ * per UNITA: il gruppo di fila (righe consecutive con lo stesso data-sup) e
+ * una sola unita, e la figlia tecnica porta il tono del padre. */
+function rizebra(righe) {
+  let indice = -1;
+  let supPrima = "";
+  righe.forEach((tr) => {
+    const sup = tr.getAttribute("data-sup") || "";
+    const tec = tr.classList.contains("p8-tec");
+    if (tec) {
+    } else if (sup && sup === supPrima) {
+    } else {
+      indice += 1;
+      supPrima = sup;
+    }
+    const tonoNuovo = indice % 2 === 0 ? "z-a" : "z-b";
+    tr.className = tr.className.split(" ").filter((c) => c && c !== "z-a" && c !== "z-b").join(" ") + " " + tonoNuovo;
+  });
+  const interi = Object.create(null);
+  righe.forEach((tr) => {
+    const sup = tr.getAttribute("data-sup") || "";
+    if (!sup) return;
+    if (interi[sup] === undefined) interi[sup] = true;
+    if (tr.classList.contains("f-nascosta")) interi[sup] = false;
+  });
+  righe.forEach((tr) => {
+    const sup = tr.getAttribute("data-sup") || "";
+    if (!sup) return;
+    const tutto = interi[sup] === true;
+    const padre = !tr.classList.contains("p8-tec");
+    tr.classList.toggle("in-sup", tutto);
+    if (padre) tr.classList.toggle("z-gruppo", tutto);
+  });
+}
+
+/* Mostra solo le righe di una sigla. Tutti non nasconde niente. */
+function applicaFiltroDistretto(pannello, tasti, sigla) {
+  tasti.forEach((b) => {
+    b.className = b.getAttribute("data-f") === sigla ? "pr-fchip on" : "pr-fchip";
+  });
+  if (!pannello) return;
+  const righe = Array.from(pannello.querySelectorAll("tbody tr.p8-r"));
+  const tutte = sigla === "Tutti";
+  righe.forEach((tr) => {
+    const c = tr.querySelector("td.c-dist .dist");
+    const sua = c ? String(c.textContent || "").trim() : "—";
+    tr.classList.toggle("f-nascosta", !(tutte || sua === sigla));
+  });
+  rizebra(righe);
+  const box = pannello.querySelector(".p8-scroll");
+  if (box) {
+    Array.from(box.querySelectorAll(".sup-cornice")).forEach((x) => x.remove());
+    if (typeof corniciScheda === "function") corniciScheda(box);
+  }
+}
+
+function filtriDistretti(doc, scheda, pannello) {
   const f = n(doc, "div", "pr-filtri");
-  ["Tutti", "Q", "G", "E", "D", "S", "T", "B", "TB", "P", "A", "Z", "Cardio"].forEach((sigla, i) => {
-    f.appendChild(pulsanteSpento(doc, "pr-fchip" + (i === 0 ? " on" : ""), sigla, "filtro " + sigla));
+  const sigle = [];
+  ((scheda && scheda.esercizi) || []).forEach((e) => {
+    if (!e || (e.padreId && e.tecnica)) return;
+    const sigla = codiceDistretto(e.muscolo);
+    if (sigle.indexOf(sigla) === -1) sigle.push(sigla);
+  });
+  const elenco = ["Tutti"].concat(sigle);
+  const tasti = [];
+  elenco.forEach((sigla, i) => {
+    const b = n(doc, "button", "pr-fchip" + (i === 0 ? " on" : ""), sigla);
+    b.type = "button";
+    b.setAttribute("data-f", sigla);
+    b.title = sigla === "Tutti" ? "mostra tutti gli esercizi della scheda" : (NOMI_DISTRETTO[sigla] || sigla);
+    b.addEventListener("click", () => applicaFiltroDistretto(pannello, tasti, sigla));
+    tasti.push(b);
+    f.appendChild(b);
   });
   return f;
 }
@@ -1388,7 +1472,7 @@ function pannelloScheda(doc, scheda, r) {
   p.appendChild(testata2);
 
   p.appendChild(barraStrumenti(doc));
-  p.appendChild(filtriDistretti(doc));
+  p.appendChild(filtriDistretti(doc, scheda, p));
 
   const note = n(doc, "div", "pr-note");
   note.appendChild(n(doc, "div", "pr-note-h", "📌 NOTE SCHEDA " + scheda.codice + " — visibili nell'export/stampa"));

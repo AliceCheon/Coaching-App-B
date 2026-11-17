@@ -87,7 +87,9 @@ test("41.04 DIST. con i codici del v31, ULTIMA dal logbook, trattino dove manca"
   assert.equal(codiceDistretto("spalle"), "S");
   assert.equal(codiceDistretto("bicipiti"), "B");
   assert.equal(codiceDistretto("tricipiti"), "T");
-  assert.equal(codiceDistretto("polpacci"), "C");
+  assert.equal(codiceDistretto("polpacci"), "Z");
+  assert.equal(codiceDistretto("adduttori"), "Q");
+  assert.equal(codiceDistretto("adduttore lungo"), "Q");
   assert.equal(codiceDistretto("addome"), "A");
   assert.equal(codiceDistretto("cardio"), "CA");
   assert.equal(codiceDistretto(""), "—");
