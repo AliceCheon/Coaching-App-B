@@ -141,8 +141,10 @@ test("57.6 la freccetta ha i valori chiesti e i pulsantini vanno di 30\"", () =>
   assert.equal(passoRecupero("30\"", 30), "1'");
   assert.equal(passoRecupero("1'", 30), "1'30\"");
   assert.equal(passoRecupero("2'30\"", 30), "3'");
-  assert.equal(passoRecupero("3'", 30), "");
-  assert.equal(passoRecupero("30\"", -30), "");
+  assert.equal(passoRecupero("3'", 30), "3'30\"");
+  assert.equal(passoRecupero("10'", 30), "", "dieci minuti sono il tetto");
+  assert.equal(passoRecupero("30\"", -30), "0\"", "da trenta secondi si scende a zero");
+  assert.equal(passoRecupero("0\"", -30), "", "sotto lo zero non si scende");
   assert.equal(passoRecupero("2'", -30), "1'30\"");
   assert.equal(passoRecupero("1'30\" e cambio gamba", 30), "");
   assert.equal(passoRecupero("", 30), "");

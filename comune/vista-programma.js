@@ -23,7 +23,8 @@ import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
   recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
-  REC_TENDINA, TUT_TENDINA, passoRecupero, recuperoScrittoValido, tempoScrittoValido } from "./tut-rec.js";
+  REC_TENDINA, TUT_TENDINA, passoRecupero, motivoPassoRecupero, intervalloSecondi,
+  secondiRecupero, recuperoScrittoValido, tempoScrittoValido } from "./tut-rec.js";
 
 import { nomePulito } from "./nome-pulito.js";
 import { PROG, PRG } from "./progressioni-b.js";
@@ -592,16 +593,37 @@ function rendiCellaRecupero(doc, td, mod, info) {
     span.title = nuovoValore;
     inviaModifica(mod, info, "recupero", esito.dopo, esito.prima);
   };
+  /* PASSO 3c (Alice, 17/11/2026): quando il valore non e' un tempo, o si e'
+   * arrivati in fondo (0" o 10'), il pulsantino si spegne e il tooltip dice
+   * perche'. Non si preme a vuoto e non si resta a chiedersi se ha preso. */
+  const aggiornaPassi = () => {
+    const attuale = String(span.getAttribute("data-prima") || "");
+    [[meno, -30], [piu, 30]].forEach((coppia) => {
+      const b = coppia[0];
+      const motivo = motivoPassoRecupero(attuale, coppia[1]);
+      b.disabled = !!motivo;
+      if (motivo) b.setAttribute("aria-disabled", "true");
+      else b.removeAttribute("aria-disabled");
+      b.title = motivo || (coppia[1] < 0 ? "meno 30 secondi" : "pi\u00f9 30 secondi");
+      b.setAttribute("aria-label", b.title);
+    });
+  };
   const passo = (delta) => {
     const attuale = String(span.getAttribute("data-prima") || "");
     const dopo = passoRecupero(attuale, delta);
     if (!dopo) return; /* non e' un tempo o limite raggiunto: non si tocca niente */
     scrivi(dopo);
+    aggiornaPassi();
   };
+  const meno = pulsantePasso(doc, -30, "meno 30 secondi", passo);
+  const piu = pulsantePasso(doc, 30, "pi\u00f9 30 secondi", passo);
   rendiValoreModificabile(doc, span, mod, Object.assign({}, info, { campo: "recupero", prima: info.valore || "", valido: recuperoScrittoValido }), componi);
-  riga.appendChild(pulsantePasso(doc, -30, "meno 30 secondi", passo));
+  /* anche il valore scritto a mano accende o spegne i pulsantini */
+  span.addEventListener("blur", () => aggiornaPassi());
+  riga.appendChild(meno);
   riga.appendChild(span);
-  riga.appendChild(pulsantePasso(doc, 30, "pi\u00f9 30 secondi", passo));
+  riga.appendChild(piu);
+  aggiornaPassi();
   riga.appendChild(rendiFreccia(doc, "freccia-rec", REC_TENDINA, "recupero: scegli un valore", scrivi));
   td.appendChild(riga);
   return span;
@@ -1571,6 +1593,16 @@ function minutiSecondi(secondi) {
   return Math.floor(s / 60) + "'" + String(s % 60).padStart(2, "0") + "\"";
 }
 
+/* Il recupero in secondi per la stima del tempo totale: un valore singolo
+ * vale se stesso, un intervallo vale la media dei due estremi (2-3' -> 150").
+ * Prima si prendeva il primo numero della cella: 1'30" contava 1 secondo e
+ * 2-3' contava 2 secondi, e il tempo totale era sbagliato di un pezzo. */
+function secondiRecuperoStima(testo) {
+  const inter = intervalloSecondi(testo);
+  if (inter) return Math.round((inter.da + inter.a) / 2);
+  return secondiRecupero(testo);
+}
+
 function tempoScheda(scheda) {
   let attivo = 0;
   let totale = 0;
@@ -1581,9 +1613,10 @@ function tempoScheda(scheda) {
     const serie = Number(String(prima.serie == null ? "" : prima.serie).replace(",", "."));
     const rip = Number((String(prima.ripetizioni == null ? "" : prima.ripetizioni).match(/\d+/) || [null])[0]);
     const tut = Number(String((e.prescrizione && e.prescrizione.tempo) || "").replace(",", "."));
-    const rec = Number((String((e.prescrizione && e.prescrizione.recupero) || "").match(/\d+/) || [null])[0]);
+    const grezzoRec = String((e.prescrizione && e.prescrizione.recupero) || "");
+    const rec = !grezzoRec.trim() ? 0 : secondiRecuperoStima(grezzoRec);
     if (!Number.isFinite(serie) || serie <= 0 || !Number.isFinite(rip) || rip <= 0 || !Number.isFinite(tut) || tut <= 0) { manca = true; return; }
-    if (!Number.isFinite(rec)) { manca = true; return; }
+    if (rec == null || !Number.isFinite(rec)) { manca = true; return; }
     attivo += serie * rip * tut;
     totale += serie * rip * tut + rec * Math.max(0, serie - 1);
   });

@@ -281,3 +281,35 @@ Tutti gli altri «C» del repo sono codici di **scheda** (la rotazione A/B/C/D) 
 
 **Quello che non ho guardato.** Non ho aperto la pagina a occhio: la prova è sulla pagina disegnata nei test, non su uno screenshot. La cornice ridisegnata dopo il filtro non l'ho vista a schermo: ho verificato che le righe del gruppo perdano e riprendano i segni `in-sup`/`z-gruppo`, che sono quelli da cui la cornice nasce.
 
+
+## PASSO 3c (17/11/2026)
+
+Il recupero va da 0" a 10'. Prima i pulsantini dei 30" si fermavano a 30" e a 3':
+adesso scendono fino a 0" (che e' un valore: nessun recupero) e salgono fino a
+10'. Oltre i due estremi il pulsantino si spegne, e il tooltip dice perche'.
+
+Su un intervallo (2-3', 1'-2', 120-180 sec) i pulsantini spostano tutti e due gli
+estremi insieme: 2-3' diventa 150-210", poi 3-4'. L'ordine resta quello, mai un
+estremo sopra l'altro; se l'estremo alto uscirebbe dai 10' il passo non si fa.
+
+Quando la cella non contiene un tempo (una frase, o la cella vuota) i pulsantini
+sono spenti e il tooltip scrive il motivo: "non e' un tempo: i pulsantini vanno
+con 90" o 2' o 2-3'", "vuoto: prima scrivi un recupero", "sotto 0" non si scende",
+"sopra 10' non si sale". Il pulsantino spento si vede spento (opacita' e cursore).
+
+Il tempo totale della scheda adesso legge il recupero vero. Prima prendeva il
+primo numero della cella: 1'30" contava 1 secondo e 2-3' contava 2 secondi, e la
+stima "S1 x serie x TUT + recuperi" era sbagliata di un pezzo. Un valore singolo
+vale se stesso, un intervallo vale la media dei due estremi (2-3' -> 150").
+
+Lo zero buttato li' resta una frase senza valore, come dal passo 14: "0", "0 sec",
+"0,00'" non diventano 0". Lo zero scritto come tempo (0", 0') invece e' un valore,
+perche' e' il limite basso del recupero. Una cifra sola con il segno dei secondi
+(1") da sola non e' un recupero: resta dentro la frase.
+
+File toccati: comune/tut-rec.js (REC_MIN 0, REC_MAX 600, secondiPezzo,
+intervalloSecondi, testoIntervallo, motivoPassoRecupero, passoRecupero),
+comune/vista-programma.js (i due pulsantini si spengono col motivo e si
+riaccendono, il tempo totale legge il recupero vero), comune/dashboard-b.css
+(.stp:disabled), tests/110-recupero-limiti.test.mjs (nuovo, 6 test), tests/57 e
+tests/61 aggiornati alle nuove regole. Suite: TOTALE pass 595 fail 0 file 87/87.

@@ -29,7 +29,7 @@ const TRATTINO = "\u2014";
 /* Un recupero vero: un intervallo (2-3', 120-180 sec), minuti e secondi
  * (1'30", 2'30"), i soli minuti (2'), la virgola del v31 (1,30'), i secondi
  * (90") o il numero con l'unita' (90 sec, 2 min). */
-const REC_VALORE = /(?:\d{1,2}\s*'\s*[-\u2013]\s*\d{1,2}\s*'?)|(?:\d{1,3}\s*[-\u2013]\s*\d{1,3}\s*(?:['\u2019\u2032"\u2033]|sec(?:ondi)?|min(?:uti)?)?)|(?:\d{1,2}\s*'\s*\d{1,2}\s*(?:"|\u2033)?)|(?:\d{1,2}\s*'(?!\d))|(?:\d{1,3}\s*[.,]\s*\d{2}\s*'?)|(?:\d{2,3}\s*(?:"|\u2033))|(?:\d{1,3}\s*(?:sec(?:ondi)?|min(?:uti)?)\b)/gi;
+const REC_VALORE = /(?:\d{1,2}\s*'\s*[-\u2013]\s*\d{1,2}\s*'?)|(?:\d{1,3}\s*[-\u2013]\s*\d{1,3}\s*(?:['\u2019\u2032"\u2033]|sec(?:ondi)?|min(?:uti)?)?)|(?:\d{1,2}\s*'\s*\d{1,2}\s*(?:"|\u2033)?)|(?:\d{1,2}\s*'(?!\d))|(?:\d{1,3}\s*[.,]\s*\d{2}\s*'?)|(?:(?:\d{2,3}|0)\s*(?:"|\u2033))|(?:\d{1,3}\s*(?:sec(?:ondi)?|min(?:uti)?)\b)/gi;
 
 /* Un TUT vero: tre o quattro numeri uniti da trattini (anche con gli spazi,
  * anche con la barra: 2/0/1). */
@@ -74,7 +74,12 @@ export function normalizzaValoreRecupero(valore) {
   }
   const conUnita = t.replace(/sec(?:ondi)?\b/gi, "\"").replace(/min(?:uti)?\b/gi, "'");
   const pulito = conUnita.replace(/\s*'\s*/g, "'").replace(/\s*"\s*/g, '"').replace(/\s+/g, " ").trim();
-  if (/^0+(?:[.,]0+)?(?:'\s*0{1,2}"?|["']?)$/.test(pulito)) return "";
+  if (/^0+(?:[.,]0+)?(?:'\s*0{1,2}"?|["']?)$/.test(pulito)) {
+    /* Alice, 17/11/2026: lo zero scritto come tempo (0", 0', 0'00") e' un
+     * valore — e' il limite basso del recupero. Lo zero buttato li' (0,
+     * 0 sec) resta una frase senza valore, come dal passo 14. */
+    return /["']/.test(t) ? '0"' : "";
+  }
   return pulito;
 }
 export function normalizzaValoreTempo(valore) {
@@ -195,13 +200,19 @@ export const REC_TENDINA = Object.freeze(["30\"", "1'", "1'30\"", "2'", "2'30\""
 export const TUT_TENDINA = Object.freeze(["2-0-2", "2-1-0", "0-1-2", "3-0-1", "3-1-1", "4-0-1"]);
 
 export const REC_PASSO = 30;
-export const REC_MIN = 30;
-export const REC_MAX = 180;
+/* Alice, 17/11/2026 (PASSO 3c): il recupero va da 0" a 10'. Sotto lo zero
+ * non si scende, sopra i dieci minuti non si sale: il pulsantino si spegne e
+ * il tooltip dice perche'. */
+export const REC_MIN = 0;
+export const REC_MAX = 600;
 
 /* Un recupero scritto come tempo, in secondi. Vale solo se il testo e' TUTTO un
  * tempo: una frase vale null, cosi' i pulsantini la lasciano stare. */
-export function secondiRecupero(valore) {
-  const t = String(valore == null ? "" : valore).trim()
+/* Un pezzo di tempo, in secondi: 2', 1'30", 90", 150, 2 min, 1,30'. Null se
+ * non e' un tempo. `nudo` dice come leggere un numero senza segni (in un
+ * intervallo 2-3' sono minuti, in 120-180 sec sono secondi). */
+export function secondiPezzo(pezzo, nudo) {
+  const t = String(pezzo == null ? "" : pezzo).trim()
     .replace(/\u2033/g, "\"")
     .replace(/[\u2019\u2032]/g, "'");
   if (!t) return null;
@@ -211,17 +222,83 @@ export function secondiRecupero(valore) {
     if (secondi >= 60) return null;
     return Number(m[1]) * 60 + secondi;
   }
-  m = /^(\d{1,3})\s*"?$/.exec(t);
-  if (m) return Number(m[1]);
+  m = /^(\d{1,2})\s*[.,]\s*(\d{2})\s*'?$/.exec(t); /* 1,30' del v31 */
+  if (m) return Number(m[1]) * 60 + Number(m[2]);
+  m = /^(\d{1,2})\s*min(?:uti)?$/i.exec(t);
+  if (m) return Number(m[1]) * 60;
   m = /^(\d{1,3})\s*(?:sec|secondi)$/i.exec(t);
   if (m) return Number(m[1]);
+  m = /^(\d{1,3})\s*"?$/.exec(t);
+  if (m) {
+    const n = Number(m[1]);
+    return nudo === "min" ? n * 60 : n;
+  }
   return null;
+}
+
+/* Il recupero scritto come tempo, in secondi. Vale solo se il testo e' TUTTO un
+ * tempo: una frase vale null, cosi' i pulsantini la lasciano stare. */
+export function secondiRecupero(valore) {
+  return secondiPezzo(valore, null);
+}
+
+/* Un intervallo (2-3', 1'-2', 120-180 sec): i due estremi in secondi. Null se
+ * non e' un intervallo o se gli estremi sono rovesciati. */
+export function intervalloSecondi(valore) {
+  const t = String(valore == null ? "" : valore).trim()
+    .replace(/\u2033/g, "\"")
+    .replace(/[\u2019\u2032]/g, "'")
+    .replace(/\bsec(?:ondi)?\b/gi, "\"")
+    .replace(/\bmin(?:uti)?\b/gi, "'");
+  const pezzi = t.split(/\s*[-\u2013]\s*/);
+  if (pezzi.length !== 2) return null;
+  /* 2-3' sono minuti, 120-180 sec sono secondi, 2-3 senza segni: minuti se
+   * tutti e due stanno sotto il minuto. */
+  let nudo = null;
+  if (/'/.test(t) && !/"/.test(t)) nudo = "min";
+  else if (/"/.test(t)) nudo = "sec";
+  let da = secondiPezzo(pezzi[0], nudo);
+  let a = secondiPezzo(pezzi[1], nudo);
+  if (nudo === null && da != null && a != null && da < 60 && a < 60) { da *= 60; a *= 60; }
+  if (da == null || a == null || da > a) return null;
+  return { da, a };
+}
+
+/* Un intervallo riscritto: 2-3' quando i due estremi sono minuti tondi,
+ * altrimenti 150-210" (corto, e si legge lo stesso). */
+export function testoIntervallo(da, a) {
+  const x = Math.round(Number(da));
+  const y = Math.round(Number(a));
+  if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < x) return "";
+  if (x % 60 === 0 && y % 60 === 0) return (x / 60) + "-" + (y / 60) + "'";
+  return x + "-" + y + "\"";
+}
+
+/* Perche' un pulsantino e' spento. Vuoto = si puo' premere. */
+export function motivoPassoRecupero(valore, delta) {
+  const verso = Number(delta) < 0 ? -1 : 1;
+  const inter = intervalloSecondi(valore);
+  if (inter) {
+    if (verso < 0 && inter.da + verso * REC_PASSO < REC_MIN) return "sotto 0\" non si scende";
+    if (verso > 0 && inter.a + verso * REC_PASSO > REC_MAX) return "sopra 10' non si sale";
+    return "";
+  }
+  const secondi = secondiRecupero(valore);
+  if (secondi == null) {
+    return String(valore == null ? "" : valore).trim()
+      ? "non e' un tempo: i pulsantini vanno con 90\" o 2' o 2-3'"
+      : "vuoto: prima scrivi un recupero";
+  }
+  const dopo = secondi + verso * REC_PASSO;
+  if (dopo < REC_MIN) return "sotto 0\" non si scende";
+  if (dopo > REC_MAX) return "sopra 10' non si sale";
+  return "";
 }
 
 /* Il tempo come lo scrive il v31: 90" oppure 1'30". */
 export function testoSecondi(secondi) {
   const n = Math.round(Number(secondi));
-  if (!Number.isFinite(n) || n <= 0) return "";
+  if (!Number.isFinite(n) || n < 0) return "";
   if (n < 60) return n + "\"";
   const minuti = Math.floor(n / 60);
   const resto = n % 60;
@@ -230,11 +307,14 @@ export function testoSecondi(secondi) {
 
 /* Un passo di 30" avanti o indietro, dentro 30" e 3'. Torna "" quando non si
  * deve toccare niente: valore che non e' un tempo, oppure limite raggiunto. */
+/* Un passo di 30" avanti o indietro, dentro 0" e 10'. Su un valore vuoto, o
+ * su una frase, non si tocca niente. Su un intervallo si spostano tutti e due
+ * gli estremi insieme: l'ordine resta quello, mai un estremo sopra l'altro. */
 export function passoRecupero(valore, delta) {
-  const secondi = secondiRecupero(valore);
-  if (secondi == null) return "";
+  if (motivoPassoRecupero(valore, delta)) return "";
   const verso = Number(delta) < 0 ? -1 : 1;
-  const dopo = secondi + verso * REC_PASSO;
-  if (dopo < REC_MIN || dopo > REC_MAX) return "";
-  return testoSecondi(dopo);
+  const scarto = verso * REC_PASSO;
+  const inter = intervalloSecondi(valore);
+  if (inter) return testoIntervallo(inter.da + scarto, inter.a + scarto);
+  return testoSecondi(secondiRecupero(valore) + scarto);
 }

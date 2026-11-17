@@ -69,17 +69,19 @@ test("61.01 il formato in cella e' solo quello delle tendine: mai sec o min", ()
   REC_TENDINA.forEach((t) => assert.ok(!/sec|min/i.test(t), "la tendina ha una parola: " + t));
 });
 
-test("61.02 lo zero non e' un valore: mai 0' o 0\" nella cella", () => {
+test("61.02 lo zero buttato li' non e' un valore: niente 0' o 0\" nella cella", () => {
   assert.equal(testoRecupero(0), "");
   assert.equal(testoRecupero("0"), "");
   assert.equal(testoRecupero({ seconds: 0 }), "");
   assert.equal(normalizzaValoreRecupero("0"), "");
-  assert.equal(normalizzaValoreRecupero("0\""), "");
-  assert.equal(normalizzaValoreRecupero("0'"), "");
   assert.equal(normalizzaValoreRecupero("0 sec"), "");
   assert.equal(normalizzaValoreRecupero("0,00'"), "");
   assert.equal(separaRecupero("0 sec").valore, "");
-  assert.equal(sostituisciRecupero("2 2", "0\""), "2 2", "lo zero scritto a mano non entra nel dato");
+  assert.equal(sostituisciRecupero("2 2", "0 sec"), "2 2", "lo zero buttato li' non entra nel dato");
+  /* PASSO 3c (17/11/2026): lo zero scritto come tempo e' il limite basso del
+   * recupero (da 0\" a 10'), quindi 0\" e 0' restano un valore. */
+  assert.equal(normalizzaValoreRecupero("0\""), "0\"");
+  assert.equal(normalizzaValoreRecupero("0'"), "0\"");
 });
 
 test("61.03 una frase senza valore non diventa 0\": il caso di A3", () => {
