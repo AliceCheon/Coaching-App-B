@@ -559,6 +559,9 @@ export async function avvia(doc, win) {
           modificheInVolo += 1;
           return editor.attivaProgramma(idProgramma).then((esito) => {
             modificheInVolo -= 1;
+            /* PASSO 3d — se il programma non e' fra i documenti di B, il motivo
+             * torna alla pagina: li' c'e' il nome, e il conteggio dei programmi. */
+            if (esito && esito.ok === false && esito.nonInB === true) return esito;
             if (esito && esito.ok) {
               segnalaModifica(esito.gia
                 ? esito.testo
@@ -579,6 +582,9 @@ export async function avvia(doc, win) {
           modificheInVolo += 1;
           return editor.mettiInBozza(idProgramma).then((esito) => {
             modificheInVolo -= 1;
+            /* PASSO 3d — se il programma non e' fra i documenti di B, il motivo
+             * torna alla pagina: li' c'e' il nome, e il conteggio dei programmi. */
+            if (esito && esito.ok === false && esito.nonInB === true) return esito;
             if (esito && esito.ok) {
               segnalaModifica(esito.gia
                 ? esito.testo

@@ -36,6 +36,26 @@ function archiviato(p) {
   return Boolean(p.archivedAt) || testo(p.status).toLowerCase() === "archived";
 }
 
+/* PASSO 3d — l'id che la pagina conosce non e' sempre l'id del documento.
+ * Il profilo porta l'id DENTRO il documento (`programMeta.id`), mentre il
+ * documento di B si chiama `program-v2-meta-…`: sono due cose diverse, e
+ * cercare solo la prima non trovava mai niente. Si accettano tutti e due, piu'
+ * l'id interno esplicito (`idInterno`, che l'editor mette quando legge B).
+ */
+function idCorrisponde(p, atteso) {
+  const a = testo(atteso);
+  if (!a) return false;
+  const o = p || {};
+  return testo(o.id) === a || testo(o.idInterno) === a || testo(o.programId) === a;
+}
+
+function trovaProgramma(elenco, idScelto) {
+  const lista = (Array.isArray(elenco) ? elenco : []).filter((p) => p && typeof p === "object");
+  return lista.filter((p) => idCorrisponde(p, idScelto))[0] || null;
+}
+
+export { trovaProgramma };
+
 /* Attivo vuol dire: non archiviato, e status "active" oppure active === true. */
 export function eAttivo(p) {
   if (!p || archiviato(p)) return false;
@@ -52,8 +72,8 @@ export function pianificaAttivazione(programmi, idScelto, opzioni) {
   const o = opzioni || {};
   const quando = testo(o.quando) || new Date().toISOString();
   const elenco = (Array.isArray(programmi) ? programmi : []).filter((p) => p && typeof p === "object");
-  const scelto = elenco.filter((p) => testo(p.id) === testo(idScelto))[0] || null;
-  if (!scelto) return { ok: false, motivo: "il programma scelto non e' fra quelli di B: non ho scritto niente" };
+  const scelto = trovaProgramma(elenco, idScelto);
+  if (!scelto) return { ok: false, nonInB: true, idScelto: testo(idScelto), quantiB: elenco.length, motivo: "il programma scelto non e' fra quelli di B: non ho scritto niente" };
   if (archiviato(scelto)) {
     return { ok: false, motivo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' archiviato: prima lo riapri, poi lo attivi" };
   }
@@ -117,8 +137,8 @@ export function pianificaBozza(programmi, idScelto, opzioni) {
   const o = opzioni || {};
   const quando = testo(o.quando) || new Date().toISOString();
   const elenco = (Array.isArray(programmi) ? programmi : []).filter((p) => p && typeof p === "object");
-  const scelto = elenco.filter((p) => testo(p.id) === testo(idScelto))[0] || null;
-  if (!scelto) return { ok: false, motivo: "il programma scelto non e' fra quelli di B: non ho scritto niente" };
+  const scelto = trovaProgramma(elenco, idScelto);
+  if (!scelto) return { ok: false, nonInB: true, idScelto: testo(idScelto), quantiB: elenco.length, motivo: "il programma scelto non e' fra quelli di B: non ho scritto niente" };
   if (archiviato(scelto)) {
     return { ok: false, motivo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' archiviato: non c'e' niente da mettere in bozza" };
   }

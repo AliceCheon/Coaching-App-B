@@ -924,7 +924,12 @@ function apriConfermaAttiva(doc, bottone, r) {
     avviso: "Scrive solo in bdB_atleti. In A non cambia niente.",
     conferma: "Sì, rendi attivo",
     segno: "attiva",
-    onConferma: () => { mod.onAttiva(String(profilo.id || "")); }
+    onConferma: () => {
+      const esito = mod.onAttiva(String(profilo.id || ""));
+      if (esito && typeof esito.then === "function") esito.then((e) => {
+        if (e && e.ok === false && e.nonInB === true) apriNonInB(doc, bottone, profilo, e);
+      });
+    }
   });
 }
 
@@ -946,7 +951,12 @@ function apriConfermaBozza(doc, bottone, r) {
     avviso: "Scrive solo in bdB_atleti. In A non cambia niente.",
     conferma: "S\u00ec, metti in bozza",
     segno: "bozza",
-    onConferma: () => { mod.onBozza(String(profilo.id || "")); }
+    onConferma: () => {
+      const esito = mod.onBozza(String(profilo.id || ""));
+      if (esito && typeof esito.then === "function") esito.then((e) => {
+        if (e && e.ok === false && e.nonInB === true) apriNonInB(doc, bottone, profilo, e);
+      });
+    }
   });
 }
 
@@ -2639,6 +2649,34 @@ function chiediConferma(doc, opzioni) {
   if (campoNome && campoNome.focus) campoNome.focus();
   else if (annulla.focus) annulla.focus();
   return box;
+}
+
+/* PASSO 3d — il rifiuto che non si capiva. Quando il programma che la
+ * pagina mostra non e' fra i documenti di B, il motivo lo dice nome e numero:
+ * «Il programma «X» non e' fra i documenti di B (in B ce ne sono N)».
+ * Il tasto «Porta in B» arriva col port da un programma alla volta: qui non
+ * si finge che sia gia' possibile. Il riquadro sta nella pagina, niente
+ * finestrelle del browser.
+ */
+function apriNonInB(doc, bottone, profilo, esito) {
+  const nome = nomePulito((profilo || {}).nome) || "questo programma";
+  let ancora = bottone;
+  if (!ancora || !ancora.parentNode) ancora = doc.querySelector(".pr-acts");
+  if (!ancora || !ancora.parentNode) return null;
+  const quanti = Number(esito && esito.quantiB);
+  const n = Number.isFinite(quanti) ? String(quanti) : "—";
+  return chiediConferma(doc, {
+    bottone: ancora,
+    titolo: "Non ho scritto niente",
+    righe: [
+      "Il programma «" + nome + "» non e' fra i documenti di B (in B ce ne sono " + n + ").",
+      "Lo stato si cambia solo su un programma che sta in B, quindi qui non ho toccato niente.",
+      "Per portarlo in B serve la pagina Copia, che legge A: si copia un programma alla volta, e in A non cambia niente."
+    ],
+    avviso: "In A non si scrive mai.",
+    conferma: "Ho capito",
+    segno: "non-in-b"
+  });
 }
 
 import { nomeProposto } from "./scheletri.js";

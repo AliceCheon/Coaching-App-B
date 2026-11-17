@@ -430,7 +430,7 @@ export function creaEditorSchede(opzioni) {
   function attivaProgramma(idProgramma) {
     return coda.esegui("programma", async () => {
       const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
-      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id), idInterno: String((d.dati && d.dati.programMeta && d.dati.programMeta.id) || (d.dati && d.dati.program && d.dati.program.id) || "") }));
       const piano = pianificaAttivazione(elenco, idProgramma, { quando: quando() });
       if (!piano.ok) return piano;
       if (piano.gia) return { ok: true, gia: true, testo: piano.testo, nome: piano.nome };
@@ -462,7 +462,7 @@ export function creaEditorSchede(opzioni) {
   function mettiInBozza(idProgramma) {
     return coda.esegui("programma", async () => {
       const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
-      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id), idInterno: String((d.dati && d.dati.programMeta && d.dati.programMeta.id) || (d.dati && d.dati.program && d.dati.program.id) || "") }));
       const piano = pianificaBozza(elenco, idProgramma, { quando: quando() });
       if (!piano.ok) return piano;
       if (piano.gia) return { ok: true, gia: true, testo: piano.testo, nome: piano.nome };
@@ -491,7 +491,7 @@ export function creaEditorSchede(opzioni) {
   async function annullaAttivazione(voce) {
     const quandoOra = quando();
     const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
-    const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+    const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id), idInterno: String((d.dati && d.dati.programMeta && d.dati.programMeta.id) || (d.dati && d.dati.program && d.dati.program.id) || "") }));
     const piano = pianificaRipristino(voce, elenco);
     if (!piano.ok) return { ok: false, motivo: "i programmi da rimettere non sono piu' in B: non ho scritto niente" };
     const scritti = [];
