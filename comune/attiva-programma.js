@@ -19,6 +19,9 @@ import { idVoceRegistro } from "./modifiche-b.js";
 
 export const TIPO_VOCE_ATTIVA = "attiva-programma";
 
+/* B.21 PASSO 2c \u2014 il passaggio inverso: il programma attivo va in bozza. */
+export const TIPO_VOCE_BOZZA = "bozza-programma";
+
 function testo(valore) {
   return valore == null ? "" : String(valore).trim();
 }
@@ -99,6 +102,64 @@ export function pianificaAttivazione(programmi, idScelto, opzioni) {
     daScrivere: daScrivere,
     voce: voce,
     testo: "programma attivo in B: \u00ab" + nomeProgramma(scelto) + "\u00bb"
+  };
+}
+
+/* B.21 PASSO 2c \u2014 \u00abMetti in bozza\u00bb: il programma attivo smette di esserlo e
+ * diventa una bozza (`status: "draft"`, `active: false`). Qui non si elegge
+ * nessuno: si mette da parte quello che c'e', e nessun altro programma viene
+ * toccato. Una bozza resta visibile nel desktop (che non chiede `escludiBozze`);
+ * il telefono non la vede piu' (PASSO 2b), e la conferma in pagina lo dice.
+ * Si scrivono sempre TUTTI E DUE i campi: `active: true` da solo terrebbe il
+ * programma attivo anche con lo status a bozza.
+ */
+export function pianificaBozza(programmi, idScelto, opzioni) {
+  const o = opzioni || {};
+  const quando = testo(o.quando) || new Date().toISOString();
+  const elenco = (Array.isArray(programmi) ? programmi : []).filter((p) => p && typeof p === "object");
+  const scelto = elenco.filter((p) => testo(p.id) === testo(idScelto))[0] || null;
+  if (!scelto) return { ok: false, motivo: "il programma scelto non e' fra quelli di B: non ho scritto niente" };
+  if (archiviato(scelto)) {
+    return { ok: false, motivo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' archiviato: non c'e' niente da mettere in bozza" };
+  }
+  const giaBozza = testo(scelto.status).toLowerCase() === "draft" && scelto.active !== true;
+  if (giaBozza) {
+    return {
+      ok: true, gia: true, nome: nomeProgramma(scelto), daScrivere: [], voce: null, altri: [],
+      testo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' gia' in bozza: non ho scritto niente"
+    };
+  }
+  const prima = [{
+    id: testo(scelto.id),
+    status: scelto.status == null ? null : scelto.status,
+    active: scelto.active == null ? null : scelto.active,
+    updatedAt: scelto.updatedAt == null ? null : scelto.updatedAt
+  }];
+  const daScrivere = [{ id: testo(scelto.id), dati: Object.assign({}, scelto, { status: "draft", active: false, updatedAt: quando }) }];
+  const dopo = [{ id: testo(scelto.id), status: "draft", active: false }];
+  const voce = {
+    idVoce: testo(o.idVoce) || idVoceRegistro(quando),
+    quando: quando,
+    tipo: TIPO_VOCE_BOZZA,
+    origine: "bozza-in-B",
+    scheda: "",
+    codice: "",
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "programma",
+    prima: prima,
+    dopo: dopo,
+    dopoTesto: "programma in bozza: " + nomeProgramma(scelto)
+  };
+  return {
+    ok: true,
+    gia: false,
+    nome: nomeProgramma(scelto),
+    altri: [],
+    daScrivere: daScrivere,
+    voce: voce,
+    testo: "programma in bozza in B: \u00ab" + nomeProgramma(scelto) + "\u00bb"
   };
 }
 

@@ -818,12 +818,18 @@ function cartaRotazione(doc, r) {
 
 function cartaStato(doc, r) {
   const c = n(doc, "section", "pr-card pr-c3");
+  /* B.21 PASSO 2c \u2014 la riga di stato dice lo stato, e solo lei: \u00abAttivo\u00bb o
+   * \u00abIn bozza\u00bb, senza promettere cosa fara' il telefono. Il tasto accanto dice
+   * l'azione (vedi tastoAttiva), mai lo stato. */
   const stato = n(doc, "div", "pr-stato");
   const punto = n(doc, "span", "pr-dot");
   punto.setAttribute("data-segno", r.profilo.segno || "vuoto");
   stato.appendChild(punto);
-  stato.appendChild(n(doc, "b", "", nomePulito(r.profilo.stato) || NON));
+  stato.appendChild(n(doc, "b", "", etichettaStato(r.profilo)));
   c.appendChild(stato);
+  if (etichettaStato(r.profilo) === "In bozza") {
+    c.appendChild(n(doc, "p", "pr-guide", "Il telefono non la vede: si attiva da qui, con il tasto \u00abAttiva\u00bb."));
+  }
 
 
   const atti = n(doc, "div", "pr-acts");
@@ -837,22 +843,36 @@ function cartaStato(doc, r) {
   return c;
 }
 
-/* B.21 PASSO 2a — «Attiva» vivo. Scrive SOLO in B (bdB_atleti): il telefono
- * di oggi legge la zona A, e la conferma lo dice prima di scrivere. Senza
- * editor collegato (pagine non vive) resta il tasto spento di prima. */
+/* B.21 PASSO 2a/2c — il tasto dice l'AZIONE, mai lo stato: «Attiva» se il
+ * programma non e' attivo, «Metti in bozza» se lo e'. Lo stato lo dice la riga
+ * col pallino, una volta sola (vedi cartaStato). Scrive SOLO in B (bdB_atleti).
+ * Senza editor collegato (pagine non vive) resta il tasto spento di prima. */
 function tastoAttiva(doc, r) {
   const mod = modificaCorrente;
   const gia = Boolean(r && r.profilo && r.profilo.segno === "vivo");
+  if (gia) {
+    if (!mod || typeof mod.onBozza !== "function") {
+      return pulsanteSpento(doc, "pr-btn pri", "Metti in bozza", "questo e' il programma attivo: metterlo in bozza si fa quando la pagina sa scrivere");
+    }
+    const b = pulsanteVivo(doc, "pr-btn pri", "Metti in bozza", "mette questo programma in bozza in B", () => apriConfermaBozza(doc, b, r));
+    return b;
+  }
   if (!mod || typeof mod.onAttiva !== "function") {
     return pulsanteSpento(doc, "pr-btn pri", "Attiva", "mette il programma come attivo");
   }
-  if (gia) {
-    const spento = pulsanteSpento(doc, "pr-btn pri", "Attivo", "questo e' gia' il programma attivo in B");
-    spento.setAttribute("aria-pressed", "true");
-    return spento;
-  }
   const t = pulsanteVivo(doc, "pr-btn pri", "Attiva", "rende attivo questo programma in B", () => apriConfermaAttiva(doc, t, r));
   return t;
+}
+
+/* Il nome che la riga di stato usa: «Attivo» e «In bozza» sono i due stati che
+ * contano qui; gli altri restano le parole di sempre (disponibile, archiviato).
+ */
+function etichettaStato(profilo) {
+  const p = profilo || {};
+  if (p.segno === "vivo") return "Attivo";
+  if (p.segno === "bozza" && p.bozza === true) return "In bozza";
+  if (p.segno === "archivio") return "Archiviato";
+  return nomePulito(p.stato) || NON;
 }
 
 /* La riga che Alice ha chiesto, parola per parola: si dice che si scrive in B
@@ -875,6 +895,28 @@ function apriConfermaAttiva(doc, bottone, r) {
     conferma: "Sì, rendi attivo",
     segno: "attiva",
     onConferma: () => { mod.onAttiva(String(profilo.id || "")); }
+  });
+}
+
+/* B.21 PASSO 2c \u2014 \u00abMetti in bozza\u00bb: la conferma dice che il telefono di oggi
+ * non cambia (legge A), e che la bozza resta visibile qui. */
+function apriConfermaBozza(doc, bottone, r) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.onBozza !== "function") { senzaEditor(doc, bottone); return; }
+  const profilo = (r && r.profilo) || {};
+  const nome = nomePulito(profilo.nome) || "questo programma";
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Mettere in bozza un programma",
+    righe: [
+      "Metto \u00ab" + nome + "\u00bb in bozza in B?",
+      "Sul telefono di oggi non cambia niente: legge ancora A.",
+      "In B resta visibile qui, e il telefono non lo vedr\u00e0 pi\u00f9 finch\u00e9 non lo riattivi."
+    ],
+    avviso: "Scrive solo in bdB_atleti. In A non cambia niente.",
+    conferma: "S\u00ec, metti in bozza",
+    segno: "bozza",
+    onConferma: () => { mod.onBozza(String(profilo.id || "")); }
   });
 }
 

@@ -573,6 +573,26 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "attivazione non riuscita" });
           });
         },
+        /* B.21 PASSO 2c \u2014 \u00abMetti in bozza\u00bb: scrive in B e rilegge. La riga di
+         * stato dice cosa e' successo, senza promettere cosa fara' il telefono. */
+        onBozza: (idProgramma) => {
+          modificheInVolo += 1;
+          return editor.mettiInBozza(idProgramma).then((esito) => {
+            modificheInVolo -= 1;
+            if (esito && esito.ok) {
+              segnalaModifica(esito.gia
+                ? esito.testo
+                : esito.testo + " \u00b7 non e' pi\u00f9 attivo: il telefono non lo vedr\u00e0" + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+            } else {
+              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente, { forza: true, motivo: "programma in bozza" });
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("passaggio in bozza non riuscito: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "passaggio in bozza non riuscito" });
+          });
+        },
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok

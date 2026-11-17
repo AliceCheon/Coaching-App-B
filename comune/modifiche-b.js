@@ -1215,7 +1215,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;

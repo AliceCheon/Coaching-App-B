@@ -99,10 +99,13 @@ test("104.4 la barra del programma non ha pi\u00f9 \u00abLibreria Coach\u00bb sp
   assert.ok(fuori.some((b) => b.disabled === false), "ed e' acceso");
 });
 
-test("104.5 \u00abAttiva\u00bb resta spento e disegnare la scheda non scrive niente", () => {
+test("104.5 il tasto del programma resta spento senza editor, e disegnare la scheda non scrive niente", () => {
   const s = paginaVera();
-  const attiva = Array.from(s.carta.querySelectorAll("button")).filter((b) => b.textContent.trim() === "Attiva")[0];
-  assert.ok(attiva, "\u00abAttiva\u00bb resta in carta: diventa vivo al PASSO 2");
-  assert.equal(attiva.disabled, true, "per ora e' ancora spento");
+  const bottoni = Array.from(s.carta.querySelectorAll(".pr-acts button")).map((b) => b.textContent.trim());
+  assert.ok(bottoni.indexOf("Attivo") === -1, "nessun tasto che ripete lo stato: " + JSON.stringify(bottoni));
+  const azione = Array.from(s.carta.querySelectorAll(".pr-acts button"))
+    .filter((b) => b.textContent.trim() === "Metti in bozza" || b.textContent.trim() === "Attiva")[0];
+  assert.ok(azione, "il tasto dell'azione resta in carta: " + JSON.stringify(bottoni));
+  assert.equal(azione.disabled, true, "senza editor e' spento");
   assert.equal(s.chiamate.length, 0, "disegnare la scheda non ha chiesto nessuna scrittura");
 });

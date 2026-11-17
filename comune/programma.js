@@ -162,11 +162,14 @@ export function elencoProgrammiOrdinato(programmi) {
 export function profiloProgramma(programma) {
   if (!programma || typeof programma !== "object") {
     return {
-      presente: false, nome: NON, stato: statoInChiaro(""), fase: "", inizio: "", durata: null,
+      presente: false, nome: NON, stato: statoInChiaro(""), segno: "vuoto", bozza: false, fase: "", inizio: "", durata: null,
       giorni: null, descrizione: "", messaggio: "", aggiornato: "", id: "", archiviato: false
     };
   }
   const stato = statoInChiaro(primoCampo(programma, CAMPI_PROGRAMMA.stato));
+  /* B.21 PASSO 2c \u2014 \u00abbozza\u00bb e' `status: "draft"` e basta: \u00abdisponibile\u00bb
+   * (`available`) resta un altro stato e non si chiama bozza. */
+  const bozzaVera = testo(primoCampo(programma, CAMPI_PROGRAMMA.stato)).toLowerCase() === "draft";
   const inizioGrezzo = testo(primoCampo(programma, CAMPI_PROGRAMMA.inizio));
   return {
     presente: true,
@@ -174,6 +177,7 @@ export function profiloProgramma(programma) {
     nome: testo(primoCampo(programma, CAMPI_PROGRAMMA.nome)) || NON,
     stato: stato.parola,
     segno: stato.segno,
+    bozza: bozzaVera,
     fase: testo(primoCampo(programma, CAMPI_PROGRAMMA.fase)),
     inizio: inizioGrezzo,
     durata: numeroOppureNull(primoCampo(programma, CAMPI_PROGRAMMA.durata)),

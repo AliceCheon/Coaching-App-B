@@ -156,3 +156,47 @@ ragione di esistere.
 **Suite.** TOTALE pass 569 fail 0 file 83/83 — nessun test saltato: i file di test sul disco sono 83 e il totale ne copre 83.
 
 **Nota sullo strumento di test.** Con il file 106 la fetta unica `veloce` (63 file) non sta piu' nei 45 secondi del comando sul computer: `suite.sh` ora la divide in `veloce1` (32 file) e `veloce2` (31 file), e `totale` somma quattro fette — `veloce1`, `veloce2`, `6x`, `7x` — controllando che la somma dei file coperti sia quella dei file sul disco. Non cambia un solo test: cambia solo come vengono raggruppati.
+
+## PASSO 2c — il tasto dice l'azione, lo stato lo dice una riga sola (17 novembre 2026)
+
+**Il problema vero, visto da te.** Il tuo programma e' gia' attivo in B, e la barra di stato mostrava due cose con la stessa parola: a sinistra il pallino col testo «Attivo», a destra un tasto «Attivo» spento. Due «Attivo» uno accanto all'altro non dicono niente: uno era lo stato, l'altro sembrava un comando che non funzionava. E la funzione non si poteva nemmeno provare, perche' in B non c'era nessuna bozza.
+
+**La regola, da adesso.** La riga col pallino e' l'unico posto che dice lo stato: **«Attivo»** o **«In bozza»**. Il tasto dice sempre l'**azione**, mai lo stato:
+
+| Il programma e' | Riga di stato | Tasto a destra |
+|---|---|---|
+| attivo | Attivo | **Metti in bozza** |
+| in bozza | In bozza + «Il telefono non la vede: si attiva da qui» | **Attiva** |
+
+**«Metti in bozza».** Premuto, si apre il riquadro dentro la pagina (mai una finestrella del browser):
+
+> Metto «Forza novembre» in bozza in B?
+> Sul telefono di oggi non cambia niente: legge ancora A.
+> In B resta visibile qui, e il telefono non lo vedra' piu' finche' non lo riattivi.
+>
+> Scrive solo in bdB_atleti. In A non cambia niente.
+
+Si conferma col tasto rosso «Si', metti in bozza»; «Annulla» chiude e non scrive niente. Alla conferma si scrivono **due** campi insieme — `status: "draft"` e `active: false` — perche' un documento attivo in B puo' esserlo in due modi, e spegnerne uno solo non lo spegnerebbe. Una voce nel registro, e l'**Annulla** rimette status, active e data com'erano.
+
+**Nessun altro programma viene toccato.** Mettere in bozza non elegge nessuno: e' l'opposto di «Attiva», che invece spegne l'altro attivo. Quindi se in B c'e' un solo programma e lo metti in bozza, la pagina **continua a mostrarlo** — il desktop le bozze le vede sempre. Sul telefono invece non compare piu': quella e' la regola del PASSO 2b, e la pagina lo dichiara nella riga sotto lo stato invece di lasciarlo scoprire.
+
+**«Cambia» resta vivo**, come avevi chiesto: con un solo programma «Attiva» agisce sempre su quello, quindi il comando ha senso anche senza la scelta multipla.
+
+**I test.** `tests/107-metti-in-bozza.test.mjs` prova il giro completo sulla pagina vera, non su un finto: attivo → premo «Metti in bozza» → il riquadro chiede il permesso col nome → confermo → il programma va in bozza e la pagina lo ridisegna con «In bozza» e il tasto «Attiva» → premo «Attiva» → confermo → torna «Attivo» e il tasto torna «Metti in bozza». L'Annulla e' provato in tutti e due i passaggi: il riquadro si chiude, nessuna scrittura parte. In piu': la riga di stato dice «Attivo» **una volta sola** (nessun tasto con la stessa parola), e la scrittura passa solo da `bdB_atleti`, con una voce di registro e l'Annulla che rimette `status: "active"` e `active: true`. Il vecchio test `105.4`, che si aspettava il tasto «Attivo» spento, e' stato riscritto sulla regola nuova.
+
+**File toccati (diff vero):**
+
+| File | +/- |
+|---|---|
+| `comune/attiva-programma.js` | +61 |
+| `comune/editor-schede-b.js` | +35 / -4 |
+| `comune/vista-programma.js` | +68 / -8 |
+| `comune/programma.js` | +5 / -1 |
+| `comune/modifiche-b.js` | +1 / -1 |
+| `desktop/app-v31.js` | +20 |
+| `tests/105-attiva-programma.test.mjs` | +5 / -5 |
+| `tests/107-metti-in-bozza.test.mjs` | nuovo, 6 test |
+
+**Suite.** TOTALE pass 575 fail 0 file 84/84 — i file di test sul disco sono 84 e il totale ne copre 84.
+
+**Quello che non ho guardato.** Non ho aperto l'app a occhio su questo passaggio: la prova e' sulla pagina vera caricata nei test, non su uno screenshot. Il colore del pallino in bozza e la larghezza del tasto «Metti in bozza» nella barra sono da vedere tu.

@@ -88,12 +88,14 @@ test("105.3 solo il tasto rosso attiva, e chiama l'editor con l'id del programma
   assert.equal(s.contenitore.querySelector(".pr-acts .pr-conf"), null, "il riquadro si chiude");
 });
 
-test("105.4 un programma gia' attivo mostra «Attivo» spento, e non si riattiva", () => {
+test("105.4 su chi e' gia' attivo il tasto dice l'azione, non lo stato", () => {
   const s = paginaVera("active");
   assert.equal(tasto(s, "Attiva"), null, "niente tasto Attiva su chi e' gia' attivo");
-  const b = tasto(s, "Attivo");
-  assert.ok(b, "c'e' «Attivo»");
-  assert.equal(b.disabled, true, "ed e' spento: non c'e' niente da fare");
+  assert.equal(tasto(s, "Attivo"), null, "nessun tasto che ripete lo stato: lo dice la riga col pallino");
+  const b = tasto(s, "Metti in bozza");
+  assert.ok(b, "il tasto dice cosa si puo' fare: \u00abMetti in bozza\u00bb");
+  assert.equal(b.disabled, true, "spento quando la pagina non sa scrivere in bozza");
+  assert.match(String(b.title || ""), /bozza/i, "il tooltip dice cosa fa: " + b.title);
   b.click();
   assert.equal(s.contenitore.querySelector(".pr-conf"), null, "nessun riquadro");
   assert.equal(s.attivate.length, 0, "nessuna scrittura");

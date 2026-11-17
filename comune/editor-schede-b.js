@@ -41,7 +41,7 @@ import {
 } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
-import { pianificaAttivazione, pianificaRipristino, TIPO_VOCE_ATTIVA } from "./attiva-programma.js";
+import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -272,7 +272,7 @@ export function creaEditorSchede(opzioni) {
       }
       /* B.21 PASSO 2a — l'attivazione di un programma si annulla come una
        * modifica di scheda: la voce porta i valori di prima di ogni documento. */
-      if (String(voce.tipo || "") === TIPO_VOCE_ATTIVA) return annullaAttivazione(voce);
+      if ([TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA].indexOf(String(voce.tipo || "")) !== -1) return annullaAttivazione(voce);
       /* B.21 — una voce che tocca più schede (svuota il programma): si
        * rimettono tutte, e il registro prende una voce sola anche qui. */
       if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
@@ -454,6 +454,38 @@ export function creaEditorSchede(opzioni) {
     });
   }
 
+  /* B.21 PASSO 2c \u2014 \u00abMetti in bozza\u00bb: il programma attivo diventa una bozza
+   * in B, e nessun altro programma viene toccato. Stessa forma di
+   * `attivaProgramma`: una scrittura, una voce di registro, l'Annulla che
+   * rimette status/active/updatedAt di prima (vedi annullaAttivazione).
+   */
+  function mettiInBozza(idProgramma) {
+    return coda.esegui("programma", async () => {
+      const letti = await conScadenza(leggiZonaB(db, uid, "programmi"), "la lettura dei programmi");
+      const elenco = (Array.isArray(letti) ? letti : []).map((d) => Object.assign({}, d.dati || {}, { id: String(d.id) }));
+      const piano = pianificaBozza(elenco, idProgramma, { quando: quando() });
+      if (!piano.ok) return piano;
+      if (piano.gia) return { ok: true, gia: true, testo: piano.testo, nome: piano.nome };
+      const scritti = [];
+      for (let i = 0; i < piano.daScrivere.length; i += 1) {
+        const t = piano.daScrivere[i];
+        const letto = await conScadenza(leggiProgrammaB(db, uid, t.id), "la lettura del programma");
+        if (!letto || !letto.esiste) {
+          return { ok: false, motivo: "il programma " + t.id + " non e' piu' in B: non ho scritto niente" };
+        }
+        try {
+          await conScadenza(salvaProgrammaConVersione(db, uid, t.id, t.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+        } catch (e) {
+          return { ok: false, motivo: (e && e.message ? e.message : "scrittura non riuscita") + " \u00b7 fermato dopo " + scritti.length + " programmi: la voce di registro non e' scritta" };
+        }
+        scritti.push(t.id);
+      }
+      const avvisoVoce = await scriviVoceSicura(piano.voce);
+      ultima = piano.voce;
+      return { ok: true, gia: false, nome: piano.nome, voce: piano.voce, avvisoRegistro: avvisoVoce, testo: piano.testo };
+    });
+  }
+
   /* L'annulla dell'attivazione: si rimettono i programmi come stavano, e la
    * storia prende una voce nuova (niente si cancella). */
   async function annullaAttivazione(voce) {
@@ -489,7 +521,7 @@ export function creaEditorSchede(opzioni) {
       campo: "programma",
       prima: null,
       dopo: null,
-      dopoTesto: "programma attivo rimesso com'era"
+      dopoTesto: String(voce.tipo || "") === TIPO_VOCE_BOZZA ? "programma in bozza rimesso com'era" : "programma attivo rimesso com'era"
     };
     const avvisoVoce = await scriviVoceSicura(voceNuova);
     ultima = voceNuova;
@@ -501,6 +533,7 @@ export function creaEditorSchede(opzioni) {
     conta: conta,
     svuotaProgramma: svuotaProgrammaIntero,
     attivaProgramma: attivaProgramma,
+    mettiInBozza: mettiInBozza,
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,
