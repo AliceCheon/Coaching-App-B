@@ -313,3 +313,47 @@ comune/vista-programma.js (i due pulsantini si spengono col motivo e si
 riaccendono, il tempo totale legge il recupero vero), comune/dashboard-b.css
 (.stp:disabled), tests/110-recupero-limiti.test.mjs (nuovo, 6 test), tests/57 e
 tests/61 aggiornati alle nuove regole. Suite: TOTALE pass 595 fail 0 file 87/87.
+
+## PASSO 3d (17/11/2026)
+
+Alice preme «Metti in bozza» e legge: «il programma scelto non e' fra quelli di
+B: non ho scritto niente». Il rifiuto era sbagliato: il programma ERA in B. La
+pagina mostra solo dati di B (desktop/app-v31.js legge leggiZonaBCompleta e non
+ripiega mai su A), e il tasto «Metti in bozza» compare solo quando il profilo
+dice «Attivo», cioe' quando un documento di B e' attivo. Se il programma si
+vede, in B c'e'.
+
+Il difetto era l'id. Il profilo porta l'id DENTRO il documento
+(comune/programma.js:176, profilo.id = testo(programma.id), cioe'
+programMeta.id), mentre i documenti di B si chiamano program-v2-meta-... e
+l'editor cercava l'id del documento (comune/editor-schede-b.js, id:
+String(d.id)). Due id diversi, un confronto solo: testo(p.id) ===
+testo(idScelto) in comune/attiva-programma.js non poteva che fallire.
+
+Cosa cambia: trovaProgramma accetta l'id del documento, l'id interno
+(idInterno, che l'editor mette quando legge B) e programId. La scrittura
+continua a usare l'id del DOCUMENTO: daScrivere[0].id resta
+program-v2-meta-..., ed e' su quello che passano leggiProgrammaB e
+salvaProgrammaConVersione. «Attiva» e «Metti in bozza» funzionano sul programma
+vero, senza portare niente da nessuna parte.
+
+Il rifiuto, quando capita davvero (un id che non esiste fra i documenti di B),
+adesso porta nonInB: true e quantiB, e la pagina apre un riquadro dentro la
+pagina con nome e numero: «Il programma "X" non e' fra i documenti di B (in B
+ce ne sono N)», e dice che non ha toccato niente. Niente finestrelle del
+browser.
+
+Da fare, e sta scritto qui come rischio da gestire: il tasto «Porta in B» per
+un solo programma. Il port va fatto dalla pagina Copia (l'unica che legge A per
+davvero), copiando il documento con LO STESSO id piu' copiatoDaA: true e
+copiatoIl. Perche' e' un rischio: il «giorno del cambio», quando si rifa' la
+copia finale da A, deve riconoscere i documenti con copiatoDaA e fare il merge
+per id, non duplicarli. Se il merge manca, la copia finale sovrascrive la
+versione lavorata in B: e' il punto da provare prima del cambio.
+
+File toccati: comune/attiva-programma.js (trovaProgramma, idCorrisponde,
+nonInB/quantiB), comune/editor-schede-b.js (idInterno sulle tre letture dei
+programmi), desktop/app-v31.js (il rifiuto nonInB torna alla pagina),
+comune/vista-programma.js (apriNonInB),
+tests/111-programma-ricerca-id.test.mjs (nuovo, 4 test). Suite: TOTALE pass 595
+fail 0 file 88/88.
