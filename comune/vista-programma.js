@@ -254,6 +254,14 @@ function pulsanteConEtichetta(doc, classe, testo, etichetta, titolo) {
   return b;
 }
 
+/* B.21 PASSO 3 — la pillola «in arrivo»: sta DENTRO il tasto, a destra del
+ * testo, con il taglio della pillola «demo» del v31. Il tasto resta spento;
+ * il tooltip dice cosa fara' quando ci sara', cosi' nessuno aspetta un clic. */
+function pulsanteInArrivo(doc, classe, testo, cosa) {
+  const b = pulsanteSpento(doc, classe, testo, "in arrivo: " + cosa);
+  b.appendChild(n(doc, "i", "pr-arrivo", "in arrivo"));
+  return b;
+}
 /* Passo 9: un pulsante che si preme. Stessa classe, stesso aspetto; cambia solo
  * che non porta "spento" e risponde al clic. */
 
@@ -834,10 +842,10 @@ function cartaStato(doc, r) {
 
   const atti = n(doc, "div", "pr-acts");
   atti.appendChild(tastoAttiva(doc, r));
-  atti.appendChild(pulsanteSpento(doc, "pr-btn", "Cambia", "cambia il programma"));
-  atti.appendChild(pulsanteSpento(doc, "pr-btn", "Confronta con…", "confronta con un altro programma"));
-  atti.appendChild(pulsanteSpento(doc, "pr-btn", "Copia da Prog…", "copia da un altro programma"));
-  atti.appendChild(pulsanteSpento(doc, "pr-btn", "⭐ Salva in Libreria", "salva il programma in libreria"));
+  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B e ti fa scegliere quale guardare"));
+  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Confronta con…", "mette due programmi affiancati e segna le differenze"));
+  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Copia da Prog…", "copia gli esercizi di un altro programma dentro questo"));
+  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "⭐ Salva in Libreria", "salva questo programma nella libreria, per riusarlo come base"));
   c.appendChild(atti);
 
   return c;
@@ -1310,7 +1318,7 @@ function barraStrumenti(doc) {
   cerca.appendChild(n(doc, "span", "pr-hint", "🔍 Cerca"));
   bar.appendChild(cerca);
   bar.appendChild(pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, modificaCorrente)));
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Periodizzazione", "apre la periodizzazione"));
+  bar.appendChild(pulsanteInArrivo(doc, "pr-btn", "Periodizzazione", "apre il generatore di periodizzazione: costruisce le otto settimane dai carichi"));
   bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "Copia/Sposta esercizi", "demo", "copia o sposta esercizi"));
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));
   bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
@@ -1569,8 +1577,13 @@ function schede(doc, r) {
   const extra = [];
   ["Stress", "Scheletri", "Analisi programmazione", "Periodizzazione"].forEach((titolo) => {
     const spenta = titolo !== "Analisi programmazione";
+    const COSA_ARRIVA = {
+      Stress: "mostra lo stress percepito settimana per settimana (arriva col passo 6)",
+      Scheletri: "apre la pagina Scheletri, non ancora collegata ai salvataggi: per ora lo scheletro resta in B",
+      Periodizzazione: "apre il generatore di periodizzazione: costruisce le otto settimane dai carichi",
+    };
     const b = spenta
-      ? pulsanteSpento(doc, "pr-ntab pr-ntab-extra", titolo, titolo)
+      ? pulsanteInArrivo(doc, "pr-ntab pr-ntab-extra", titolo, COSA_ARRIVA[titolo] || titolo)
       : n(doc, "button", "pr-ntab pr-ntab-extra", titolo);
     b.type = "button";
     b.setAttribute("role", "tab");

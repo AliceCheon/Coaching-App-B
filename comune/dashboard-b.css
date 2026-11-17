@@ -781,3 +781,11 @@ td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
     word-break:normal !important;overflow-wrap:normal !important;-webkit-line-clamp:unset !important;
     line-clamp:unset !important;overflow:hidden !important;text-overflow:ellipsis}
 }
+
+/* B.21 PASSO 3 — la pillola «in arrivo»: stesso taglio della pillola «demo»
+ * del v31 (dentro il tasto, 8px, maiuscoletto via CSS), in lilla, cosi' si
+ * distingue da «demo» a colpo d'occhio. Non e' un tasto: sta dentro quello. */
+.pr-arrivo{font-style:normal;font-size:8px;letter-spacing:.08em;text-transform:uppercase;
+  color:#c9a7ff;border:1px solid color-mix(in srgb,#c9a7ff 70%,transparent);
+  border-radius:5px;padding:0 4px;margin-left:6px;opacity:.9}
+body[data-theme="light"] .pr-arrivo{color:#7b4bbf;border-color:#7b4bbf;opacity:1;font-weight:800}

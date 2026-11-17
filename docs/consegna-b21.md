@@ -180,7 +180,7 @@ Si conferma col tasto rosso «Si', metti in bozza»; «Annulla» chiude e non sc
 
 **Nessun altro programma viene toccato.** Mettere in bozza non elegge nessuno: e' l'opposto di «Attiva», che invece spegne l'altro attivo. Quindi se in B c'e' un solo programma e lo metti in bozza, la pagina **continua a mostrarlo** — il desktop le bozze le vede sempre. Sul telefono invece non compare piu': quella e' la regola del PASSO 2b, e la pagina lo dichiara nella riga sotto lo stato invece di lasciarlo scoprire.
 
-**«Cambia» resta vivo**, come avevi chiesto: con un solo programma «Attiva» agisce sempre su quello, quindi il comando ha senso anche senza la scelta multipla.
+**«Cambia» era vivo in questo passo** — poi cambiato nel PASSO 3: resta spento con la pillola «in arrivo», si accende dopo «Porta in B» (vedi sotto). Come avevi chiesto: con un solo programma «Attiva» agisce sempre su quello, quindi il comando ha senso anche senza la scelta multipla.
 
 **I test.** `tests/107-metti-in-bozza.test.mjs` prova il giro completo sulla pagina vera, non su un finto: attivo → premo «Metti in bozza» → il riquadro chiede il permesso col nome → confermo → il programma va in bozza e la pagina lo ridisegna con «In bozza» e il tasto «Attiva» → premo «Attiva» → confermo → torna «Attivo» e il tasto torna «Metti in bozza». L'Annulla e' provato in tutti e due i passaggi: il riquadro si chiude, nessuna scrittura parte. In piu': la riga di stato dice «Attivo» **una volta sola** (nessun tasto con la stessa parola), e la scrittura passa solo da `bdB_atleti`, con una voce di registro e l'Annulla che rimette `status: "active"` e `active: true`. Il vecchio test `105.4`, che si aspettava il tasto «Attivo» spento, e' stato riscritto sulla regola nuova.
 
@@ -216,3 +216,30 @@ Questa e' la decisione di Alice sulla versione telefono, scritta una volta e val
 **5. Il logbook del telefono deve arrivare al PC.** Il mockup oggi salva solo in locale (le code `bd-coda` e `bd-lim`). Perche' il logbook scritto dal telefono arrivi al PC servono due cose: la scrittura in `bdB_atleti` e la verifica delle regole Firestore della zona B, che oggi **non sono verificate** — rischio dichiarato, non risolto.
 
 **6. Fino al «giorno del cambio» il telefono di oggi legge A.** Il telefono che Alice usa adesso continua a leggere la zona A. Tutto quello che B scrive in `bdB_atleti` si vedra' sul telefono solo dal giorno del cambio.
+## PASSO 3 (17/11/2026) — la pillola «in arrivo» sui tasti che restano spenti
+
+**Cosa hai chiesto.** I controlli che decidiamo di tenere ma che non funzionano ancora devono dirlo dentro il tasto, a destra del testo, col taglio della vecchia pillola «demo»: la parola «in arrivo» e un tooltip che spiega **cosa fara'**. Non su «Suggerimenti: ON» (spento di proposito, ha gia' il suo tooltip) ne' su «Spiegazioni (4/4)» (e' un pannello, resta).
+
+| Dove | Tasto | Cosa dice il tooltip |
+|---|---|---|
+| barra | Periodizzazione | apre il generatore di periodizzazione: costruisce le otto settimane dai carichi |
+| barra | Cambia | apre l'elenco dei programmi presenti in B e ti fa scegliere quale guardare |
+| barra | Confronta con… | mette due programmi affiancati e segna le differenze |
+| barra | Copia da Prog… | copia gli esercizi di un altro programma dentro questo |
+| barra | ⭐ Salva in Libreria | salva questo programma nella libreria, per riusarlo come base |
+| linguette | Stress | mostra lo stress percepito settimana per settimana (arriva col passo 6) |
+| linguette | Scheletri | apre la pagina Scheletri, non ancora collegata ai salvataggi: per ora lo scheletro resta in B |
+| linguette | Periodizzazione | apre il generatore di periodizzazione: costruisce le otto settimane dai carichi |
+
+**Le linguette.** Stress, Scheletri e Periodizzazione portano la pillola anche come linguette accanto alle schede. «Analisi programmazione» resta viva e non ce l'ha.
+
+**Cambia = selettore dei programmi presenti in bdB_atleti; da attivare dopo «Porta in B».** Con un solo programma il comando non ha niente da scegliere: si accende quando in B ce ne sono almeno due.
+
+**La pillola non e' un tasto.** E' un `<i class="pr-arrivo">` dentro il tasto: nessun clic, nessun cambio di stato, e il tasto resta dichiarato spento (`aria-disabled`).
+
+**I test.** `tests/108-pillola-in-arrivo.test.mjs`, 6 test sulla pagina vera: la pillola sta dentro i tasti, il tooltip dice «in arrivo:» e cosa fara', «Suggerimenti» e «Spiegazioni» restano senza, le tre linguette spente l'hanno e «Analisi programmazione» no, la regola CSS e' quella della pillola demo in lilla, e la pillola e' un `<i>`.
+
+**Suite.** TOTALE pass 581 fail 0 file 85/85.
+
+**Quello che non ho guardato.** Non ho aperto la pagina a occhio: la prova e' sulla pagina vera caricata nei test (`desktop/index.html`), non su uno screenshot. Il lilla della pillola sul tema chiaro e' scritto in `dashboard-b.css` ma non l'ho visto renderizzato.
+

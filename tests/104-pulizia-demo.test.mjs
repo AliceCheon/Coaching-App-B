@@ -86,7 +86,7 @@ test("104.3 nella carta del programma non ci sono pi\u00f9 \u00abImporta da PDF\
   assert.ok(!/Importa da PDF/i.test(testo), "niente Importa da PDF");
   assert.ok(!/Visibile all'atleta dal/i.test(testo), "niente campo \u00abVisibile all'atleta dal\u00bb");
   assert.equal(s.carta.querySelector(".pr-vis"), null, "niente riquadro .pr-vis nella scheda viva");
-  const cambia = Array.from(s.carta.querySelectorAll(".pr-acts button")).filter((b) => b.textContent.trim() === "Cambia");
+  const cambia = Array.from(s.carta.querySelectorAll(".pr-acts button")).filter((b) => b.textContent.replace("in arrivo", "").trim() === "Cambia");
   assert.equal(cambia.length, 1, "resta un solo \u00abCambia\u00bb: quello del programma");
 });
 
