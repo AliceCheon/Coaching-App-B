@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # Script unico della suite (richiesta di Alice).
-#   bash suite.sh            -> tutte le fette + TOTALE
-#   bash suite.sh azzera | veloce | 6x | 7x | totale | nodo
+#   bash suite.sh prossima   -> esegue la prima fetta non ancora nel log
+#   bash suite.sh elenco     -> nome, quanti file e quali file di ogni fetta
+#   bash suite.sh totale     -> somma le fette e verifica i file coperti
+#   bash suite.sh azzera     -> svuota log-suite.txt
+#   bash suite.sh nodo       -> quale Node vero si usa
+#   bash suite.sh fetta <n>  -> rifai una sola fetta
+#   bash suite.sh            -> tutte le fette di fila + TOTALE
+# Regola dal 17 novembre 2026: una fetta deve stare sotto i 35 secondi, cosi'
+# una sola chiamata (45 s) la porta a termine e il log resta scritto. Le fette
+# lunghe sono spezzate in blocchi: veloce1/veloce2 da 16 file, 6x e 7x da 4.
 # Regola dal 16 novembre 2026: si usa SOLO il Node vero, e lo si sceglie
 # PROVANDO che --test parta davvero. Lo shim di GensparkAIO risponde
-# «managed runtime is not available» e non esegue nulla: con quello una fetta
-# gira a vuoto e il TOTALE direbbe «0 e 0», che e' peggio di un errore.
+# "managed runtime is not available" e non esegue nulla: con quello una fetta
+# gira a vuoto e il TOTALE direbbe "0 e 0", che e' peggio di un errore.
 cd "$(dirname "$0")" || exit 1
 
 NODE=""
@@ -15,17 +23,17 @@ trovare_node() {
   local cand dir out
   for cand in "$(command -v node 2>/dev/null)" "C:/Program Files/nodejs/node.exe" "/c/Program Files/nodejs/node.exe" "/mnt/c/Program Files/nodejs/node.exe"; do
     if [ -z "$cand" ]; then
-      MOTIVO="$MOTIVO · nessun node nel PATH"
+      MOTIVO="$MOTIVO . nessun node nel PATH"
       continue
     fi
     if ! "$cand" -e "process.exit(0)" >/dev/null 2>&1; then
-      MOTIVO="$MOTIVO · non parte: $cand"
+      MOTIVO="$MOTIVO . non parte: $cand"
       continue
     fi
     dir=".prova-node-$$"
     rm -rf "$dir"
     if ! mkdir -p "$dir"; then
-      MOTIVO="$MOTIVO · non posso creare la cartella di prova dentro il repo"
+      MOTIVO="$MOTIVO . non posso creare la cartella di prova dentro il repo"
       continue
     fi
     printf 'import { test } from "node:test";\ntest("prova", () => {});\n' > "$dir/p.test.mjs"
@@ -35,7 +43,7 @@ trovare_node() {
       NODE="$cand"
       return 0
     fi
-    MOTIVO="$MOTIVO · c'e' ma --test non parte: $cand ($(echo "$out" | grep -vE '^[[:space:]]*$' | head -1))"
+    MOTIVO="$MOTIVO . c'e' ma --test non parte: $cand ($(echo "$out" | grep -vE '^[[:space:]]*$' | head -1))"
   done
   return 1
 }
@@ -48,6 +56,7 @@ fi
 
 prendi() { grep -oE "$1 [0-9]+" "$2" | tail -1 | grep -oE "[0-9]+"; }
 
+# Una fetta: nome + i file da passare a --test. Scrive una riga in log-suite.txt.
 fetta() {
   local nome="$1"
   shift
@@ -71,54 +80,103 @@ fetta() {
   [ "$f" = "0" ]
 }
 
-totale() {
-  local P=0 F=0 NF=0 mancanti="" nome linea p f nf sudisco
-  sudisco=$(ls tests/*.test.mjs 2>/dev/null | wc -l | tr -d ' ')
-  for nome in veloce1 veloce2 6x 7x; do
-    linea=$(grep "^fetta $nome:" log-suite.txt | tail -1)
-    if [ -z "$linea" ]; then
-      mancanti="$mancanti $nome"
+# Spezza un elenco in blocchi di "passo" file: nome-1, nome-2, ...
+chunkizza() {
+  local nome="$1"
+  local passo="$2"
+  shift 2
+  local tot=$#
+  local i=0 k=1
+  while [ "$i" -lt "$tot" ]; do
+    local -a files=("${@:i+1:passo}")
+    printf '%s-%d\t%d\t%s\n' "$nome" "$k" "${#files[@]}" "${files[*]}" >> fette.txt
+    i=$((i + passo))
+    k=$((k + 1))
+  done
+}
+
+# Elenco completo delle fette in fette.txt (nome, quanti file, quali file).
+costruisci() {
+  local testa meta
+  testa=$(ls tests/*.test.mjs 2>/dev/null | grep -v "tests/6" | grep -v "tests/7")
+  read -r -a VELOCE_ARR <<< "$(echo "$testa" | tr '\n' ' ')"
+  meta=$(( (${#VELOCE_ARR[@]} + 1) / 2 ))
+  : > fette.txt
+  chunkizza veloce1 16 "${VELOCE_ARR[@]:0:$meta}"
+  chunkizza veloce2 16 "${VELOCE_ARR[@]:$meta}"
+  chunkizza 6x 4 tests/6*.test.mjs
+  chunkizza 7x 4 tests/7*.test.mjs
+}
+
+prossima() {
+  costruisci
+  local nome nf fl
+  while IFS=$'\t' read -r nome nf fl; do
+    if grep -q "^fetta $nome:" log-suite.txt; then
       continue
     fi
-    if echo "$linea" | grep -q MANCATA; then
+    read -r -a ARR <<< "$fl"
+    fetta "$nome" "${ARR[@]}"
+    return $?
+  done < fette.txt
+  echo "nessuna fetta da fare: il log ha gia' tutte le fette (usa azzera per rifare)" | tee -a log-suite.txt
+  return 0
+}
+
+totale() {
+  costruisci
+  local nome nf fl linea p f
+  local P=0 F=0 NF=0 mancanti="" sudisco
+  sudisco=$(ls tests/*.test.mjs 2>/dev/null | wc -l | tr -d ' ')
+  while IFS=$'\t' read -r nome nf fl; do
+    linea=$(grep "^fetta $nome:" log-suite.txt | tail -1)
+    if [ -z "$linea" ] || echo "$linea" | grep -q MANCATA; then
       mancanti="$mancanti $nome"
       continue
     fi
     p=$(echo "$linea" | grep -oE "pass [0-9]+" | grep -oE "[0-9]+")
     f=$(echo "$linea" | grep -oE "fail [0-9]+" | grep -oE "[0-9]+")
-    nf=$(echo "$linea" | grep -oE "file [0-9]+" | grep -oE "[0-9]+")
     P=$((P + p))
     F=$((F + f))
     NF=$((NF + nf))
-  done
+  done < fette.txt
   if [ -n "$mancanti" ] || [ "$NF" != "$sudisco" ] || [ "$F" != "0" ]; then
-    echo "TOTALE FALLITO pass $P fail $F file $NF/$sudisco · fette mancanti:$mancanti"
+    echo "TOTALE FALLITO pass $P fail $F file $NF/$sudisco . fette mancanti:$mancanti"
     return 1
   fi
   echo "TOTALE pass $P fail $F file $NF/$sudisco"
 }
 
-VELOCE=$(ls tests/*.test.mjs | grep -v "tests/6" | grep -v "tests/7" | tr "
-" " ")
-read -r -a VELOCE_ARR <<< "$VELOCE"
-METAV=$(( (${#VELOCE_ARR[@]} + 1) / 2 ))
-VELOCE1=("${VELOCE_ARR[@]:0:$METAV}")
-VELOCE2=("${VELOCE_ARR[@]:$METAV}")
-
 case "$1" in
   nodo) echo "node vero: $NODE" ;;
-  azzera) : > log-suite.txt ;;
-  veloce1) fetta veloce1 "${VELOCE1[@]}" ;;
-  veloce2) fetta veloce2 "${VELOCE2[@]}" ;;
-  6x) fetta 6x tests/6*.test.mjs ;;
-  7x) fetta 7x tests/7*.test.mjs ;;
+  azzera) : > log-suite.txt; echo "log-suite.txt svuotato" ;;
+  elenco) costruisci; awk -F'\t' '{printf "%-10s %2d file  %s\n", $1, $2, $3}' fette.txt | cut -c1-150 ;;
+  prossima) prossima ;;
+  fetta)
+    shift
+    if [ -z "$1" ]; then
+      echo "fetta sconosciuta: serve il nome"
+      echo "TOTALE FALLITO: fetta sconosciuta"
+      exit 2
+    fi
+    costruisci
+    RIGA=$(awk -F'\t' -v n="$1" '$1==n' fette.txt)
+    if [ -z "$RIGA" ]; then
+      echo "fetta sconosciuta: $1"
+      echo "TOTALE FALLITO: fetta sconosciuta"
+      exit 2
+    fi
+    FLCH=$(echo "$RIGA" | awk -F'\t' '{print $3}')
+    read -r -a ARR <<< "$FLCH"
+    fetta "$1" "${ARR[@]}" ;;
   totale) totale ;;
   "")
     : > log-suite.txt
-    fetta veloce1 "${VELOCE1[@]}"
-    fetta veloce2 "${VELOCE2[@]}"
-    fetta 6x tests/6*.test.mjs
-    fetta 7x tests/7*.test.mjs
+    costruisci
+    while IFS=$'\t' read -r NOME NF FL; do
+      read -r -a ARR <<< "$FL"
+      fetta "$NOME" "${ARR[@]}" || break
+    done < fette.txt
     totale ;;
   *) echo "fetta sconosciuta: $1"; echo "TOTALE FALLITO: fetta sconosciuta"; exit 2 ;;
 esac
