@@ -277,7 +277,7 @@ Tutti gli altri «C» del repo sono codici di **scheda** (la rotazione A/B/C/D) 
 
 **I test.** `tests/109-filtro-distretti.test.mjs`, 8 test: scheda con 3 distretti = «Tutti» + 3 pillole in ordine; polpacci con `Z` in colonna e pillola `Z` che filtra; adduttori con `Q` che si vedono con la pillola `Q` insieme ai quadricipiti; riga non riconosciuta con la pillola `—`; filtro che nasconde le righe giuste comprese le figlie tecniche; zebra ricalcolata; cornice solo col gruppo intero; dati interi e stampa intatta.
 
-**Suite.** TOTALE FALLITO pass 23 fail 0 file 4/86 . fette mancanti: veloce1-1 veloce1-2 veloce1-3 veloce1-4 veloce1-5 veloce2-1 veloce2-2 veloce2-3 veloce2-4 veloce2-5 6x-1 6x-2 6x-3 6x-4 6x-5 7x-1 7x-2 7x-3.
+**Suite.** TOTALE pass 589 fail 0 file 86/86 (il numero incompleto che c'era qui era un errore mio di lettura del log, non un rosso della suite).
 
 **Quello che non ho guardato.** Non ho aperto la pagina a occhio: la prova è sulla pagina disegnata nei test, non su uno screenshot. La cornice ridisegnata dopo il filtro non l'ho vista a schermo: ho verificato che le righe del gruppo perdano e riprendano i segni `in-sup`/`z-gruppo`, che sono quelli da cui la cornice nasce.
 
