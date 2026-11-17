@@ -102,10 +102,10 @@ costruisci() {
   read -r -a VELOCE_ARR <<< "$(echo "$testa" | tr '\n' ' ')"
   meta=$(( (${#VELOCE_ARR[@]} + 1) / 2 ))
   : > fette.txt
-  chunkizza veloce1 16 "${VELOCE_ARR[@]:0:$meta}"
-  chunkizza veloce2 16 "${VELOCE_ARR[@]:$meta}"
-  chunkizza 6x 4 tests/6*.test.mjs
-  chunkizza 7x 4 tests/7*.test.mjs
+  chunkizza veloce1 8 "${VELOCE_ARR[@]:0:$meta}"
+  chunkizza veloce2 8 "${VELOCE_ARR[@]:$meta}"
+  chunkizza 6x 2 tests/6*.test.mjs
+  chunkizza 7x 2 tests/7*.test.mjs
 }
 
 prossima() {
