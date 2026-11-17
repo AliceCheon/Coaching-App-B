@@ -200,3 +200,19 @@ Si conferma col tasto rosso «Si', metti in bozza»; «Annulla» chiude e non sc
 **Suite.** TOTALE pass 575 fail 0 file 84/84 — i file di test sul disco sono 84 e il totale ne copre 84.
 
 **Quello che non ho guardato.** Non ho aperto l'app a occhio su questo passaggio: la prova e' sulla pagina vera caricata nei test, non su uno screenshot. Il colore del pallino in bozza e la larghezza del tasto «Metti in bozza» nella barra sono da vedere tu.
+
+## Il telefono (deciso il 17 novembre 2026)
+
+Questa e' la decisione di Alice sulla versione telefono, scritta una volta e valida per ogni passo che la tocca. Non e' codice: e' la regola che tiene insieme i passi futuri.
+
+**1. Il disegno del telefono e' del telefono.** La versione telefono sara' un'APK costruita dal mockup «Barbell Diva Telefono» — Dashboard, Workout, Alimentazione, Corpo, Altro, Diva Bot. Layout e navigazione sono **suoi**: non hanno niente a che vedere con la zona PC. PC e telefono sono collegati **solo dai dati**: la stessa zona `bdB_atleti` dal «giorno del cambio». Quindi non si porta sul telefono l'aspetto del desktop, e non si porta sul desktop l'aspetto del telefono.
+
+**2. La palette e' una sola.** I due lati condividono le variabili di colore: viola scuri, rosa `#ff4fa3`, lilla `#c9a7ff`, tema chiaro con `#f8eafa`. Non si cambiano in modo diverso fra PC e telefono: se cambia un colore, cambia da tutte e due le parti.
+
+**3. Il metodo e' quello del PC.** Il mockup si importa **identico e congelato**, con la sua impronta `sha256` dichiarata, in una cartella a parte. Poi si collega ai dati una sezione per volta. Ogni riga diversa dal mockup si dichiara nel diario con una guardia come la 42: se il file congelato cambia, il test lo dice.
+
+**4. `mobile/` oggi e' solo una prova.** La cartella `mobile/` e' una pagina di lettura di prova («Lettura (telefono)»): verra' **sostituita** dal mockup collegato, non estesa. Non ci si costruisce sopra.
+
+**5. Il logbook del telefono deve arrivare al PC.** Il mockup oggi salva solo in locale (le code `bd-coda` e `bd-lim`). Perche' il logbook scritto dal telefono arrivi al PC servono due cose: la scrittura in `bdB_atleti` e la verifica delle regole Firestore della zona B, che oggi **non sono verificate** — rischio dichiarato, non risolto.
+
+**6. Fino al «giorno del cambio» il telefono di oggi legge A.** Il telefono che Alice usa adesso continua a leggere la zona A. Tutto quello che B scrive in `bdB_atleti` si vedra' sul telefono solo dal giorno del cambio.
