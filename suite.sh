@@ -66,7 +66,7 @@ fetta() {
     echo "fetta $nome: MANCATA (nessun file in questa fetta)" | tee -a log-suite.txt
     return 1
   fi
-  "$NODE" --test "$@" > "$log" 2>&1
+  "$NODE" --test "$@" > "$log" 2>&1 < /dev/null
   local p f
   p=$(prendi pass "$log")
   f=$(prendi fail "$log")
@@ -175,7 +175,7 @@ case "$1" in
     costruisci
     while IFS=$'\t' read -r NOME NF FL; do
       read -r -a ARR <<< "$FL"
-      fetta "$NOME" "${ARR[@]}" || break
+      fetta "$NOME" "${ARR[@]}" || echo "(fetta non andata, continuo)"
     done < fette.txt
     totale ;;
   *) echo "fetta sconosciuta: $1"; echo "TOTALE FALLITO: fetta sconosciuta"; exit 2 ;;
