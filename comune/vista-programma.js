@@ -1394,7 +1394,7 @@ function pulsanteStampa(doc, testo, titolo, tipo) {
 /* La fila del v31, nell'ordine del v31. Tutti spenti: sono comandi che
  * scrivono (o che aprono finestre di modifica), tranne le due stampe, che
  * sarebbero letture e si accenderanno quando Alice lo dice. */
-function barraStrumenti(doc) {
+function barraStrumenti(doc, scheda, r) {
   const bar = n(doc, "div", "pr-bar");
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Applica sett./scarico a tutte le schede", "applica settimane e scarico a tutte le schede"));
   const cerca = n(doc, "span", "pr-cerca-box");
@@ -1408,7 +1408,12 @@ function barraStrumenti(doc) {
   bar.appendChild(cerca);
   bar.appendChild(pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, modificaCorrente)));
   bar.appendChild(pulsanteInArrivo(doc, "pr-btn", "Periodizzazione", "apre il generatore di periodizzazione: costruisce le otto settimane dai carichi"));
-  bar.appendChild(pulsanteConEtichetta(doc, "pr-btn", "Copia/Sposta esercizi", "demo", "copia o sposta esercizi"));
+  /* PASSO 4b — il tasto è vivo: la pillola «demo» se n'è andata con il
+   * riquadro dentro la pagina. La copia vale dentro il programma attivo:
+   * mai da un atleta all'altro, mai fuori dalle schede di questo programma. */
+  const btCopia = pulsanteVivo(doc, "pr-btn", "Copia/Sposta esercizi", "copia o sposta gli esercizi in un'altra scheda", () => apriCopiaEsercizi(doc, btCopia, scheda, r));
+  btCopia.setAttribute("data-copia", "1");
+  bar.appendChild(btCopia);
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));
   bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
   bar.appendChild(pulsanteStampa(doc, "Stampa da Compilare", "stampa una settimana con le caselle vuote da spuntare a mano", "compilare"));
@@ -1567,7 +1572,7 @@ function pannelloScheda(doc, scheda, r) {
   testata2.appendChild(f);
   p.appendChild(testata2);
 
-  p.appendChild(barraStrumenti(doc));
+  p.appendChild(barraStrumenti(doc, scheda, r));
   p.appendChild(filtriDistretti(doc, scheda, p));
 
   const note = n(doc, "div", "pr-note");
@@ -2786,6 +2791,203 @@ function mostraEsitoScheletro(doc, bottone, esito, nome) {
   riga.textContent = testo;
   riga.setAttribute("data-esito", esito && esito.ok === true ? "salvato" : "non-salvato");
   return riga;
+}
+
+/* ---------- PASSO 4b \u00b7 copia e sposta esercizi ---------------------------- */
+
+/* Le spunte del riquadro: solo le righe scelte, nell'ordine dell'elenco. */
+function eserciziSpuntati(box) {
+  return Array.from(box.querySelectorAll("input[data-copia-es]"))
+    .filter((i) => i.checked === true)
+    .map((i) => String(i.value || ""))
+    .filter(Boolean);
+}
+
+/* Le righe tecniche che seguono i padri scelti: si contano per la domanda. */
+function tecnicheSpuntate(scheda, scelti) {
+  const presi = {};
+  scelti.forEach((id) => { presi[id] = true; });
+  return ((scheda && scheda.tecniche) || []).filter((t) => t && presi[String(t.padreId || "")]).length;
+}
+
+function messaggioGruppiTagliati(gruppi) {
+  const pezzi = (Array.isArray(gruppi) ? gruppi : []).filter((g) => Array.isArray(g) && g.length).map((g) => "[" + g.join(" + ") + "]");
+  if (!pezzi.length) return "";
+  return "le superserie spuntate solo in parte arrivano senza legame: " + pezzi.join(", ");
+}
+
+function mostraEsitoCopia(doc, barra, testo, salvato) {
+  if (!barra) return null;
+  let riga = barra.querySelector(".pr-esito");
+  if (!riga) { riga = n(doc, "p", "pr-esito"); barra.appendChild(riga); }
+  riga.textContent = String(testo == null ? "" : testo);
+  riga.setAttribute("data-esito", salvato === true ? "salvato" : "non-salvato");
+  return riga;
+}
+
+function eseguiCopia(doc, barra, mod, richiesta) {
+  return Promise.resolve(mod.copiaEsercizi(richiesta)).then((esito) => {
+    if (esito && esito.ok === true) {
+      let testo = String(esito.testo || "esercizi copiati");
+      const gruppi = messaggioGruppiTagliati(esito.gruppiTagliati);
+      if (gruppi) testo += " \u00b7 " + gruppi;
+      mostraEsitoCopia(doc, barra, testo, true);
+      return;
+    }
+    if (esito && Array.isArray(esito.doppioni) && esito.doppioni.length) {
+      apriDoppioni(doc, barra, mod, richiesta, esito.doppioni);
+      return;
+    }
+    const m = String((esito && (esito.motivo || esito.testo)) || "").trim() || "non ho scritto niente";
+    mostraEsitoCopia(doc, barra, m, false);
+  }).catch((e) => {
+    mostraEsitoCopia(doc, barra, (e && e.message) || "errore", false);
+  });
+}
+
+/* I doppioni: la pagina mostra QUALI sono e offre due strade valide per tutti
+ * i doppioni di questa operazione. Nessuna aggiunta silenziosa, mai. */
+function apriDoppioni(doc, barra, mod, richiesta, doppioni) {
+  const vecchio = barra.querySelector(".pr-conf");
+  if (vecchio) chiudiConferma(vecchio);
+  const box = n(doc, "div", "pr-conf");
+  box.setAttribute("data-copia-box", "1");
+  box.setAttribute("data-doppioni", "1");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "esercizi gia presenti");
+  box.appendChild(n(doc, "p", "pr-conf-titolo", "Ci sono gia', nella scheda di destinazione"));
+  box.appendChild(n(doc, "p", "", doppioni.length === 1
+    ? "Nella scheda di destinazione c'e' gia' questo esercizio:"
+    : "Nella scheda di destinazione ci sono gia' questi esercizi:"));
+  const elenco = n(doc, "ul", "pr-conf-doppioni");
+  doppioni.forEach((nome) => elenco.appendChild(n(doc, "li", "", nome)));
+  box.appendChild(elenco);
+  box.appendChild(n(doc, "p", "pr-conf-avviso", "Non ho scritto niente. La scelta vale per tutti i doppioni di questa operazione."));
+  const fila = n(doc, "div", "pr-conf-fila");
+  fila.appendChild(pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => chiudiConferma(box)));
+  const sost = pulsanteVivo(doc, "pr-btn danger", "Sostituisci", "l'esistente esce e la copia prende il suo posto", () => {
+    chiudiConferma(box);
+    eseguiCopia(doc, barra, mod, Object.assign({}, richiesta, { doppioni: "sostituisci" }));
+  });
+  sost.setAttribute("data-copia-scelta", "sostituisci");
+  fila.appendChild(sost);
+  const agg = pulsanteVivo(doc, "pr-btn", "Aggiungi ugualmente", "resta anche l'esistente", () => {
+    chiudiConferma(box);
+    eseguiCopia(doc, barra, mod, Object.assign({}, richiesta, { doppioni: "aggiungi" }));
+  });
+  agg.setAttribute("data-copia-scelta", "aggiungi");
+  fila.appendChild(agg);
+  box.appendChild(fila);
+  box.addEventListener("keydown", (ev) => {
+    if (!ev) return;
+    if (ev.key === "Escape" || ev.keyCode === 27) { if (ev.preventDefault) ev.preventDefault(); chiudiConferma(box); }
+  });
+  barra.appendChild(box);
+  return box;
+}
+
+/* Il riquadro dentro la pagina, in due passi: prima scegli, poi leggi il
+ * conto esatto e confermi. Niente finestre del browser, niente Invio che
+ * scrive: si conferma solo col clic sul tasto. */
+function apriCopiaEsercizi(doc, bottone, scheda, r) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.copiaEsercizi !== "function") { senzaEditor(doc, bottone); return null; }
+  const barra = bottone && bottone.parentNode ? bottone.parentNode : null;
+  if (!barra) return null;
+  const aperto = barra.querySelector(".pr-conf");
+  if (aperto) chiudiConferma(aperto);
+
+  const box = n(doc, "div", "pr-conf");
+  box.setAttribute("data-copia-box", "1");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "copia esercizi");
+  box.appendChild(n(doc, "p", "pr-conf-titolo", "Copia esercizi"));
+  box.appendChild(n(doc, "p", "pr-conf-partenza", "Dalla Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "")));
+
+  const altre = (Array.isArray(r && r.schede) ? r.schede : []).filter((s) => s && String(s.id || "") !== String(scheda.id || ""));
+  if (!altre.length) {
+    box.appendChild(n(doc, "p", "pr-conf-avviso", "Questo programma non ha altre schede: non c'e' dove copiare."));
+    const f0 = n(doc, "div", "pr-conf-fila");
+    f0.appendChild(pulsanteVivo(doc, "pr-btn", "Chiudi", "chiudi", () => chiudiConferma(box)));
+    box.appendChild(f0);
+    barra.appendChild(box);
+    return box;
+  }
+
+  box.appendChild(n(doc, "span", "pr-conf-etichetta", "Scheda di destinazione"));
+  const dest = n(doc, "select", "pr-sel");
+  dest.setAttribute("data-pr-c", "copia-destinazione");
+  dest.setAttribute("aria-label", "scheda di destinazione");
+  altre.forEach((s) => {
+    const o = doc.createElement("option");
+    o.value = String(s.id || "");
+    o.textContent = "Scheda " + s.codice + (s.nome ? " \u2014 " + nomePulito(s.nome) : "");
+    dest.appendChild(o);
+  });
+  box.appendChild(dest);
+
+  box.appendChild(n(doc, "span", "pr-conf-etichetta", "Esercizi da copiare"));
+  const elenco = n(doc, "div", "pr-conf-elenco");
+  (scheda.esercizi || []).forEach((e) => {
+    const riga = n(doc, "label", "pr-conf-es");
+    const c = n(doc, "input", "");
+    c.type = "checkbox";
+    c.value = String(e.id || ""); c.setAttribute("data-copia-es", String(e.id || ""));
+    riga.appendChild(c);
+    riga.appendChild(n(doc, "span", "", nomePulito(e.nome || e.name || "")));
+    elenco.appendChild(riga);
+  });
+  box.appendChild(elenco);
+  box.appendChild(n(doc, "p", "pr-hint", "Le righe tecniche seguono il loro esercizio."));
+
+  const fila = n(doc, "div", "pr-conf-fila");
+  fila.appendChild(pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => chiudiConferma(box)));
+  const avanti = pulsanteVivo(doc, "pr-btn", "Avanti", "guarda il conto prima di scrivere", () => {
+    const scelti = eserciziSpuntati(box);
+    if (!scelti.length) { mostraEsitoCopia(doc, barra, "Spunta almeno un esercizio: non ho scritto niente.", false); return; }
+    const scelta = altre.filter((s) => String(s.id || "") === String(dest.value || ""))[0] || null;
+    if (!scelta) { mostraEsitoCopia(doc, barra, "Scegli la scheda di destinazione: non ho scritto niente.", false); return; }
+    const tec = tecnicheSpuntate(scheda, scelti);
+    const pezzi = [quanti(scelti.length, "esercizio", "esercizi")];
+    if (tec) pezzi.push(quanti(tec, "riga tecnica", "righe tecniche"));
+    const codici = {};
+    (scheda.esercizi || []).forEach((e) => { codici[String(e.id || "")] = true; });
+    const domanda = "Copi " + pezzi.join(" e ") + " dalla Scheda " + scheda.codice + " alla Scheda " + scelta.codice + "?";
+    passoConferma(doc, box, barra, mod, {
+      idSchedaPartenza: String(scheda.id || ""),
+      idSchedaDestinazione: String(scelta.id || ""),
+      idEsercizi: scelti,
+      modo: "copia",
+      codiceDestinazione: String(scelta.codice || "")
+    }, domanda);
+  });
+  avanti.setAttribute("data-copia-avanti", "1");
+  fila.appendChild(avanti);
+  box.appendChild(fila);
+  box.addEventListener("keydown", (ev) => {
+    if (!ev) return;
+    if (ev.key === "Escape" || ev.keyCode === 27) { if (ev.preventDefault) ev.preventDefault(); chiudiConferma(box); }
+  });
+  barra.appendChild(box);
+  return box;
+}
+
+/* Il secondo passo: il conto esatto e il tasto che scrive. */
+function passoConferma(doc, box, barra, mod, richiesta, domanda) {
+  while (box.firstChild) box.removeChild(box.firstChild);
+  box.appendChild(n(doc, "p", "pr-conf-titolo", "Conferma"));
+  box.appendChild(n(doc, "p", "pr-conf-domanda", domanda));
+  box.appendChild(n(doc, "p", "pr-conf-avviso", "Si puo' annullare subito dopo, e l'Annulla rimette la scheda di destinazione com'era."));
+  const fila = n(doc, "div", "pr-conf-fila");
+  fila.appendChild(pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => chiudiConferma(box)));
+  const ok = pulsanteVivo(doc, "pr-btn danger", "Conferma", "scrive davvero nella scheda di destinazione", () => {
+    chiudiConferma(box);
+    eseguiCopia(doc, barra, mod, richiesta);
+  });
+  ok.setAttribute("data-copia-conferma", "1");
+  fila.appendChild(ok);
+  box.appendChild(fila);
+  return box;
 }
 
 function senzaEditor(doc, bottone) {

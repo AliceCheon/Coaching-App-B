@@ -596,3 +596,19 @@ il campo deve mostrare «—». Per sicurezza ora la tendina viene forzata:
 le voci, `selectedIndex = 0` — così non può comparire la prima voce al posto di
 un dato che non c'è. Se in una scheda comparisse ancora S1, quel documento
 porta davvero `pianoTest { settimana: 1 }` scritto in un passaggio precedente.
+
+## PASSO 4b, commit 1 — copiare esercizi da una scheda all'altra (18 novembre 2026)
+
+**Cosa fa.** Il tasto «Copia/Sposta esercizi» della barra della scheda non è più spento e non porta più la pillola «demo»: apre un riquadro **dentro la pagina** (mai una finestra del browser) con la scheda di partenza già scritta, il menu della scheda di destinazione (solo le altre schede di questo programma), l'elenco degli esercizi della partenza con le spunte — più esercizi insieme — e il tasto «Avanti». Il secondo passo è la domanda con i numeri esatti: «Copi 3 esercizi e 1 riga tecnica dalla Scheda A alla Scheda E?». Si conferma solo con il clic: Invio non scrive, Esc chiude.
+
+**Il linguaggio.** Nell'app le giornate sono le SCHEDE (A, B, C, D): nei testi e nel registro si legge «esercizio copiato nella Scheda B», mai «giorno». La copia vale dentro il programma attivo: non esiste un passaggio da un atleta all'altro.
+
+**Cosa viaggia con l'esercizio.** Serie, ripetizioni, nota, recupero e le otto settimane identici; id nuovo per ogni riga copiata, mai un id già in giro (neanche su una riga tolta). La riga tecnica figlia segue sempre il padre e il suo `padreId` punta al **nuovo** id del padre. Una superserie si copia solo se sono spuntati **tutti** i suoi membri: in quel caso la copia riceve un identificativo di gruppo nuovo; se ne spunti una parte, la copia arriva senza legame e la pagina lo dice («le superserie spuntate solo in parte arrivano senza legame: [Rematore + Pulley]»). In fondo alla scheda di destinazione, nell'ordine della partenza. Il Logbook non si tocca mai.
+
+**Doppioni.** Se nella destinazione c'è già una riga con lo stesso nome il motore **non scrive** e restituisce l'elenco: il riquadro mostra quali sono e offre «Sostituisci» (l'esistente esce, con le sue righe tecniche, e la copia prende il suo posto) oppure «Aggiungi ugualmente» (resta anche l'esistente), più «Annulla». Nessuna aggiunta silenziosa, mai.
+
+**Scritture e Annulla.** Una scrittura sulla destinazione; per lo sposta, prima la destinazione e poi la partenza — se la seconda non passa la copia resta e il messaggio dice «esercizi copiati ma non tolti dalla scheda di partenza». Una **sola voce di registro** per tutta l'operazione, con la fotografia delle schede toccate: un solo Annulla rimette tutti i lati, e se una metà non passa lo dichiara («esercizi rimessi in 1 schede su 2»).
+
+**Prove.** `tests/116-copia-esercizi.test.mjs`, undici prove sulla pagina vera con l'editor vero e una zona B finta che registra: riquadro e spunte, numeri della conferma, id nuovi e settimane intatte, originale intatto, figlia tecnica col nuovo padreId, superserie intera con legame nuovo e parziale senza, doppione che avvisa senza scrivere poi «Aggiungi ugualmente» e «Sostituisci», Annulla che rimette la destinazione, stessa scheda rifiutata, nessuna scrittura fuori da schede e registro, sposta con la seconda scrittura che fallisce.
+
+**Cosa non ho potuto guardare.** Nessun browser vero (jsdom): la resa grafica del riquadro non è stata fotografata, e lo Sposta non ha ancora il suo comando nella pagina — arriva nel commit 2, come da spezzatura concordata.

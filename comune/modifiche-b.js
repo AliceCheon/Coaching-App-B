@@ -1221,7 +1221,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -1789,4 +1789,321 @@ function annullaPianoETestata(dati, v, quando, uid) {
     versioneDopo: nuovo.versione
   };
   return { ok: true, dati: nuovo, voce: voce };
+}
+
+/* --- PASSO 4b (commit 1): la copia degli esercizi fra schede --------------
+ * Alice copia (o sposta) uno o piu' esercizi da una scheda all'altra, dentro
+ * il programma attivo. Il motore non conosce schermate: riceve i due
+ * documenti e l'elenco degli id scelti e restituisce i due documenti nuovi
+ * piu' UNA voce di registro per l'intera operazione (l'Annulla rimette a
+ * posto tutti e due i lati).
+ *
+ * Regole tenute qui, cosi' la pagina non le ripete:
+ *  - id NUOVI per ogni riga copiata, mai un id gia' esistente in nessuna
+ *    delle due schede, neanche su una riga tolta;
+ *  - le righe tecniche figlie seguono SEMPRE il padre e puntano al SUO id
+ *    nuovo (mai a quello vecchio);
+ *  - una superserie si copia solo INTERA, e la copia prende un identificativo
+ *    di gruppo NUOVO; se ne spunti solo una parte, la copia arriva senza
+ *    legame e il motivo si legge nel risultato;
+ *  - con lo sposta le righe escono dalla partenza e un gruppo che resta con
+ *    un solo membro vivo perde il legame (stessa regola del tasto superserie);
+ *  - il Logbook non si tocca mai: qui si scrivono solo le due schede. */
+
+function copiaProfonda(valore) {
+  if (valore == null || typeof valore !== "object") return valore;
+  try {
+    return JSON.parse(JSON.stringify(valore));
+  } catch (e) {
+    return Array.isArray(valore) ? valore.slice() : Object.assign({}, valore);
+  }
+}
+
+function nomeRigaEsercizio(riga) {
+  if (!riga || typeof riga !== "object") return "";
+  return testo(riga.name != null ? riga.name : riga.nome);
+}
+
+function chiaveNomeRiga(riga) {
+  return testo(nomeRigaEsercizio(riga)).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function righeVive(elenco) {
+  return (Array.isArray(elenco) ? elenco : []).filter((e) => e && typeof e === "object" && !e.deletedAt && !eFigliaTecnica(e));
+}
+
+function figlieViveDi(elenco, idPadre) {
+  const k = testo(idPadre);
+  if (!k) return [];
+  return (Array.isArray(elenco) ? elenco : []).filter((e) => e && typeof e === "object" && !e.deletedAt && eFigliaTecnica(e) && testo(e.padreId) === k);
+}
+
+/* Un gruppo di superserie che resta con un solo membro vivo non e' piu' un
+ * gruppo: il legame se ne va, come fa il tasto superserie quando stacca. */
+export function pulisciGruppiSoli(elenco) {
+  const conta = {};
+  righeVive(elenco).forEach((e) => { const s = testo(e.sup); if (s) conta[s] = (conta[s] || 0) + 1; });
+  return (Array.isArray(elenco) ? elenco : []).map((e) => {
+    if (!e || typeof e !== "object") return e;
+    const s = testo(e.sup);
+    if (!s || conta[s] > 1) return e;
+    const c = Object.assign({}, e);
+    delete c.sup;
+    return c;
+  });
+}
+
+/* 3 esercizi e 1 riga tecnica copiati nella Scheda B: i numeri esatti. */
+function contoInParole(conto, modo, dove) {
+  const esercizi = Number(conto.esercizi) || 0;
+  const tecniche = Number(conto.tecniche) || 0;
+  const pezzi = [esercizi === 1 ? "1 esercizio" : String(esercizi) + " esercizi"];
+  if (tecniche) pezzi.push(tecniche === 1 ? "1 riga tecnica" : String(tecniche) + " righe tecniche");
+  const plurale = esercizi + tecniche > 1;
+  const verbo = modo === "sposta" ? (plurale ? "spostati" : "spostato") : (plurale ? "copiati" : "copiato");
+  return pezzi.join(" e ") + " " + verbo + " nella " + dove;
+}
+
+export function copiaEsercizi(datiPartenza, datiDestinazione, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const modo = testo(r.modo) === "sposta" ? "sposta" : "copia";
+  const fP = foglioDi(datiPartenza);
+  if (!fP) return { ok: false, motivo: "la scheda di partenza non e' leggibile: non ho scritto niente" };
+  const fD = foglioDi(datiDestinazione);
+  if (!fD) return { ok: false, motivo: "la scheda di destinazione non e' leggibile: non ho scritto niente" };
+  const chiaveP = chiaveEsercizi(fP);
+  const chiaveD = chiaveEsercizi(fD);
+  if (!chiaveP) return { ok: false, motivo: "la scheda di partenza non ha un elenco di esercizi: non ho scritto niente" };
+  if (!chiaveD) return { ok: false, motivo: "la scheda di destinazione non ha un elenco di esercizi: non ho scritto niente" };
+  const elencoP = fP[chiaveP];
+  const elencoD = fD[chiaveD];
+  const scelti = Array.isArray(r.idEsercizi) ? r.idEsercizi.map((x) => testo(x)).filter(Boolean) : [];
+  if (!scelti.length) return { ok: false, motivo: "non hai spuntato nessun esercizio: non ho scritto niente" };
+
+  /* Le righe scelte: solo esercizi vivi, mai le figlie di una tecnica. */
+  const prese = [];
+  scelti.forEach((id) => {
+    const i = indicePerId(elencoP, id);
+    if (i < 0) return;
+    const e = elencoP[i];
+    if (!e || typeof e !== "object" || e.deletedAt || eFigliaTecnica(e)) return;
+    if (prese.some((x) => x.indice === i)) return;
+    prese.push({ indice: i, riga: e });
+  });
+  if (!prese.length) return { ok: false, motivo: "gli esercizi scelti non si ritrovano vivi in questa scheda: non ho scritto niente" };
+  prese.sort((a, b) => a.indice - b.indice);
+  const presoId = {};
+  prese.forEach((x) => { presoId[testo(x.riga.id)] = true; });
+
+  /* Tutti gli id gia' in giro: nessuna copia li riusa. */
+  const usati = {};
+  elencoP.concat(elencoD).forEach((e) => { const id = testo(e && e.id); if (id) usati[id] = true; });
+  const genera = typeof o.generaId === "function" ? o.generaId : generaIdDiDefault;
+  function idLibero() {
+    for (let t = 0; t < 40; t += 1) {
+      const id = testo(genera(t));
+      if (id && !usati[id]) { usati[id] = true; return id; }
+    }
+    return "";
+  }
+
+  /* Le superserie: intere o niente. */
+  const membri = {};
+  righeVive(elencoP).forEach((e) => {
+    const s = testo(e.sup);
+    if (!s) return;
+    if (!membri[s]) membri[s] = [];
+    membri[s].push(testo(e.id));
+  });
+  const nuovoSup = {};
+  const gruppiTagliati = [];
+  Object.keys(membri).forEach((s) => {
+    const tutti = membri[s];
+    const presi = tutti.filter((id) => presoId[id]).length;
+    if (!presi) return;
+    if (presi === tutti.length && tutti.length >= 2) {
+      for (let t = 0; t < 20; t += 1) {
+        const nuovo = "ss-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+        if (!usati[nuovo]) { usati[nuovo] = true; nuovoSup[s] = nuovo; break; }
+      }
+    } else {
+      gruppiTagliati.push(tutti.map((id) => {
+        const i = indicePerId(elencoP, id);
+        return i < 0 ? "" : nomeRigaEsercizio(elencoP[i]);
+      }).filter(Boolean));
+    }
+  });
+
+  /* I doppioni: se il nome c'e' gia' nella destinazione il motore NON scrive
+   * e li restituisce; la scelta la fa Alice, per tutti insieme. */
+  const nomiDest = {};
+  righeVive(elencoD).forEach((e) => {
+    const k = chiaveNomeRiga(e);
+    if (!k) return;
+    if (!nomiDest[k]) nomiDest[k] = [];
+    nomiDest[k].push(e);
+  });
+  const doppioni = [];
+  prese.forEach((x) => {
+    const nome = nomeRigaEsercizio(x.riga);
+    if (nomiDest[chiaveNomeRiga(x.riga)] && doppioni.indexOf(nome) === -1) doppioni.push(nome);
+  });
+  const sceltaDoppioni = testo(r.doppioni);
+  if (doppioni.length && sceltaDoppioni !== "sostituisci" && sceltaDoppioni !== "aggiungi") {
+    return {
+      ok: false,
+      doppioni: doppioni,
+      motivo: (doppioni.length === 1
+        ? "nella scheda di destinazione c'e' gia' " + doppioni[0]
+        : "nella scheda di destinazione ci sono gia' " + doppioni.join(", ")) +
+        ": scegli se sostituirli o aggiungerli ugualmente. Non ho scritto niente"
+    };
+  }
+
+  /* Dove atterrano: in fondo, nell'ordine in cui compaiono nella partenza. */
+  let massimo = -1;
+  elencoD.forEach((e, i) => {
+    if (!e || typeof e !== "object") return;
+    const v = numeroDi(e.order != null ? e.order : e.ordine);
+    massimo = Math.max(massimo, v == null ? i : v);
+  });
+  const nuove = [];
+  let copiati = 0;
+  let tecnicheCopiate = 0;
+  prese.forEach((x) => {
+    const vecchioId = testo(x.riga.id);
+    const nuovoId = idLibero();
+    if (!nuovoId) return;
+    const copia = copiaProfonda(x.riga);
+    copia.id = nuovoId;
+    delete copia.deletedAt;
+    massimo += 1;
+    copia.order = massimo;
+    const sup = testo(copia.sup);
+    if (sup && nuovoSup[sup]) copia.sup = nuovoSup[sup];
+    else delete copia.sup;
+    nuove.push(copia);
+    copiati += 1;
+    figlieViveDi(elencoP, vecchioId).forEach((figlia) => {
+      const idF = idLibero();
+      if (!idF) return;
+      const cf = copiaProfonda(figlia);
+      cf.id = idF;
+      cf.padreId = nuovoId;
+      delete cf.deletedAt;
+      massimo += 1;
+      cf.order = massimo;
+      nuove.push(cf);
+      tecnicheCopiate += 1;
+    });
+  });
+  if (copiati !== prese.length) return { ok: false, motivo: "non ho trovato identificativi liberi per tutti gli esercizi: non ho scritto niente" };
+
+  /* Sostituisci: l'esistente esce (con le sue righe tecniche) e la copia
+   * prende il suo posto. Aggiungi ugualmente: resta anche l'esistente. */
+  const nomiCopiati = {};
+  prese.forEach((x) => { const k = chiaveNomeRiga(x.riga); if (k) nomiCopiati[k] = true; });
+  const sostituiti = [];
+  let elencoFinaleD = elencoD.slice();
+  if (sceltaDoppioni === "sostituisci" && doppioni.length) {
+    elencoFinaleD = elencoD.map((e) => {
+      if (!e || typeof e !== "object" || e.deletedAt) return e;
+      if (eFigliaTecnica(e)) {
+        const iP = indicePerId(elencoD, e.padreId);
+        const padre = iP < 0 ? null : elencoD[iP];
+        if (padre && !padre.deletedAt && nomiCopiati[chiaveNomeRiga(padre)]) {
+          sostituiti.push(testo(e.id));
+          return Object.assign({}, e, { deletedAt: quando });
+        }
+        return e;
+      }
+      if (!nomiCopiati[chiaveNomeRiga(e)]) return e;
+      sostituiti.push(testo(e.id));
+      return Object.assign({}, e, { deletedAt: quando });
+    });
+  }
+  const elencoNuovoD = elencoFinaleD.concat(nuove);
+
+  let elencoNuovoP = elencoP;
+  if (modo === "sposta") {
+    elencoNuovoP = pulisciGruppiSoli(elencoP.filter((e) => {
+      if (!e || typeof e !== "object" || e.deletedAt) return true;
+      if (eFigliaTecnica(e)) return !presoId[testo(e.padreId)];
+      return !presoId[testo(e.id)];
+    }));
+  }
+
+  const nuovoD = chiudiDocumento(datiDestinazione, fD, chiaveD, elencoNuovoD, quando, o.uid,
+    modo === "sposta" ? "esercizi spostati" : "esercizi copiati");
+  const nuovoP = modo === "sposta"
+    ? chiudiDocumento(datiPartenza, fP, chiaveP, elencoNuovoP, quando, o.uid, "esercizi tolti")
+    : datiPartenza;
+
+  const conto = { esercizi: copiati, tecniche: tecnicheCopiate };
+  const dove = testo(r.codiceDestinazione) ? "Scheda " + testo(r.codiceDestinazione) : "scheda di destinazione";
+  const testoEsito = contoInParole(conto, modo, dove);
+
+  /* Le due fotografie: servono all'Annulla, che rimette ENTRAMBI i lati. */
+  const documentiPrima = [];
+  documentiPrima.push({
+    documento: testo(r.documentoDestinazione),
+    scheda: testo(r.idSchedaDestinazione),
+    esercizi: copiaProfonda(elencoD)
+  });
+  if (modo === "sposta") {
+    documentiPrima.push({
+      documento: testo(r.documentoPartenza),
+      scheda: testo(r.idSchedaPartenza),
+      esercizi: copiaProfonda(elencoP)
+    });
+  }
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: modo === "sposta" ? "sposta-esercizi" : "copia-esercizi",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idSchedaPartenza),
+    codice: codiceScheda(nuovoP),
+    esercizio: testoEsito,
+    idEsercizio: "",
+    settimana: null,
+    campo: "copia-esercizi",
+    da: testo(r.idSchedaPartenza),
+    a: testo(r.idSchedaDestinazione),
+    modo: modo,
+    eserciziCopiati: prese.map((x) => nomeRigaEsercizio(x.riga)),
+    tecnicheCopiate: tecnicheCopiate,
+    sostituiti: sostituiti,
+    doppioni: sceltaDoppioni || "",
+    prima: { documenti: documentiPrima },
+    dopoTesto: modo === "sposta" ? "esercizi spostati" : "esercizi copiati",
+    versionePrima: versioneDi(datiPartenza),
+    versioneDopo: versioneDi(nuovoD)
+  };
+
+  return {
+    ok: true,
+    datiPartenza: nuovoP,
+    datiDestinazione: nuovoD,
+    voce: voce,
+    testo: testoEsito,
+    conto: conto,
+    sostituiti: sostituiti,
+    gruppiTagliati: gruppiTagliati
+  };
+}
+
+/* L'Annulla di una copia o di uno spostamento: si rimette l'elenco di prima
+ * di ogni documento che la voce porta. Non si cancella niente: la storia
+ * resta intera e la voce nuova dice che cosa e' stato rimesso. */
+export function rimettiElencoEsercizi(dati, elencoPrima, quando, uid, nota) {
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "il documento non contiene una scheda: non ho scritto niente" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave || !Array.isArray(elencoPrima)) return { ok: false, motivo: "la voce del registro non porta l'elenco di prima: non ho scritto niente" };
+  const nuovo = chiudiDocumento(dati, f, chiave, copiaProfonda(elencoPrima), quando, uid, nota || "esercizi rimessi com'erano");
+  return { ok: true, dati: nuovo };
 }

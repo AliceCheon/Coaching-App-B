@@ -41,7 +41,7 @@ import {
   cambiaPianoScheda,
   cambiaTestataProgramma
 
-} from "./modifiche-b.js";
+, copiaEsercizi as applicaCopiaEsercizi, rimettiElencoEsercizi } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
 import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
@@ -286,6 +286,11 @@ export function creaEditorSchede(opzioni) {
       if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
       /* PASSO 4a — la testata del programma si annulla sul documento del
        * programma, non su una scheda. */
+      /* PASSO 4b — la copia (o lo spostamento) tocca due documenti: si
+       * rimettono tutti e due con una voce sola. */
+      if (String(voce.tipo || "") === "copia-esercizi" || String(voce.tipo || "") === "sposta-esercizi") {
+        return annullaCopia(voce);
+      }
       if (String(voce.tipo || "") === "testata-programma") {
         const idDoc = String(voce.programma || "");
         if (!idDoc) return { ok: false, motivo: "la voce del registro non dice quale programma rimettere" };
@@ -377,6 +382,120 @@ export function creaEditorSchede(opzioni) {
       ultima = ultimaAnnullabile(registro.concat([{ id: esito.voce.idVoce, dati: esito.voce }]));
       return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
     });
+  }
+
+
+  /* PASSO 4b — copia (o sposta) esercizi fra due schede dello stesso
+   * programma. Tocca due documenti: prima la destinazione, poi la partenza
+   * (solo per lo sposta). Una sola voce di registro per tutta l'operazione,
+   * e un solo Annulla che rimette tutti e due i lati. */
+  function copiaEsercizi(richiesta) {
+    const r = richiesta || {};
+    const idPart = String(r.idSchedaPartenza == null ? "" : r.idSchedaPartenza).trim();
+    const idDest = String(r.idSchedaDestinazione == null ? "" : r.idSchedaDestinazione).trim();
+    if (!idPart || !idDest) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato le due schede: non ho scritto niente" });
+    if (idPart === idDest) return Promise.resolve({ ok: false, motivo: "la scheda di partenza e quella di destinazione sono la stessa: scegline un'altra" });
+    const docPart = documentoScheda(idPart);
+    const docDest = documentoScheda(idDest);
+    if (!docPart) return Promise.resolve({ ok: false, motivo: "scheda di partenza non trovata in B · " + schedaNonTrovata(idPart) });
+    if (!docDest) return Promise.resolve({ ok: false, motivo: "scheda di destinazione non trovata in B · " + schedaNonTrovata(idDest) });
+    return coda.esegui("programma", async () => {
+      const lettoP = await conScadenza(leggiSchedaB(db, uid, docPart), "la lettura della scheda di partenza");
+      if (!lettoP || !lettoP.esiste) return { ok: false, motivo: "la scheda di partenza non e' ancora in B: fai prima la copia" };
+      const lettoD = await conScadenza(leggiSchedaB(db, uid, docDest), "la lettura della scheda di destinazione");
+      if (!lettoD || !lettoD.esiste) return { ok: false, motivo: "la scheda di destinazione non e' ancora in B: fai prima la copia" };
+      const esito = applicaCopiaEsercizi(lettoP.dati, lettoD.dati, Object.assign({}, r, {
+        idSchedaPartenza: idPart,
+        idSchedaDestinazione: idDest,
+        documentoPartenza: docPart,
+        documentoDestinazione: docDest
+      }), { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+
+      /* Prima la destinazione: se questa non passa, in partenza non e' stato
+       * tolto niente e la copia non esiste. */
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, docDest, esito.datiDestinazione, versioneDi(lettoD.dati)), "la scrittura della scheda di destinazione");
+      } catch (e) {
+        return { ok: false, motivo: (e && e.message ? e.message : "scrittura non riuscita") + " · non ho toccato la scheda di partenza" };
+      }
+      versioni[docDest] = versioneDi(esito.datiDestinazione);
+
+      /* Poi la partenza, solo per lo sposta. Se questa non passa la copia
+       * resta buona, e lo dico con parole che non si possono leggere male. */
+      if (esito.datiPartenza !== lettoP.dati) {
+        try {
+          await conScadenza(salvaSchedaConVersione(db, uid, docPart, esito.datiPartenza, versioneDi(lettoP.dati)), "la scrittura della scheda di partenza");
+        } catch (e) {
+          await scriviVoceSicura(esito.voce);
+          ultima = esito.voce;
+          return { ok: false, copiaResta: true, testo: esito.testo, motivo: "esercizi copiati ma non tolti dalla scheda di partenza" };
+        }
+        versioni[docPart] = versioneDi(esito.datiPartenza);
+      }
+
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      ultima = esito.voce;
+      return {
+        ok: true,
+        testo: esito.testo,
+        conto: esito.conto,
+        voce: esito.voce,
+        gruppiTagliati: esito.gruppiTagliati,
+        avvisoRegistro: avvisoVoce
+      };
+    });
+  }
+
+  /* L'Annulla che tocca due documenti: rimette l'elenco di prima dove la
+   * voce lo porta. Se una delle due meta' non passa lo dice, e la voce nuova
+   * racconta quante ne sono state rimesse. */
+  async function annullaCopia(voce) {
+    const quandoOra = quando();
+    const documentiVoce = voce && voce.prima && Array.isArray(voce.prima.documenti) ? voce.prima.documenti : [];
+    if (!documentiVoce.length) return { ok: false, motivo: "la voce del registro non porta le schede da rimettere: non ho scritto niente" };
+    const rimessi = [];
+    const falliti = [];
+    for (let i = 0; i < documentiVoce.length; i += 1) {
+      const d = documentiVoce[i];
+      const idDoc = String((d && d.documento) || "");
+      const letto = await leggiSchedaB(db, uid, idDoc);
+      if (!letto || !letto.esiste) { falliti.push(idDoc); continue; }
+      const esito = rimettiElencoEsercizi(letto.dati, d.esercizi, quandoOra, uid, "esercizi rimessi com'erano");
+      if (!esito.ok) { falliti.push(idDoc); continue; }
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, idDoc, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
+      } catch (e) {
+        falliti.push(idDoc);
+        continue;
+      }
+      versioni[idDoc] = versioneDi(esito.dati);
+      rimessi.push(idDoc);
+    }
+    if (!rimessi.length) return { ok: false, motivo: "non sono riuscito a rimettere nessuna delle schede toccate: non ho scritto la voce del registro" };
+    const testoEsito = falliti.length
+      ? "esercizi rimessi in " + rimessi.length + " schede su " + documentiVoce.length + ": " + falliti.length + " non si sono potute rimettere"
+      : "esercizi rimessi com'erano";
+    const voceNuova = {
+      idVoce: idVoceRegistro(quandoOra),
+      quando: quandoOra,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(voce.idVoce || ""),
+      scheda: "",
+      codice: "",
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "copia-esercizi",
+      prima: null,
+      dopo: null,
+      dopoTesto: testoEsito
+    };
+    const voceBuona = voceNuova;
+    const avvisoVoce = await scriviVoceSicura(voceBuona);
+    ultima = voceBuona;
+    return { ok: true, voce: voceBuona, quante: rimessi.length, falliti: falliti, testo: testoEsito, avvisoRegistro: avvisoVoce };
   }
 
   /* Il conto che si legge nella conferma. Senza id: tutto il programma. */
@@ -588,6 +707,7 @@ export function creaEditorSchede(opzioni) {
     get ultima() { return ultima; },
     modifica: modifica,
     testataProgramma: testataProgramma,
+    copiaEsercizi: copiaEsercizi,
     annulla: annulla,
     annullaVoce: annullaVoce
   };
