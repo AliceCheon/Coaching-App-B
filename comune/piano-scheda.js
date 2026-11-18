@@ -27,13 +27,12 @@ function testo(valore) {
 
 /* Quante settimane ha davvero la scheda: la piu' lunga delle prescrizioni,
  * senza scendere sotto 1. Non si inventano otto settimane se ce ne sono sei. */
-export function settimaneScheda(dati) {
-  const f = foglio(dati);
-  if (!f) return 0;
-  const chiave = Array.isArray(f.exercises) ? "exercises" : (Array.isArray(f.esercizi) ? "esercizi" : "");
-  if (!chiave) return 0;
+/* Quante settimane portano davvero delle prescrizioni: la piu' lunga.
+ * Non si inventano otto settimane se ce ne sono sei. */
+export function settimaneEsercizi(esercizi) {
+  const elenco = Array.isArray(esercizi) ? esercizi : [];
   let quante = 0;
-  f[chiave].forEach((e) => {
+  elenco.forEach((e) => {
     if (!e || typeof e !== "object") return;
     const candidati = [
       e.weeks,
@@ -42,11 +41,44 @@ export function settimaneScheda(dati) {
       e.prescrizione && e.prescrizione.elencoSettimane,
       e.elencoSettimane
     ];
-    candidati.forEach((elenco) => {
-      if (Array.isArray(elenco) && elenco.length > quante) quante = elenco.length;
+    candidati.forEach((settimane) => {
+      if (Array.isArray(settimane) && settimane.length > quante) quante = settimane.length;
     });
   });
   return quante;
+}
+
+/* Quante settimane ha la scheda di un documento. */
+export function settimaneScheda(dati) {
+  const f = foglio(dati);
+  if (!f) return 0;
+  const chiave = Array.isArray(f.exercises) ? "exercises" : (Array.isArray(f.esercizi) ? "esercizi" : "");
+  if (!chiave) return 0;
+  return settimaneEsercizi(f[chiave]);
+}
+
+/* Gli id con cui la pagina puo' chiamare una scheda sono piu' d'uno: il
+ * documento porta `sheetId`, il foglio porta il suo `id`, la vista usa
+ * quello del foglio. Indicizzare con uno solo faceva sparire il valore
+ * appena scritto (difetto del 18/11/2026): la scrittura andava a buon fine, la
+ * lettura dopo il ridisegno cercava un'altra chiave. Qui si indicizza con
+ * TUTTI, cosi' scrittura e lettura non possono piu' divergere. */
+export function pianiDalleSchede(documenti) {
+  const piani = Object.create(null);
+  (Array.isArray(documenti) ? documenti : []).forEach((d) => {
+    if (!d || !d.id) return;
+    const dati = d.dati || {};
+    if (dati.kind === "archived") return;
+    if (String(d.id).indexOf("program-v2-archived-") === 0) return;
+    const f = dati.sheet;
+    if (!f || typeof f !== "object") return;
+    const piano = leggiPiano(dati);
+    [dati.sheetId, f.id, d.id].forEach((grezza) => {
+      const k = String(grezza == null ? "" : grezza).trim();
+      if (k) piani[k] = piano;
+    });
+  });
+  return piani;
 }
 
 function intero(valore) {

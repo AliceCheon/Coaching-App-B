@@ -16,6 +16,7 @@
  * pezzi del v31 rifatti qui, con i gettoni dei due temi.
  */
 
+import { settimaneEsercizi } from "./piano-scheda.js";
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 
 import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
@@ -138,19 +139,24 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
  * lettura: qui si disegna il campo e si lascia il segnaposto `data-pr-c`;
  * chi lo trasforma in un controllo vero è comune/piano-vivo.js, che sa chi
  * è l'utente e come si scrive in B. */
-function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse) {
+function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse, opzioni) {
+  const o = opzioni || {};
   const f = n(doc, "label", "pr-f" + (extraClasse ? " " + extraClasse : ""));
-  f.appendChild(n(doc, "span", "pr-lab", etichetta));
+  const lab = n(doc, "span", "pr-lab", etichetta);
+  if (o.titolo) lab.setAttribute("title", o.titolo);
+  f.appendChild(lab);
   let controllo;
   if (tipo === "select") {
     controllo = n(doc, "select", "pr-sel pr-vivo");
-    const vuota = n(doc, "option", "", NON);
+    const vuota = n(doc, "option", "", o.vuota || "\u2014");
     vuota.value = "";
     controllo.appendChild(vuota);
-    (Array.isArray(scelte) ? scelte : []).forEach((o) => {
-      const op = n(doc, "option", "", o);
-      op.value = o;
-      if (o === valore) { op.selected = true; op.setAttribute("selected", ""); }
+    (Array.isArray(scelte) ? scelte : []).forEach((voce) => {
+      const testoVoce = voce && typeof voce === "object" ? String(voce.testo) : String(voce);
+      const valoreVoce = voce && typeof voce === "object" ? String(voce.valore) : String(voce);
+      const op = n(doc, "option", "", testoVoce);
+      op.value = valoreVoce;
+      if (valoreVoce === valore) { op.selected = true; op.setAttribute("selected", ""); }
       controllo.appendChild(op);
     });
     if (!valore) { vuota.selected = true; vuota.setAttribute("selected", ""); }
@@ -160,11 +166,20 @@ function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse) {
     controllo.setAttribute("inputmode", "numeric");
     controllo.value = valore == null ? "" : String(valore);
     controllo.setAttribute("value", valore == null ? "" : String(valore));
-    controllo.placeholder = NON;
+    controllo.placeholder = o.segnaposto || NON;
   }
+  if (o.titolo) controllo.setAttribute("title", o.titolo);
   controllo.setAttribute("data-pr-c", chiave);
   controllo.setAttribute("aria-label", etichetta);
-  f.appendChild(controllo);
+  if (o.suffisso) {
+    const coda = n(doc, "span", "pr-suf", o.suffisso);
+    const guscio = n(doc, "span", "pr-suf-box");
+    guscio.appendChild(controllo);
+    guscio.appendChild(coda);
+    f.appendChild(guscio);
+  } else {
+    f.appendChild(controllo);
+  }
   return f;
 }
 
@@ -775,8 +790,8 @@ function cartaProgramma(doc, r) {
 
   const campi = n(doc, "div", "pr-fields");
   campi.appendChild(campo(doc, "Programma", nomePulito(r.profilo.nome), "text", null, null, "pr-f-full"));
-  campi.appendChild(campoPiano(doc, "Data inizio", "", "programma-inizio", "text", null, "pr-f-sm"));
-  campi.appendChild(campoPiano(doc, "Fase", "", "programma-fase", "select", ["Bulk", "Cut", "Recomp", "Mantenimento"], "pr-f-sm"));
+  campi.appendChild(campoPiano(doc, "Data inizio", "", "programma-inizio", "text", null, "pr-f-sm", { titolo: "il giorno in cui comincia il programma: gg/mm/aaaa", segnaposto: "gg/mm/aaaa" }));
+  campi.appendChild(campoPiano(doc, "Fase", "", "programma-fase", "select", ["Bulk", "Cut", "Recomp", "Mantenimento"], "pr-f-sm", { titolo: "la fase del blocco" }));
   campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
   campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text"));
   c.appendChild(campi);
@@ -1532,17 +1547,21 @@ function pannelloScheda(doc, scheda, r) {
   }, -1);
 
   const f = n(doc, "div", "pr-shd-f");
+  /* Le tendine delle settimane: S1...SN, con N = settimane scritte davvero
+   * nella scheda. «—» vuol dire «non registrato». */
+  const quantePiano = settimaneEsercizi(scheda.esercizi);
+  const vociSettimane = Array.from({ length: quantePiano }, (_, i) => ({ valore: "S" + (i + 1), testo: "S" + (i + 1) }));
   f.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text", null, null, "pr-f-sm"));
   /* PASSO 4a — scarico (settimana e percentuale) e test sono campi veri.
    * Il piano letto dal documento lo riempie comune/piano-vivo.js: qui si
    * disegna solo il campo, con «non registrato» quando non c'e'. Il «2°»
    * è stato tolto: nessun blocco lo legge e nessuno lo usava. */
-  f.appendChild(campoPiano(doc, "Scarico", "", "scarico-settimana", "text", null, "pr-f-sm"));
-  f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm"));
+  f.appendChild(campoPiano(doc, "Scarico", "", "scarico-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana dello scarico" }));
+  f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm", { titolo: "di quanto togli il volume in quella settimana, es. 40", segnaposto: "es. 40", suffisso: "%" }));
   const chipScarico = n(doc, "span", "pr-chip-s4", "S— vol non registrato");
   chipScarico.setAttribute("data-pr-c", "scarico-chip");
   f.appendChild(chipScarico);
-  f.appendChild(campoPiano(doc, "Test", "", "test-settimana", "text", null, "pr-f-sm"));
+  f.appendChild(campoPiano(doc, "Test", "", "test-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana del test" }));
   testata2.appendChild(f);
   p.appendChild(testata2);
 

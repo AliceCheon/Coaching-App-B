@@ -435,3 +435,88 @@ finto, la zona B finta e jsdom, non il database. La resa a schermo nei due temi
 non è stata guardata a occhio: i campi usano le classi `pr-in`/`pr-sel`/`pr-f`
 già esistenti, quindi non c'è CSS nuovo — ma questo è un argomento, non una
 verifica.
+
+## PASSO 4a-bis — il valore che spariva uscendo dal campo (18 novembre 2026)
+
+Alice lo ha visto sulla pagina vera: scriveva la settimana di scarico e la
+percentuale, usciva dal campo, e il valore spariva senza un messaggio.
+
+**La causa e' la (c): il valore si scriveva, la lettura non lo ritrovava.**
+La scrittura andava a buon fine (`pianoScarico` finiva davvero nella scheda in
+zona B), ma i piani che la pagina tiene in mano erano indicizzati con una chiave
+sola — `dati.sheetId || sheet.id` — mentre la vista chiede la scheda con
+`scheda.id`, che per una scheda copiata da A e' `sheet.id`. Quando i due campi
+non coincidono (ed e' il caso normale: `sheetId: "s-A"`, `sheet.id: "sh-A"`) la
+vista cercava una chiave che non esisteva, il piano le arrivava `null` e
+riscriveva il campo vuoto. Nessun errore, perche' non c'era nessun errore da
+scrivere: il difetto era tutto nella lettura.
+
+Non era lo stesso difetto del PASSO 3d: la' si confrontavano id di documento
+contro id interno, qui due id della stessa scheda. Ma la lezione e' la stessa, e
+la cura e' la stessa: **una sola funzione** che dice quale documento e' quella
+scheda, usata da chi scrive e da chi legge.
+
+### Cosa e' cambiato
+
+- `comune/piano-scheda.js`: nuova `pianiDalleSchede(documenti)`, che indicizza
+  il piano con **tutti** gli id della scheda (`sheetId`, `sheet.id`, id del
+  documento) e salta archiviate e documenti archiviati. Nuova
+  `settimaneEsercizi(esercizi)`, che `settimaneScheda` ora usa: le settimane
+  della scheda si contano in un posto solo.
+- `desktop/app-v31.js`: il blocco che raccoglieva i piani a mano e' sostituito
+  da `pianiDalleSchede(schedeGrezze)`. Scrittura e lettura passano dalla stessa
+  funzione, quindi non possono piu' divergere.
+- `comune/vista-programma.js`: `campoPiano` accetta un oggetto di opzioni
+  (tooltip, segnaposto, suffisso) e le voci di tendina come `{ valore, testo }`.
+  **Scarico e Test sono tendine** con «—» e «S1»…«SN» (N = settimane scritte
+  davvero nella scheda, non otto per forza). **Vol −%** e' un numero con il
+  segno `%` accanto e il tooltip «di quanto togli il volume in quella
+  settimana, es. 40». Tooltip sulle etichette: Scarico «settimana dello
+  scarico», Test «settimana del test». La voce vuota della tendina dice «—».
+- `comune/piano-vivo.js`: riscritto.
+  - si scrive **solo sul cambio** (change/blur o Invio), mai a ogni tasto;
+  - **mentre il campo ha il fuoco la pagina non si ridisegna**: il ridisegno
+    parte quando il fuoco esce (`dopoIlFuoco`). Prima poteva essere sostituito
+    l'elemento sotto le dita;
+  - un rifiuto **non e' piu' un silenzio**: la riga di stato dice «Scarico non
+    salvato: <motivo>» (e cosi' per Test, Data di inizio, Fase) e **il campo
+    tiene quello che Alice ha scritto** finche' non lo corregge;
+  - dopo un ridisegno e dopo un Annulla il campo mostra il valore SALVATO.
+
+### Le prove (`tests/114-piano-pagina-vera.test.mjs`, 7 prove)
+
+Pagina vera (`desktop/index.html`) + `renderProgramma` + **editor vero**
+(`creaEditorSchede`) sopra una zona B finta in memoria che registra le
+scritture. Scheda con `sheetId: "s-A"` e `sheet.id: "sh-A"`, come i documenti
+che arrivano da A.
+
+1. la stessa scheda si trova con tutti i suoi id (la causa);
+2. Scarico e Test sono tendine «—, S1…S8», Vol ha `%` e tooltip, etichette con
+   tooltip;
+3. S4 + 40 arrivano in zona B (`pianoScarico { settimana: 4, volume: 40 }`),
+   la settimana 4 e' `deload` su tutte le righe, e dopo il ridisegno i campi
+   mostrano ancora S4 e 40;
+4. scrittura rifiutata (versione cambiata sotto): messaggio «Scarico non
+   salvato: …versione…» visibile e valore scelto mantenuto, disco intatto;
+5. Annulla: il piano esce dalla scheda e la tendina torna a «—»;
+6. Data inizio e Fase arrivano in zona B e resistono al ridisegno;
+7. con il fuoco dentro il campo la pagina non si ridisegna; uscendo, si
+   ridisegna e il valore resta.
+
+`tests/113` aggiornato dove il comportamento e' cambiato per scelta di Alice:
+una data impossibile (31/02/2026) ora **resta scritta** con il messaggio
+«Data di inizio non salvata: …», invece di essere cancellata in silenzio.
+
+### Cosa le prove NON coprono
+
+La scrittura vera su Firestore con le regole vere: qui il database e' finto e
+in memoria, l'editor e' quello vero ma il filo verso il cloud no. Quindi resta
+da guardare a mano, sulla pagina vera, che il salvataggio passi con le regole
+di produzione — tutto il resto del giro (validazione, versione, registro,
+ridisegno, Annulla) e' provato.
+
+### Riconciliazione dei numeri
+
+La suite contava 610 prove su 89 file con il 113 fuori dalle fette. Il 113 e'
+dentro `fette.txt`, il 114 entra con questa consegna: il totale atteso e'
+**90 file**. Il numero delle prove sale di 11 (113) + 7 (114).

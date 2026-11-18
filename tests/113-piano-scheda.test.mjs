@@ -256,8 +256,8 @@ test("113.11 una data impossibile viene rifiutata e il campo torna al valore sal
   await new Promise((r) => setTimeout(r, 5));
   assert.equal(richieste.length, 1);
   assert.equal(richieste[0].valore, "2026-02-31");
-  assert.equal(inizio.value, "05/10/2026", "il campo non torna al valore salvato");
+  assert.equal(inizio.value, "31/02/2026", "il campo deve tenere quello che Alice ha scritto");
   assert.equal(messaggi.length, 1);
   assert.equal(messaggi[0].tono, "errore");
-  assert.match(messaggi[0].testo, /non esiste/);
+  assert.match(messaggi[0].testo, /Data di inizio non salvata/);
 });
