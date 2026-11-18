@@ -377,3 +377,100 @@ test("116.11 sposta: se la seconda scrittura fallisce la copia resta e la pagina
   assert.equal(lat.length, 1, "la copia deve restare nella destinazione");
   assert.ok(b.eserciziA().some((x) => String(x.name || "") === "Lat machine"), "la partenza non deve aver perso la riga");
 });
+
+
+/* ---------------------------------------------------- PASSO 4b commit 2: sposta */
+
+test("116.12 il riquadro ha la scelta Copia / Sposta e la domanda cambia verbo", () => {
+  const b = banco();
+  b.tasto().click();
+  const modi = Array.from(b.doc.querySelectorAll("input[data-copia-modo]")).map((r) => r.value);
+  assert.deepEqual(modi, ["copia", "sposta"], "manca la scelta del modo");
+  b.spunta("ex-A-lat");
+  b.avanti();
+  assert.equal(b.domanda(), "Copi 1 esercizio e 1 riga tecnica dalla Scheda A alla Scheda E?");
+  chiudiTutto(b);
+
+  const c = banco();
+  c.tasto().click();
+  c.spunta("ex-A-lat");
+  const radio = c.doc.querySelector('input[data-copia-modo="sposta"]');
+  assert.ok(radio, "manca il radio dello sposta");
+  radio.checked = true;
+  c.avanti();
+  assert.equal(c.domanda(), "Sposti 1 esercizio e 1 riga tecnica dalla Scheda A alla Scheda E?");
+});
+
+function chiudiTutto(b) {
+  const box = b.box();
+  if (box && box.parentNode) box.parentNode.removeChild(box);
+}
+
+test("116.13 sposta: le righe escono dalla partenza e arrivano in fondo alla destinazione", async () => {
+  const b = banco();
+  const primaA = b.eserciziA().filter((e) => !e.padreId).map((e) => String(e.name || ""));
+  assert.deepEqual(primaA, ["Lat machine", "Rematore", "Pulley"]);
+
+  b.tasto().click();
+  b.spunta("ex-A-rem");
+  b.doc.querySelector('input[data-copia-modo="sposta"]').checked = true;
+  b.avanti();
+  b.conferma();
+  await attendi();
+
+  const viviA = b.eserciziA().filter((e) => !e.deletedAt && !e.padreId).map((e) => String(e.name || ""));
+  assert.deepEqual(viviA, ["Lat machine", "Pulley"], "la partenza deve perdere l'esercizio spostato");
+  const viviE = b.viviE().map((e) => String(e.name || ""));
+  assert.deepEqual(viviE, ["Leg press", "Rematore"], "la destinazione deve riceverlo in fondo");
+  assert.equal(b.esito().indexOf("1 esercizio spostato nella Scheda E"), 0, b.esito());
+});
+
+test("116.14 sposta con la superserie che resta sola: il membro rimasto perde il legame", async () => {
+  const b = banco();
+  b.tasto().click();
+  b.spunta("ex-A-pul");
+  b.doc.querySelector('input[data-copia-modo="sposta"]').checked = true;
+  b.avanti();
+  b.conferma();
+  await attendi();
+
+  const rem = b.eserciziA().filter((e) => String(e.name || "") === "Rematore")[0];
+  assert.ok(rem, "il Rematore deve restare nella partenza");
+  assert.equal(rem.sup, undefined, "un gruppo rimasto con un membro solo non e' piu' un gruppo");
+  const pul = b.viviE().filter((e) => String(e.name || "") === "Pulley")[0];
+  assert.equal(pul.sup, undefined, "la riga spostata arriva senza il vecchio legame");
+});
+
+test("116.15 uno sposta si annulla su tutte e due le schede con un Annulla solo", async () => {
+  const b = banco();
+  const primaA = JSON.parse(JSON.stringify(b.eserciziA()));
+  const primaE = JSON.parse(JSON.stringify(b.eserciziE()));
+  b.tasto().click();
+  b.spunta("ex-A-lat");
+  b.doc.querySelector('input[data-copia-modo="sposta"]').checked = true;
+  b.avanti();
+  b.conferma();
+  await attendi();
+  assert.ok(b.viviE().some((e) => String(e.name || "") === "Lat machine"), "lo sposta non e' avvenuto");
+
+  const esito = await b.editor.annulla();
+  assert.equal(esito.ok, true, "l'annulla non e' passato: " + JSON.stringify(esito));
+  assert.deepEqual(b.eserciziA(), primaA, "l'annulla non ha rimesso la partenza com'era");
+  assert.deepEqual(b.eserciziE(), primaE, "l'annulla non ha rimesso la destinazione com'era");
+  assert.equal(esito.testo, "esercizi rimessi com'erano");
+});
+
+test("116.16 il registro prende UNA voce sola per lo sposta, che porta le due schede", async () => {
+  const b = banco();
+  b.tasto().click();
+  b.spunta("ex-A-lat");
+  b.doc.querySelector('input[data-copia-modo="sposta"]').checked = true;
+  b.avanti();
+  b.conferma();
+  await attendi();
+  const voci = Object.keys(b.f.sotto.registro || {}).map((k) => b.f.sotto.registro[k]);
+  const sposta = voci.filter((v) => v && v.tipo === "sposta-esercizi");
+  assert.equal(sposta.length, 1, "lo sposta deve lasciare una voce sola, non una per scheda");
+  assert.equal(sposta[0].prima.documenti.length, 2, "la voce deve portare le due fotografie: destinazione e partenza");
+  assert.equal(sposta[0].modo, "sposta");
+});

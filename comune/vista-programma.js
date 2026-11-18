@@ -2901,7 +2901,7 @@ function apriCopiaEsercizi(doc, bottone, scheda, r) {
   box.setAttribute("data-copia-box", "1");
   box.setAttribute("role", "dialog");
   box.setAttribute("aria-label", "copia esercizi");
-  box.appendChild(n(doc, "p", "pr-conf-titolo", "Copia esercizi"));
+  box.appendChild(n(doc, "p", "pr-conf-titolo", "Copia / Sposta esercizi"));
   box.appendChild(n(doc, "p", "pr-conf-partenza", "Dalla Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "")));
 
   const altre = (Array.isArray(r && r.schede) ? r.schede : []).filter((s) => s && String(s.id || "") !== String(scheda.id || ""));
@@ -2938,6 +2938,25 @@ function apriCopiaEsercizi(doc, bottone, scheda, r) {
     elenco.appendChild(riga);
   });
   box.appendChild(elenco);
+  /* Copia o sposta: una scelta sola per tutta l'operazione. Senza scelta
+   * esplicita il modo e' «copia», che non toglie niente da dove parte. */
+  box.appendChild(n(doc, "span", "pr-conf-etichetta", "Cosa fare"));
+  const modi = n(doc, "div", "pr-conf-modi");
+  [["copia", "Copia", "l'esercizio resta dov'e' e nasce una copia nell'altra scheda"],
+   ["sposta", "Sposta", "l'esercizio esce da questa scheda e va nell'altra"]].forEach((m) => {
+    const riga = n(doc, "label", "pr-conf-modo");
+    const r = n(doc, "input", "");
+    r.type = "radio";
+    r.name = "copia-modo";
+    r.value = m[0];
+    r.setAttribute("data-copia-modo", m[0]);
+    if (m[0] === "copia") r.checked = true;
+    riga.appendChild(r);
+    riga.appendChild(n(doc, "b", "", m[1]));
+    riga.appendChild(n(doc, "span", "pr-conf-modo-nota", m[2]));
+    modi.appendChild(riga);
+  });
+  box.appendChild(modi);
   box.appendChild(n(doc, "p", "pr-hint", "Le righe tecniche seguono il loro esercizio."));
 
   const fila = n(doc, "div", "pr-conf-fila");
@@ -2952,12 +2971,15 @@ function apriCopiaEsercizi(doc, bottone, scheda, r) {
     if (tec) pezzi.push(quanti(tec, "riga tecnica", "righe tecniche"));
     const codici = {};
     (scheda.esercizi || []).forEach((e) => { codici[String(e.id || "")] = true; });
-    const domanda = "Copi " + pezzi.join(" e ") + " dalla Scheda " + scheda.codice + " alla Scheda " + scelta.codice + "?";
+    const radio = box.querySelector('input[data-copia-modo]:checked');
+    const sceltoModo = radio && String(radio.value || "") === "sposta" ? "sposta" : "copia";
+    const domanda = (sceltoModo === "sposta" ? "Sposti " : "Copi ") + pezzi.join(" e ") +
+      " dalla Scheda " + scheda.codice + " alla Scheda " + scelta.codice + "?";
     passoConferma(doc, box, barra, mod, {
       idSchedaPartenza: String(scheda.id || ""),
       idSchedaDestinazione: String(scelta.id || ""),
       idEsercizi: scelti,
-      modo: "copia",
+      modo: sceltoModo,
       codiceDestinazione: String(scelta.codice || "")
     }, domanda);
   });
@@ -2977,10 +2999,13 @@ function passoConferma(doc, box, barra, mod, richiesta, domanda) {
   while (box.firstChild) box.removeChild(box.firstChild);
   box.appendChild(n(doc, "p", "pr-conf-titolo", "Conferma"));
   box.appendChild(n(doc, "p", "pr-conf-domanda", domanda));
-  box.appendChild(n(doc, "p", "pr-conf-avviso", "Si puo' annullare subito dopo, e l'Annulla rimette la scheda di destinazione com'era."));
+  box.appendChild(n(doc, "p", "pr-conf-avviso", String(richiesta.modo || "copia") === "sposta"
+    ? "Si puo' annullare subito dopo, e l'Annulla rimette com'erano tutte e due le schede."
+    : "Si puo' annullare subito dopo, e l'Annulla rimette la scheda di destinazione com'era."));
   const fila = n(doc, "div", "pr-conf-fila");
   fila.appendChild(pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => chiudiConferma(box)));
-  const ok = pulsanteVivo(doc, "pr-btn danger", "Conferma", "scrive davvero nella scheda di destinazione", () => {
+  const verboConferma = String(richiesta.modo || "copia") === "sposta" ? "Sposta" : "Copia";
+  const ok = pulsanteVivo(doc, "pr-btn danger", verboConferma, "scrive davvero: prima la destinazione, poi la partenza", () => {
     chiudiConferma(box);
     eseguiCopia(doc, barra, mod, richiesta);
   });

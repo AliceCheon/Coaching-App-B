@@ -612,3 +612,17 @@ porta davvero `pianoTest { settimana: 1 }` scritto in un passaggio precedente.
 **Prove.** `tests/116-copia-esercizi.test.mjs`, undici prove sulla pagina vera con l'editor vero e una zona B finta che registra: riquadro e spunte, numeri della conferma, id nuovi e settimane intatte, originale intatto, figlia tecnica col nuovo padreId, superserie intera con legame nuovo e parziale senza, doppione che avvisa senza scrivere poi «Aggiungi ugualmente» e «Sostituisci», Annulla che rimette la destinazione, stessa scheda rifiutata, nessuna scrittura fuori da schede e registro, sposta con la seconda scrittura che fallisce.
 
 **Cosa non ho potuto guardare.** Nessun browser vero (jsdom): la resa grafica del riquadro non è stata fotografata, e lo Sposta non ha ancora il suo comando nella pagina — arriva nel commit 2, come da spezzatura concordata.
+
+## PASSO 4b, commit 2 — spostare esercizi (19 novembre 2026)
+
+**Cosa si aggiunge.** Nel riquadro della copia entra la scelta **Copia / Sposta**, una sola per tutta l'operazione: «Copia» lascia l'esercizio dov'è e ne fa nascere uno nell'altra scheda, «Sposta» lo toglie da qui e lo porta là. La domanda di conferma cambia verbo e il tasto che scrive pure: «Sposti 2 esercizi e 1 riga tecnica dalla Scheda A alla Scheda E?», poi «Sposta». Nessun tasto sulle righe: si parte sempre dal tasto della barra della scheda, e la pillola «DEMO» non c'è più.
+
+**Le regole dello sposta.** Le righe escono dalla scheda di partenza con le loro righe tecniche, esattamente come per la copia (id nuovi nella destinazione, figlie col nuovo `padreId`). Un **gruppo di superserie che resta con un solo membro vivo perde il legame**, e questo vale in tutti e due i casi: se sposto via un membro, il membro rimasto non è più «in gruppo» (stessa regola del tasto superserie e di «Cancella»); se sposto l'intero gruppo, i membri arrivano con un legame nuovo. Spostando una parte del gruppo, la riga che va via arriva senza legame e la pagina lo dice.
+
+**Le scritture.** Prima la destinazione, poi la partenza. Se la seconda non passa: «esercizi copiati ma non tolti dalla scheda di partenza» e la copia **resta** — meglio una riga in più che una riga perduta. Una **sola voce di registro** per l'intero spostamento, con le fotografie di tutte e due le schede: un solo Annulla rimette al suo posto partenza e destinazione, e se una metà non passa la pagina dichiara quante ne sono state rimesse («esercizi rimessi in 1 schede su 2»).
+
+**Lo stile.** Il riquadro non aveva nessuna regola CSS: dentro la pagina sarebbe arrivato come testo nudo. Ora ha una regola sola con i colori scritti per i due temi (gli stessi valori calcolati per le tendine del 4a-ter), l'elenco con le spunte in una cassa con scorrimento, la fila dei tasti, e la riga dell'esito verde quando scrive e rosa quando rifiuta — nei due temi.
+
+**Prove.** `tests/116-copia-esercizi.test.mjs` passa a **16 prove**: le 11 della copia più cinque dello sposta — la scelta nel riquadro e il verbo della domanda, lo spostamento vero con la partenza che perde la riga e la destinazione che la riceve in fondo, il gruppo rimasto solo che perde il legame, l'Annulla che rimette tutte e due le schede, e il registro che prende **una voce sola** con le due fotografie.
+
+**Cosa non ho potuto guardare.** Nessun browser vero (jsdom): lo stile del riquadro è scritto e leggibile nel foglio, ma la sua resa a schermo non è stata fotografata, e il campo Test con la sua tendina lo controllerà Alice sulla pagina vera.
