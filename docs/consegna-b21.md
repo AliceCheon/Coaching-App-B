@@ -357,3 +357,7 @@ programmi), desktop/app-v31.js (il rifiuto nonInB torna alla pagina),
 comune/vista-programma.js (apriNonInB),
 tests/111-programma-ricerca-id.test.mjs (nuovo, 4 test). Suite: TOTALE pass 595
 fail 0 file 88/88.
+
+## Idee scartate (18 novembre 2026)
+
+- **Porta in B (un programma alla volta da A)**: scartato, ramo `idee/porta-in-b`; si riprende solo se serve. Il difetto vero era il confronto di id, curato nel 3d; il tasto avrebbe aggiunto un secondo meccanismo con rischio di doppioni al giorno del cambio.
