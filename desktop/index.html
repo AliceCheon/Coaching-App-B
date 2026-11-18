@@ -139,6 +139,16 @@ body[data-theme="dark"],body[data-theme="light"]{
   --linea:var(--line);
 }
 
+/* ---- TENDINE: il menu nativo segue il tema (UN SOLO posto) ----
+ * Il menu a tendina lo disegna il sistema operativo, non il nostro CSS: se il
+ * testo eredita il chiaro del tema scuro e il fondo del menu resta bianco, le
+ * voci spariscono (difetto del 18/11/2026). Qui color e fondo delle voci sono
+ * espliciti per i due temi, e color-scheme dice al sistema quale tema usare.
+ * Regola d'elemento: vale per OGNI tendina dell'app, presente e futura. */
+html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="light"]{color-scheme:light}
+select,select option{color:#F3EAF9;background-color:#241634}
+html[data-theme="light"] select,html[data-theme="light"] select option{color:#281738;background-color:#FFFFFF}
 /* ---- Programmi nel chiaro: ultime due regole del file, sui nomi del mockup ---- */
 
 /* --- leggibilità delle due pagine: solo variabili del tema --- */
@@ -7710,8 +7720,17 @@ nav.rail .voce[data-vista="programma-2"],nav.rail .voce[data-vista="programma-3"
 #pag-programma-1 .pr-shd-t{min-width:0}
 #pag-programma-1 .pr-shd-t h3{margin:0;font-size:16px;font-weight:800;color:var(--text);line-height:1.25}
 #pag-programma-1 .pr-shd-c{font-size:11.5px;color:var(--muted)}
-#pag-programma-1 .pr-shd-f{display:flex;align-items:flex-end;gap:8px}
-#pag-programma-1 .pr-f-sm{width:88px}
+#pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:10px}
+#pag-programma-1 .pr-f-sm{width:96px;flex:0 0 auto}
+#pag-programma-1 .pr-shd-f .pr-lab{min-height:11px;margin-bottom:4px;white-space:nowrap}
+#pag-programma-1 .pr-shd-f .pr-in,#pag-programma-1 .pr-shd-f .pr-sel{height:34px;padding:0 10px;font-size:12.5px;line-height:32px}
+#pag-programma-1 .pr-shd-f .pr-sel{padding-right:8px}
+/* il segno % vive DENTRO il campo: sta sopra l'input, a destra */
+#pag-programma-1 .pr-suf-box{position:relative;display:block}
+#pag-programma-1 .pr-suf-box .pr-in{padding-right:28px}
+#pag-programma-1 .pr-suf{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--muted);pointer-events:none}
+#pag-programma-1 .pr-vivo[disabled]{opacity:.45;cursor:not-allowed}
+@media (max-width:1180px){#pag-programma-1 .pr-shd{grid-template-columns:minmax(0,1fr)}#pag-programma-1 .pr-shd-f{justify-content:flex-start}}
 #pag-programma-1 .pr-chip-s4{
   display:inline-flex;align-items:center;border:1px solid var(--pink);color:var(--text);
   background:var(--card-2);border-radius:999px;padding:6px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;

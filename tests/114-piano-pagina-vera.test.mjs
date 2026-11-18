@@ -181,7 +181,8 @@ test("114.2 i campi sono tendine S1..SN e la percentuale porta il % e il suo too
   assert.equal(etichettaScarico.getAttribute("title"), "settimana dello scarico");
   assert.equal(tst.closest("label").querySelector(".pr-lab").getAttribute("title"), "settimana del test");
   const vol = b.campo("scarico-volume");
-  assert.equal(vol.getAttribute("title"), "di quanto togli il volume in quella settimana, es. 40");
+  assert.equal(vol.getAttribute("title"), "scegli prima la settimana dello scarico", "da spento il campo dice perche' non si scrive");
+  assert.equal(vol.disabled, true, "senza settimana di scarico il volume e' spento");
   assert.ok(vol.closest("label").textContent.indexOf("%") !== -1, "manca il segno % accanto al campo");
 });
 
@@ -198,7 +199,9 @@ test("114.3 S4 e 40 si scrivono davvero in zona B e restano dopo il ridisegno", 
   /* il ridisegno e' gia' avvenuto (il campo non aveva il fuoco) */
   assert.equal(b.campo("scarico-settimana").value, "S4", "dopo il ridisegno la settimana non si vede");
   assert.equal(b.campo("scarico-volume").value, "40", "dopo il ridisegno la percentuale non si vede");
-  assert.match(b.campo("scarico-chip").textContent, /S4 vol \u221240%/);
+  assert.equal(b.campo("scarico-settimana").value, "S4", "la tendina deve mostrare la settimana salvata");
+  assert.equal(b.campo("scarico-volume").value, "40", "il campo deve mostrare la percentuale salvata");
+  assert.equal(b.campo("scarico-volume").disabled, false, "con lo scarico scelto il volume e' acceso");
 });
 
 test("114.4 una scrittura rifiutata lascia un messaggio visibile e tiene il valore scritto", async () => {
@@ -229,7 +232,9 @@ test("114.5 dopo Annulla il campo mostra il valore salvato di prima", async () =
   b.disegna();
   assert.equal(b.campo("scarico-settimana").value, "", "dopo Annulla la tendina deve dire \u00abnon registrato\u00bb");
   assert.equal(b.campo("scarico-volume").value, "");
-  assert.equal(b.campo("scarico-chip").textContent.indexOf("non registrato") !== -1, true);
+  assert.equal(b.campo("scarico-settimana").value, "", "dopo Annulla la tendina torna su «—»");
+  assert.equal(b.campo("scarico-volume").value, "", "dopo Annulla il volume e' vuoto");
+  assert.equal(b.campo("scarico-volume").disabled, true, "senza scarico il volume e' spento");
 });
 
 test("114.6 data di inizio e fase resistono al ridisegno, con l'editor vero", async () => {
@@ -249,7 +254,11 @@ test("114.7 il campo con il fuoco dentro non fa ridisegnare la pagina", async ()
   const b = banco();
   const vol = b.campo("scarico-volume");
   const sett = b.campo("scarico-settimana");
-  sett.value = "S4"; /* la settimana gia' scelta, senza uscire dal campo */
+  sett.value = "S4"; /* la settimana gia' scelta */
+  /* il volume si accende scegliendo la settimana: qui si simula quel passaggio,
+   * senza uscire dal campo, perche' un campo spento non prende il fuoco */
+  sett.dispatchEvent(new b.win.Event("change", { bubbles: true }));
+  await attendi();
   vol.focus();
   const prima = b.contaDisegni();
   vol.value = "30";
@@ -263,4 +272,16 @@ test("114.7 il campo con il fuoco dentro non fa ridisegnare la pagina", async ()
   assert.ok(b.contaDisegni() > prima, "uscendo dal campo il ridisegno deve arrivare");
   assert.equal(b.campo("scarico-volume").value, "30", "dopo il ridisegno la percentuale non si vede");
   assert.equal(b.campo("scarico-settimana").value, "S4");
+});
+
+
+test("114.8 senza piano il Test mostra \u00ab\u2014\u00bb, e il volume nasce spento", () => {
+  const b = banco();
+  b.disegna();
+  const tst = b.campo("test-settimana");
+  assert.equal(tst.value, "", "senza pianoTest la tendina non deve mostrare nessuna settimana");
+  assert.equal(tst.selectedOptions[0].textContent, "\u2014", "la voce scelta deve essere \u00ab\u2014\u00bb, non S1");
+  const vol = b.campo("scarico-volume");
+  assert.equal(vol.disabled, true, "senza settimana di scarico il volume e' spento");
+  assert.equal(vol.title, "scegli prima la settimana dello scarico", "il campo spento deve dire perche'");
 });

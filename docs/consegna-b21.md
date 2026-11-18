@@ -520,3 +520,79 @@ ridisegno, Annulla) e' provato.
 La suite contava 610 prove su 89 file con il 113 fuori dalle fette. Il 113 e'
 dentro `fette.txt`, il 114 entra con questa consegna: il totale atteso e'
 **90 file**. Il numero delle prove sale di 11 (113) + 7 (114).
+
+## PASSO 4a-ter — le tendine che sparivano nel bianco, la testata in una riga, la pillola via (18 novembre 2026)
+
+### 1. Il difetto delle tendine (causa: una sola, il menu lo disegna il sistema)
+Alice apre la tendina dello Scarico: le voci S1…S8 ci sono, ma sono grigio
+chiarissimo su fondo BIANCO. Solo quella sotto il mouse si legge.
+Non era un colore nostro sbagliato: il menu a comparsa di una `<select>` lo
+disegna il sistema operativo. Il testo della voce ereditava il chiaro del tema
+scuro (il nostro `color`), mentre il fondo del menu restava quello bianco di
+sistema. Nessuna regola dava un fondo alle voci, quindi il sistema metteva il suo.
+
+Correzione, in **un solo posto** del CSS (`desktop/index.html`, dentro il blocco
+del tema, subito prima di «Programmi nel chiaro»):
+
+```
+html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="light"]{color-scheme:light}
+select,select option{color:#F3EAF9;background-color:#241634}
+html[data-theme="light"] select,html[data-theme="light"] select option{color:#281738;background-color:#FFFFFF}
+```
+
+Il selettore è d'elemento (`select option`): vale per **ogni** tendina dell'app,
+presente e futura — Fase, Test, Scarico, le tendine del Database, i selettori
+dei riquadri, le tendine della libreria e dei filtri. Non una regola per
+tendina. `color-scheme` dice al sistema quale tema disegnare, così anche il
+bordo e il fondo del menu seguono il tema.
+
+Contrasti (formula del test 86): scuro `#F3EAF9` su `#241634` = 13,0:1; chiaro
+`#281738` su `#FFFFFF` = 18,0:1. Tutti e due sopra 4,5:1.
+
+**Altre tendine con lo stesso difetto:** sì, tutte quelle che non dichiaravano
+un fondo per le voci — cioè quasi tutte (`.sel`, `.db-sel`, `.lb-sel`, `.t8-sel`,
+`.pr-psel`, `.cv-cerca`, `#bd-diva .dv-panel select`). La regola d'elemento le
+copre tutte in un colpo, comprese quelle che l'app costruisce a riga di codice.
+
+### 2. La testata in una riga
+`#pag-programma-1 .pr-shd-f` è una fila (`display:flex`) che va a capo in modo
+ordinato (`flex-wrap:wrap`) quando la finestra è stretta: Settimane | Scarico |
+Vol −% | Test, ognuno con l'etichetta sopra e il campo sotto, tutti della stessa
+larghezza (96px, una regola sola) e della stessa altezza (34px, una regola sola).
+
+Il segno `%` ora sta **dentro** il campo: il guscio `.pr-suf-box` è
+`position:relative` e il segno è `position:absolute;right:10px`. L'input ha
+`padding-right:28px`, così il numero non finisce sotto il segno.
+
+Il campo Vol −% **nasce spento** (`disattivato: true` nella vista,
+`vol.disabled = !acceso` in `piano-vivo.js`) e si accende quando si sceglie una
+settimana di scarico; da spento porta il tooltip «scegli prima la settimana
+dello scarico». Scegliere la settimana senza avere ancora scritto la
+percentuale non è un errore: la riga di stato dice «S4 scelta: scrivi la
+percentuale di volume» e il campo si accende.
+
+### 3. La pillola «S— vol non registrato»
+Tolta dal pannello vivo: era il riassunto del v31 e ora doppiava i campi.
+Eliminati, in `comune/vista-programma.js`, la creazione del `span.pr-chip-s4`
+con `data-pr-c="scarico-chip"` e il suo `appendChild` (3 righe); in
+`comune/piano-vivo.js` la riga che lo cercava e il blocco `if (chip) { … }` che
+lo riscriveva (7 righe). Il riassunto non si mostra più in nessuna forma: la
+conferma arriva dalla riga di stato («scarico salvato: S4 · volume −40%»).
+
+**Markup statico:** non toccato, nessuna riga di `desktop/index.html` cambiata
+nel corpo della pagina. Le uniche modifiche al file sono righe di CSS: il blocco
+delle tendine (11 righe nuove prima di «Programmi nel chiaro») e il blocco
+`pr-shd-f`/`pr-f-sm` sostituito da 11 righe (fila, altezze, `%` dentro il
+campo, campo spento, media query per la finestra stretta). La regola
+`.pr-chip-s4` resta dov'era perché la usa il mockup statico della pagina.
+
+### 4. Da dove veniva S1 nel campo Test
+Non c'era nessun default, e questo è il punto: nel codice `pianoTest` viene
+scritto **solo** dalla tendina del Test (`cambiaPianoScheda` con
+`campo: "test"`) e letto solo da `leggiPiano`. Senza `pianoTest` nel documento
+il campo deve mostrare «—». Per sicurezza ora la tendina viene forzata:
+`controllo.value = valore ? String(valore) : ""` e, se il valore non esiste tra
+le voci, `selectedIndex = 0` — così non può comparire la prima voce al posto di
+un dato che non c'è. Se in una scheda comparisse ancora S1, quel documento
+porta davvero `pianoTest { settimana: 1 }` scritto in un passaggio precedente.

@@ -160,6 +160,10 @@ function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse, o
       controllo.appendChild(op);
     });
     if (!valore) { vuota.selected = true; vuota.setAttribute("selected", ""); }
+    /* Difesa: se il valore non esiste tra le voci, si resta su «—» e non si
+     * mostra S1 come se fosse un dato scritto. */
+    controllo.value = valore ? String(valore) : "";
+    if (String(controllo.value) !== (valore == null ? "" : String(valore))) controllo.selectedIndex = 0;
   } else {
     controllo = n(doc, "input", "pr-in pr-vivo");
     controllo.type = "text";
@@ -169,6 +173,7 @@ function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse, o
     controllo.placeholder = o.segnaposto || NON;
   }
   if (o.titolo) controllo.setAttribute("title", o.titolo);
+  if (o.disattivato) { controllo.disabled = true; controllo.setAttribute("disabled", ""); }
   controllo.setAttribute("data-pr-c", chiave);
   controllo.setAttribute("aria-label", etichetta);
   if (o.suffisso) {
@@ -1557,10 +1562,7 @@ function pannelloScheda(doc, scheda, r) {
    * disegna solo il campo, con «non registrato» quando non c'e'. Il «2°»
    * è stato tolto: nessun blocco lo legge e nessuno lo usava. */
   f.appendChild(campoPiano(doc, "Scarico", "", "scarico-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana dello scarico" }));
-  f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm", { titolo: "di quanto togli il volume in quella settimana, es. 40", segnaposto: "es. 40", suffisso: "%" }));
-  const chipScarico = n(doc, "span", "pr-chip-s4", "S— vol non registrato");
-  chipScarico.setAttribute("data-pr-c", "scarico-chip");
-  f.appendChild(chipScarico);
+  f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm", { titolo: "scegli prima la settimana dello scarico", segnaposto: "es. 40", suffisso: "%", disattivato: true }));
   f.appendChild(campoPiano(doc, "Test", "", "test-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana del test" }));
   testata2.appendChild(f);
   p.appendChild(testata2);

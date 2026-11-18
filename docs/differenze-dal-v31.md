@@ -8,44 +8,46 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - i dati di esempio del Programma attivo non si vedono più (editor statico nascosto); `window.BD_LB_SEED` resta nel file: lo usano le schermate non ancora collegate (Dashboard, Overview, Riepilogo volume…)
 
 ## Le righe cambiate (numeri del file attuale, desktop/index.html)
-: Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
 - righe 40-44
 - righe 46-48
 - righe 75-79
 - righe 81-83
-- righe 1452-1527
-- righe 1579
-- righe 2827
-- righe 2841-2844
-- righe 2858
-- righe 2871
-- righe 2884
-- righe 2955
+- righe 142-151
+- righe 1462-1537
+- righe 1589
+- righe 2837
+- righe 2851-2854
+- righe 2868
+- righe 2881
+- righe 2894
 - righe 2965
-- righe 3180
-- righe 3181-3180
-- righe 3726
-- righe 3846
-- righe 3988
-- righe 4665
-- righe 4669
-- righe 5822-5830
-- righe 6526
-- righe 6901-6905
-- righe 7856-7855
-- righe 7883-7910
-- righe 7955
-- righe 8001-8000
-- righe 8051-8052
-- righe 8403
-- righe 8560
-- righe 8948-8949
-- righe 9863
-- righe 10593-10602
-- righe 10713
-- righe 10715
-- righe 10717-10716
-- righe 10785-10789
+- righe 2975
+- righe 3190
+- righe 3191-3190
+- righe 3736
+- righe 3856
+- righe 3998
+- righe 4675
+- righe 4679
+- righe 5832-5840
+- righe 6536
+- righe 6911-6915
+- righe 7723-7733
+- righe 7875-7874
+- righe 7902-7929
+- righe 7974
+- righe 8020-8019
+- righe 8070-8071
+- righe 8422
+- righe 8579
+- righe 8967-8968
+- righe 9882
+- righe 10612-10621
+- righe 10732
+- righe 10734
+- righe 10736-10735
+- righe 10804-10808
+: Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
 : La sezione Programma 1 apre il contenitore dinamico #programma-attivo e nasconde l'editor statico dentro #programma-strumenti (hidden): i dati di esempio non si vedono più; il resto del blocco resta nel file, intatto.

@@ -89,19 +89,23 @@ export function collegaPiano(doc, opzioni) {
     const sett = riquadro.querySelector('[data-pr-c="scarico-settimana"]');
     const vol = riquadro.querySelector('[data-pr-c="scarico-volume"]');
     const tst = riquadro.querySelector('[data-pr-c="test-settimana"]');
-    const chip = riquadro.querySelector('[data-pr-c="scarico-chip"]');
 
     const settScritta = () => (scarico ? "S" + scarico.settimana : "");
     const volScritto = () => (scarico ? String(scarico.volume) : "");
     const testScritto = () => (test ? "S" + test.settimana : "");
+    /* Il volume non vive da solo: si accende quando c'è la settimana di
+     * scarico; finché non c'è resta spento, con il perché nel tooltip. */
+    const aggiornaVolume = () => {
+      if (!vol) return;
+      const acceso = String(sett ? sett.value : "").trim() !== "";
+      vol.disabled = !acceso;
+      if (acceso) { vol.removeAttribute("disabled"); vol.title = "di quanto togli il volume in quella settimana, es. 40"; }
+      else { vol.setAttribute("disabled", ""); vol.title = "scegli prima la settimana dello scarico"; }
+    };
     rimetti(sett, settScritta());
     rimetti(vol, volScritto());
     rimetti(tst, testScritto());
-    if (chip) {
-      chip.textContent = scarico
-        ? "S" + scarico.settimana + " vol \u2212" + scarico.volume + "%"
-        : "S\u2014 vol non registrato";
-    }
+    aggiornaVolume();
 
     /* Legge i due campi insieme: la percentuale non vive da sola. */
     const leggiScarico = () => {
@@ -112,8 +116,15 @@ export function collegaPiano(doc, opzioni) {
       return { s: s, v: v, vuoto: vuoto };
     };
 
-    const scriviScarico = (elemento) => {
+    const scriviScarico = (elemento, daSettimana) => {
       const q = leggiScarico();
+      /* La settimana scelta e la percentuale non ancora scritta: non è un
+       * errore, è un passo intermedio. Si accende il volume e lo si dice. */
+      if (daSettimana && q.s != null && q.v == null) {
+        aggiornaVolume();
+        segnala("S" + q.s + " scelta: scrivi la percentuale di volume", "ok");
+        return Promise.resolve();
+      }
       if (!q.vuoto && (q.s == null || q.v == null)) {
         segnala(MESSAGGIO_SCARICO, "errore");
         return Promise.resolve();
@@ -129,6 +140,7 @@ export function collegaPiano(doc, opzioni) {
           segnala("Scarico non salvato: " + ((esito && esito.motivo) || "non ho scritto niente"), "errore");
           return null;
         }
+        aggiornaVolume();
         segnala(q.vuoto
           ? "scarico tolto dalla scheda"
           : "scarico salvato: S" + q.s + " \u00b7 volume \u2212" + q.v + "%" + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
@@ -141,7 +153,7 @@ export function collegaPiano(doc, opzioni) {
 
     if (sett) {
       legati += 1;
-      sett.addEventListener("change", () => { scriviScarico(sett); });
+      sett.addEventListener("change", () => { scriviScarico(sett, true); });
     }
 
     if (vol) {
