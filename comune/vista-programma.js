@@ -2820,6 +2820,7 @@ function mostraEsitoCopia(doc, barra, testo, salvato) {
   if (!barra) return null;
   let riga = barra.querySelector(".pr-esito");
   if (!riga) { riga = n(doc, "p", "pr-esito"); barra.appendChild(riga); }
+  doc.__bdUltimoEsito = String(testo == null ? "" : testo);
   riga.textContent = String(testo == null ? "" : testo);
   riga.setAttribute("data-esito", salvato === true ? "salvato" : "non-salvato");
   return riga;

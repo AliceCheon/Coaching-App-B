@@ -166,7 +166,7 @@ function banco(eserciziE) {
   b.box = () => doc.querySelector("[data-copia-box]");
   b.esito = () => {
     const e = doc.querySelector(".pr-esito");
-    return e ? e.textContent : "";
+    return (e && e.textContent) || doc.__bdUltimoEsito || "";
   };
   b.spunta = (id) => {
     const c = doc.querySelector('input[data-copia-es="' + id + '"]');
