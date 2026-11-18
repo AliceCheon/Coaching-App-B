@@ -134,6 +134,41 @@ function campo(doc, etichetta, valore, tipo, nota, scelte, extraClasse) {
   return f;
 }
 
+/* PASSO 4a — un campo che si può scrivere. Questa vista resta di sola
+ * lettura: qui si disegna il campo e si lascia il segnaposto `data-pr-c`;
+ * chi lo trasforma in un controllo vero è comune/piano-vivo.js, che sa chi
+ * è l'utente e come si scrive in B. */
+function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse) {
+  const f = n(doc, "label", "pr-f" + (extraClasse ? " " + extraClasse : ""));
+  f.appendChild(n(doc, "span", "pr-lab", etichetta));
+  let controllo;
+  if (tipo === "select") {
+    controllo = n(doc, "select", "pr-sel pr-vivo");
+    const vuota = n(doc, "option", "", NON);
+    vuota.value = "";
+    controllo.appendChild(vuota);
+    (Array.isArray(scelte) ? scelte : []).forEach((o) => {
+      const op = n(doc, "option", "", o);
+      op.value = o;
+      if (o === valore) { op.selected = true; op.setAttribute("selected", ""); }
+      controllo.appendChild(op);
+    });
+    if (!valore) { vuota.selected = true; vuota.setAttribute("selected", ""); }
+  } else {
+    controllo = n(doc, "input", "pr-in pr-vivo");
+    controllo.type = "text";
+    controllo.setAttribute("inputmode", "numeric");
+    controllo.value = valore == null ? "" : String(valore);
+    controllo.setAttribute("value", valore == null ? "" : String(valore));
+    controllo.placeholder = NON;
+  }
+  controllo.setAttribute("data-pr-c", chiave);
+  controllo.setAttribute("aria-label", etichetta);
+  f.appendChild(controllo);
+  return f;
+}
+
+
 /* Un pulsante del v31, spento: stessa forma, stessa parola, nessun effetto.
  * Tutti i pulsanti di questa pagina nascono da qui, così nessuno può scrivere
  * per distrazione. */
@@ -740,8 +775,8 @@ function cartaProgramma(doc, r) {
 
   const campi = n(doc, "div", "pr-fields");
   campi.appendChild(campo(doc, "Programma", nomePulito(r.profilo.nome), "text", null, null, "pr-f-full"));
-  campi.appendChild(campo(doc, "Data inizio", r.profilo.inizio, "data"));
-  campi.appendChild(campo(doc, "Fase", nomePulito(r.profilo.fase), "select", null, ["Bulk", "Cut", "Recomp", "Mantenimento"]));
+  campi.appendChild(campoPiano(doc, "Data inizio", "", "programma-inizio", "text", null, "pr-f-sm"));
+  campi.appendChild(campoPiano(doc, "Fase", "", "programma-fase", "select", ["Bulk", "Cut", "Recomp", "Mantenimento"], "pr-f-sm"));
   campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
   campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text"));
   c.appendChild(campi);
@@ -1477,6 +1512,8 @@ function filtriDistretti(doc, scheda, pannello) {
 
 function pannelloScheda(doc, scheda, r) {
   const p = n(doc, "div", "pr-shell");
+  /* Il segnaposto dei campi vivi: lega i controlli alla scheda giusta. */
+  p.setAttribute("data-pr-scheda", String(scheda.id == null ? "" : scheda.id));
 
   const testata2 = n(doc, "div", "pr-shd");
   const t = n(doc, "div", "pr-shd-t");
@@ -1496,10 +1533,16 @@ function pannelloScheda(doc, scheda, r) {
 
   const f = n(doc, "div", "pr-shd-f");
   f.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text", null, null, "pr-f-sm"));
-  f.appendChild(campo(doc, "Scarico", indiceScar >= 0 ? "S" + (indiceScar + 1) : "", "text", null, null, "pr-f-sm"));
-  f.appendChild(campo(doc, "2°", "", "text", null, null, "pr-f-sm"));
-  f.appendChild(n(doc, "span", "pr-chip-s4", (indiceScar >= 0 ? "S" + (indiceScar + 1) : "S—") + " vol " + NON));
-  f.appendChild(campo(doc, "Test", "", "text", null, null, "pr-f-sm"));
+  /* PASSO 4a — scarico (settimana e percentuale) e test sono campi veri.
+   * Il piano letto dal documento lo riempie comune/piano-vivo.js: qui si
+   * disegna solo il campo, con «non registrato» quando non c'e'. Il «2°»
+   * è stato tolto: nessun blocco lo legge e nessuno lo usava. */
+  f.appendChild(campoPiano(doc, "Scarico", "", "scarico-settimana", "text", null, "pr-f-sm"));
+  f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm"));
+  const chipScarico = n(doc, "span", "pr-chip-s4", "S— vol non registrato");
+  chipScarico.setAttribute("data-pr-c", "scarico-chip");
+  f.appendChild(chipScarico);
+  f.appendChild(campoPiano(doc, "Test", "", "test-settimana", "text", null, "pr-f-sm"));
   testata2.appendChild(f);
   p.appendChild(testata2);
 

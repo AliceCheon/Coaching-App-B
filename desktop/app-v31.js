@@ -25,6 +25,8 @@ import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
+import { collegaPiano } from "../comune/piano-vivo.js";
+import { leggiPiano } from "../comune/piano-scheda.js";
 import { renderVolume } from "../comune/vista-volume.js";
 import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
@@ -664,6 +666,30 @@ export async function avvia(doc, win) {
         }
       }
     }));
+
+    /* PASSO 4a — i campi vivi della testata: scarico (settimana e
+     * percentuale), test, data di inizio, fase. I valori si leggono dai
+     * documenti appena letti: dopo ogni scrittura la pagina rilegge e li
+     * rimette a schermo, anche dopo un Annulla. */
+    const pianiSchede = Object.create(null);
+    (Array.isArray(schedeGrezze) ? schedeGrezze : []).forEach((d) => {
+      const datiScheda = d && d.dati ? d.dati : null;
+      const foglioScheda = datiScheda && datiScheda.sheet ? datiScheda.sheet : null;
+      if (!foglioScheda) return;
+      const idScheda = String(datiScheda.sheetId || foglioScheda.id || "");
+      if (idScheda) pianiSchede[idScheda] = leggiPiano(datiScheda);
+    });
+    collegaPiano(doc, {
+      editor: editor,
+      piani: pianiSchede,
+      programma: {
+        id: attivo && attivo.programma ? String(attivo.programma.id || "") : "",
+        inizio: rp.profilo.inizio,
+        fase: nomePulito(rp.profilo.fase)
+      },
+      segnala: segnalaModifica,
+      sincronizza: () => sincronizza(utente, { forza: true, motivo: "piano della scheda" })
+    });
 
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;

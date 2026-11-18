@@ -37,7 +37,10 @@ import {
   aggiungiEsercizio,
   aggiungiTecnica,
   scriviTecnica,
-  rimuoviTecnica
+  rimuoviTecnica,
+  cambiaPianoScheda,
+  cambiaTestataProgramma
+
 } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
@@ -223,6 +226,11 @@ export function creaEditorSchede(opzioni) {
         esito = cancellaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "sostituzione-riga") {
         esito = sostituisciEsercizio(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "scarico" || campo === "test") {
+        /* PASSO 4a: il piano della scheda (settimana di scarico e
+         * percentuale, settimana di test). La percentuale e' un'annotazione. */
+        esito = cambiaPianoScheda(letto.dati, r, { quando: quando(), uid: uid });
+
       } else if (campo === "superserie") {
         esito = cambiaSuperserie(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "svuota-scheda") {
@@ -276,6 +284,25 @@ export function creaEditorSchede(opzioni) {
       /* B.21 — una voce che tocca più schede (svuota il programma): si
        * rimettono tutte, e il registro prende una voce sola anche qui. */
       if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
+      /* PASSO 4a — la testata del programma si annulla sul documento del
+       * programma, non su una scheda. */
+      if (String(voce.tipo || "") === "testata-programma") {
+        const idDoc = String(voce.programma || "");
+        if (!idDoc) return { ok: false, motivo: "la voce del registro non dice quale programma rimettere" };
+        const lettoP = await conScadenza(leggiProgrammaB(db, uid, idDoc), "la lettura del programma");
+        if (!lettoP || !lettoP.esiste) return { ok: false, motivo: "il programma non e' piu' in B" };
+        const esitoP = annullaModifica(lettoP.dati, voce, { quando: quando(), uid: uid });
+        if (!esitoP.ok) return { ok: false, motivo: esitoP.motivo };
+        try {
+          await conScadenza(salvaProgrammaConVersione(db, uid, idDoc, esitoP.dati, Number(lettoP.dati.versione) || 0), "la scrittura del programma");
+        } catch (e) {
+          return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+        }
+        const avvisoP = await scriviVoceSicura(esitoP.voce);
+        ultima = ultimaAnnullabile(registro.concat([{ id: esitoP.voce.idVoce, dati: esitoP.voce }]));
+        return { ok: true, voce: esitoP.voce, avvisoRegistro: avvisoP };
+      }
+
       const idScheda = documentoScheda(voce.scheda);
       if (!idScheda) {
         return { ok: false, motivo: "la voce del registro non porta a una scheda di B · " + schedaNonTrovata(voce.scheda) };
@@ -293,6 +320,29 @@ export function creaEditorSchede(opzioni) {
       const avvisoVoce = await scriviVoceSicura(esito.voce);
       versioni[idScheda] = versioneDi(esito.dati);
       ultima = ultimaAnnullabile(registro.concat([{ id: esito.voce.idVoce, dati: esito.voce }]));
+      return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
+    });
+  }
+
+  /* PASSO 4a — la testata del programma: data di inizio e fase. Non e' una
+   * scheda: si legge e si scrive il documento del programma, con la stessa
+   * regola di versione e la stessa voce di registro delle schede. */
+  function testataProgramma(richiesta) {
+    const r = richiesta || {};
+    const idProgramma = String(r.idProgramma == null ? "" : r.idProgramma).trim();
+    if (!idProgramma) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato il programma: non ho scritto niente" });
+    return coda.esegui("programma", async () => {
+      const letto = await conScadenza(leggiProgrammaB(db, uid, idProgramma), "la lettura del programma");
+      if (!letto || !letto.esiste) return { ok: false, motivo: "il programma non e' ancora in B: fai prima la copia" };
+      const esito = cambiaTestataProgramma(letto.dati, r, { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+      try {
+        await conScadenza(salvaProgrammaConVersione(db, uid, idProgramma, esito.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      ultima = esito.voce;
       return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
     });
   }
@@ -537,6 +587,7 @@ export function creaEditorSchede(opzioni) {
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,
+    testataProgramma: testataProgramma,
     annulla: annulla,
     annullaVoce: annullaVoce
   };

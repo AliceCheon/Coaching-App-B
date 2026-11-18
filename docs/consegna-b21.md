@@ -361,3 +361,77 @@ fail 0 file 88/88.
 ## Idee scartate (18 novembre 2026)
 
 - **Porta in B (un programma alla volta da A)**: scartato, ramo `idee/porta-in-b`; si riprende solo se serve. Il difetto vero era il confronto di id, curato nel 3d; il tasto avrebbe aggiunto un secondo meccanismo con rischio di doppioni al giorno del cambio.
+
+## PASSO 4a — il piano della scheda (scarico e test), la testata del programma
+
+Fatto il 18 novembre 2026. Tre cose: i campi veri nella testata della scheda, la
+testata del programma (data di inizio e fase), e il «2°» tolto.
+
+**Cosa si scrive, e dove.** Un campo solo per ogni cosa:
+
+| Cosa | Dove sta nel documento | Forma |
+|---|---|---|
+| Scarico | `sheet.pianoScarico` | `{ settimana: N, volume: NN }` |
+| Test | `sheet.pianoTest` | `{ settimana: N }` |
+| Data inizio | documento programma | `startDate` (`aaaa-mm-gg`) |
+| Fase | documento programma | `phase` (Bulk, Cut, Recomp, Mantenimento) |
+
+La settimana di scarico segna anche la settimana come «deload» in ogni riga che
+ha quella settimana, così il campo e la scheda dicono la stessa cosa. Le serie e
+le ripetizioni non si toccano: la percentuale è un'annotazione, e la prova 113.2
+lo verifica (volume della scheda identico prima e dopo).
+
+**Validazione.** Settimana: intero dentro 1…N, dove N è la settimana più lunga
+scritta nella scheda (`settimaneScheda`). Percentuale: intero 0…100. Data: deve
+esistere nel calendario (il 30 febbraio si rifiuta). Fase: una delle quattro.
+Vuoto vuol dire «non registrato», e si può svuotare: il piano sparisce e la
+settimana torna com'era.
+
+**Registro e Annulla.** Una voce per modifica (`piano-scheda`,
+`testata-programma`), e l'Annulla rimette i valori di prima, compreso il tipo
+delle settimane. La voce della testata porta l'id del programma, perché si
+annulla sul documento del programma, non su una scheda.
+
+**Il disegno, in due tempi.** `comune/vista-programma.js` resta di sola lettura:
+disegna il campo e lascia il segnaposto `data-pr-c` (più `data-pr-scheda` sul
+riquadro). `comune/piano-vivo.js` — modulo nuovo, senza Firebase — trasforma il
+segnaposto in un controllo vero: riempie il valore salvato, manda la modifica,
+e sulla pagina non usa mai `alert`/`confirm`: gli errori vanno nella riga di
+stato della pagina. Sta fuori da `app-v31.js` proprio per poterlo provare con
+jsdom. Dopo ogni scrittura la pagina rilegge: il valore a schermo è quello
+salvato, anche dopo un Annulla.
+
+**Il «2°» è stato tolto.** Una riga sola in `comune/vista-programma.js` (riga
+~1500, dentro `pannelloScheda`): etichetta, casella e codice che la disegnava.
+Nessun test lo nominava, nessun campo `secondoScarico` esiste nei dati, e
+nessuna funzione lo leggeva. La riga 3792 di `desktop/index.html` — il campo
+`pr-sk-due` del mockup statico — **non è stata toccata**: nella pagina vera la
+testata la disegna `pannelloScheda`, e `app-v31.js` non nomina mai `pr-sk-due`.
+La prova 113.9 lo verifica sul rendering: nella pagina vera non esiste nessun
+«2°», né come etichetta né come testo.
+
+**Idee future, da fare solo se serve.**
+
+- **`2° scarico`**: si aggiunge solo se Alice farà blocchi più lunghi di 8
+  settimane. Oggi ogni blocco ha un solo scarico.
+- **`extra-1` — una funzione sola per la settimana di test.** Oggi il campo Test
+  segna `type: "test"` sulla settimana, mentre la spia rosa «Test» si accende
+  dalla parola «test» scritta nelle celle: sono due fonti diverse e possono
+  contraddirsi (settimana segnata test, celle senza la parola). Il passo è
+  `settimanaDiTest(scheda)`: legge prima il tipo, e solo se manca guarda la
+  parola; spia e campo leggono da lì. Non è stato fatto qui di proposito: il 4a
+  non tocca la spia.
+
+**Prove.** `tests/113-piano-scheda.test.mjs`, 11 prove: piano letto e vuoto,
+invarianza del volume (serie e ripetizioni identiche), settimana segnata come
+deload, rifiuti di settimana e percentuale fuori misura, Annulla del test e
+dello scarico (piano e tipo di prima), testata del programma con data vera e
+rifiuto del 30 febbraio, API dell'editor, e due prove sulla pagina vera con
+jsdom (nessun «2°»; campi che mostrano il valore salvato e mandano la modifica
+con settimana e percentuale insieme).
+
+**Cosa non è provato.** La scrittura vera su Firestore: le prove usano un editor
+finto, la zona B finta e jsdom, non il database. La resa a schermo nei due temi
+non è stata guardata a occhio: i campi usano le classi `pr-in`/`pr-sel`/`pr-f`
+già esistenti, quindi non c'è CSS nuovo — ma questo è un argomento, non una
+verifica.

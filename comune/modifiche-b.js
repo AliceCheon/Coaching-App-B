@@ -27,6 +27,8 @@ import { rigaTecnica as costruisciRigaTecnica, nomeTecnica, tecnicaCambiata, not
 import { coppieRiga, coppieScheda, baseDaSettimane, nomeProgressione, voceScheda } from "./progressioni-b.js";
 
 /* Il nome del campo che dice "a questa scheda ho messo mano in B". */
+import { validaSettimana, validaVolume, settimaneScheda, leggiPiano } from "./piano-scheda.js";
+
 export const MARCHIO_B = "modificatoInB";
 
 /* Un documento Firestore regge 1 MiB. Qui la soglia di avviso sta un po'
@@ -1106,6 +1108,10 @@ export function annullaModifica(dati, voce, opzioni) {
   const o = opzioni || {};
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
   const tipo = testo(v.tipo);
+  /* PASSO 4a — il piano della scheda e la testata del programma si
+   * annullano sul loro documento, non su un elenco di esercizi. */
+  if (tipo === "piano-scheda" || tipo === "testata-programma") return annullaPianoETestata(dati, v, quando, o.uid);
+
   /* B.21 — i comandi dell'igiene portano l'elenco INTERO di prima:
    * l'annullamento lo rimette in blocco, una volta sola, e con lui tornano
    * esercizi, righe figlie della tecnica, superserie e le otto settimane
@@ -1215,7 +1221,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -1556,4 +1562,231 @@ function rimettiElenco(dati, voce, quando, uid) {
     versioneDopo: nuovo.versione
   };
   return { ok: true, dati: nuovo, voce: voce2 };
+}
+
+
+/* ---------- PASSO 4a: il piano della scheda e la testata del programma ---- */
+
+/* Dove stanno le settimane di una riga: `progression.weeks`, `weeks` oppure
+ * `prescription.weeks`. Si riscrivono nello stesso posto, senza spostarle. */
+function postoWeeks(esercizio) {
+  if (!esercizio || typeof esercizio !== "object") return null;
+  if (Array.isArray(esercizio.weeks)) return { dentro: "riga", elenco: esercizio.weeks };
+  if (esercizio.progression && Array.isArray(esercizio.progression.weeks)) return { dentro: "progression", elenco: esercizio.progression.weeks };
+  if (esercizio.prescription && Array.isArray(esercizio.prescription.weeks)) return { dentro: "prescription", elenco: esercizio.prescription.weeks };
+  return null;
+}
+
+function riscriviWeeks(esercizio, posto, nuove) {
+  const copia = Object.assign({}, esercizio);
+  if (posto.dentro === "progression") copia.progression = Object.assign({}, esercizio.progression, { weeks: nuove });
+  else if (posto.dentro === "prescription") copia.prescription = Object.assign({}, esercizio.prescription, { weeks: nuove });
+  else copia.weeks = nuove;
+  return copia;
+}
+
+/* Storico di una percentuale/una settimana: '' vuol dire «non registrato».
+ * Settimana vuota = si toglie il piano (e la settimana non resta segnata come
+ * scarico). La percentuale NON tocca serie e ripetizioni: e' un'annotazione. */
+export function cambiaPianoScheda(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const campo = r.campo === "scarico" ? "scarico" : (r.campo === "test" ? "test" : "");
+  if (!campo) return { ok: false, motivo: "in questo passo si registrano solo scarico e test" };
+  const quante = settimaneScheda(dati);
+  const vuoto = testo(r.settimana) === "" && (campo === "test" || testo(r.volume) === "");
+
+  let settimana = null;
+  let volume = null;
+  if (!vuoto) {
+    const s = validaSettimana(r.settimana, quante);
+    if (!s.ok) return { ok: false, motivo: s.motivo };
+    settimana = s.settimana;
+    if (campo === "scarico") {
+      const v = validaVolume(r.volume);
+      if (!v.ok) return { ok: false, motivo: v.motivo };
+      volume = v.volume;
+    }
+  }
+
+  const attuale = leggiPiano(dati);
+  const prima = campo === "scarico"
+    ? (attuale.scarico ? "S" + attuale.scarico.settimana + " · vol −" + attuale.scarico.volume + "%" : "")
+    : (attuale.test ? "S" + attuale.test.settimana : "");
+  const dopo = vuoto ? "" : (campo === "scarico" ? "S" + settimana + " · vol −" + volume + "%" : "S" + settimana);
+  if (prima === dopo) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  const nuovoFoglio = Object.assign({}, f);
+  const primaPiano = campo === "scarico"
+    ? (f.pianoScarico == null ? null : Object.assign({}, f.pianoScarico))
+    : (f.pianoTest == null ? null : Object.assign({}, f.pianoTest));
+  const chiavePiano = campo === "scarico" ? "pianoScarico" : "pianoTest";
+
+  /* Lo scarico segna anche la settimana come «deload» in ogni riga che ha
+   * quella settimana: la settimana e il piano dicono la stessa cosa. Le serie
+   * e le ripetizioni restano quelle scritte. */
+  const tipiPrima = [];
+  if (campo === "scarico") {
+    const chiave = chiaveEsercizi(f);
+    if (chiave && settimana != null) {
+      const k = settimana - 1;
+      nuovoFoglio[chiave] = f[chiave].map((e) => {
+        const posto = postoWeeks(e);
+        if (!posto || k >= posto.elenco.length) return e;
+        const w = posto.elenco[k];
+        tipiPrima.push({ id: testo(e && e.id), tipo: w && w.type ? testo(w.type) : "" });
+        const nuove = posto.elenco.map((x, i) => (i === k ? Object.assign({}, x && typeof x === "object" ? x : {}, { type: vuoto ? "" : "deload" }) : x));
+        return riscriviWeeks(e, posto, nuove);
+      });
+    } else if (chiave && vuoto === false) {
+      /* nessuna riga con le settimane: il piano resta un'annotazione */
+    }
+  }
+
+  if (vuoto) delete nuovoFoglio[chiavePiano];
+  else nuovoFoglio[chiavePiano] = campo === "scarico" ? { settimana: settimana, volume: volume } : { settimana: settimana };
+
+  const versionePrima = versioneDi(dati);
+  const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio });
+  nuovo.versione = versionePrima + 1;
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: campo };
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "piano-scheda",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "",
+    idEsercizio: "",
+    settimana: settimana,
+    campo: campo,
+    prima: prima,
+    dopo: dopo,
+    primaPiano: primaPiano,
+    tipiPrima: tipiPrima,
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
+}
+
+/* Data di inizio e fase: campi del documento-programma, non della scheda. */
+export function cambiaTestataProgramma(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  if (!dati || typeof dati !== "object") return { ok: false, motivo: "questo documento non e' un programma" };
+  const campo = r.campo === "inizio" ? "inizio" : (r.campo === "fase" ? "fase" : "");
+  if (!campo) return { ok: false, motivo: "in questo passo si registrano solo data di inizio e fase" };
+  const FASI = ["Bulk", "Cut", "Recomp", "Mantenimento"];
+  const valore = testo(r.valore);
+  if (campo === "fase") {
+    if (valore && FASI.indexOf(valore) === -1) return { ok: false, motivo: "la fase va scelta fra Bulk, Cut, Recomp e Mantenimento" };
+  } else if (valore) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valore);
+    if (!m) return { ok: false, motivo: "la data va scritta come aaaa-mm-gg" };
+    const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    if (d.getUTCFullYear() !== Number(m[1]) || d.getUTCMonth() !== Number(m[2]) - 1 || d.getUTCDate() !== Number(m[3])) {
+      return { ok: false, motivo: "quella data non esiste nel calendario" };
+    }
+  }
+  const chiave = campo === "inizio" ? "startDate" : "phase";
+  const prima = testo(dati[chiave]);
+  if (prima === valore) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  const nuovo = Object.assign({}, dati);
+  if (valore) nuovo[chiave] = valore; else delete nuovo[chiave];
+  const versionePrima = Number(dati.versione) || 0;
+  nuovo.versione = versionePrima + 1;
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: campo };
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "testata-programma",
+    origine: "modifica-fatta-in-B",
+    programma: testo(r.idProgramma),
+    scheda: "",
+    codice: "",
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: campo,
+    prima: prima,
+    dopo: valore,
+    primaPiano: prima === "" ? null : prima,
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: valore };
+}
+
+/* L'annullamento delle due modifiche qui sopra. */
+function annullaPianoETestata(dati, v, quando, uid) {
+  const campo = testo(v.campo);
+  const nuovo = Object.assign({}, dati);
+  if (testo(v.tipo) === "testata-programma") {
+    const chiave = campo === "inizio" ? "startDate" : (campo === "fase" ? "phase" : "");
+    if (!chiave) return { ok: false, motivo: "la voce del registro non dice quale campo rimettere" };
+    if (v.primaPiano == null || testo(v.primaPiano) === "") delete nuovo[chiave];
+    else nuovo[chiave] = testo(v.primaPiano);
+  } else {
+    const f = foglioDi(dati);
+    if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+    const nf = Object.assign({}, f);
+    if (campo === "scarico" || campo === "test") {
+      const chiavePiano = campo === "scarico" ? "pianoScarico" : "pianoTest";
+      if (v.primaPiano == null) delete nf[chiavePiano];
+      else nf[chiavePiano] = Object.assign({}, v.primaPiano);
+    } else {
+      return { ok: false, motivo: "la voce del registro non dice quale campo rimettere" };
+    }
+    const tipi = Array.isArray(v.tipiPrima) ? v.tipiPrima : [];
+    if (tipi.length && campo === "scarico") {
+      const chiave = chiaveEsercizi(nf);
+      if (chiave) {
+        nf[chiave] = nf[chiave].map((e) => {
+          const t = tipi.filter((x) => x && testo(x.id) === testo(e && e.id))[0];
+          if (!t) return e;
+          const posto = postoWeeks(e);
+          if (!posto) return e;
+          const nuove = posto.elenco.map((w, i) => {
+            if (i !== (Number(v.settimana) || 0) - 1) return w;
+            const c = Object.assign({}, w && typeof w === "object" ? w : {});
+            if (t.tipo) c.type = t.tipo; else delete c.type;
+            return c;
+          });
+          return riscriviWeeks(e, posto, nuove);
+        });
+      }
+    }
+    nuovo.sheet = nf;
+  }
+  const versionePrima = Number(dati.versione) || 0;
+  nuovo.versione = versionePrima + 1;
+  nuovo[MARCHIO_B] = { quando: quando, da: uid == null ? null : String(uid), ultima: campo };
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "annulla-modifica",
+    origine: "annullamento-in-B",
+    annullaDi: testo(v.idVoce),
+    scheda: testo(v.scheda),
+    codice: testo(v.codice),
+    esercizio: "",
+    idEsercizio: "",
+    settimana: v.settimana == null ? null : v.settimana,
+    campo: campo,
+    prima: testo(v.dopo),
+    dopo: testo(v.prima),
+    dopoTesto: "«" + campo + "» rimesso com'era",
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
 }
