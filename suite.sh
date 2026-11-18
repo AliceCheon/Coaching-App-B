@@ -16,6 +16,51 @@
 # gira a vuoto e il TOTALE direbbe "0 e 0", che e' peggio di un errore.
 cd "$(dirname "$0")" || exit 1
 
+# --- Un solo giro alla volta (19 novembre 2026) -----------------------------
+# Due suite concorrenti si pestavano i piedi: le fette uscivano MANCATE e i log
+# restavano vuoti. Qui: prima si spengono i processi di test rimasti appesi
+# (SOLO node.exe con --test, mai altri node: gli strumenti di lavoro restano),
+# poi si prende un file di blocco con il PID. Se quel PID e' ancora vivo
+# un'altra suite e' in corso e questa esce subito. Il blocco si toglie sempre,
+# anche quando la suite fallisce.
+BLOCCO=".suite.lock"
+
+processi_test() {
+  powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -match '--test' } | Select-Object -ExpandProperty ProcessId" 2>/dev/null
+}
+
+pulisci_test() {
+  local vivi
+  vivi=$(processi_test)
+  if [ -z "$vivi" ]; then return 0; fi
+  powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -match '--test' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }" >/dev/null 2>&1
+  if [ -z "$(processi_test)" ]; then
+    echo "pulizia: spenti i processi di test rimasti appesi ($(echo $vivi | wc -w | tr -d ' '))"
+  else
+    echo "pulizia: qualche processo di test non si e' spento"
+  fi
+}
+
+pid_vivo() {
+  local pid="$1"
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null && return 0
+  powershell -NoProfile -Command "if (Get-Process -Id $pid -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >/dev/null 2>&1
+}
+
+if [ -f "$BLOCCO" ]; then
+  ALTRO=$(tr -dc '0-9' < "$BLOCCO" | head -c 12)
+  if pid_vivo "$ALTRO"; then
+    echo "TOTALE FALLITO: un'altra suite e' in corso (PID $ALTRO)"
+    exit 3
+  fi
+  rm -f "$BLOCCO"
+fi
+
+pulisci_test
+printf '%s\n' "$" > "$BLOCCO"
+trap 'rm -f "$BLOCCO"' EXIT INT TERM
+
 NODE=""
 MOTIVO=""
 

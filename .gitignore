@@ -7,3 +7,6 @@ barbell-diva-backup*.json
 *.patch
 *.log
 nul
+
+# il blocco della suite: e' un segnale di lavoro, non un file del progetto
+.suite.lock
