@@ -20,6 +20,8 @@ import { settimaneEsercizi } from "./piano-scheda.js";
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 
 import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
+import { codiceDistretto } from "./distretti-b.js";
+import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
@@ -1035,31 +1037,10 @@ function apriConfermaBozza(doc, bottone, r) {
  * A Addominali · CA Cardio. Il documento di B porta il nome del gruppo, non la
  * lettera: si traduce con questa tabella, e quello che non si riconosce resta
  * un trattino invece di una lettera inventata. */
-const DISTRETTI = [
-  [["femorali", "femorale", "bicipiti femorali", "hamstring"], "E"],
-  [["centro schiena", "schiena"], "CS"],
-  [["dorsali", "dorsale", "dorso", "lat "], "D"],
-  [["spalle", "spalla", "deltoidi", "deltoide"], "S"],
-  [["glutei", "gluteo"], "G"],
-  [["bicipiti", "bicipite", "brachiali", "brachiale"], "B"],
-  [["tricipiti", "tricipite"], "T"],
-  [["pettorali", "pettorale", "petto"], "P"],
-  [["adduttori", "adduttore"], "Q"],
-  [["quadricipiti", "quadricipite", "gambe"], "Q"],
-  [["polpacci", "polpaccio", "calf"], "Z"],
-  [["addominali", "addominale", "addome", "core"], "A"],
-  [["cardio"], "CA"]
-];
-
-export function codiceDistretto(muscolo) {
-  const t = " " + String(muscolo || "").toLowerCase().trim() + " ";
-  if (t.trim() === "") return "\u2014";
-  for (let i = 0; i < DISTRETTI.length; i += 1) {
-    const chiavi = DISTRETTI[i][0];
-    for (let k = 0; k < chiavi.length; k += 1) if (t.indexOf(chiavi[k]) !== -1) return DISTRETTI[i][1];
-  }
-  return "\u2014";
-}
+/* La mappa dei distretti vive in comune/distretti-b.js (PASSO 4c): la usa
+ * anche il conto dell Analisi, e due copie vorrebbero dire due conti diversi.
+ * Qui si riesporta, cosi chi la importava da questa vista non cambia. */
+export { codiceDistretto };
 
 /* L'ultima volta che quell'esercizio è stato fatto, nella scheda giusta:
  * «26/10/2026 · 50 kg», come nel v31. Se il logbook non ha quella seduta resta
@@ -1640,72 +1621,86 @@ function pannelloScheda(doc, scheda, r) {
 
 /* ---------- analisi del programma: serie per distretto e sovrapposizione -- */
 
-/* Due carte che nel v31 vivono sotto la linguetta «Analisi programmazione».
- * Formula del v31, dichiarata nella carta: somma delle serie della settimana 1
- * di tutte le schede; la sovrapposizione dice in quali schede compare ogni
- * distretto. Si contano le serie scritte nel programma, non le sedute. */
+/* PASSO 4c: le due carte sotto la linguetta Analisi programmazione.
+ * Il conto NON sta qui: sta in comune/analisi-programmazione.js. La vista
+ * legge e disegna, e i due numeri non possono divergere. */
 function analisi(doc, r) {
   const box = n(doc, "div", "t9-an");
-  const perDistretto = Object.create(null);
-  const schedePerDistretto = Object.create(null);
-  (r.schede || []).forEach((s) => {
-    (s.esercizi || []).forEach((e) => {
-      const cod = codiceDistretto(e.muscolo);
-      if (cod === "\u2014") return;
-      const sett = (e.prescrizione && e.prescrizione.elencoSettimane) || [];
-      const prima = settimanePerTabella(sett, 1)[0] || {};
-      const serie = Number(String(prima.serie || "").replace(",", "."));
-      perDistretto[cod] = (perDistretto[cod] || 0) + (Number.isFinite(serie) ? serie : 0);
-      if (!schedePerDistretto[cod]) schedePerDistretto[cod] = [];
-      if (schedePerDistretto[cod].indexOf(s.codice) === -1) schedePerDistretto[cod].push(s.codice);
-    });
-  });
-
+  const schede = r.schede || [];
+  const quante = settimaneDelleSchede(schede);
+  const testa = n(doc, "div", "t9-an-scelta");
+  testa.appendChild(n(doc, "span", "t9-sub", "Settimana:"));
+  const sel = doc.createElement("select");
+  sel.className = "t9-sel";
+  sel.setAttribute("data-analisi-settimana", "1");
+  sel.setAttribute("aria-label", "settimana da contare");
+  for (let i = 1; i <= quante; i += 1) {
+    const o = doc.createElement("option");
+    o.value = String(i);
+    o.textContent = "S" + i;
+    sel.appendChild(o);
+  }
+  const blocco = doc.createElement("option");
+  blocco.value = "blocco";
+  blocco.textContent = "tutto il blocco";
+  sel.appendChild(blocco);
+  testa.appendChild(sel);
+  box.appendChild(testa);
   const griglia = n(doc, "div", "t9-an-grid");
-
-  const c1 = n(doc, "div", "t9-card");
-  c1.appendChild(n(doc, "h4", "", "Serie per distretto"));
-  c1.appendChild(n(doc, "p", "t9-sub", "Somma delle serie della settimana 1 di tutte le schede."));
-  const d1 = n(doc, "div", "t9-dist");
-  const voci = Object.keys(perDistretto).sort((a, b) => perDistretto[b] - perDistretto[a] || a.localeCompare(b));
-  if (!voci.length) {
-    d1.appendChild(n(doc, "p", "pg-vuoto", "Nessuna serie leggibile nelle schede: non si contano zeri al posto loro."));
-  } else {
-    const massimo = Math.max(...voci.map((k) => perDistretto[k]), 1);
-    voci.forEach((k) => {
-      const riga = n(doc, "div", "t9-dist-r");
-      riga.appendChild(n(doc, "b", "t9-dist-c", k));
-      const barra = n(doc, "i", "t9-dist-b");
-      barra.style.width = Math.round((perDistretto[k] / massimo) * 100) + "%";
-      riga.appendChild(barra);
-      riga.appendChild(n(doc, "span", "t9-dist-n", String(perDistretto[k])));
-      d1.appendChild(riga);
-    });
-  }
-  c1.appendChild(d1);
-  griglia.appendChild(c1);
-
-  const c2 = n(doc, "div", "t9-card");
-  c2.appendChild(n(doc, "h4", "", "Sovrapposizione tra schede"));
-  c2.appendChild(n(doc, "p", "t9-sub", "In quali schede compare ogni distretto: due o più lettere = il gruppo è lavorato più volte nel ciclo."));
-  const d2 = n(doc, "div", "t9-ov");
-  const chiavi = Object.keys(schedePerDistretto).sort();
-  if (!chiavi.length) {
-    d2.appendChild(n(doc, "p", "pg-vuoto", "Nessun distretto riconosciuto negli esercizi letti."));
-  } else {
-    chiavi.forEach((k) => {
-      const riga = n(doc, "div", "t9-ov-r");
-      riga.appendChild(n(doc, "b", "t9-dist-c", k));
-      const chips = n(doc, "span", "t9-ov-s");
-      schedePerDistretto[k].forEach((codice) => chips.appendChild(n(doc, "span", "pr-rotchip", codice)));
-      riga.appendChild(chips);
-      d2.appendChild(riga);
-    });
-  }
-  c2.appendChild(d2);
-  griglia.appendChild(c2);
-
   box.appendChild(griglia);
+  const disegna = () => {
+    const scelta = sel.value === "blocco" ? null : Number(sel.value);
+    const conto = analisiProgrammazione(schede, { settimana: scelta });
+    while (griglia.firstChild) griglia.removeChild(griglia.firstChild);
+    const c1 = n(doc, "div", "t9-card");
+    c1.setAttribute("data-analisi-carta", "distretti");
+    c1.appendChild(n(doc, "h4", "", "Serie per distretto"));
+    c1.appendChild(n(doc, "p", "t9-sub", conto.blocco ? "Tutte le settimane del blocco." : ("Somma delle serie della settimana " + conto.settimana + " di tutte le schede.")));
+    const totale = n(doc, "p", "t9-totale");
+    totale.setAttribute("data-analisi-totale", "1");
+    totale.textContent = String(conto.totaleSerie);
+    c1.appendChild(totale);
+    const d1 = n(doc, "div", "t9-dist");
+    if (!conto.distretti.length) {
+      d1.appendChild(n(doc, "p", "pg-vuoto", "Nessuna serie leggibile nelle schede: non si contano zeri al posto loro."));
+    } else {
+      const massimo = Math.max.apply(null, conto.distretti.map((x) => x.serie).concat([1]));
+      conto.distretti.forEach((x) => {
+        const riga = n(doc, "div", "t9-dist-r");
+        riga.appendChild(n(doc, "b", "t9-dist-c", x.codice));
+        const barra = n(doc, "i", "t9-dist-b");
+        barra.style.width = Math.round((x.serie / massimo) * 100) + "%";
+        riga.appendChild(barra);
+        riga.appendChild(n(doc, "span", "t9-dist-n", String(x.serie)));
+        d1.appendChild(riga);
+      });
+    }
+    c1.appendChild(d1);
+    const tonn = n(doc, "p", "t9-sub", "Tonnellaggio: " + tonnellaggioInParola(conto.totaleTonnellaggio, conto.tonnellaggioNoto));
+    tonn.setAttribute("data-analisi-tonnellaggio", "1");
+    c1.appendChild(tonn);
+    griglia.appendChild(c1);
+    const c2 = n(doc, "div", "t9-card");
+    c2.appendChild(n(doc, "h4", "", "Sovrapposizione tra schede"));
+    c2.appendChild(n(doc, "p", "t9-sub", "In quali schede compare ogni distretto: due o piu lettere = il gruppo e lavorato piu volte nel ciclo."));
+    const d2 = n(doc, "div", "t9-ov");
+    if (!conto.distretti.length) {
+      d2.appendChild(n(doc, "p", "pg-vuoto", "Nessun distretto riconosciuto negli esercizi letti."));
+    } else {
+      conto.distretti.forEach((x) => {
+        const riga = n(doc, "div", "t9-ov-r");
+        riga.appendChild(n(doc, "b", "t9-dist-c", x.codice));
+        const chips = n(doc, "span", "t9-ov-s");
+        x.schede.forEach((codice) => chips.appendChild(n(doc, "span", "pr-rotchip", codice)));
+        riga.appendChild(chips);
+        d2.appendChild(riga);
+      });
+    }
+    c2.appendChild(d2);
+    griglia.appendChild(c2);
+  };
+  sel.addEventListener("change", disegna);
+  disegna();
   return box;
 }
 
