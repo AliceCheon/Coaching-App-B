@@ -27,6 +27,7 @@ import { riepilogoProgramma } from "../comune/programma.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
+import { chiedeRilettura } from "../comune/ridisegno-b.js";
 import { renderVolume } from "../comune/vista-volume.js";
 import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
@@ -666,7 +667,7 @@ export async function avvia(doc, win) {
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
              * senza rileggere, a schermo non cambierebbe niente. */
-            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "tecnica-parametri" || richiesta.campo === "tecnica-settimana" || richiesta.campo === "tecnica-nota" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie" || richiesta.campo === "svuota-scheda" || richiesta.campo === "ripristina-scheda")) {
+            if (chiedeRilettura(richiesta)) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };

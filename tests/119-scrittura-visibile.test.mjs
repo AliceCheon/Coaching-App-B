@@ -165,14 +165,19 @@ test("119.2 tutta la vista cerca la scheda in un posto solo: idSchedaVicino", ()
 });
 
 /* ---------- 2. dopo la scrittura la pagina rilegge ------------------------ */
-test("119.3 la riga aggiunta e' fra i campi che fanno rileggere e ridisegnare", () => {
-  assert.match(app, /richiesta\.campo === "aggiunta-riga"/,
-    "senza questo nome la pagina scrive in B e resta a schermo il disegno vecchio");
+test("119.3 la pagina chiede il ridisegno a una funzione sola: chiedeRilettura", () => {
+  assert.match(app, /import \{ chiedeRilettura \} from "\.\.\/comune\/ridisegno-b\.js"/,
+    "la pagina deve usare la funzione unica di comune/ridisegno-b.js");
+  assert.match(app, /if \(chiedeRilettura\(richiesta\)\)/,
+    "la decisione se rileggere deve passare da li'");
+  assert.equal(app.indexOf('richiesta.campo === "aggiunta-riga"'), -1,
+    "non deve restare la fila di || scritta a mano: un nome dimenticato li' e' proprio il difetto di + Riga");
 });
 
-test("119.4 le scritture delle tecniche fanno ridisegnare come le altre", () => {
-  ["tecnica-parametri", "tecnica-settimana", "tecnica-nota"].forEach((c) => {
-    assert.match(app, new RegExp('richiesta\\.campo === "' + c + '"'), "manca " + c + " nella lista del ridisegno");
+test("119.4 nessun campo del ridisegno e' piu' scritto a mano nella pagina", () => {
+  ["aggiunta-riga", "aggiunta-tecnica", "rimozione-tecnica", "tecnica-parametri", "tecnica-settimana", "tecnica-nota", "sostituzione-riga", "superserie", "ripristina-scheda"].forEach((c) => {
+    assert.equal(app.indexOf('richiesta.campo === "' + c + '"'), -1,
+      "la pagina nomina ancora a mano " + c + ": la lista deve stare solo in ridisegno-b.js");
   });
 });
 
