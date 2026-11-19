@@ -1240,11 +1240,9 @@ function tabellaEsercizi(doc, scheda, r) {
     const chips2 = n(doc, "div", "ese-chips2");
     /* Passo B.16a-2: la spia «Test» e' viva solo se nelle celle delle
      * settimane c'e' «test» (maiuscolo o minuscolo). Spia, non tasto. */
-    const settimaneTest = [];
-    (perRiga[indice] || []).forEach((s, k) => {
-      const cella = String(s.serie == null ? "" : s.serie) + " " + String(s.ripetizioni == null ? "" : s.ripetizioni);
-      if (cella.toLowerCase().indexOf("test") !== -1) settimaneTest.push(k + 1);
-    });
+    /* PASSO 4c-anticipo: la stessa funzione del campo Test, cosi' spia e campo
+     * non possono contraddirsi. */
+    const settimaneTest = settimaneTestDiRiga(perRiga[indice]);
     if (settimaneTest.length) {
       const test = n(doc, "span", "tb-test on");
       test.appendChild(n(doc, "i"));
@@ -1535,6 +1533,35 @@ function filtriDistretti(doc, scheda, pannello) {
 
 /* ---------- le schede ---------------------------------------------------- */
 
+/* PASSO 4c-anticipo — il titolo: se il nome e' gia' «Scheda X» non si
+ * ripete due volte; se e' diverso, «Scheda X — NOME». */
+function suffissoNome(scheda) {
+  const nome = nomePulito(scheda && scheda.nome);
+  if (!nome) return "";
+  const codice = "Scheda " + (scheda && scheda.codice != null ? scheda.codice : "");
+  if (nome.toLowerCase() === codice.toLowerCase()) return "";
+  return " — " + nome;
+}
+
+/* PASSO 4c-anticipo — il campo Test non e' piu' una tendina: e' un'etichetta
+ * che riconosce da sola le settimane di test dalle celle della scheda. Non si
+ * digita, non ha freccia, si aggiorna a ogni ridisegno (dopo ogni modifica
+ * delle celle). */
+function etichettaTest(doc, scheda) {
+  const settimane = settimaneDiTest(scheda);
+  const f = n(doc, "div", "pr-f pr-f-sm");
+  const lab = n(doc, "span", "pr-lab", "Test");
+  lab.setAttribute("title", "riconosciuto dalle celle della scheda");
+  f.appendChild(lab);
+  const c = n(doc, "span", "pr-in pr-val pr-vivo", testoTest(settimane));
+  c.setAttribute("data-pr-c", "test-settimana");
+  c.setAttribute("aria-label", "Test");
+  c.setAttribute("title", "riconosciuto dalle celle della scheda");
+  if (!settimane.length) c.setAttribute("data-vuoto", "1");
+  f.appendChild(c);
+  return f;
+}
+
 function pannelloScheda(doc, scheda, r) {
   const p = n(doc, "div", "pr-shell");
   /* Il segnaposto dei campi vivi: lega i controlli alla scheda giusta. */
@@ -1542,7 +1569,7 @@ function pannelloScheda(doc, scheda, r) {
 
   const testata2 = n(doc, "div", "pr-shd");
   const t = n(doc, "div", "pr-shd-t");
-  t.appendChild(n(doc, "h3", "", "Scheda " + scheda.codice + (scheda.nome ? " — " + nomePulito(scheda.nome) : "")));
+  t.appendChild(n(doc, "h3", "", "Scheda " + scheda.codice + suffissoNome(scheda)));
   t.appendChild(n(doc, "span", "pr-shd-c", scheda.numeroEsercizi + (scheda.numeroEsercizi === 1 ? " esercizio" : " esercizi") + (scheda.focus ? " · " + nomePulito(scheda.focus) : "")));
   testata2.appendChild(t);
 
@@ -1568,7 +1595,7 @@ function pannelloScheda(doc, scheda, r) {
    * è stato tolto: nessun blocco lo legge e nessuno lo usava. */
   f.appendChild(campoPiano(doc, "Scarico", "", "scarico-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana dello scarico" }));
   f.appendChild(campoPiano(doc, "Vol −%", "", "scarico-volume", "text", null, "pr-f-sm", { titolo: "scegli prima la settimana dello scarico", segnaposto: "es. 40", suffisso: "%", disattivato: true }));
-  f.appendChild(campoPiano(doc, "Test", "", "test-settimana", "select", vociSettimane, "pr-f-sm", { titolo: "settimana del test" }));
+  f.appendChild(etichettaTest(doc, scheda));
   testata2.appendChild(f);
   p.appendChild(testata2);
 
@@ -2270,7 +2297,7 @@ function serieDaCella(testo) {
 }
 
 function haTest(perRiga) {
-  return (perRiga || []).some((s) => (nomePulito(s.serie) + " " + nomePulito(s.ripetizioni)).toLowerCase().indexOf("test") !== -1);
+  return settimaneTestDiRiga(perRiga).length > 0;
 }
 
 /* Un foglio deve stare in UNA pagina: si abbassa il corpo per gradi fino al
@@ -2337,7 +2364,7 @@ function costruisciCompatta(doc, r, codici) {
     if (!scheda || !scheda.codice || codici.indexOf(scheda.codice) === -1) return;
     const numero = numeroSettimane(scheda);
     const pagina = n(doc, "div", "st-pagina", "");
-    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "")));
+    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + suffissoNome(scheda)));
     const t = n(doc, "table", "st-tab st-compatta", "");
     const cg = n(doc, "colgroup", "", "");
     ["st-w-js", "st-w-dist", "st-w-ese", "st-w-rec", "st-w-tut"].forEach(() => cg.appendChild(n(doc, "col", "", "")));
@@ -2454,7 +2481,7 @@ function costruisciCompilare(doc, r, codici, settimana) {
     if (!scheda || !scheda.codice || codici.indexOf(scheda.codice) === -1) return;
     const numero = numeroSettimane(scheda);
     const pagina = n(doc, "div", "st-pagina st-compilare", "");
-    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "") + " \u00b7 Settimana S" + scelta));
+    pagina.appendChild(testaStampa(doc, r, "Scheda " + scheda.codice + suffissoNome(scheda) + " \u00b7 Settimana S" + scelta));
     const t = n(doc, "table", "st-tab st-tab-compilare", "");
     const cg = n(doc, "colgroup", "", "");
     ["11mm", "13mm", "46mm", "11mm", "10mm", "18mm"].forEach((larghezza) => {
@@ -2749,6 +2776,7 @@ function apriNonInB(doc, bottone, profilo, esito) {
 }
 
 import { nomeProposto } from "./scheletri.js";
+import { settimaneDiTest, settimaneTestDiRiga, testoTest } from "./settimane-test.js";
 
 /* B.21 commit 2 — «Salva come scheletro»: la struttura di QUESTA scheda,
  * senza lettera e senza carichi. Il nome lo sceglie Alice qui dentro.
@@ -2903,7 +2931,7 @@ function apriCopiaEsercizi(doc, bottone, scheda, r) {
   box.setAttribute("role", "dialog");
   box.setAttribute("aria-label", "copia esercizi");
   box.appendChild(n(doc, "p", "pr-conf-titolo", "Copia / Sposta esercizi"));
-  box.appendChild(n(doc, "p", "pr-conf-partenza", "Dalla Scheda " + scheda.codice + (scheda.nome ? " \u2014 " + nomePulito(scheda.nome) : "")));
+  box.appendChild(n(doc, "p", "pr-conf-partenza", "Dalla Scheda " + scheda.codice + suffissoNome(scheda)));
 
   const altre = (Array.isArray(r && r.schede) ? r.schede : []).filter((s) => s && String(s.id || "") !== String(scheda.id || ""));
   if (!altre.length) {
@@ -2922,7 +2950,7 @@ function apriCopiaEsercizi(doc, bottone, scheda, r) {
   altre.forEach((s) => {
     const o = doc.createElement("option");
     o.value = String(s.id || "");
-    o.textContent = "Scheda " + s.codice + (s.nome ? " \u2014 " + nomePulito(s.nome) : "");
+    o.textContent = "Scheda " + s.codice + suffissoNome(s);
     dest.appendChild(o);
   });
   box.appendChild(dest);

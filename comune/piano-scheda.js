@@ -114,17 +114,15 @@ export function leggiPiano(dati) {
   if (!f) return vuoto;
   const quante = settimaneScheda(dati);
   const s = f.pianoScarico;
-  const t = f.pianoTest;
+  /* PASSO 4c-anticipo: il test non si scrive e non si legge piu' dal piano.
+   * Il vecchio pianoTest resta nel documento, ignorato senza errori. */
   const scarico = s && typeof s === "object" && validaSettimana(s.settimana, quante).ok && validaVolume(s.volume).ok
     ? { settimana: Number(s.settimana), volume: Number(s.volume) }
     : null;
-  const test = t && typeof t === "object" && validaSettimana(t.settimana, quante).ok
-    ? { settimana: Number(t.settimana) }
-    : null;
   return {
     scarico: scarico,
-    test: test,
-    scaricoTesto: scarico ? "S" + scarico.settimana + " · vol −" + scarico.volume + "%" : NON,
-    testTesto: test ? "S" + test.settimana : NON
+    test: null,
+    scaricoTesto: scarico ? "S" + scarico.settimana + " \u00b7 vol \u2212" + scarico.volume + "%" : NON,
+    testTesto: NON
   };
 }

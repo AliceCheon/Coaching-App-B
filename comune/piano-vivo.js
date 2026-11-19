@@ -15,7 +15,6 @@
  */
 
 export const MESSAGGIO_SCARICO = "Scarico non salvato: scegli la settimana e scrivi la percentuale (un numero da 0 a 100)";
-export const MESSAGGIO_TEST = "Test non salvato: scegli la settimana del test";
 export const MESSAGGIO_DATA = "Data di inizio non salvata: scrivila come gg/mm/aaaa, per esempio 05/10/2026";
 
 /* "S4" / "s 4" / "4" -> 4. Vuoto o storto -> null. */
@@ -88,11 +87,9 @@ export function collegaPiano(doc, opzioni) {
     const test = piano && piano.test ? piano.test : null;
     const sett = riquadro.querySelector('[data-pr-c="scarico-settimana"]');
     const vol = riquadro.querySelector('[data-pr-c="scarico-volume"]');
-    const tst = riquadro.querySelector('[data-pr-c="test-settimana"]');
 
     const settScritta = () => (scarico ? "S" + scarico.settimana : "");
     const volScritto = () => (scarico ? String(scarico.volume) : "");
-    const testScritto = () => (test ? "S" + test.settimana : "");
     /* Il volume non vive da solo: si accende quando c'è la settimana di
      * scarico; finché non c'è resta spento, con il perché nel tooltip. */
     const aggiornaVolume = () => {
@@ -104,7 +101,6 @@ export function collegaPiano(doc, opzioni) {
     };
     rimetti(sett, settScritta());
     rimetti(vol, volScritto());
-    rimetti(tst, testScritto());
     aggiornaVolume();
 
     /* Legge i due campi insieme: la percentuale non vive da sola. */
@@ -161,29 +157,6 @@ export function collegaPiano(doc, opzioni) {
       vol.addEventListener("change", () => { scriviScarico(vol); });
     }
 
-    if (tst) {
-      legati += 1;
-      tst.addEventListener("change", () => {
-        const s = numeroSettimana(tst.value);
-        const vuoto = String(tst.value == null ? "" : tst.value).trim() === "";
-        if (!vuoto && s == null) {
-          segnala(MESSAGGIO_TEST, "errore");
-          return;
-        }
-        editor.modifica({ campo: "test", idScheda: idScheda, settimana: vuoto ? "" : s }).then((esito) => {
-          if (!esito || !esito.ok) {
-            segnala("Test non salvato: " + ((esito && esito.motivo) || "non ho scritto niente"), "errore");
-            return null;
-          }
-          segnala(vuoto ? "test tolto dalla scheda"
-            : "test salvato: S" + s + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
-          return dopoIlFuoco(tst, () => sincronizza());
-        }, (e) => {
-          segnala("Test non salvato: " + (e && e.message ? e.message : "scrittura non riuscita"), "errore");
-          return null;
-        });
-      });
-    }
   });
 
   /* ---------- la testata del programma --------------------------------- */

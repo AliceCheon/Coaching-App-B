@@ -175,11 +175,11 @@ test("114.2 i campi sono tendine S1..SN e la percentuale porta il % e il suo too
   const voci = Array.from(sett.querySelectorAll("option")).map((o) => o.textContent);
   assert.deepEqual(voci, ["\u2014", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]);
   const tst = b.campo("test-settimana");
-  assert.equal(tst.tagName, "SELECT", "Test deve essere una tendina");
-  assert.equal(Array.from(tst.querySelectorAll("option")).length, 9);
+  assert.equal(tst.tagName, "SPAN", "Test e' un'etichetta, non una tendina");
+  assert.equal(tst.querySelectorAll("option").length, 0, "l'etichetta non ha voci: non e' una tendina");
   const etichettaScarico = sett.closest("label").querySelector(".pr-lab");
   assert.equal(etichettaScarico.getAttribute("title"), "settimana dello scarico");
-  assert.equal(tst.closest("label").querySelector(".pr-lab").getAttribute("title"), "settimana del test");
+  assert.equal(tst.closest(".pr-f").querySelector(".pr-lab").getAttribute("title"), "riconosciuto dalle celle della scheda");
   const vol = b.campo("scarico-volume");
   assert.equal(vol.getAttribute("title"), "scegli prima la settimana dello scarico", "da spento il campo dice perche' non si scrive");
   assert.equal(vol.disabled, true, "senza settimana di scarico il volume e' spento");
@@ -275,12 +275,12 @@ test("114.7 il campo con il fuoco dentro non fa ridisegnare la pagina", async ()
 });
 
 
-test("114.8 senza piano il Test mostra \u00ab\u2014\u00bb, e il volume nasce spento", () => {
+test("114.8 senza piano il Test dice nessun test, e il volume nasce spento", () => {
   const b = banco();
   b.disegna();
   const tst = b.campo("test-settimana");
-  assert.equal(tst.value, "", "senza pianoTest la tendina non deve mostrare nessuna settimana");
-  assert.equal(tst.selectedOptions[0].textContent, "\u2014", "la voce scelta deve essere \u00ab\u2014\u00bb, non S1");
+  assert.equal(tst.textContent, "nessun test", "senza celle con test l'etichetta lo dice");
+  assert.equal(tst.getAttribute("data-vuoto"), "1", "senza celle con test l'etichetta si segna vuota");
   const vol = b.campo("scarico-volume");
   assert.equal(vol.disabled, true, "senza settimana di scarico il volume e' spento");
   assert.equal(vol.title, "scegli prima la settimana dello scarico", "il campo spento deve dire perche'");

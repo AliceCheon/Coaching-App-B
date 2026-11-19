@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { renderProgramma } from "../comune/vista-programma.js";
-import { leggiPiano, settimaneScheda, validaSettimana, validaVolume } from "../comune/piano-scheda.js";
+import { leggiPiano, pianiDalleSchede, settimaneScheda, validaSettimana, validaVolume } from "../comune/piano-scheda.js";
 import { cambiaPianoScheda, cambiaTestataProgramma, annullaModifica } from "../comune/modifiche-b.js";
 import { collegaPiano, inIso, inItaliano } from "../comune/piano-vivo.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
@@ -109,15 +109,10 @@ test("113.4 settimana e percentuale fuori misura si rifiutano", () => {
   assert.match(troppo.motivo, /0 a 100/);
 });
 
-test("113.5 il test segna la sua settimana, e l'Annulla rimette com'era", () => {
-  const d = schedaDati();
-  const esito = cambiaPianoScheda(d, { idScheda: "sh-A", campo: "test", settimana: 8 }, { quando: "2026-11-18T10:00:00.000Z", uid: "u1" });
-  assert.equal(esito.ok, true, esito.motivo);
-  assert.equal(leggiPiano(esito.dati).testTesto, "S8");
-  const annulla = annullaModifica(esito.dati, esito.voce, { quando: "2026-11-18T10:05:00.000Z", uid: "u1" });
-  assert.equal(annulla.ok, true, annulla.motivo);
-  assert.equal(annulla.dati.sheet.pianoTest, undefined, "il test non e' stato tolto");
-  assert.equal(leggiPiano(annulla.dati).test, null);
+test("113.5 il test non si scrive piu': lo dicono le celle della scheda", () => {
+  const esito = cambiaPianoScheda({}, { idScheda: "sh-A", campo: "test", settimana: 8 }, {});
+  assert.equal(esito.ok, false, "il salvataggio del test deve essere rifiutato");
+  assert.ok(/celle della scheda/.test(esito.motivo || ""), "e deve dire perche': " + esito.motivo);
 });
 
 test("113.6 l'Annulla dello scarico rimette il piano e il tipo di prima", () => {
@@ -128,6 +123,20 @@ test("113.6 l'Annulla dello scarico rimette il piano e il tipo di prima", () => 
   assert.equal(annulla.dati.sheet.pianoScarico, undefined);
   assert.deepEqual(annulla.dati.sheet.exercises.map((e) => e.progression.weeks[3].type), ["normal", "normal", "normal"]);
   assert.equal(volume(annulla.dati), volume(d));
+});
+
+test("113.12 il vecchio pianoTest nel documento e' ignorato, senza errori", () => {
+  const d = schedaDati();
+  d.sheet.pianoTest = { settimana: 5 };
+  const p = leggiPiano(d);
+  assert.equal(p.test, null, "il vecchio pianoTest non si legge piu'");
+  assert.equal(p.testTesto, "non registrato");
+  assert.equal(d.sheet.pianoTest.settimana, 5, "il documento non si ripulisce: si ignora e basta");
+  assert.doesNotThrow(() => pianiDalleSchede([{ id: "sh-A", dati: d }]), "un documento col vecchio pianoTest non deve far errori");
+  assert.equal(pianiDalleSchede([{ id: "sh-A", dati: d }])["sh-A"].test, null, "il vecchio test non torna dal piano della scheda");
+  const rifiuto = cambiaPianoScheda(d, { idScheda: "sh-A", campo: "test", settimana: 5 }, { quando: "2026-11-19T10:00:00.000Z", uid: "u1" });
+  assert.equal(rifiuto.ok, false, "scrivere il test deve restare rifiutato");
+  assert.match(rifiuto.motivo, /celle della scheda/);
 });
 
 /* ------------------------------------------------------------- 2. la testata */
@@ -206,7 +215,8 @@ test("113.10 i campi vivi mostrano il valore salvato, e la percentuale resta ann
   const inizio = doc.querySelector('[data-pr-c=programma-inizio]');
   assert.equal(sett.value, "S4", "dopo il ridisegno la settimana di scarico non si vede");
   assert.equal(vol.value, "20");
-  assert.equal(tst.value, "", "il test vuoto deve restare vuoto, non zero");
+  assert.equal(tst.tagName, "SPAN", "il Test non e' piu' una tendina: e' un'etichetta");
+  assert.equal(tst.textContent, "S1", "la scheda ha «test 12rm» in S1: l'etichetta lo dice, e non mostra zero");
   assert.equal(inizio.value, "05/10/2026");
   assert.equal(volume(scritto.dati), volumePrima);
 

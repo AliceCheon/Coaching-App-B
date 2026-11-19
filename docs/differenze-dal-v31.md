@@ -32,21 +32,21 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - righe 5832-5840
 - righe 6536
 - righe 6911-6915
-- righe 7723-7755
-- righe 7897-7896
-- righe 7924-7951
-- righe 7996
-- righe 8042-8041
-- righe 8092-8093
-- righe 8444
-- righe 8601
-- righe 8989-8990
-- righe 9904
-- righe 10634-10643
-- righe 10754
-- righe 10756
-- righe 10758-10757
-- righe 10826-10830
+- righe 7723-7759
+- righe 7901-7900
+- righe 7928-7955
+- righe 8000
+- righe 8046-8045
+- righe 8096-8097
+- righe 8448
+- righe 8605
+- righe 8993-8994
+- righe 9908
+- righe 10638-10647
+- righe 10758
+- righe 10760
+- righe 10762-10761
+- righe 10830-10834
 : Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).

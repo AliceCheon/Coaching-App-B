@@ -7725,6 +7725,10 @@ nav.rail .voce[data-vista="programma-2"],nav.rail .voce[data-vista="programma-3"
 #pag-programma-1 .pr-shd-f .pr-lab{min-height:11px;margin-bottom:4px;white-space:nowrap}
 #pag-programma-1 .pr-shd-f .pr-in,#pag-programma-1 .pr-shd-f .pr-sel{height:34px;padding:0 10px;font-size:12.5px;line-height:32px}
 #pag-programma-1 .pr-shd-f .pr-sel{padding-right:8px}
+/* PASSO 4c-anticipo: il Test e' un'etichetta dentro il riquadro dei campi:
+ * stessa altezza degli altri, nessuna freccia, niente da digitare. */
+#pag-programma-1 .pr-shd-f .pr-val{display:flex;align-items:center;justify-content:center;height:34px;border:1px solid rgba(128,128,128,.45);border-radius:9px;background:transparent;font:600 12.5px/1 "JetBrains Mono",monospace;color:inherit;cursor:default;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pag-programma-1 .pr-shd-f .pr-val[data-vuoto="1"]{font-weight:500;opacity:.75}
 /* il segno % vive DENTRO il campo: sta sopra l'input, a destra */
 #pag-programma-1 .pr-suf-box{position:relative;display:block}
 #pag-programma-1 .pr-suf-box .pr-in{padding-right:28px}

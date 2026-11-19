@@ -7,6 +7,9 @@
 #   bash suite.sh nodo       -> quale Node vero si usa
 #   bash suite.sh fetta <n>  -> rifai una sola fetta
 #   bash suite.sh            -> tutte le fette di fila + TOTALE
+# Regola dal 19 novembre 2026: NIENTE --test-timeout=0. scripts/con-tetto.mjs
+# da' 60 secondi a ogni prova e 240 a ogni file; una fetta che li supera dice
+# «TOTALE FALLITO» col nome del file bloccato. La suite non resta piu' appesa.
 # Regola dal 17 novembre 2026: una fetta deve stare sotto i 35 secondi, cosi'
 # una sola chiamata (45 s) la porta a termine e il log resta scritto. Le fette
 # lunghe sono spezzate in blocchi: veloce1/veloce2 da 16 file, 6x e 7x da 4.
@@ -15,6 +18,19 @@
 # "managed runtime is not available" e non esegue nulla: con quello una fetta
 # gira a vuoto e il TOTALE direbbe "0 e 0", che e' peggio di un errore.
 cd "$(dirname "$0")" || exit 1
+
+# PowerShell (19/11/2026): lanciata da nohup, questa bash non lo trova nel PATH.
+# Lo si cerca una volta, col percorso vero di Windows, e poi si usa sempre $PS.
+PS=""
+for c in powershell.exe "$SYSTEMROOT/System32/WindowsPowerShell/v1.0/powershell.exe" "/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe" "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"; do
+  [ -n "$c" ] || continue
+  if "$c" -NoProfile -Command "exit 0" >/dev/null 2>&1; then PS="$c"; break; fi
+done
+if [ -z "$PS" ]; then
+  echo "pulizia: PowerShell non trovata, ne nel PATH ne in /c/Windows/System32/WindowsPowerShell/v1.0/"
+  echo "Mi fermo qui: senza PowerShell non posso spegnere i test appesi, quindi non lancio nessuna corsa."
+  exit 3
+fi
 
 # --- Un solo giro alla volta (19 novembre 2026) -----------------------------
 # Due suite concorrenti si pestavano i piedi: le fette uscivano MANCATE e i log
@@ -30,12 +46,12 @@ BLOCCO=".suite.lock"
 # script mostra l'elenco PRIMA e DOPO, cosi' nel log si vede che i processi
 # sono davvero spariti.
 processi_test() {
-  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/elenco-test.ps1 2>/dev/null
+  "$PS" -NoProfile -ExecutionPolicy Bypass -File scripts/elenco-test.ps1 2>/dev/null
 }
 
 pulisci_test() {
   local out esito
-  out=$(powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ferma-test.ps1 2>&1)
+  out=$("$PS" -NoProfile -ExecutionPolicy Bypass -File scripts/ferma-test.ps1 2>&1)
   esito=$?
   if [ -n "$out" ]; then
     printf '%s
@@ -51,7 +67,7 @@ pid_vivo() {
   local pid="$1"
   [ -n "$pid" ] || return 1
   kill -0 "$pid" 2>/dev/null && return 0
-  powershell -NoProfile -Command "if (Get-Process -Id $pid -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >/dev/null 2>&1
+  "$PS" -NoProfile -Command "if (Get-Process -Id $pid -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >/dev/null 2>&1
 }
 
 if [ -f "$BLOCCO" ]; then
@@ -117,14 +133,26 @@ fetta() {
     echo "fetta $nome: MANCATA (nessun file in questa fetta)" | tee -a log-suite.txt
     return 1
   fi
-  "$NODE" --test "$@" > "$log" 2>&1 < /dev/null
+  # Il tetto (19/11/2026): 60 s a ogni prova dentro scripts/con-tetto.mjs,
+  # 240 s a ogni file qui. Prima --test-timeout=0 lasciava la suite appesa
+  # per sempre su una prova che non finiva.
+  local avviso esitoFile blocc
+  avviso=$("$NODE" scripts/con-tetto.mjs "$log" 240 "$@" 2>&1 1>/dev/null < /dev/null)
+  esitoFile=$?
+  if [ "$esitoFile" = "124" ]; then
+    blocc=$(printf '%s' "$avviso" | grep -o 'BLOCCATO: .*' | sed 's/^BLOCCATO: //')
+    echo "fetta $nome: TOTALE FALLITO (bloccata: ${blocc:-file sconosciuto})" | tee -a log-suite.txt
+    [ -f "$log" ] && cat "$log" >> log-suite.txt && rm -f "$log"
+    return 1
+  fi
   local p f
-  p=$(prendi pass "$log")
-  f=$(prendi fail "$log")
-  if [ -z "$p" ] || [ -z "$f" ]; then
+  # Una fetta puo' avere piu' file: ogni file ha il suo riepilogo, qui si somma.
+  if ! grep -qE "^. pass [0-9]+$" "$log" 2>/dev/null; then
     echo "fetta $nome: MANCATA (nessun risultato da --test, vedi $log)" | tee -a log-suite.txt
     return 1
   fi
+  p=$(awk '$2=="pass"{s+=$3} END{print s+0}' "$log")
+  f=$(awk '$2=="fail"{s+=$3} END{print s+0}' "$log")
   echo "fetta $nome: pass $p fail $f file $nfile" | tee -a log-suite.txt
   cat "$log" >> log-suite.txt
   rm -f "$log"

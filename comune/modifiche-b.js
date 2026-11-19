@@ -1589,6 +1589,9 @@ function riscriviWeeks(esercizio, posto, nuove) {
  * Settimana vuota = si toglie il piano (e la settimana non resta segnata come
  * scarico). La percentuale NON tocca serie e ripetizioni: e' un'annotazione. */
 export function cambiaPianoScheda(dati, richiesta, opzioni) {
+  /* PASSO 4c-anticipo: il test non si scrive piu': lo riconoscono le celle
+   * della scheda. Il vecchio pianoTest resta nel documento, ignorato. */
+  if (testo((richiesta || {}).campo) === "test") return { ok: false, motivo: "il test si legge dalle celle della scheda: non si scrive piu'" };
   const r = richiesta || {};
   const o = opzioni || {};
   const f = foglioDi(dati);

@@ -99,6 +99,6 @@ test("115.5 la pillola non c'e' piu', e il volume parte spento", () => {
 test("115.6 l'ordine e' Settimane, Scarico, Vol, Test", () => {
   const iSett = vista.indexOf('"scarico-settimana"');
   const iVol = vista.indexOf('"scarico-volume"');
-  const iTest = vista.indexOf('"test-settimana"');
+  const iTest = vista.indexOf("f.appendChild(etichettaTest(doc, scheda))");
   assert.ok(iSett > 0 && iVol > iSett && iTest > iVol, "l'ordine dei quattro campi non e' quello chiesto");
 });

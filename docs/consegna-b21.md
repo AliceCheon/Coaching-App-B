@@ -626,3 +626,24 @@ porta davvero `pianoTest { settimana: 1 }` scritto in un passaggio precedente.
 **Prove.** `tests/116-copia-esercizi.test.mjs` passa a **16 prove**: le 11 della copia più cinque dello sposta — la scelta nel riquadro e il verbo della domanda, lo spostamento vero con la partenza che perde la riga e la destinazione che la riceve in fondo, il gruppo rimasto solo che perde il legame, l'Annulla che rimette tutte e due le schede, e il registro che prende **una voce sola** con le due fotografie.
 
 **Cosa non ho potuto guardare.** Nessun browser vero (jsdom): lo stile del riquadro è scritto e leggibile nel foglio, ma la sua resa a schermo non è stata fotografata, e il campo Test con la sua tendina lo controllerà Alice sulla pagina vera.
+
+
+## Regola dei moduli (19 novembre 2026)
+
+**Ogni modulo nuovo di `comune/` va registrato nell'elenco del caricatore**: deve
+entrare nel grafo di import statici che parte da `desktop/app-v31.js`, l'unico
+`<script type="module">` di `desktop/index.html`.
+
+- Un modulo che nessuno importa non si carica: la vista che lo usa resta vuota.
+- Un modulo importato che non esiste, o che lancia un errore appena caricato,
+  rompe TUTTA la pagina: il velo di accesso resta su e ogni clic va in timeout.
+  E' successo il 19/11 con `comune/piano-scheda.js` (un `ReferenceError` dentro
+  `leggiPiano`): 74.0 e 76 si sono bloccati per quello, non per il test.
+- La sorveglianza sta in `tests/118-caricatore-moduli.test.mjs`: legge il grafo
+  senza eseguirlo e dice quale modulo manca.
+
+## Regola dei tempi (stessa data)
+
+La suite non usa piu' `--test-timeout=0`. `scripts/con-tetto.mjs` da' 60 secondi
+a ogni prova e 240 a ogni file di test; una fetta che li supera si chiude con
+«TOTALE FALLITO» e il nome del file bloccato.
