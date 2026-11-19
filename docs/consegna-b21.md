@@ -647,3 +647,26 @@ entrare nel grafo di import statici che parte da `desktop/app-v31.js`, l'unico
 La suite non usa piu' `--test-timeout=0`. `scripts/con-tetto.mjs` da' 60 secondi
 a ogni prova e 240 a ogni file di test; una fetta che li supera si chiude con
 «TOTALE FALLITO» e il nome del file bloccato.
+
+## Regola del «mutation check» (19 novembre 2026, richiesta di Alice)
+
+**Da ora vale per OGNI correzione di un difetto**: quando una prova nuova nasce
+per fissare un difetto, prima di dichiararla buona si toglie il fix (o si
+rimette il comportamento sbagliato) e si verifica che la prova diventi ROSSA.
+Se resta verde, la prova non sta guardando il punto giusto e va riscritta.
+
+- Il controllo si fa sul file, con la sola modifica che riporta il difetto; poi
+  si rimette il fix e si vede la prova tornare verde.
+- Nel report si scrive quali prove sono state controllate così.
+- Esempio, prova 121.7 («Salva come scheletro»): rimettendo in
+  `desktop/app-v31.js` il vecchio `return { ridisegnato: false };` la prova deve
+  tornare rossa con «la pagina dice: Scheletro non salvato».
+
+## Il cancello del push (19 novembre 2026)
+
+`bash suite.sh totale` è una **sola lettura**: non svuota `log-suite.txt`, non
+spegne i test in corso, non prende il blocco. La logica sta in
+`scripts/totale.cjs`, provata da `tests/122-cancello-totale.test.mjs`. Riga
+finale: `TOTALE pass N fail M file X/Y`; uscita 0 solo con fail 0 e i file
+coperti uguali a quelli sul disco (confronto per nome). Il push è quindi una
+riga sola: `bash suite.sh totale && git push`.

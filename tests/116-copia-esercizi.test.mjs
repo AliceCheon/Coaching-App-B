@@ -196,6 +196,18 @@ function banco(eserciziE) {
 
 const attendi = (ms) => new Promise((r) => setTimeout(r, ms || 60));
 
+/* Aspettare una CONDIZIONE, non un tempo fisso. Sotto carico (le fette lanciano
+ * otto file di prova insieme) le due scritture di uno sposta arrivano dopo i
+ * 60 ms del vecchio attendi(): la 116.13 diventava rossa a caso pur essendo
+ * giusto il codice. Qui si aspetta che il fatto sia successo, con un tetto. */
+async function attendiFinche(condizione, massimoMs, cosa) {
+  const t0 = Date.now();
+  while (!condizione()) {
+    if (Date.now() - t0 > (massimoMs || 15000)) throw new Error("attesa scaduta: " + cosa);
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 /* ------------------------------------------------------------------ le prove */
 
 test("116.1 il tasto apre il riquadro dentro la pagina, con la sua scheda e le spunte", () => {
@@ -418,8 +430,10 @@ test("116.13 sposta: le righe escono dalla partenza e arrivano in fondo alla des
   b.conferma();
   await attendi();
 
-  const viviA = b.eserciziA().filter((e) => !e.deletedAt && !e.padreId).map((e) => String(e.name || ""));
-  assert.deepEqual(viviA, ["Lat machine", "Pulley"], "la partenza deve perdere l'esercizio spostato");
+  const viviA = () => b.eserciziA().filter((e) => !e.deletedAt && !e.padreId).map((e) => String(e.name || ""));
+  await attendiFinche(() => viviA().indexOf("Rematore") === -1, 30000,
+    "la partenza non ha perso l'esercizio spostato: " + viviA().join(", "));
+  assert.deepEqual(viviA(), ["Lat machine", "Pulley"], "la partenza deve perdere l'esercizio spostato");
   const viviE = b.viviE().map((e) => String(e.name || ""));
   assert.deepEqual(viviE, ["Leg press", "Rematore"], "la destinazione deve riceverlo in fondo");
   assert.equal(b.esito().indexOf("1 esercizio spostato nella Scheda E"), 0, b.esito());

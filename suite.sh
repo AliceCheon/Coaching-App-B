@@ -19,6 +19,22 @@
 # gira a vuoto e il TOTALE direbbe "0 e 0", che e' peggio di un errore.
 cd "$(dirname "$0")" || exit 1
 
+# «totale» e' il cancello del push (19/11/2026) e deve poter girare da solo,
+# subito, prima di ogni pulizia: lo serve scripts/totale.cjs, che legge e basta.
+# Prima la bash di «totale» spegneva i test in corso e prendeva il blocco.
+if [ "$1" = "totale" ]; then
+  NODO_T=""
+  for cand in "C:/Program Files/nodejs/node.exe" "/c/Program Files/nodejs/node.exe" "/mnt/c/Program Files/nodejs/node.exe" "$(command -v node 2>/dev/null)"; do
+    [ -n "$cand" ] || continue
+    "$cand" -e "process.exit(0)" >/dev/null 2>&1 && { NODO_T="$cand"; break; }
+  done
+  if [ -z "$NODO_T" ]; then
+    echo "TOTALE FALLITO: nessun Node utilizzabile per il cancello"
+    exit 2
+  fi
+  exec "$NODO_T" scripts/totale.cjs
+fi
+
 # PowerShell (19/11/2026): lanciata da nohup, questa bash non lo trova nel PATH.
 # Lo si cerca una volta, col percorso vero di Windows, e poi si usa sempre $PS.
 PS=""
@@ -256,6 +272,6 @@ case "$1" in
       read -r -a ARR <<< "$FL"
       fetta "$NOME" "${ARR[@]}" || echo "(fetta non andata, continuo)"
     done < fette.txt
-    totale ;;
+    if [ -n "$NODE" ]; then "$NODE" scripts/totale.cjs; else totale; fi ;;
   *) echo "fetta sconosciuta: $1"; echo "TOTALE FALLITO: fetta sconosciuta"; exit 2 ;;
 esac
