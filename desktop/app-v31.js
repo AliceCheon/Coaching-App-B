@@ -464,7 +464,7 @@ export async function avvia(doc, win) {
     const improntaPrima = stato.impronta;
     stato.letture += 1;
 
-    if (o.forza !== true && impronta === improntaPrima) return { ridisegnato: false };
+    if (o.forza !== true && impronta === improntaPrima) return Object.assign({ ridisegnato: false }, esito);
     /* l'impronta si aggiorna quando il disegno parte davvero: un secondo giro
      * che arriva mentre il primo disegna non puo' ridisegnare lo stesso stato. */
     stato.impronta = impronta;
@@ -670,7 +670,7 @@ export async function avvia(doc, win) {
             if (chiedeRilettura(richiesta)) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
-            return { ridisegnato: false };
+            return Object.assign({ ridisegnato: false }, esito);
           }, (e) => {
             /* Passo 24 — un rifiuto non puo' piu' bloccare la pagina: si
              * scende di uno, si dice la causa e si rilegge, cosi' la versione
