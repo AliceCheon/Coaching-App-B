@@ -25,20 +25,26 @@ cd "$(dirname "$0")" || exit 1
 # anche quando la suite fallisce.
 BLOCCO=".suite.lock"
 
+# La pulizia sta in uno script a parte: le virgolette annidate dentro Git Bash
+# si rompono, e un file .ps1 lanciato con -File non ha questo problema. Lo
+# script mostra l'elenco PRIMA e DOPO, cosi' nel log si vede che i processi
+# sono davvero spariti.
 processi_test() {
-  powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -match '--test' } | Select-Object -ExpandProperty ProcessId" 2>/dev/null
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/elenco-test.ps1 2>/dev/null
 }
 
 pulisci_test() {
-  local vivi
-  vivi=$(processi_test)
-  if [ -z "$vivi" ]; then return 0; fi
-  powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -match '--test' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }" >/dev/null 2>&1
-  if [ -z "$(processi_test)" ]; then
-    echo "pulizia: spenti i processi di test rimasti appesi ($(echo $vivi | wc -w | tr -d ' '))"
+  local out esito
+  out=$(powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ferma-test.ps1 2>&1)
+  esito=$?
+  if [ -n "$out" ]; then
+    printf '%s
+' "$out" | sed 's/^/pulizia | /'
   else
-    echo "pulizia: qualche processo di test non si e' spento"
+    echo "pulizia: lo script non ha risposto (powershell non raggiungibile)"
   fi
+  if [ "$esito" != "0" ]; then echo "pulizia: restano processi di test vivi"; fi
+  return 0
 }
 
 pid_vivo() {
