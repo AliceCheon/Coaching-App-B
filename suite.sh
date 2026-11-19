@@ -268,10 +268,25 @@ case "$1" in
   "")
     : > log-suite.txt
     costruisci
+    # Regola 19/11/2026: la rotazione si fotografa QUI, prima di partire.
+    # Se un file di test compare o sparisce mentre la corsa gira, il TOTALE
+    # non vale: si dice e si esce rossi, invece di inventare una fetta.
+    PRIMA=$(ls tests/*.test.mjs 2>/dev/null | sort)
     while IFS=$'\t' read -r NOME NF FL; do
       read -r -a ARR <<< "$FL"
       fetta "$NOME" "${ARR[@]}" || echo "(fetta non andata, continuo)"
     done < fette.txt
+    DOPO=$(ls tests/*.test.mjs 2>/dev/null | sort)
+    if [ "$PRIMA" != "$DOPO" ]; then
+      echo "CORSA NON VALIDA: i file di test sono cambiati mentre la corsa girava."
+      printf '%s
+' "$PRIMA" > /tmp/.fette-prima.txt
+      printf '%s
+' "$DOPO" > /tmp/.fette-dopo.txt
+      diff /tmp/.fette-prima.txt /tmp/.fette-dopo.txt | sed 's/^/  /'
+      echo "Il TOTALE di questa corsa non vale: rilancia bash suite.sh con i file fermi."
+      exit 1
+    fi
     if [ -n "$NODE" ]; then "$NODE" scripts/totale.cjs; else totale; fi ;;
   *) echo "fetta sconosciuta: $1"; echo "TOTALE FALLITO: fetta sconosciuta"; exit 2 ;;
 esac
