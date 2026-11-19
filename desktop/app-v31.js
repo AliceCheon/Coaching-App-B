@@ -601,6 +601,22 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "passaggio in bozza non riuscito" });
           });
         },
+        copiaEsercizi: (richiesta) => {
+          modificheInVolo += 1;
+          return editor.copiaEsercizi(richiesta).then((esito) => {
+            modificheInVolo -= 1;
+            if (esito && esito.ok) {
+              segnalaModifica((esito.testo || "esercizi copiati") + (esito.avvisoRegistro ? " · MA: " + esito.avvisoRegistro : ""), "ok");
+            } else {
+              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente, { forza: true, motivo: "copia esercizi" });
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("copia non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "copia non riuscita" });
+          });
+        },
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
@@ -650,7 +666,7 @@ export async function avvia(doc, win) {
             if (rinvioAutomatico) { rinvioAutomatico = false; return sincronizza(utente, { motivo: "controllo rimandato" }); }
             /* Passo 20 — le otto settimane le ha calcolate B, non la cella:
              * senza rileggere, a schermo non cambierebbe niente. */
-            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie" || richiesta.campo === "svuota-scheda" || richiesta.campo === "ripristina-scheda")) {
+            if (richiesta && (richiesta.campo === "progressione" || richiesta.campo === "progressione-scheda" || richiesta.campo === "riga" || richiesta.campo === "aggiunta-riga" || richiesta.campo === "aggiunta-tecnica" || richiesta.campo === "rimozione-tecnica" || richiesta.campo === "tecnica-cambia" || richiesta.campo === "tecnica-parametri" || richiesta.campo === "tecnica-settimana" || richiesta.campo === "tecnica-nota" || richiesta.campo === "sostituzione-riga" || richiesta.campo === "superserie" || richiesta.campo === "svuota-scheda" || richiesta.campo === "ripristina-scheda")) {
               return sincronizza(utente, { forza: true, motivo: "progressione" });
             }
             return { ridisegnato: false };

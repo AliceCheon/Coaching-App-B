@@ -751,14 +751,26 @@ function testata(doc, modifica) {
 /* Passo B: «+ Riga» apre lo stesso selettore del Database esercizi della testa.
 Alla scelta la riga nasce in fondo alla scheda aperta (aggiungiEsercizio in
 modifiche-b.js); senza editor acceso la scelta resta sola lettura. */
-function apriSelettoreRigaB(doc, mod) {
+function apriSelettoreRigaB(doc, bottone) {
+  const mod = modificaCorrente;
+  const idScheda = idSchedaVicino(bottone);
   creaSelettoreEserciziB(doc, {
     allaScelta: (scelta) => {
-      const m = mod || null;
-      if (!m || typeof m.onCambia !== "function") return;
-      const tabella = doc.querySelector(".p8-tab[data-scheda]");
-      const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
-      m.onCambia({ idScheda: idScheda, campo: "aggiunta-riga", esercizio: scelta.n, muscolo: scelta.g });
+      if (!mod || typeof mod.onCambia !== "function") {
+        senzaEditor(doc, bottone, {
+          titolo: "Questa riga non si puo' ancora aggiungere",
+          riga: "La pagina non ha un editor collegato a questa scheda: non ho aggiunto niente."
+        });
+        return;
+      }
+      if (!idScheda) {
+        senzaEditor(doc, bottone, {
+          titolo: "Non so a quale scheda appartiene questo tasto",
+          riga: "Il tasto non sta dentro la tabella di una scheda: non ho aggiunto niente."
+        });
+        return;
+      }
+      mod.onCambia({ idScheda: idScheda, campo: "aggiunta-riga", esercizio: scelta.n, muscolo: scelta.g });
     }
   }).apri();
 }
@@ -964,7 +976,7 @@ function etichettaStato(profilo) {
  * e che il telefono di oggi legge A. Niente promesse sul telefono di oggi. */
 function apriConfermaAttiva(doc, bottone, r) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.onAttiva !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.onAttiva !== "function") { senzaEditor(doc, bottone, { titolo: "Questo programma non si puo' ancora attivare", riga: "La pagina non ha un editor collegato a questo programma: non ho attivato niente." }); return; }
   const profilo = (r && r.profilo) || {};
   const nome = nomePulito(profilo.nome) || "questo programma";
   const righe = [
@@ -992,7 +1004,7 @@ function apriConfermaAttiva(doc, bottone, r) {
  * non cambia (legge A), e che la bozza resta visibile qui. */
 function apriConfermaBozza(doc, bottone, r) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.onBozza !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.onBozza !== "function") { senzaEditor(doc, bottone, { titolo: "Questo programma non si puo' ancora mettere in bozza", riga: "La pagina non ha un editor collegato a questo programma: non ho messo in bozza niente." }); return; }
   const profilo = (r && r.profilo) || {};
   const nome = nomePulito(profilo.nome) || "questo programma";
   chiediConferma(doc, {
@@ -1404,12 +1416,17 @@ function barraStrumenti(doc, scheda, r) {
   cerca.appendChild(input);
   cerca.appendChild(n(doc, "span", "pr-hint", "🔍 Cerca"));
   bar.appendChild(cerca);
-  bar.appendChild(pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, modificaCorrente)));
+  const btRiga = modificaCorrente
+    ? pulsanteVivo(doc, "pr-btn", "+ Riga", "aggiunge una riga alla scheda", () => apriSelettoreRigaB(doc, btRiga))
+    : pulsanteSpento(doc, "pr-btn", "+ Riga", "aspetta che il programma sia caricato");
+  bar.appendChild(btRiga);
   bar.appendChild(pulsanteInArrivo(doc, "pr-btn", "Periodizzazione", "apre il generatore di periodizzazione: costruisce le otto settimane dai carichi"));
   /* PASSO 4b — il tasto è vivo: la pillola «demo» se n'è andata con il
    * riquadro dentro la pagina. La copia vale dentro il programma attivo:
    * mai da un atleta all'altro, mai fuori dalle schede di questo programma. */
-  const btCopia = pulsanteVivo(doc, "pr-btn", "Copia/Sposta esercizi", "copia o sposta gli esercizi in un'altra scheda", () => apriCopiaEsercizi(doc, btCopia, scheda, r));
+  const btCopia = modificaCorrente
+    ? pulsanteVivo(doc, "pr-btn", "Copia/Sposta esercizi", "copia o sposta gli esercizi in un'altra scheda", () => apriCopiaEsercizi(doc, btCopia, scheda, r))
+    : pulsanteSpento(doc, "pr-btn", "Copia/Sposta esercizi", "aspetta che il programma sia caricato");
   btCopia.setAttribute("data-copia", "1");
   bar.appendChild(btCopia);
   bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));
@@ -1420,18 +1437,21 @@ function barraStrumenti(doc, scheda, r) {
   const btProgScheda = pulsanteVivo(doc, "pr-btn", "Applica progressione a tutta la scheda",
     "applica la progressione alle 8 settimane di tutte le righe", () => {
     if (!modificaCorrente) return;
-    const tabella = doc.querySelector(".p8-tab[data-scheda]");
-    const idScheda = tabella ? String(tabella.getAttribute("data-scheda") || "") : "";
+    const idScheda = idSchedaVicino(btProgScheda);
     apriProgressioni(doc, btProgScheda, vociScheda(),
       "Le 8 settimane di tutte le righe di questa scheda vengono riscritte. Puoi annullare subito dopo.",
       (pid) => modificaCorrente.onCambia({ idScheda: idScheda, campo: "progressione-scheda", progressione: pid }));
   });
   bar.appendChild(btProgScheda);
-  const btScheletro = pulsanteVivo(doc, "pr-btn", "Salva come scheletro", "salva la struttura di questa scheda come scheletro", () => apriSalvaScheletro(doc, btScheletro));
+  const btScheletro = modificaCorrente
+    ? pulsanteVivo(doc, "pr-btn", "Salva come scheletro", "salva la struttura di questa scheda come scheletro", () => apriSalvaScheletro(doc, btScheletro))
+    : pulsanteSpento(doc, "pr-btn", "Salva come scheletro", "aspetta che il programma sia caricato");
   bar.appendChild(btScheletro);
   /* B.21 — i tre comandi dell'igiene: vivi, ma nessuno scrive senza un
    * secondo clic nel riquadro qui sotto. */
-  const btSvuota = pulsanteVivo(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda", () => apriSvuotaScheda(doc, btSvuota));
+  const btSvuota = modificaCorrente
+    ? pulsanteVivo(doc, "pr-btn danger", "Svuota scheda", "svuota la scheda", () => apriSvuotaScheda(doc, btSvuota))
+    : pulsanteSpento(doc, "pr-btn danger", "Svuota scheda", "aspetta che il programma sia caricato");
   bar.appendChild(btSvuota);
   const btSvuotaTutto = pulsanteVivo(doc, "pr-btn danger", "Svuota tutto il programma", "svuota tutto il programma", () => apriSvuotaProgramma(doc, btSvuotaTutto));
   bar.appendChild(btSvuotaTutto);
@@ -2783,7 +2803,7 @@ import { settimaneDiTest, settimaneTestDiRiga, testoTest } from "./settimane-tes
  * Se la scrittura non passa, la pagina lo dice: mai «salvato» per sbaglio. */
 function apriSalvaScheletro(doc, bottone) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone, { titolo: "Questa scheda non si puo' ancora salvare come scheletro", riga: "La pagina non ha un editor collegato a questa scheda: non ho salvato niente." }); return; }
   const id = idSchedaVicino(bottone);
   const c = typeof mod.conta === "function" ? mod.conta(id) : null;
   const proposto = nomeProposto((c && c.codice) || "", new Date());
@@ -2920,7 +2940,7 @@ function apriDoppioni(doc, barra, mod, richiesta, doppioni) {
  * scrive: si conferma solo col clic sul tasto. */
 function apriCopiaEsercizi(doc, bottone, scheda, r) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.copiaEsercizi !== "function") { senzaEditor(doc, bottone); return null; }
+  if (!mod || typeof mod.copiaEsercizi !== "function") { senzaEditor(doc, bottone, { titolo: "Questi esercizi non si possono ancora copiare", riga: "La pagina non ha un editor collegato a questa scheda: non ho copiato niente." }); return null; }
   const barra = bottone && bottone.parentNode ? bottone.parentNode : null;
   if (!barra) return null;
   const aperto = barra.querySelector(".pr-conf");
@@ -3044,18 +3064,19 @@ function passoConferma(doc, box, barra, mod, richiesta, domanda) {
   return box;
 }
 
-function senzaEditor(doc, bottone) {
+function senzaEditor(doc, bottone, azione) {
+  const a = azione || {};
   chiediConferma(doc, {
     bottone: bottone,
-    titolo: "Questa scheda non si può ancora svuotare",
-    righe: ["La pagina non ha un editor collegato a questa scheda: non ho fatto niente."],
+    titolo: a.titolo || "Questa pagina non sa ancora scrivere",
+    righe: [a.riga || "La pagina non ha un editor collegato a questa scheda: non ho fatto niente."],
     conferma: "Chiudi"
   });
 }
 
 function apriSvuotaScheda(doc, bottone) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone, { titolo: "Questa scheda non si puo' ancora svuotare", riga: "La pagina non ha un editor collegato a questa scheda: non ho fatto niente." }); return; }
   const id = idSchedaVicino(bottone);
   const c = typeof mod.conta === "function" ? mod.conta(id) : null;
   if (c && !c.righe) {
@@ -3083,7 +3104,7 @@ function apriSvuotaScheda(doc, bottone) {
 
 function apriSvuotaProgramma(doc, bottone) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.svuotaProgramma !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.svuotaProgramma !== "function") { senzaEditor(doc, bottone, { titolo: "Il programma non si puo' ancora svuotare", riga: "La pagina non ha un editor collegato a questo programma: non ho svuotato niente." }); return; }
   const c = typeof mod.conta === "function" ? mod.conta("") : null;
   if (c && !c.schede) {
     chiediConferma(doc, {
@@ -3108,7 +3129,7 @@ function apriSvuotaProgramma(doc, bottone) {
 
 function apriRipristinaScheda(doc, bottone) {
   const mod = modificaCorrente;
-  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone); return; }
+  if (!mod || typeof mod.onCambia !== "function") { senzaEditor(doc, bottone, { titolo: "Questa scheda non si puo' ancora ripristinare", riga: "La pagina non ha un editor collegato a questa scheda: non ho rimesso niente com'era." }); return; }
   const id = idSchedaVicino(bottone);
   const c = typeof mod.conta === "function" ? mod.conta(id) : null;
   const codice = (c && c.codice) || "questa scheda";
