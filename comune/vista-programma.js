@@ -356,6 +356,7 @@ function rendiCellaModificabile(doc, span, mod, info) {
         esercizio: info.esercizio,
         settimana: info.settimana == null ? null : info.settimana,
         campo: info.campo,
+        campoCella: info.campoCella,
         valore: valore
       });
     }
