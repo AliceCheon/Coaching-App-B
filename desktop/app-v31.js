@@ -539,7 +539,7 @@ export async function avvia(doc, win) {
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
       modifica: {
         attivo: true,
-        annullabile: editor.annullabile,
+        get annullabile() { return editor.annullabile; },
         /* B.21 — i conti per la conferma e lo svuotamento del programma. */
         conta: (idScheda) => editor.conta(idScheda),
         svuotaProgramma: () => {
@@ -614,6 +614,19 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "passaggio in bozza non riuscito" });
           });
         },
+        /* 4d: il tasto 4d cerca queste funzioni sull'editor che la pagina riceve qui. */
+        proponiScaricoTutte: (richiesta) => editor.proponiScaricoTutte(richiesta),
+        applicaScaricoTutte: (richiesta) => {
+          modificheInVolo += 1;
+          return editor.applicaScaricoTutte(richiesta).then((esito) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            return esito;
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            throw e;
+          });
+        },
+        rilegge: () => sincronizza(utente, { forza: true, motivo: "applica sett./scarico a tutte le schede" }),
         copiaEsercizi: (richiesta) => {
           modificheInVolo += 1;
           return editor.copiaEsercizi(richiesta).then((esito) => {
@@ -704,6 +717,10 @@ export async function avvia(doc, win) {
      * percentuale), test, data di inizio, fase. I piani si raccolgono con la
      * funzione che usano anche i test: scrittura e lettura passano dalle
      * stesse chiavi, altrimenti il valore scritto sparisce dal campo. */
+    /* 4d \u2014 il tasto \u00abApplica a tutte le schede\u00bb scrive fuori da onCambia:
+     * dopo la scrittura la pagina deve rileggere, o la colonna dello scarico
+     * resta quella di prima. */
+    if (editor && typeof editor === "object") editor.rilegge = () => sincronizza(utente, { forza: true, motivo: "applica sett./scarico a tutte le schede" });
     const pianiSchede = pianiDalleSchede(schedeGrezze);
     collegaPiano(doc, {
       editor: editor,

@@ -1386,9 +1386,136 @@ function pulsanteStampa(doc, testo, titolo, tipo) {
 /* La fila del v31, nell'ordine del v31. Tutti spenti: sono comandi che
  * scrivono (o che aprono finestre di modifica), tranne le due stampe, che
  * sarebbero letture e si accenderanno quando Alice lo dice. */
+/* 4d \u2014 \u00abApplica sett./scarico a tutte le schede\u00bb, vivo.
+ * I valori si leggono dai campi che Alice vede nella scheda aperta: si applica
+ * quello che c'e' scritto li'. Prima i numeri scheda per scheda, poi la
+ * scrittura, poi UNA voce di registro e un solo Annulla. */
+function valoriScaricoInPagina(doc, scheda) {
+  const id = String((scheda && scheda.id) || "");
+  const rq = (id ? doc.querySelector('[data-pr-scheda="' + id + '"]') : null) || doc.querySelector("[data-pr-scheda]");
+  const s = rq ? rq.querySelector('[data-pr-c="scarico-settimana"]') : null;
+  const v = rq ? rq.querySelector('[data-pr-c="scarico-volume"]') : null;
+  return {
+    settimana: s ? String(s.value || "").trim().replace(/^[Ss]\s*/, "") : "",
+    volume: v ? String(v.value || "").trim().replace(/%/g, "") : ""
+  };
+}
+
+function pulsanteScaricoTutte(doc, barra, scheda, r) {
+  const b = pulsanteVivo(doc, "pr-btn", "Applica sett./scarico a tutte le schede",
+    "guarda i numeri scheda per scheda, poi scrive",
+    () => apriScaricoTutte(doc, barra, scheda, r));
+  b.setAttribute("data-scarico-tutte", "1");
+  return b;
+}
+
+function apriScaricoTutte(doc, barra, scheda, r) {
+  const mod = modificaCorrente;
+  if (!mod || typeof mod.proponiScaricoTutte !== "function" || typeof mod.applicaScaricoTutte !== "function") {
+    senzaEditor(doc, null, {
+      titolo: "Questa pagina non sa ancora applicare a tutte le schede",
+      riga: "La pagina non ha un editor collegato a questa scheda: non ho fatto niente."
+    });
+    return null;
+  }
+  const valori = valoriScaricoInPagina(doc, scheda);
+  const vecchio = barra.querySelector(".pr-conf");
+  if (vecchio) chiudiConferma(vecchio);
+  const box = n(doc, "div", "pr-conf");
+  box.setAttribute("data-scarico-box", "1");
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "applica a tutte le schede");
+  box.appendChild(n(doc, "p", "pr-conf-titolo", "Applica a tutte le schede"));
+  box.appendChild(n(doc, "p", "pr-hint", "Leggo le schede di B e conto quello che cambierebbe\u2026"));
+  barra.appendChild(box);
+  box.addEventListener("keydown", (ev) => {
+    if (!ev) return;
+    if (ev.key === "Escape" || ev.keyCode === 27) { if (ev.preventDefault) ev.preventDefault(); chiudiConferma(box); }
+  });
+  if (!valori.settimana || !valori.volume) {
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.appendChild(n(doc, "p", "pr-conf-titolo", "Manca lo scarico da applicare"));
+    box.appendChild(n(doc, "p", "pr-conf-domanda", "Scegli la settimana e la percentuale di scarico nella scheda che stai guardando, poi riprova: non ho scritto niente."));
+    const f0 = n(doc, "div", "pr-conf-fila");
+    f0.appendChild(pulsanteVivo(doc, "pr-btn", "Chiudi", "chiudi", () => chiudiConferma(box)));
+    box.appendChild(f0);
+    return box;
+  }
+  Promise.resolve(mod.proponiScaricoTutte({ idPartenza: String(scheda && scheda.id || ""), settimana: valori.settimana, volume: valori.volume }))
+    .then((piano) => {
+      if (!box.parentNode) return;
+      while (box.firstChild) box.removeChild(box.firstChild);
+      if (!piano || !piano.ok) {
+        box.appendChild(n(doc, "p", "pr-conf-titolo", "Non si puo' applicare"));
+        box.appendChild(n(doc, "p", "pr-conf-domanda", String((piano && piano.motivo) || "non ho scritto niente")));
+        const f1 = n(doc, "div", "pr-conf-fila");
+        f1.appendChild(pulsanteVivo(doc, "pr-btn", "Chiudi", "chiudi", () => chiudiConferma(box)));
+        box.appendChild(f1);
+        return;
+      }
+      if (piano.gia) {
+        box.appendChild(n(doc, "p", "pr-conf-titolo", "Niente da cambiare"));
+        box.appendChild(n(doc, "p", "pr-conf-domanda", String(piano.testo || "")));
+        (piano.righe || []).forEach((riga) => box.appendChild(n(doc, "p", "pr-conf-riga", riga.testo)));
+        const f2 = n(doc, "div", "pr-conf-fila");
+        f2.appendChild(pulsanteVivo(doc, "pr-btn", "Chiudi", "chiudi", () => chiudiConferma(box)));
+        box.appendChild(f2);
+        return;
+      }
+      box.appendChild(n(doc, "p", "pr-conf-domanda", String(piano.domanda || "")));
+      (piano.righe || []).forEach((riga) => {
+        const p = n(doc, "p", "pr-conf-riga" + (riga.esito === "salta" ? " salta" : ""), riga.testo);
+        p.setAttribute("data-scarico-riga", String(riga.id || ""));
+        box.appendChild(p);
+      });
+      box.appendChild(n(doc, "p", "pr-conf-avviso", "Il test non si copia: resta com'e' in ogni scheda. Logbook e zona A non si toccano. Si puo' annullare subito dopo, e l'Annulla rimette tutte le schede toccate."));
+      const fila = n(doc, "div", "pr-conf-fila");
+      fila.appendChild(pulsanteVivo(doc, "pr-btn", "Annulla", "non fare niente", () => chiudiConferma(box)));
+      const ok = pulsanteVivo(doc, "pr-btn danger", "Applica", "scrive davvero, scheda per scheda", () => {
+        chiudiConferma(box);
+        eseguiScaricoTutte(doc, barra, mod, { idPartenza: String(scheda && scheda.id || ""), settimana: valori.settimana, volume: valori.volume });
+      });
+      ok.setAttribute("data-scarico-conferma", "1");
+      fila.appendChild(ok);
+      box.appendChild(fila);
+    }, (e) => {
+      if (!box.parentNode) return;
+      while (box.firstChild) box.removeChild(box.firstChild);
+      box.appendChild(n(doc, "p", "pr-conf-titolo", "Non si puo' applicare"));
+      box.appendChild(n(doc, "p", "pr-conf-domanda", "lettura non riuscita: " + (e && e.message ? e.message : "errore") + " \u00b7 non ho scritto niente"));
+      const f3 = n(doc, "div", "pr-conf-fila");
+      f3.appendChild(pulsanteVivo(doc, "pr-btn", "Chiudi", "chiudi", () => chiudiConferma(box)));
+      box.appendChild(f3);
+    });
+  return box;
+}
+
+function eseguiScaricoTutte(doc, barra, mod, richiesta) {
+  return Promise.resolve(mod.applicaScaricoTutte(richiesta)).then((esito) => {
+    if (esito && esito.ok === true) {
+      let testo = String(esito.testo || "scarico applicato");
+      if (Array.isArray(esito.saltate) && esito.saltate.length) testo += " \u00b7 saltate: " + esito.saltate.map((x) => x.codice).join(", ");
+      mostraEsitoCopia(doc, barra, testo + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), true);
+      /* La colonna dello scarico la disegna B: senza rileggere, a schermo
+       * resta il disegno di prima. */
+      if (typeof mod.rilegge === "function") {
+        try {
+          const p = mod.rilegge();
+          if (p && typeof p.then === "function") p.then(() => {}, () => {});
+        } catch (e) { /* la scrittura e' andata: la rilettura si riprova da sola */ }
+      }
+      return;
+    }
+    const m = String((esito && (esito.motivo || esito.testo)) || "").trim() || "non ho scritto niente";
+    mostraEsitoCopia(doc, barra, m, false);
+  }).catch((e) => {
+    mostraEsitoCopia(doc, barra, (e && e.message) || "errore", false);
+  });
+}
+
 function barraStrumenti(doc, scheda, r) {
   const bar = n(doc, "div", "pr-bar");
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Applica sett./scarico a tutte le schede", "applica settimane e scarico a tutte le schede"));
+  bar.appendChild(pulsanteScaricoTutte(doc, bar, scheda, r));
   const cerca = n(doc, "span", "pr-cerca-box");
   const input = n(doc, "input", "pr-in");
   input.type = "search";

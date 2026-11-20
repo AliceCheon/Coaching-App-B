@@ -20,7 +20,7 @@ import { JSDOM, VirtualConsole } from "jsdom";
 
 import { creaZonaBFinta, creaSdkFinto } from "./finti/zona-b-finta.mjs";
 import { attendiFinche } from "./finti/attesa.mjs";
-import { CAMPI_CHE_RIDISEGNANO } from "../comune/ridisegno-b.js";
+import { CAMPI_CHE_RIDISEGNANO, chiedeRilettura } from "../comune/ridisegno-b.js";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 const META = {
@@ -363,4 +363,10 @@ test("126.17 guardia: ogni verbo di chiedeRilettura ha una prova col suo nome in
   const fonte = readFileSync(fileURLToPath(import.meta.url), "utf8");
   const senza = CAMPI_CHE_RIDISEGNANO.filter((v) => fonte.indexOf(" " + v + ":") === -1);
   assert.deepEqual(senza, [], "questi verbi non hanno nessuna prova col loro nome: " + senza.join(", "));
+});
+
+test("126.18 il verbo applica-scarico-tutte: ridisegna la tabella come gli altri", () => {
+  assert.equal(CAMPI_CHE_RIDISEGNANO.indexOf("applica-scarico-tutte") !== -1, true, "il verbo nuovo non e' nella lista che ridisegna");
+  assert.equal(chiedeRilettura({ campo: "applica-scarico-tutte" }), true, "chiedeRilettura non riconosce applica-scarico-tutte");
+  assert.equal(chiedeRilettura({ campo: "applica-scarico-tutte", idScheda: "sh-A" }), true, "chiedeRilettura perde il verbo quando c'e' la scheda");
 });

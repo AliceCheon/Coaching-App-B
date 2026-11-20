@@ -45,6 +45,7 @@ import {
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
 import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
+import { pianificaScaricoTutte, TIPO_VOCE_SCARICO_TUTTE } from "./scarico-tutte.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -283,6 +284,9 @@ export function creaEditorSchede(opzioni) {
       if ([TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA].indexOf(String(voce.tipo || "")) !== -1) return annullaAttivazione(voce);
       /* B.21 — una voce che tocca più schede (svuota il programma): si
        * rimettono tutte, e il registro prende una voce sola anche qui. */
+      /* 4d \u2014 lo scarico applicato a tutte le schede: una voce sola, e
+       * l'Annulla rimette ogni scheda con la sua voce figlia. */
+      if (String(voce.tipo || "") === TIPO_VOCE_SCARICO_TUTTE) return annullaScaricoTutte(voce);
       if (Array.isArray(voce.schede) && voce.schede.length) return annullaPiuSchede(voce);
       /* PASSO 4a — la testata del programma si annulla sul documento del
        * programma, non su una scheda. */
@@ -697,6 +701,132 @@ export function creaEditorSchede(opzioni) {
     return { ok: true, voce: voceNuova, quante: scritti.length, avvisoRegistro: avvisoVoce };
   }
 
+  /* ---------- 4d: sett./scarico a TUTTE le schede ---------------------- */
+
+  /* Le schede vere di B, senza le archiviate. Nessuna scrittura. */
+  function schedeDiB() {
+    return conScadenza(leggiZonaB(db, uid, "schede"), "la lettura delle schede").then((letti) => (Array.isArray(letti) ? letti : [])
+      .map((d) => ({ id: String(d.id), dati: (d && d.dati) || {} }))
+      .filter((s) => s.dati.kind !== "archived" && s.id.indexOf("program-v2-archived-") !== 0));
+  }
+
+  /* Solo lettura: i numeri che la conferma mostra prima di scrivere. */
+  function proponiScaricoTutte(richiesta) {
+    return schedeDiB().then((schede) => pianificaScaricoTutte(schede, richiesta || {}, { quando: quando() }));
+  }
+
+  /* La scrittura: una scheda alla volta, tutte sotto UNA voce di registro.
+   * Ogni scheda passa dal suo cambiaPianoScheda (che sa gia' segnare la
+   * settimana come deload) e dalla guardia di versione. Se una si ferma, le
+   * precedenti restano scritte e la voce NON si scrive: lo si dice. */
+  function applicaScaricoTutte(richiesta) {
+    const r = richiesta || {};
+    return coda.esegui("programma", async () => {
+      const schede = await schedeDiB();
+      const piano = pianificaScaricoTutte(schede, r, { quando: quando() });
+      if (!piano.ok) return piano;
+      if (piano.gia) return { ok: true, gia: true, testo: piano.testo, quante: 0, saltate: piano.saltate };
+      const quandoOra = quando();
+      const voci = [];
+      const scritte = [];
+      for (let i = 0; i < piano.daToccare.length; i += 1) {
+        const t = piano.daToccare[i];
+        const idDoc = documentoScheda(t.id) || t.id;
+        const letto = await conScadenza(leggiSchedaB(db, uid, idDoc), "la lettura della scheda");
+        if (!letto || !letto.esiste) {
+          return { ok: false, motivo: "la scheda " + t.codice + " non e' in B \u00b7 fermato dopo " + scritte.length + " schede: la voce di registro non e' scritta" };
+        }
+        const esito = cambiaPianoScheda(letto.dati, {
+          campo: "scarico", idScheda: idDoc, codice: t.codice,
+          settimana: piano.settimana, volume: piano.volume
+        }, { quando: quandoOra, uid: uid });
+        if (!esito.ok) {
+          return { ok: false, motivo: "scheda " + t.codice + ": " + esito.motivo + " \u00b7 fermato dopo " + scritte.length + " schede" };
+        }
+        try {
+          await conScadenza(salvaSchedaConVersione(db, uid, idDoc, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
+        } catch (e) {
+          return { ok: false, motivo: (e && e.message ? e.message : "scrittura non riuscita") + " \u00b7 fermato dopo " + scritte.length + " schede" };
+        }
+        versioni[idDoc] = versioneDi(esito.dati);
+        if (esito.voce) voci.push(esito.voce);
+        scritte.push(idDoc);
+      }
+      const voce = {
+        idVoce: idVoceRegistro(quandoOra),
+        quando: quandoOra,
+        tipo: TIPO_VOCE_SCARICO_TUTTE,
+        origine: "modifica-fatta-in-B",
+        scheda: "",
+        codice: "",
+        esercizio: "",
+        idEsercizio: "",
+        settimana: piano.settimana,
+        campo: "applica-scarico-tutte",
+        volume: piano.volume,
+        schede: scritte.slice(),
+        voci: voci,
+        dopoTesto: piano.testo
+      };
+      const avvisoVoce = await scriviVoceSicura(voce);
+      ultima = voce;
+      return {
+        ok: true, gia: false, testo: piano.testo, quante: scritte.length,
+        saltate: piano.saltate, voce: voce, avvisoRegistro: avvisoVoce
+      };
+    });
+  }
+
+  /* Un solo Annulla per tutte: ogni scheda torna com'era con la sua voce
+   * figlia (annullaModifica sa gia' rimettere lo scarico di una scheda). */
+  async function annullaScaricoTutte(voce) {
+    const quandoOra = quando();
+    const figlie = Array.isArray(voce && voce.voci) ? voce.voci : [];
+    if (!figlie.length) return { ok: false, motivo: "la voce del registro non porta le schede da rimettere: non ho scritto niente" };
+    const rimesse = [];
+    const fallite = [];
+    for (let i = 0; i < figlie.length; i += 1) {
+      const figlia = figlie[i] || {};
+      const idDoc = documentoScheda(String(figlia.scheda || "")) || String(figlia.scheda || "");
+      if (!idDoc) { fallite.push(String(figlia.codice || "?")); continue; }
+      const letto = await conScadenza(leggiSchedaB(db, uid, idDoc), "la lettura della scheda");
+      if (!letto || !letto.esiste) { fallite.push(String(figlia.codice || idDoc)); continue; }
+      const esito = annullaModifica(letto.dati, figlia, { quando: quandoOra, uid: uid });
+      if (!esito || !esito.ok) { fallite.push(String(figlia.codice || idDoc)); continue; }
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, idDoc, esito.dati, versioneDi(letto.dati)), "la scrittura della scheda");
+      } catch (e) {
+        fallite.push(String(figlia.codice || idDoc));
+        continue;
+      }
+      versioni[idDoc] = versioneDi(esito.dati);
+      rimesse.push(idDoc);
+    }
+    if (!rimesse.length) return { ok: false, motivo: "non sono riuscito a rimettere nessuna scheda: non ho scritto la voce del registro" };
+    const testoEsito = fallite.length
+      ? "scarico rimesso in " + rimesse.length + " schede su " + figlie.length + ": " + fallite.length + " non si sono potute rimettere"
+      : (rimesse.length === 1 ? "scarico rimesso com'era in 1 scheda" : "scarico rimesso com'era in " + rimesse.length + " schede");
+    const voceNuova = {
+      idVoce: idVoceRegistro(quandoOra),
+      quando: quandoOra,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(voce.idVoce || ""),
+      scheda: "",
+      codice: "",
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "applica-scarico-tutte",
+      prima: null,
+      dopo: null,
+      dopoTesto: testoEsito
+    };
+    const avvisoVoce = await scriviVoceSicura(voceNuova);
+    ultima = voceNuova;
+    return { ok: true, voce: voceNuova, quante: rimesse.length, fallite: fallite, testo: testoEsito, avvisoRegistro: avvisoVoce };
+  }
+
   return {
     attivo: true,
     conta: conta,
@@ -708,6 +838,8 @@ export function creaEditorSchede(opzioni) {
     modifica: modifica,
     testataProgramma: testataProgramma,
     copiaEsercizi: copiaEsercizi,
+    proponiScaricoTutte: proponiScaricoTutte,
+    applicaScaricoTutte: applicaScaricoTutte,
     annulla: annulla,
     annullaVoce: annullaVoce
   };

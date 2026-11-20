@@ -6,7 +6,7 @@
  * pagina scrive in B e resta il disegno vecchio: il difetto di "+ Riga".
  *
  * Si controllano i 18 verbi, tempo compreso:
- *   14 cambiano le righe disegnate (devono far ridisegnare);
+ *   15 cambiano le righe disegnate (devono far ridisegnare);
  *   4  la cella li mostra da sola (serie, ripetizioni, recupero, tempo): non
  *      devono far ridisegnare, altrimenti cancellano il campo aperto sotto le
  *      dita di chi scrive.
@@ -27,11 +27,11 @@ const NL = String.fromCharCode(10);
 const RIDISEGNANO = [
   "progressione", "progressione-scheda", "riga", "aggiunta-riga", "aggiunta-tecnica",
   "rimozione-tecnica", "tecnica-cambia", "tecnica-parametri", "tecnica-settimana",
-  "tecnica-nota", "sostituzione-riga", "superserie", "svuota-scheda", "ripristina-scheda"
+  "tecnica-nota", "sostituzione-riga", "superserie", "svuota-scheda", "ripristina-scheda", "applica-scarico-tutte"
 ];
 const NON_RIDISEGNANO = ["serie", "ripetizioni", "recupero", "tempo"];
 
-test("123.1 i quattordici verbi che ridisegnano sono quelli, nell'ordine, senza doppioni", () => {
+test("123.1 i quindici verbi che ridisegnano sono quelli, nell'ordine, senza doppioni", () => {
   assert.deepEqual([...CAMPI_CHE_RIDISEGNANO], RIDISEGNANO, "la lista dei campi che ridisegnano e' cambiata: " + [...CAMPI_CHE_RIDISEGNANO].join(", "));
   assert.equal(new Set(CAMPI_CHE_RIDISEGNANO).size, CAMPI_CHE_RIDISEGNANO.length, "nella lista che ridisegna c'e' un doppione");
   assert.equal(Object.isFrozen(CAMPI_CHE_RIDISEGNANO), true, "la lista che ridisegna non e' congelata: si puo' cambiare a mano e la guardia non vale piu'");
@@ -43,10 +43,10 @@ test("123.2 i quattro verbi che NON ridisegnano, tempo compreso, e le due liste 
   assert.equal(Object.isFrozen(CAMPI_CHE_NON_RIDISEGNANO), true, "la lista che non ridisegna non e' congelata");
   const comuni = CAMPI_CHE_RIDISEGNANO.filter((c) => CAMPI_CHE_NON_RIDISEGNANO.indexOf(c) !== -1);
   assert.deepEqual(comuni, [], "un verbo sta in tutte e due le liste: " + comuni.join(", "));
-  assert.equal(CAMPI_CHE_RIDISEGNANO.length + CAMPI_CHE_NON_RIDISEGNANO.length, 18, "i verbi coperti devono essere 18");
+  assert.equal(CAMPI_CHE_RIDISEGNANO.length + CAMPI_CHE_NON_RIDISEGNANO.length, 19, "i verbi coperti devono essere 19");
 });
 
-test("123.3 chiedeRilettura risponde il vero per tutti e diciotto i verbi", () => {
+test("123.3 chiedeRilettura risponde il vero per tutti e diciannove i verbi", () => {
   for (const campo of RIDISEGNANO) {
     assert.equal(chiedeRilettura({ campo: campo }), true, "la pagina deve rileggere dopo \u00ab" + campo + "\u00bb e invece non lo fa");
   }
