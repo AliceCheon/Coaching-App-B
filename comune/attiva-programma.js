@@ -26,14 +26,77 @@ function testo(valore) {
   return valore == null ? "" : String(valore).trim();
 }
 
+/* EXTRA-4 - dove vive lo stato del programma.
+ * A scrive i programmi v2 come { programMeta: {...} }, e la lettura di B
+ * restituisce PROPRIO programMeta come programma (comune/lettura-b.js):
+ * status, active e updatedAt stanno DENTRO il meta. Scriverli in cima al
+ * documento - come faceva pianificaBozza - li rende invisibili a
+ * programmaAttivo() e al telefono (mobile/app.js chiede escludiBozze:true):
+ * la pagina resta "Attivo" e nessuno se ne accorge. Un documento scritto col
+ * vecchio modo non e' leggibile da qui: la prima pressione lo rimette a
+ * posto, perche' da adesso si scrive nel meta e la cima si pulisce. */
+export function statoDelProgramma(dati) {
+  const d = dati || {};
+  const meta = d.programMeta && typeof d.programMeta === "object" ? d.programMeta
+    : (d.program && typeof d.program === "object" ? d.program : d);
+  return {
+    dove: meta === d ? "documento" : (d.programMeta ? "programMeta" : "program"),
+    stato: meta.status == null ? null : meta.status,
+    attivo: meta.active == null ? null : meta.active,
+    updatedAt: meta.updatedAt == null ? null : meta.updatedAt,
+    archiviato: Boolean(meta.archivedAt) || testo(meta.status).toLowerCase() === "archived"
+  };
+}
+
+/* Il documento da scrivere: gli stessi campi letti, con lo stato messo dove i
+ * lettori lo cercano. Se il programma e' annidato, in cima non resta un
+ * secondo status/active/updatedAt che nessuno legge (era il difetto). */
+export function conStato(dati, nuovoStato, attivo, quando) {
+  const d = Object.assign({}, dati || {});
+  const dentro = d.programMeta && typeof d.programMeta === "object" ? "programMeta"
+    : (d.program && typeof d.program === "object" ? "program" : "");
+  if (!dentro) {
+    d.status = nuovoStato;
+    d.active = attivo === true;
+    d.updatedAt = quando;
+    return d;
+  }
+  d[dentro] = Object.assign({}, d[dentro], { status: nuovoStato, active: attivo === true, updatedAt: quando });
+  delete d.status;
+  delete d.active;
+  delete d.updatedAt;
+  delete d.idInterno;
+  return d;
+}
+
+/* L'Annulla rimette i tre campi dove li aveva trovati. */
+export function rimettiStato(dati, x) {
+  const v = x || {};
+  const d = Object.assign({}, dati || {});
+  const dentro = d.programMeta && typeof d.programMeta === "object" ? "programMeta"
+    : (d.program && typeof d.program === "object" ? "program" : "");
+  const bersaglio = dentro ? Object.assign({}, d[dentro]) : d;
+  if (v.status == null) delete bersaglio.status; else bersaglio.status = v.status;
+  if (v.active == null) delete bersaglio.active; else bersaglio.active = v.active === true;
+  if (v.updatedAt == null) delete bersaglio.updatedAt; else bersaglio.updatedAt = v.updatedAt;
+  if (!dentro) return bersaglio;
+  d[dentro] = bersaglio;
+  delete d.status;
+  delete d.active;
+  delete d.updatedAt;
+  return d;
+}
+
 export function nomeProgramma(p) {
   const o = p || {};
-  return testo(o.name) || testo(o.nome) || testo(o.titolo) || testo(o.id) || "senza nome";
+  const m = o.programMeta && typeof o.programMeta === "object" ? o.programMeta
+    : (o.program && typeof o.program === "object" ? o.program : o);
+  return testo(m.name) || testo(m.nome) || testo(m.titolo) || testo(m.id) || testo(o.id) || "senza nome";
 }
 
 function archiviato(p) {
   if (!p) return true;
-  return Boolean(p.archivedAt) || testo(p.status).toLowerCase() === "archived";
+  return statoDelProgramma(p).archiviato;
 }
 
 /* PASSO 3d — l'id che la pagina conosce non e' sempre l'id del documento.
@@ -59,8 +122,9 @@ export { trovaProgramma };
 /* Attivo vuol dire: non archiviato, e status "active" oppure active === true. */
 export function eAttivo(p) {
   if (!p || archiviato(p)) return false;
-  if (testo(p.status).toLowerCase() === "active") return true;
-  return p.active === true;
+  const s = statoDelProgramma(p);
+  if (testo(s.stato).toLowerCase() === "active") return true;
+  return s.attivo === true;
 }
 
 /* Il piano: chi diventa attivo, chi smette, e la voce di registro che li
@@ -88,14 +152,10 @@ export function pianificaAttivazione(programmi, idScelto, opzioni) {
   const dopo = [];
   const daScrivere = [];
   function prepara(p, nuovoStato, attivo) {
-    prima.push({
-      id: testo(p.id),
-      status: p.status == null ? null : p.status,
-      active: p.active == null ? null : p.active,
-      updatedAt: p.updatedAt == null ? null : p.updatedAt
-    });
-    daScrivere.push({ id: testo(p.id), dati: Object.assign({}, p, { status: nuovoStato, active: attivo, updatedAt: quando }) });
-    dopo.push({ id: testo(p.id), status: nuovoStato, active: attivo });
+    const s = statoDelProgramma(p);
+    prima.push({ id: testo(p.id), status: s.stato, active: s.attivo, updatedAt: s.updatedAt, dove: s.dove });
+    daScrivere.push({ id: testo(p.id), dati: conStato(p, nuovoStato, attivo, quando), dove: s.dove });
+    dopo.push({ id: testo(p.id), status: nuovoStato, active: attivo, dove: s.dove });
   }
   altri.forEach((p) => prepara(p, "available", false));
   prepara(scelto, "active", true);
@@ -142,21 +202,17 @@ export function pianificaBozza(programmi, idScelto, opzioni) {
   if (archiviato(scelto)) {
     return { ok: false, motivo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' archiviato: non c'e' niente da mettere in bozza" };
   }
-  const giaBozza = testo(scelto.status).toLowerCase() === "draft" && scelto.active !== true;
+  const adesso = statoDelProgramma(scelto);
+  const giaBozza = testo(adesso.stato).toLowerCase() === "draft" && adesso.attivo !== true;
   if (giaBozza) {
     return {
       ok: true, gia: true, nome: nomeProgramma(scelto), daScrivere: [], voce: null, altri: [],
       testo: "\u00ab" + nomeProgramma(scelto) + "\u00bb e' gia' in bozza: non ho scritto niente"
     };
   }
-  const prima = [{
-    id: testo(scelto.id),
-    status: scelto.status == null ? null : scelto.status,
-    active: scelto.active == null ? null : scelto.active,
-    updatedAt: scelto.updatedAt == null ? null : scelto.updatedAt
-  }];
-  const daScrivere = [{ id: testo(scelto.id), dati: Object.assign({}, scelto, { status: "draft", active: false, updatedAt: quando }) }];
-  const dopo = [{ id: testo(scelto.id), status: "draft", active: false }];
+  const prima = [{ id: testo(scelto.id), status: adesso.stato, active: adesso.attivo, updatedAt: adesso.updatedAt, dove: adesso.dove }];
+  const daScrivere = [{ id: testo(scelto.id), dati: conStato(scelto, "draft", false, quando), dove: adesso.dove }];
+  const dopo = [{ id: testo(scelto.id), status: "draft", active: false, dove: adesso.dove }];
   const voce = {
     idVoce: testo(o.idVoce) || idVoceRegistro(quando),
     quando: quando,
@@ -195,11 +251,7 @@ export function pianificaRipristino(voce, programmi) {
     const id = testo(x && x.id);
     const p = elenco.filter((q) => testo(q && q.id) === id)[0] || null;
     if (!p) { mancanti.push(id); return; }
-    const dati = Object.assign({}, p);
-    if (x.status == null) delete dati.status; else dati.status = x.status;
-    if (x.active == null) delete dati.active; else dati.active = x.active === true;
-    if (x.updatedAt == null) delete dati.updatedAt; else dati.updatedAt = x.updatedAt;
-    daScrivere.push({ id: id, dati: dati });
+    daScrivere.push({ id: id, dati: rimettiStato(p, x) });
   });
   return { ok: daScrivere.length > 0, daScrivere: daScrivere, mancanti: mancanti };
 }
