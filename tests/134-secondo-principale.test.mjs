@@ -103,6 +103,28 @@ test("134.4 il numero grande è in serie, non in percentuale", () => {
   assert.match(testo(doc, "[data-reds-nota]"), /sedute A della settimana 3 — 1 seduta, 3 righe lette/);
 });
 
+test("134.6 pressa, hack e sissy NON hanno la lombare: il pulley sì", () => {
+  const fuori = ["Pressa 45°", "Pressa45° piedi alti schienale chiuso", "Pressa mono gamba",
+    "Pressa verticale panatta", "Hack Squat con elastico", "Sissy squat in piedi"];
+  fuori.forEach((n) => {
+    const art = articolazioniDi(n);
+    assert.equal(art.punti["colonna lombare"], undefined, n + " non deve piu' portare la lombare");
+    assert.deepEqual(art.secondiPrincipali, []);
+    assert.notEqual(art.modello, "squat", n + " esce dal modello squat");
+    const totale = Object.keys(art.punti).reduce((a, k) => a + art.punti[k], 0);
+    assert.ok(totale <= TETTO_ESERCIZIO);
+  });
+  /* il pulley non ha schienale: la lombare resta principale aggiunta */
+  assert.equal(articolazioniDi("Pulley triangolo").punti["colonna lombare"], 1);
+  assert.equal(articolazioniDi("Pulley sbarra presa larga supina").punti["colonna lombare"], 1);
+  /* e chi resta nel modello squat ce l'ha ancora */
+  ["Squat", "Front squat machine", "Pendulum", "Goblet squat"].forEach((n) => {
+    assert.equal(articolazioniDi(n).punti["colonna lombare"], 1, n);
+  });
+  const nomi = eserciziConSecondoPrincipale().map((x) => x.catalogo);
+  fuori.forEach((n) => assert.equal(nomi.indexOf(n), -1, n + " non deve stare nel report"));
+});
+
 test("134.5 la classifica è ordinata per serie, e la soglia sta nella riga", () => {
   const r = stressSettimana([scheda]);
   const serie = r.classifica.map((x) => x.massimo);

@@ -337,7 +337,8 @@ export function nomeDelCatalogo(nome) {
  * resto del corpo. In quei casi vale 1 punto come una principale, non 0,5.
  *
  * I modelli, uno per uno, con il nome che finisce nel report:
- *   squat (squat, goblet, hack, pendulum, pressa, front squat),
+ *   squat (squat, goblet, pendulum, front squat) — non pressa, hack, sissy,
+ *   che sostengono la schiena (passo 6g),
  *   affondo (affondi, bulgaro),
  *   stacco/hip hinge (stacco, RDL),
  *   rematore (rematore, row, pendaly, krock, t bar, pulley, gentlemen),
@@ -347,7 +348,9 @@ export function nomeDelCatalogo(nome) {
  * principale + due secondarie, la seconda secondaria esce.
  * ------------------------------------------------------------------------- */
 export const MODELLI_LOMBARE = Object.freeze([
-  { modello: "squat", prova: (n) => /squat|goblet|hack|pendulum|pressa/.test(n) },
+  /* PASSO 6g: pressa, hack e sissy NON caricano la schiena in piedi (la schiena
+   * e' sostenuta): la lombare resta com'era prima del 6f. */
+  { modello: "squat", prova: (n) => /squat|goblet|pendulum/.test(n) && !/hack|sissy|pressa/.test(n) },
   { modello: "affondo", prova: (n) => /affond|bulgar/.test(n) },
   { modello: "stacco", prova: (n) => /stacco|rdl/.test(n) },
   /* i rematori appoggiati alla panca non portano carico sulla schiena */
