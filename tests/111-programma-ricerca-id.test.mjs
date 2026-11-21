@@ -38,8 +38,9 @@ test("111.1 «Metti in bozza» trova il programma con l'id che la pagina conosce
   assert.equal(piano.ok, true, "il programma si trova: " + piano.motivo);
   assert.equal(piano.daScrivere.length, 1, "una sola scrittura");
   assert.equal(piano.daScrivere[0].id, "program-v2-meta-prg111", "si scrive sul DOCUMENTO, non sull'id interno");
-  assert.equal(piano.daScrivere[0].dati.status, "draft", "lo stato diventa bozza");
-  assert.equal(piano.daScrivere[0].dati.active, false, "e active si spegne: due campi, sempre");
+  assert.equal(piano.daScrivere[0].dati.programMeta.status, "draft", "lo stato diventa bozza, dove la pagina e il telefono leggono");
+  assert.equal(piano.daScrivere[0].dati.programMeta.active, false, "e active si spegne: due campi, sempre");
+  assert.equal(piano.daScrivere[0].dati.active, undefined, "in cima non resta un secondo active che nessuno legge");
 });
 
 test("111.2 «Attiva» trova il programma con l'id interno e spegne l'altro", () => {
