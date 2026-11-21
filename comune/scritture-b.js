@@ -241,6 +241,29 @@ export function leggiScheletroB(db, uid, id) {
   });
 }
 
+/* L'elenco intero della raccolta: la pagina Scheletri legge da qui. */
+export function leggiScheletriB(db, uid) {
+  const rif = riferimentoB(db, uid, SOTTO_B.scheletri);
+  return rif.get().then((istantanea) => {
+    const fuori = [];
+    if (!istantanea || typeof istantanea.forEach !== "function") return fuori;
+    istantanea.forEach((d) => {
+      if (!d) return;
+      fuori.push({ id: String(d.id), dati: (d.data && d.data()) || {} });
+    });
+    return fuori;
+  });
+}
+
+/* Cancellare e' una scrittura come le altre: se lo scheletro non c'e' piu',
+ * si dice, non si finge che sia sparito. */
+export async function eliminaScheletroB(db, uid, id) {
+  const letto = await leggiScheletroB(db, uid, id);
+  if (!letto.esiste) throw new ErroreVersione("lo scheletro non e' piu' in B: niente da eliminare");
+  await riferimentoB(db, uid, SOTTO_B.scheletri, id).delete();
+  return { id: String(id) };
+}
+
 /* ---------- Programmi (B.21 PASSO 2a) ------------------------------------
  * Il programma attivo e' un campo del documento, non una scheda: la scrittura
  * segue la stessa regola delle schede (versione attesa) e aggiunge `versione`,

@@ -223,12 +223,13 @@ export function statoZonaB(letture) {
  * quelle. */
 export async function leggiZonaBCompleta(db, uid) {
   // Passo 31: letture indipendenti in parallelo, stessi risultati e ripieghi.
-  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni] = await Promise.all([
+  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni, documentiScheletri] = await Promise.all([
     leggiFotografia(db, uid).catch(() => null),
     leggiZonaB(db, uid, SOTTO_B.programmi),
     leggiZonaB(db, uid, SOTTO_B.schede),
     leggiZonaB(db, uid, SOTTO_B.sedute),
-    leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => [])
+    leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => []),
+    leggiZonaB(db, uid, SOTTO_B.scheletri).catch(() => [])
   ]);
 
   const p = programmiDaDocumenti(documentiProgrammi);
@@ -241,6 +242,7 @@ export async function leggiZonaBCompleta(db, uid) {
     programmiInfo: p,
     sedute: s,
     schedeV2,
+    scheletri: documentiScheletri,
     esclusioni,
     esito: statoZonaB({
       fotografia,

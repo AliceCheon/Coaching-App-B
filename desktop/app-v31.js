@@ -357,6 +357,12 @@ export function testoEsito(richiesta, esito) {
   if (r.campo === "riga") {
     return "riga tolta · Annulla per rimetterla";
   }
+  if (r.campo === "applica-scheletro") {
+    return (esito && esito.testo) || "scheletro applicato: righe senza carichi \u00b7 Annulla per rimettere com'era";
+  }
+  if (r.campo === "elimina-scheletro") {
+    return (esito && esito.testo) || "scheletro eliminato dalla raccolta";
+  }
   if (r.campo === "salva-scheletro") {
     return (esito && esito.testo) || "scheletro salvato";
   }

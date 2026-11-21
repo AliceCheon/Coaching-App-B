@@ -44,6 +44,8 @@ import {
 , copiaEsercizi as applicaCopiaEsercizi, rimettiElencoEsercizi } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
 import { salvaScheletroDaScheda } from "./scheletri.js";
+import { applicaScheda, messaggioApplicato, messaggioNonApplicato, messaggioEliminato, messaggioNonEliminato } from "./scheletri.js";
+import { leggiScheletroB, eliminaScheletroB } from "./scritture-b.js";
 import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
 import { pianificaScaricoTutte, TIPO_VOCE_SCARICO_TUTTE } from "./scarico-tutte.js";
 
@@ -204,6 +206,49 @@ export function creaEditorSchede(opzioni) {
         const sk = await salvaScheletroDaScheda(letto.dati, r, { db: db, uid: uid, quando: quando() });
         if (!sk.ok) return { ok: false, motivo: sk.messaggio };
         return { ok: true, testo: sk.messaggio, scheletro: sk.id, nome: sk.nome };
+      }
+      /* extra-3 — Applica: la scheda cambia in blocco, senza carichi. */
+      if (campo === "applica-scheletro") {
+        const idSk = String(r.idScheletro == null ? "" : r.idScheletro).trim();
+        if (!idSk) return { ok: false, motivo: messaggioNonApplicato("manca lo scheletro da applicare: non ho scritto niente") };
+        const sk = await leggiScheletroB(db, uid, idSk);
+        if (!sk || !sk.esiste) return { ok: false, motivo: messaggioNonApplicato("lo scheletro " + idSk + " non e' in B: non ho scritto niente") };
+        const quandoOra = quando();
+        const piano = applicaScheda(letto.dati, sk.dati, { quando: quandoOra });
+        const datiNuovi = Object.assign({}, letto.dati, { sheet: piano.sheet, versione: versioneDi(letto.dati) + 1 });
+        try {
+          await conScadenza(salvaSchedaConVersione(db, uid, idScheda, datiNuovi, versioneDi(letto.dati)), "la scrittura della scheda");
+        } catch (e) {
+          return { ok: false, motivo: messaggioNonApplicato(e && e.message) };
+        }
+        versioni[idScheda] = versioneDi(datiNuovi);
+        const foglioPrima = (letto.dati && letto.dati.sheet) || {};
+        const elencoPrima = (Array.isArray(foglioPrima.exercises) ? foglioPrima.exercises : []).filter((x) => x && !x.deletedAt);
+        const codiceScheda = String(foglioPrima.code || "");
+        const testo = messaggioApplicato(sk.dati.nome, codiceScheda);
+        const voce = {
+          idVoce: idVoceRegistro(quandoOra), quando: quandoOra, tipo: "applica-scheletro",
+          origine: "pagina-scheletri", annullaDi: "", scheda: String(r.idScheda == null ? "" : r.idScheda),
+          codice: codiceScheda, esercizio: "", idEsercizio: "", settimana: null, campo: "applica-scheletro",
+          prima: elencoPrima, dopo: null, dopoTesto: testo
+        };
+        const avvisoVoce = await scriviVoceSicura(voce);
+        ultima = voce;
+        return { ok: true, testo: testo, voce: voce, dati: datiNuovi, sostituite: piano.sostituite, aggiunte: piano.aggiunte, avvisoRegistro: avvisoVoce };
+      }
+      /* extra-3 — Elimina: toglie lo scheletro dalla raccolta, non dalla scheda. */
+      if (campo === "elimina-scheletro") {
+        const idSk = String(r.idScheletro == null ? "" : r.idScheletro).trim();
+        if (!idSk) return { ok: false, motivo: messaggioNonEliminato("manca lo scheletro da eliminare") };
+        const sk = await leggiScheletroB(db, uid, idSk);
+        if (!sk || !sk.esiste) return { ok: false, motivo: messaggioNonEliminato("lo scheletro " + idSk + " non e' in B") };
+        const nomeSk = (sk.dati && sk.dati.nome) || "";
+        try {
+          await conScadenza(eliminaScheletroB(db, uid, idSk), "l'eliminazione dello scheletro");
+        } catch (e) {
+          return { ok: false, motivo: messaggioNonEliminato(e && e.message) };
+        }
+        return { ok: true, testo: messaggioEliminato(nomeSk) };
       }
       let esito = null;
       if (campo === "serie" || campo === "ripetizioni") {

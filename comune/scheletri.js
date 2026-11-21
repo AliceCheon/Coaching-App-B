@@ -149,3 +149,113 @@ export async function salvaScheletroDaScheda(schedaDati, richiesta, contesto) {
     return { ok: false, motivo: motivo, messaggio: messaggioNonSalvato(motivo) };
   }
 }
+
+/* ---------- extra-3: la pagina Scheletri (elenco, Applica, Elimina) ------ */
+
+export function dataInChiaro(iso) {
+  const t = testoPulito(iso);
+  if (!t) return "";
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return t;
+  const g = String(d.getDate()).padStart(2, "0");
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return g + "/" + m + "/" + d.getFullYear();
+}
+
+export function elencoScheletri(documenti) {
+  const fuori = (Array.isArray(documenti) ? documenti : [])
+    .filter((d) => d && d.dati && (!d.dati.tipo || d.dati.tipo === "scheletro"))
+    .map((d) => {
+      const dati = d.dati || {};
+      const esercizi = Array.isArray(dati.esercizi) ? dati.esercizi : [];
+      return {
+        id: String(d.id == null ? "" : d.id),
+        nome: testoPulito(dati.nome) || "(senza nome)",
+        creatoIl: testoPulito(dati.creatoIl),
+        data: dataInChiaro(dati.creatoIl),
+        esercizi: esercizi.length
+      };
+    })
+    .filter((s) => s.id);
+  fuori.sort((a, b) => String(b.creatoIl).localeCompare(String(a.creatoIl)));
+  return fuori;
+}
+
+export function fraseApplica(nome, quanti, codice, sostituite) {
+  return "Applichi lo scheletro \u00ab" + testoPulito(nome) + "\u00bb (" + quanti + (quanti === 1 ? " esercizio" : " esercizi")
+    + ") alla scheda " + testoPulito(codice) + ": sostituisce " + sostituite + (sostituite === 1 ? " riga" : " righe") + ", senza carichi.";
+}
+
+export function fraseElimina(nome, quanti) {
+  return "Elimini lo scheletro \u00ab" + testoPulito(nome) + "\u00bb (" + quanti + (quanti === 1 ? " esercizio" : " esercizi")
+    + ")? Dalla raccolta sparisce: la scheda non si tocca.";
+}
+
+export function messaggioApplicato(nome, codice) {
+  return "Scheletro \u00ab" + testoPulito(nome) + "\u00bb applicato alla scheda " + testoPulito(codice) + ": righe senza carichi";
+}
+
+export function messaggioNonApplicato(motivo) {
+  return "Scheletro non applicato: " + (testoPulito(motivo) || "motivo non dichiarato");
+}
+
+export function messaggioEliminato(nome) {
+  return "Scheletro \u00ab" + testoPulito(nome) + "\u00bb eliminato";
+}
+
+export function messaggioNonEliminato(motivo) {
+  return "Scheletro non eliminato: " + (testoPulito(motivo) || "motivo non dichiarato");
+}
+
+/* Quante settimane ha la scheda: le righe nuove si portano dietro lo stesso
+ * numero, cosi' la tabella non cambia larghezza sotto le dita. */
+function settimaneDellaScheda(scheda) {
+  const ex = (Array.isArray(scheda.exercises) ? scheda.exercises : [])
+    .filter((r) => r && !r.deletedAt && !eTecnica(r));
+  let quante = 0;
+  ex.forEach((r) => { const n = settimaneDi(r).length; if (n > quante) quante = n; });
+  return quante || 8;
+}
+
+/* La scheda nuova: struttura dallo scheletro, ZERO carichi. Ogni settimana
+ * nasce con serie e ripetizioni e nient'altro: il kg non ha nessuna strada
+ * per entrare, perche' non e' scritto in nessuna chiave qui sotto. */
+export function applicaScheda(schedaDati, scheletro, opzioni) {
+  const o = opzioni || {};
+  const scheda = Object.assign({}, (schedaDati && schedaDati.sheet) || schedaDati || {});
+  const prima = (Array.isArray(scheda.exercises) ? scheda.exercises : []).filter((r) => r && !r.deletedAt);
+  const sostituite = prima.filter((r) => !eTecnica(r)).length;
+  const quante = settimaneDellaScheda(scheda);
+  const righe = Array.isArray(scheletro && scheletro.esercizi) ? scheletro.esercizi : [];
+  const quando = testoPulito(o.quando);
+  const coda = quando ? quando.replace(/[^0-9]/g, "").slice(-6) : "000000";
+  const nuove = [];
+  righe.forEach((r, i) => {
+    const idEx = "sk-" + (i + 1) + "-" + coda;
+    const weeks = Array.from({ length: quante }, (_, k) => ({
+      week: k + 1,
+      sets: r.serie == null ? null : numeroOppure(r.serie, null),
+      reps: testoPulito(r.ripetizioni),
+      type: "normal",
+      note: "",
+      source: "scheletro"
+    }));
+    const ex = {
+      id: idEx,
+      name: testoPulito(r.nome),
+      muscle: testoPulito(r.distretto),
+      nota: testoPulito(r.nota),
+      prescription: {},
+      progression: { weeks: weeks }
+    };
+    if (testoPulito(r.superserie)) ex.sup = testoPulito(r.superserie);
+    nuove.push(ex);
+    (Array.isArray(r.tecniche) ? r.tecniche : []).forEach((t, k) => {
+      nuove.push({ id: idEx + "-t" + (k + 1), name: testoPulito(t.tecnica), tipo: "tecnica", padreId: idEx, serie: t.serie == null ? null : t.serie });
+    });
+  });
+  scheda.exercises = nuove;
+  delete scheda.pianoScarico;
+  if (quando) scheda.updatedAt = quando;
+  return { sheet: scheda, sostituite: sostituite, aggiunte: righe.length, righe: nuove.length };
+}
