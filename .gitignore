@@ -10,3 +10,6 @@ nul
 
 # il blocco della suite: e' un segnale di lavoro, non un file del progetto
 .suite.lock
+
+# bundle di lavoro (mai nel repo)
+*.bundle

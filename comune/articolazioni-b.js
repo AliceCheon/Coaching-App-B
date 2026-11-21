@@ -540,3 +540,113 @@ export function stressRiepilogo(scheda) {
     tutteAZero: articolazioni.length > 0 && articolazioni.every((x) => x.massimo === 0)
   };
 }
+
+/* ---------- PASSO 6e: NON una scheda, ma la SETTIMANA intera ---------------
+ *
+ * Lo sbaglio da correggere: la carta guardava una scheda sola (la prima della
+ * settimana), quindi con A/B/C/D il carico era quello di UNA seduta. Qui si
+ * sommano tutte le schede che arrivano: per ogni articolazione, settimana per
+ * settimana, si sommano le serie equivalenti; il massimo settimanale e' il
+ * picco della settimana intera.
+ *
+ * Il numero grande non e' piu' la media delle otto percentuali (una media
+ * nasconde proprio l'articolazione che si fa male): e' la percentuale della
+ * struttura PIU' CARICATA, con la classifica di tutte e otto, dalla piu'
+ * caricata alla meno.
+ * ------------------------------------------------------------------------- */
+export function stressSettimana(schede) {
+  const elenco = (Array.isArray(schede) ? schede : [schede]).filter((s) => s && typeof s === "object");
+  const perArticolazione = Object.create(null);
+  ARTICOLAZIONI.forEach((a) => { perArticolazione[a] = { settimane: [], esercizi: [] }; });
+  let quante = 0;
+  let righeContate = 0;
+  let righeSaltate = 0;
+  let righeConArticolazione = 0;
+  let righeCardio = 0;
+  let righeNonMappate = 0;
+  const nonMappati = [];
+
+  elenco.forEach((scheda) => {
+    const conto = stressArticolazioni(scheda);
+    if (conto.quante > quante) quante = conto.quante;
+    righeContate += conto.righeContate;
+    righeSaltate += conto.righeSaltate;
+    righeConArticolazione += conto.righeConArticolazione;
+    righeCardio += conto.righeCardio;
+    righeNonMappate += conto.righeNonMappate;
+    conto.nonMappati.forEach((n) => nonMappati.push(n));
+    conto.articolazioni.forEach((v) => {
+      const voce = perArticolazione[v.articolazione];
+      if (!voce) return;
+      v.settimane.forEach((val, i) => { voce.settimane[i] = (voce.settimane[i] || 0) + val; });
+      v.esercizi.forEach((nome) => { if (voce.esercizi.indexOf(nome) === -1) voce.esercizi.push(nome); });
+    });
+  });
+
+  const nomiNonRiconosciuti = nonMappati.slice(0, 3);
+  const base = {
+    righeContate: righeContate,
+    righeSaltate: righeSaltate,
+    righeConArticolazione: righeConArticolazione,
+    righeSenza: righeCardio + righeNonMappate,
+    righeCardio: righeCardio,
+    righeNonMappate: righeNonMappate,
+    nomiNonRiconosciuti: nomiNonRiconosciuti,
+    nomiNonRiconosciutiTotale: nonMappati.length,
+    quante: quante,
+    schedeLette: elenco.length
+  };
+
+  if (!righeContate) {
+    return Object.assign({}, base, {
+      leggibile: false,
+      motivo: !elenco.length
+        ? "la scheda non ha esercizi da leggere"
+        : (elenco.every((s) => !Array.isArray(s.esercizi) || !s.esercizi.length)
+          ? "la scheda non ha esercizi da leggere"
+          : "nessuna riga della scheda entra nel volume"),
+      articolazioni: [],
+      classifica: [],
+      piuCaricata: null,
+      sopraCento: [],
+      tutteAZero: false
+    });
+  }
+
+  const articolazioni = ARTICOLAZIONI.filter((a) => TOLLERANZE[a] != null).map((a) => {
+    const voce = perArticolazione[a];
+    let massimo = 0;
+    let massimoSettimana = 0;
+    for (let i = 0; i < quante; i += 1) {
+      const v = voce.settimane[i] || 0;
+      if (v > massimo) { massimo = v; massimoSettimana = i + 1; }
+    }
+    const tolleranza = TOLLERANZE[a];
+    const percentuale = (massimo / tolleranza) * 100;
+    return {
+      articolazione: a,
+      tolleranza: tolleranza,
+      massimo: massimo,
+      massimoSettimana: massimoSettimana,
+      percentuale: percentuale,
+      sopraCento: percentuale > 100,
+      esercizi: voce.esercizi.slice()
+    };
+  });
+
+  /* La classifica: dalla piu' caricata alla meno. A pari carico resta
+   * l'ordine del corpo (spalla, gomito, ...), cosi' due letture uguali
+   * danno la stessa lista. */
+  const classifica = articolazioni.slice().sort((a, b) => b.percentuale - a.percentuale);
+  const piuCaricata = classifica.length ? classifica[0] : null;
+
+  return Object.assign({}, base, {
+    leggibile: true,
+    motivo: "",
+    articolazioni: articolazioni,
+    classifica: classifica,
+    piuCaricata: piuCaricata,
+    sopraCento: articolazioni.filter((x) => x.sopraCento).map((x) => x.articolazione),
+    tutteAZero: articolazioni.length > 0 && articolazioni.every((x) => x.massimo === 0)
+  });
+}

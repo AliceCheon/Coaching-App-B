@@ -609,6 +609,15 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .ck-red-bar{flex:1;height:7px;border-radius:4px;position:relative;
   background:linear-gradient(90deg,#7BE0A8,#FFE066 55%,#F08080)}
 .ck-red-bar i{position:absolute;inset:0;background:#2A1A36;left:0;width:100%;opacity:.35}
+.ck-red-cla{margin-top:11px;border-top:1px solid var(--linea);padding-top:9px;display:flex;flex-direction:column;gap:5px}
+.ck-red-cla:empty{display:none}
+.ck-red-r{display:grid;grid-template-columns:92px 1fr 56px;align-items:center;gap:8px;font-size:10px}
+.ck-red-rn{color:var(--muto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-red-rb{position:relative;height:6px;border-radius:3px;background:#2A1A36;overflow:visible}
+.ck-red-rb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accento,#FF4FA3)}
+.ck-red-rb em{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--testo);opacity:.55}
+.ck-red-r.su .ck-red-rv{color:#F08080}
+.ck-red-rv{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-align:right;white-space:nowrap}
 .ck-dove{margin-top:11px;border-top:1px solid var(--linea);padding-top:9px;display:flex;flex-direction:column;gap:6px}
 .ck-dove-t{font-size:8.6px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .ck-dove-r{display:flex;align-items:center;gap:7px;font-size:10.2px}
@@ -1757,6 +1766,7 @@ window.BDVAI=function(id,el){
             <div class="ck-red-num"><b data-reds-num>—</b><span class="ck-pill mute" data-reds-stato>non calcolabile</span></div>
             <div class="ck-red-bar"><i></i><em></em></div>
           </div>
+          <div class="ck-red-cla" data-reds-classifica></div>
           <div class="ck-dove">
             <div class="ck-dove-t">Da dove nasce</div>
             <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l5 2v4.5c0 3-2.2 4.8-5 5.5-2.8-.7-5-2.5-5-5.5V4z"/><path d="M6 7.8l1.5 1.5L10.5 6"/></svg> <span>Articolazione più sollecitata</span><b class="mute" data-reds-piu>mappa articolare assente</b></div>

@@ -127,7 +127,7 @@ test("130.5 una scheda non leggibile non diventa mai zero", () => {
   assert.equal(zero.leggibile, false);
 });
 
-test("130.6 sulla pagina vera la carta mostra la media e l'articolazione più sollecitata", () => {
+test("130.6 sulla pagina vera la carta mostra la struttura più caricata", () => {
   const dom = new JSDOM(pagina, { url: "https://alicecheon.github.io/Coaching-App-B/desktop/" });
   const doc = dom.window.document;
   const r = riempiRischioStrutturale(doc, scheda);
@@ -136,8 +136,9 @@ test("130.6 sulla pagina vera la carta mostra la media e l'articolazione più so
   const carta = doc.querySelector("#pag-dashboard .ck-red");
   assert.ok(carta, "la carta RED-S c'è");
   assert.equal(carta.getAttribute("data-reds"), "calcolato");
-  assert.equal(carta.querySelector("[data-reds-num]").textContent, "22%");
-  assert.equal(carta.querySelector("[data-reds-stato]").textContent, "media delle 8 articolazioni");
+  /* PASSO 6e: il numero grande e' la struttura piu' caricata, non la media */
+  assert.equal(carta.querySelector("[data-reds-num]").textContent, "42%");
+  assert.equal(carta.querySelector("[data-reds-stato]").textContent, "caviglia");
   assert.equal(carta.querySelector("[data-reds-piu]").textContent, "caviglia · 42%");
   const nota = carta.querySelector("[data-reds-nota]").textContent;
   assert.match(nota, /Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza/);

@@ -8,45 +8,6 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - i dati di esempio del Programma attivo non si vedono più (editor statico nascosto); `window.BD_LB_SEED` resta nel file: lo usano le schermate non ancora collegate (Dashboard, Overview, Riepilogo volume…)
 
 ## Le righe cambiate (numeri del file attuale, desktop/index.html)
-- righe 40-44
-- righe 46-48
-- righe 75-79
-- righe 81-83
-- righe 142-151
-- righe 1462-1565
-- righe 1617
-- righe 2865
-- righe 2879-2882
-- righe 2896
-- righe 2909
-- righe 2922
-- righe 2993
-- righe 3003
-- righe 3218
-- righe 3218
-- righe 3764
-- righe 3884
-- righe 4008
-- righe 4689
-- righe 4689
-- righe 5842-5850
-- righe 6546
-- righe 6921-6925
-- righe 7733-7769
-- righe 7938-7965
-- righe 7938-7965
-- righe 8010
-- righe 8056
-- righe 8106-8107
-- righe 8458
-- righe 8615
-- righe 9003-9004
-- righe 9918
-- righe 10648-10657
-- righe 10772
-- righe 10772
-- righe 10772
-- righe 10840-10844
 : Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
@@ -1279,13 +1240,51 @@ Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spa
 - Valgono le stesse regole della compatta: Descr./Setup accorciata a 60 caratteri, etichette SS1/SS2 nella colonna JS, figlia tecnica sotto il padre con la freccetta e il nome in corsivo, spia Test col pallino, bianco e nero anche col tema scuro, riduzione del corpo fino a 7pt prima di mandare qualcosa in seconda pagina.
 - Il vecchio gestore inline del tasto (avviso a schermo e `window.print()` immediato) e' stato tolto: ora il tasto passa dal solo `stampeCollegate`, come la compatta. La stampa continua a non scrivere niente nei dati (confronto del riepilogo prima/dopo nei test).
 - Prove: `tests/100-stampa-compilare.test.mjs`, 6 controlli (selettore S1…S8 e settimana giusta nel foglio, una casella per serie con la misura 14x8 mm, superserie e figlia tecnica, colonne del modulo, due schede = due pagine senza toccare i dati, spia Test).
-- righe 3851
-- righe 3895
-- righe 3927
-- righe 4685
-- righe 7910-7911
-- righe 10768
-- righe 10770
-- righe 1757
-- righe 1762
-- righe 1766-1767
+
+- righe 40-44
+- righe 46-48
+- righe 75-79
+- righe 81-83
+- righe 142-151
+- righe 612-620
+- righe 1471-1574
+- righe 1626
+- righe 1766
+- righe 1769
+- righe 1772
+- righe 1776-1777
+- righe 2875
+- righe 2889-2892
+- righe 2906
+- righe 2919
+- righe 2932
+- righe 3003
+- righe 3013
+- righe 3228
+- righe 3229
+- righe 3774
+- righe 3861
+- righe 3894
+- righe 3905
+- righe 3938
+- righe 4018
+- righe 4695
+- righe 4699
+- righe 5852-5860
+- righe 6556
+- righe 6931-6935
+- righe 7743-7779
+- righe 7921
+- righe 7948-7975
+- righe 8020
+- righe 8066
+- righe 8116-8117
+- righe 8468
+- righe 8625
+- righe 9013-9014
+- righe 9928
+- righe 10658-10667
+- righe 10778
+- righe 10780
+- righe 10782
+- righe 10850-10854

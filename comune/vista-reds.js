@@ -11,7 +11,7 @@
  * e non mostra zeri.
  */
 
-import { stressRiepilogo } from "./articolazioni-b.js";
+import { stressSettimana, serieInParola } from "./articolazioni-b.js";
 import { programmaAttivo, settimanaCorrente } from "./lettura-dati.js";
 import { nomePulito } from "./nome-pulito.js";
 
@@ -21,7 +21,17 @@ function aggiorna(nodo, testo) {
   if (nodo) nodo.textContent = String(testo);
 }
 
-export function riempiRischioStrutturale(doc, scheda, opzioni) {
+/* PASSO 6e — la carta legge la SETTIMANA, non una scheda.
+ *
+ * Entra un elenco di schede (o una sola, per le prove vecchie): il conto le
+ * somma, il numero grande e' la percentuale della struttura piu' caricata e
+ * sotto c'e' la classifica delle otto, con le serie della settimana e la barra
+ * proporzionata alla piu' carica. La tacca al 100% della tolleranza compare
+ * solo quando serve (cioe' quando qualcosa passa il 100%).
+ *
+ * opzioni.calcolo = { codici: ["A","B"], settimana: 3 } dice alla nota su cosa
+ * si e' calcolato. Se manca, la nota parla de «la scheda attiva». */
+export function riempiRischioStrutturale(doc, schede, opzioni) {
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   const carta = doc.querySelector("#pag-dashboard .ck-red");
   if (!carta) return null;
@@ -29,39 +39,78 @@ export function riempiRischioStrutturale(doc, scheda, opzioni) {
   const stato = carta.querySelector("[data-reds-stato]");
   const piu = carta.querySelector("[data-reds-piu]");
   const nota = carta.querySelector("[data-reds-nota]");
+  const classifica = carta.querySelector("[data-reds-classifica]");
 
-  const riepilogo = scheda && typeof scheda === "object" ? stressRiepilogo(scheda) : null;
+  const elenco = (Array.isArray(schede) ? schede : (schede && typeof schede === "object" ? [schede] : []))
+    .filter((x) => x && typeof x === "object");
+  const riepilogo = elenco.length ? stressSettimana(elenco) : null;
+
+  const svuotaClassifica = () => {
+    if (!classifica) return;
+    while (classifica.firstChild) classifica.removeChild(classifica.firstChild);
+  };
 
   if (!riepilogo || riepilogo.leggibile !== true) {
     const motivo = o.motivo
       ? String(o.motivo)
-      : (!scheda || typeof scheda !== "object"
-        ? "nessuna scheda da leggere: la scheda attiva non è arrivata alla carta"
+      : (elenco.length === 0
+        ? "nessuna scheda da leggere: la scheda attiva non \u00e8 arrivata alla carta"
         : (riepilogo && riepilogo.motivo) || "la scheda non si riesce a leggere");
     aggiorna(num, NON);
     aggiorna(stato, "non calcolabile");
     aggiorna(piu, "non calcolabile");
+    svuotaClassifica();
     const diagnosi = o.diagnosi ? " " + String(o.diagnosi) : "";
     aggiorna(nota, "Non calcolato: " + motivo + "." + diagnosi + " Nessuno zero al posto di un dato che manca.");
     carta.setAttribute("data-reds", "non-calcolabile");
     return riepilogo;
   }
 
-  aggiorna(num, riepilogo.mediaIntera + "%");
-  aggiorna(stato, "media delle 8 articolazioni");
-  const massima = riepilogo.piuSollecitata;
+  const piuCaricata = riepilogo.piuCaricata;
+  aggiorna(num, (piuCaricata ? Math.round(piuCaricata.percentuale) : 0) + "%");
+  aggiorna(stato, piuCaricata && !riepilogo.tutteAZero ? piuCaricata.articolazione : "non calcolabile");
   /* Tutte a zero non vuol dire «spalla 0%»: vuol dire che nessuno degli
    * esercizi letti ha dato punti (nomi non riconosciuti, o solo cardio). */
   if (riepilogo.tutteAZero === true) {
     aggiorna(piu, "nessun esercizio ha dato punti");
   } else {
-    aggiorna(piu, massima
-      ? massima.articolazione + " · " + Math.round(massima.percentuale) + "%"
+    aggiorna(piu, piuCaricata
+      ? piuCaricata.articolazione + " · " + Math.round(piuCaricata.percentuale) + "%"
       : "non registrata");
   }
-  const sopra = riepilogo.sopraCento.length
-    ? " Sopra il 100%: " + riepilogo.sopraCento.join(", ") + "."
-    : "";
+
+  /* La classifica sotto: otto righe, dalla piu' carica alla meno. */
+  svuotaClassifica();
+  if (classifica) {
+    const massimoPct = piuCaricata ? piuCaricata.percentuale : 0;
+    riepilogo.classifica.forEach((voce) => {
+      const riga = doc.createElement("div");
+      riga.className = "ck-red-r" + (voce.sopraCento ? " su" : "");
+      riga.setAttribute("data-reds-r", voce.articolazione);
+      const nome = doc.createElement("span");
+      nome.className = "ck-red-rn";
+      nome.textContent = voce.articolazione;
+      const barra = doc.createElement("span");
+      barra.className = "ck-red-rb";
+      const pieno = doc.createElement("i");
+      pieno.style.width = (massimoPct > 0 ? (voce.percentuale / massimoPct) * 100 : 0).toFixed(2) + "%";
+      barra.appendChild(pieno);
+      /* la tacca al 100% della tolleranza: c'e' solo se qualcosa lo passa */
+      if (massimoPct > 100) {
+        const tacca = doc.createElement("em");
+        tacca.style.left = (100 / massimoPct) * 100 + "%";
+        barra.appendChild(tacca);
+      }
+      const valore = doc.createElement("span");
+      valore.className = "ck-red-rv";
+      valore.textContent = serieInParola(voce.massimo) + " serie";
+      riga.appendChild(nome);
+      riga.appendChild(barra);
+      riga.appendChild(valore);
+      classifica.appendChild(riga);
+    });
+  }
+
   /* PASSO 6c-fix-3 — i numeri veri della mappatura dei nomi, cosi' in un colpo
    * si vede se il problema sono i nomi. I nomi passano da nomePulito perche'
    * vengono dai dati (regola 44). */
@@ -74,8 +123,27 @@ export function riempiRischioStrutturale(doc, scheda, opzioni) {
         ? " e altri " + (riepilogo.nomiNonRiconosciutiTotale - nonRiconosciuti.length) : "")
       + ")" : "")
     + ".";
-  aggiorna(nota, "Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza"
-    + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette)." + mappatura + sopra);
+  const sopra = riepilogo.sopraCento.length
+    ? " Sopra il 100%: " + riepilogo.sopraCento.join(", ") + "."
+    : "";
+
+  /* Su cosa e' calcolato: la settimana intera, dichiarata. */
+  let apertura;
+  const calcolo = o.calcolo && typeof o.calcolo === "object" ? o.calcolo : null;
+  if (calcolo) {
+    const codici = Array.isArray(calcolo.codici) ? calcolo.codici.filter((c) => String(c == null ? "" : c).trim()) : [];
+    const quante = elenco.length;
+    const dove = codici.length ? "sedute " + codici.join(", ") : (quante === 1 ? "1 scheda" : quante + " schede");
+    apertura = calcolo.settimana != null && codici.length
+      ? "Calcolato sulle " + dove + " della settimana " + calcolo.settimana
+      : "Calcolato su tutte le schede del programma" + (codici.length ? " (" + codici.join(", ") + ")" : "");
+    apertura += " \u2014 " + quante + (quante === 1 ? " seduta" : " sedute")
+      + ", " + riepilogo.righeContate + " righe lette.";
+  } else {
+    apertura = "Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza"
+      + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette).";
+  }
+  aggiorna(nota, apertura + mappatura + sopra);
   carta.setAttribute("data-reds", "calcolato");
   return riepilogo;
 }
@@ -224,21 +292,43 @@ export function schedaPerRischio(letture) {
   const perSettimana = (a, b) => (Number(a.settimana) || 0) - (Number(b.settimana) || 0)
     || (Number(a.ordine) || 0) - (Number(b.ordine) || 0)
     || String(a.codice || "").localeCompare(String(b.codice || ""));
-  let scelta = settimana == null ? null : (schede.filter((s) => Number(s.settimana) === settimana)[0] || null);
-  let fonte = scelta ? "scheda della settimana " + settimana : null;
-  if (!scelta) {
-    scelta = schede.slice().sort(perSettimana)[0];
-    fonte = settimana == null
-      ? "prima scheda del programma: nessuna settimana corrente registrata"
-      : "prima scheda del programma: la settimana " + settimana + " non ha una scheda";
+  /* PASSO 6e — TUTTE le schede della settimana, non la prima: con A/B/C/D il
+   * carico di una settimana e' la somma delle quattro sedute. Se la settimana
+   * corrente non si sa, o quella settimana non ha schede, si prendono tutte le
+   * schede del programma e la nota lo dichiara. */
+  const ordinate = schede.slice().sort(perSettimana);
+  const dellaSettimana = settimana == null
+    ? []
+    : ordinate.filter((s) => Number(s.settimana) === settimana);
+  const scelte = dellaSettimana.length ? dellaSettimana : ordinate;
+  const codici = scelte
+    .map((s) => String(s.codice == null ? "" : s.codice).trim())
+    .filter((c) => c);
+  let fonte;
+  if (dellaSettimana.length) {
+    fonte = "scheda della settimana " + settimana;
+  } else if (settimana == null) {
+    fonte = "prima scheda del programma: nessuna settimana corrente registrata";
+  } else {
+    fonte = "prima scheda del programma: la settimana " + settimana + " non ha una scheda";
+  }
+  if (!dellaSettimana.length) {
+    fonte = (settimana == null
+      ? "nessuna settimana corrente registrata"
+      : "la settimana " + settimana + " non ha una scheda")
+      + ": tutte le schede del programma";
   }
   return {
-    scheda: scelta,
+    schede: scelte,
+    scheda: scelte[0] || null,
+    codici: codici,
+    calcolo: { codici: codici, settimana: dellaSettimana.length ? settimana : null },
+    nSchede: scelte.length,
     motivo: null,
     diagnosi: null,
     numeri,
     programma: programma,
-    settimana: settimana,
+    settimana: dellaSettimana.length ? settimana : null,
     fonte: fonte,
     esplicito: attivo.esplicito === true,
     ripiego: attivo.ripiego === true
@@ -251,7 +341,11 @@ export function schedaPerRischio(letture) {
  * la nota scrive «Errore nel calcolo: <messaggio>» e la pagina va avanti. */
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
-  const riepilogo = riempiRischioStrutturale(doc, scelta.scheda, { motivo: scelta.motivo, diagnosi: scelta.diagnosi });
+  const riepilogo = riempiRischioStrutturale(doc, scelta.schede, {
+    motivo: scelta.motivo,
+    diagnosi: scelta.diagnosi,
+    calcolo: scelta.calcolo
+  });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
 }
 

@@ -52,15 +52,17 @@ test("131.1 con una settimana corrente la carta guarda la scheda di quella setti
   assert.equal(scelta.motivo, null);
 });
 
-test("131.2 senza settimana corrente la carta guarda la prima scheda del programma", () => {
+test("131.2 senza settimana corrente la carta prende tutte le schede del programma", () => {
   const scelta = schedaPerRischio(zona());
   assert.equal(scelta.scheda.codice, "A", "la prima per settimana, poi per ordine");
+  assert.deepEqual(scelta.codici, ["A", "B"], "PASSO 6e: la settimana intera, non una scheda");
   assert.equal(scelta.settimana, null);
-  assert.match(scelta.fonte, /prima scheda del programma/);
+  assert.match(scelta.fonte, /tutte le schede del programma/);
   /* e se la settimana corrente non ha una scheda, si ripiega sulla prima, dichiarandolo */
   const senza = schedaPerRischio(zona({ sedute: [{ id: 1000000002, source: "App", week: 7 }] }));
   assert.equal(senza.scheda.codice, "A");
   assert.match(senza.fonte, /la settimana 7 non ha una scheda/);
+  assert.deepEqual(senza.codici, ["A", "B"], "ripiego dichiarato: tutte le schede del programma");
 });
 
 test("131.3 nessun programma attivo: la carta lo dice, e non inventa una scheda", () => {
@@ -87,10 +89,11 @@ test("131.4 pagina vera, zona B finta: numero, articolazione più sollecitata e 
   assert.equal(esito.riepilogo.leggibile, true);
 
   assert.equal(carta(doc).getAttribute("data-reds"), "calcolato");
-  assert.equal(testo(doc, "[data-reds-num]"), "22%");
-  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 42%");
-  assert.equal(testo(doc, "[data-reds-stato]"), "media delle 8 articolazioni");
-  assert.match(testo(doc, "[data-reds-nota]"), /6 righe lette/);
+  /* PASSO 6e: A e B sommate, caviglia 18 serie su 12 di tolleranza = 150% */
+  assert.equal(testo(doc, "[data-reds-num]"), "150%");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 150%");
+  assert.equal(testo(doc, "[data-reds-stato]"), "caviglia");
+  assert.match(testo(doc, "[data-reds-nota]"), /7 righe lette/);
 
   /* una carta sola, e il riquadro MRV resta com'era */
   assert.equal(doc.querySelectorAll("#pag-dashboard .ck-red").length, 1);
@@ -134,8 +137,7 @@ test("131.6 schede legate all'id del documento: si trovano e la carta calcola 22
   const doc = dom.window.document;
   riempiRischioDaZonaB(doc, legate);
   assert.equal(carta(doc).getAttribute("data-reds"), "calcolato");
-  assert.equal(testo(doc, "[data-reds-num]"), "22%");
-  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 42%");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 150%");
 
   /* e vale anche quando la chiave e' un'altra cosa che finisce con l'id */
   const coda = zona({
