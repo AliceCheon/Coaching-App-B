@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { renderProgramma } from "../comune/vista-programma.js";
-import { elencoScheletri, fraseApplica, fraseElimina } from "../comune/scheletri.js";
+import { elencoScheletri, fraseApplica, fraseElimina, applicaScheda } from "../comune/scheletri.js";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pagina = readFileSync(join(radice, "desktop", "index.html"), "utf8");
@@ -48,8 +48,8 @@ const docScheletro = (id, nome, creatoIl, quanti) => ({
   }
 });
 const scheletri = () => [
-  docScheletro("sk-vecchio", "Dorsali base", "2026-09-20T10:00:00.000Z", 2),
-  docScheletro("sk-nuovo", "Spinta completa", "2026-11-10T10:00:00.000Z", 3)
+  docScheletro("skp-vecchio", "Dorsali base", "2026-09-20T10:00:00.000Z", 2),
+  docScheletro("skp-nuovo", "Spinta completa", "2026-11-10T10:00:00.000Z", 3)
 ];
 
 /* La pagina, disegnata una volta per prova. `conEditor: false` serve alla prova
@@ -80,9 +80,9 @@ function paginaVera(opzioni) {
   return { dom, doc, chiamate, contenitore };
 }
 
-const righe = (s) => Array.from(s.doc.querySelectorAll("#programma-attivo .sk-carta .sk-riga"));
+const righe = (s) => Array.from(s.doc.querySelectorAll("#programma-attivo .skp-carta .skp-riga"));
 const tastoIn = (s, dentro, parola) => Array.from(dentro.querySelectorAll("button")).filter((b) => String(b.textContent || "").trim() === parola)[0] || null;
-const carta = (s) => s.doc.querySelector("#programma-attivo .sk-carta");
+const carta = (s) => s.doc.querySelector("#programma-attivo .skp-carta");
 
 test("128.1 la linguetta Scheletri si accende solo se la vista riceve l'elenco", () => {
   const senza = paginaVera({ conScheletri: false });
@@ -100,8 +100,8 @@ test("128.2 l'elenco mostra nome, data e numero di esercizi, dal piu' recente", 
   const s = paginaVera();
   const rr = righe(s);
   assert.equal(rr.length, 2, "due scheletri, due righe");
-  assert.equal(rr[0].getAttribute("data-sk"), "sk-nuovo", "il piu' recente sta in cima");
-  assert.equal(rr[1].getAttribute("data-sk"), "sk-vecchio");
+  assert.equal(rr[0].getAttribute("data-sk"), "skp-nuovo", "il piu' recente sta in cima");
+  assert.equal(rr[1].getAttribute("data-sk"), "skp-vecchio");
   const testo = rr[0].textContent;
   assert.ok(testo.indexOf("Spinta completa") !== -1, "il nome si legge");
   assert.ok(testo.indexOf("3 esercizi") !== -1, "il numero di esercizi si legge: " + testo);
@@ -115,7 +115,7 @@ test("128.3 Applica: la conferma dice i numeri esatti e passa la scheda scelta",
   assert.ok(scelta, "ogni scheletro ha la scelta della scheda");
   scelta.value = scelta.querySelector("option").value;
   tastoIn(s, riga, "Applica a una scheda").dispatchEvent(new s.dom.window.Event("click"));
-  const conf = riga.querySelector(".sk-conf");
+  const conf = riga.querySelector(".skp-conf");
   assert.ok(conf, "la conferma si apre dentro la pagina");
   const atteso = fraseApplica("Spinta completa", 3, "A", 2);
   assert.ok(conf.textContent.indexOf("Spinta completa") !== -1, "la conferma nomina lo scheletro");
@@ -127,7 +127,7 @@ test("128.3 Applica: la conferma dice i numeri esatti e passa la scheda scelta",
   tastoIn(s, conf, "Applica").dispatchEvent(new s.dom.window.Event("click"));
   assert.equal(s.chiamate.length, 1, "confermando parte una sola scrittura");
   assert.equal(s.chiamate[0].campo, "applica-scheletro");
-  assert.equal(s.chiamate[0].idScheletro, "sk-nuovo");
+  assert.equal(s.chiamate[0].idScheletro, "skp-nuovo");
   assert.equal(s.chiamate[0].idScheda, String(scelta.value));
 });
 
@@ -135,7 +135,7 @@ test("128.4 Elimina: la conferma lo dice chiaro e la scrittura e' una sola", () 
   const s = paginaVera();
   const riga = righe(s)[1];
   tastoIn(s, riga, "Elimina").dispatchEvent(new s.dom.window.Event("click"));
-  const conf = riga.querySelector(".sk-conf");
+  const conf = riga.querySelector(".skp-conf");
   assert.ok(conf, "la conferma di Elimina si apre dentro la pagina");
   assert.ok(conf.textContent.indexOf(fraseElimina("Dorsali base", 2)) !== -1, "la frase e' quella di scheletri.js: " + conf.textContent);
   assert.ok(conf.textContent.indexOf("la scheda non si tocca") !== -1, "la conferma dice che la scheda non si tocca");
@@ -145,15 +145,15 @@ test("128.4 Elimina: la conferma lo dice chiaro e la scrittura e' una sola", () 
   si.dispatchEvent(new s.dom.window.Event("click"));
   assert.equal(s.chiamate.length, 1, "confermando parte una sola scrittura");
   assert.equal(s.chiamate[0].campo, "elimina-scheletro");
-  assert.equal(s.chiamate[0].idScheletro, "sk-vecchio");
+  assert.equal(s.chiamate[0].idScheletro, "skp-vecchio");
 });
 
 test("128.5 senza editor la pagina dice che non ha scritto niente", () => {
   const s = paginaVera({ conEditor: false });
   const riga = righe(s)[0];
   tastoIn(s, riga, "Applica a una scheda").dispatchEvent(new s.dom.window.Event("click"));
-  assert.equal(riga.querySelector(".sk-conf"), null, "senza editor non si apre nessuna conferma");
-  const esito = riga.querySelector(".sk-esito");
+  assert.equal(riga.querySelector(".skp-conf"), null, "senza editor non si apre nessuna conferma");
+  const esito = riga.querySelector(".skp-esito");
   assert.ok(esito, "la riga dell'esito c'e'");
   assert.ok(esito.textContent.indexOf("non ho scritto niente") !== -1, "l'esito lo dice: " + esito.textContent);
   assert.equal(esito.getAttribute("data-ok"), "no");
@@ -163,13 +163,50 @@ test("128.6 se le regole Firestore rifiutano, l'esito lo dice con quelle parole"
   const s = paginaVera({ risposta: { ok: false, motivo: "Missing or insufficient permissions." } });
   const riga = righe(s)[0];
   tastoIn(s, riga, "Elimina").dispatchEvent(new s.dom.window.Event("click"));
-  const conf = riga.querySelector(".sk-conf");
+  const conf = riga.querySelector(".skp-conf");
   const si = Array.from(conf.querySelectorAll("button")).filter((b) => String(b.textContent || "").trim() === "Elimina")[0];
   si.dispatchEvent(new s.dom.window.Event("click"));
   await new Promise((r) => setImmediate(r));
-  const esito = riga.querySelector(".sk-esito");
+  const esito = riga.querySelector(".skp-esito");
   assert.ok(esito, "la riga dell'esito c'e'");
   assert.ok(esito.textContent.indexOf("Le regole Firestore hanno rifiutato") !== -1, "il rifiuto si legge: " + esito.textContent);
   assert.ok(esito.textContent.indexOf("non ho toccato la scheda") !== -1);
   assert.equal(esito.getAttribute("data-ok"), "no");
+});
+
+/* extra-3D2 — il modello: lo scheletro si applica SENZA carichi. Sta qui e non
+ * nella pagina perche' e' il punto in cui i carichi potrebbero rientrare: se
+ * qualcuno aggiungesse kg o le serie della scheda, questa prova diventa rossa. */
+test("128.7 applicare lo scheletro non porta nessun carico nella scheda", () => {
+  const scheda = {
+    sheet: {
+      id: "sh-A", code: "A",
+      exercises: [
+        { id: "ex-1", name: "Rematore", progression: { weeks: [{ week: 1, sets: 4, reps: "10", kg: 60, rest: { seconds: 90 } }] } },
+        { id: "ex-2", name: "Trazioni", progression: { weeks: [{ week: 1, sets: 3, reps: "8", kg: 20 }] } }
+      ],
+      pianoScarico: { settimana: 4, volume: 40 }
+    }
+  };
+  const sk = { nome: "Spinta", esercizi: [
+    { nome: "Panca", distretto: "petto", serie: 5, ripetizioni: "6", nota: "fermo 2s", superserie: "S1", tecniche: [{ tecnica: "rest-pause", serie: 1 }] },
+    { nome: "Croci", distretto: "petto", serie: 3, ripetizioni: "12", nota: "", superserie: "", tecniche: [] }
+  ] };
+  const piano = applicaScheda(scheda, sk, { quando: "2026-11-21T10:00:00.000Z" });
+  const righe = piano.sheet.exercises;
+  assert.equal(righe.length, 3, "due esercizi piu' la riga della tecnica");
+  assert.equal(piano.sostituite, 2, "le righe sostituite sono solo gli esercizi vivi");
+  const testo = JSON.stringify(righe);
+  assert.equal(/kg/.test(testo), false, "nessun carico nella scheda applicata: " + testo);
+  assert.equal(piano.sheet.pianoScarico, undefined, "lo scarico vecchio non resta appeso");
+  const panca = righe[0];
+  assert.equal(panca.name, "Panca");
+  assert.equal(panca.progression.weeks.length, 1, "le settimane sono quelle della scheda");
+  assert.equal(String(panca.progression.weeks[0].sets), "5", "le serie arrivano dallo scheletro");
+  assert.equal(panca.progression.weeks[0].reps, "6");
+  assert.equal(panca.progression.weeks[0].source, "scheletro");
+  assert.equal(panca.progression.weeks[0].kg, undefined, "la settimana non ha kg");
+  const tec = righe.filter((r) => String(r.padreId || "") !== "");
+  assert.equal(tec.length, 1, "la riga tecnica c'e'");
+  assert.equal(tec[0].padreId, panca.id);
 });

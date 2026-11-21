@@ -54,19 +54,19 @@ export function testoEsitoScheletro(esito, azione) {
  * niente finestrelle del browser. Torna il nodo, cosi' la prova lo legge. */
 function chiediConferma(doc, riga, opzioni) {
   const o = opzioni || {};
-  const vecchio = riga.querySelector(".sk-conf");
+  const vecchio = riga.querySelector(".skp-conf");
   if (vecchio) riga.removeChild(vecchio);
-  const box = el(doc, "div", "sk-conf");
+  const box = el(doc, "div", "skp-conf");
   box.setAttribute("role", "dialog");
   box.setAttribute("aria-label", o.titolo || "conferma");
-  if (o.titolo) box.appendChild(el(doc, "p", "sk-conf-titolo", o.titolo));
-  (Array.isArray(o.righe) ? o.righe : []).forEach((t) => box.appendChild(el(doc, "p", "sk-conf-riga", t)));
-  if (o.avviso) box.appendChild(el(doc, "p", "sk-conf-avviso", o.avviso));
-  const fila = el(doc, "div", "sk-conf-fila");
-  const no = tasto(doc, "sk-btn sk-btn-no", "Annulla", "non fare niente");
+  if (o.titolo) box.appendChild(el(doc, "p", "skp-conf-titolo", o.titolo));
+  (Array.isArray(o.righe) ? o.righe : []).forEach((t) => box.appendChild(el(doc, "p", "skp-conf-riga", t)));
+  if (o.avviso) box.appendChild(el(doc, "p", "skp-conf-avviso", o.avviso));
+  const fila = el(doc, "div", "skp-conf-fila");
+  const no = tasto(doc, "skp-btn skp-btn-no", "Annulla", "non fare niente");
   no.addEventListener("click", () => { if (box.parentNode) box.parentNode.removeChild(box); });
   fila.appendChild(no);
-  const si = tasto(doc, "sk-btn sk-btn-si" + (o.rosso ? " danger" : ""), o.conferma || "Conferma", o.titolo || "conferma");
+  const si = tasto(doc, "skp-btn skp-btn-si" + (o.rosso ? " danger" : ""), o.conferma || "Conferma", o.titolo || "conferma");
   si.addEventListener("click", () => {
     if (box.parentNode) box.parentNode.removeChild(box);
     if (typeof o.onConferma === "function") o.onConferma();
@@ -79,8 +79,8 @@ function chiediConferma(doc, riga, opzioni) {
 
 /* La riga dell'esito: una sola per scheletro, si riusa. */
 function scriviEsito(doc, riga, testo, ok) {
-  let r = riga.querySelector(".sk-esito");
-  if (!r) { r = el(doc, "p", "sk-esito"); riga.appendChild(r); }
+  let r = riga.querySelector(".skp-esito");
+  if (!r) { r = el(doc, "p", "skp-esito"); riga.appendChild(r); }
   r.textContent = String(testo || "");
   r.setAttribute("data-ok", ok === true ? "si" : "no");
   return r;
@@ -97,29 +97,29 @@ function esegui(riga, promessa, azione) {
 
 /* La pagina intera: si aggancia alla linguetta come gli altri pannelli. */
 export function pannelloScheletri(doc, r) {
-  const c = el(doc, "article", "ck-card sk-carta");
+  const c = el(doc, "article", "ck-card skp-carta");
   const elenco = Array.isArray(r && r.scheletri) ? r.scheletri : [];
   const schede = Array.isArray(r && r.schede) ? r.schede.filter((s) => s && s.id) : [];
   const mod = r && r.modifica ? r.modifica : null;
 
-  c.appendChild(el(doc, "h3", "sk-titolo", "Scheletri in B"));
+  c.appendChild(el(doc, "h3", "skp-titolo", "Scheletri in B"));
   if (!elenco.length) {
-    c.appendChild(el(doc, "p", "sk-vuoto", "Nessuno scheletro salvato: si crea da un tasto \u00abSalva come scheletro\u00bb nella scheda, e da qui si applica a qualunque scheda."));
+    c.appendChild(el(doc, "p", "skp-vuoto", "Nessuno scheletro salvato: si crea da un tasto \u00abSalva come scheletro\u00bb nella scheda, e da qui si applica a qualunque scheda."));
     return c;
   }
-  c.appendChild(el(doc, "p", "sk-sub", elenco.length + (elenco.length === 1 ? " scheletro" : " scheletri") + " \u00b7 dal pi\u00f9 recente. Applicare non copia i carichi: le righe restano senza serie e ripetizioni."));
+  c.appendChild(el(doc, "p", "skp-sub", elenco.length + (elenco.length === 1 ? " scheletro" : " scheletri") + " \u00b7 dal pi\u00f9 recente. Applicare non copia i carichi: le righe restano senza serie e ripetizioni."));
 
   elenco.forEach((s) => {
-    const riga = el(doc, "div", "sk-riga");
+    const riga = el(doc, "div", "skp-riga");
     riga.setAttribute("data-sk", String(s.id == null ? "" : s.id));
-    const testa = el(doc, "div", "sk-testa");
-    testa.appendChild(el(doc, "b", "sk-nome", s.nome));
-    testa.appendChild(el(doc, "span", "sk-data", s.data || "data non registrata"));
-    testa.appendChild(el(doc, "span", "sk-conto", s.esercizi + (s.esercizi === 1 ? " esercizio" : " esercizi")));
+    const testa = el(doc, "div", "skp-testa");
+    testa.appendChild(el(doc, "b", "skp-nome", s.nome));
+    testa.appendChild(el(doc, "span", "skp-data", s.data || "data non registrata"));
+    testa.appendChild(el(doc, "span", "skp-conto", s.esercizi + (s.esercizi === 1 ? " esercizio" : " esercizi")));
     riga.appendChild(testa);
 
-    const atti = el(doc, "div", "sk-atti");
-    const scelta = el(doc, "select", "sk-scelta");
+    const atti = el(doc, "div", "skp-atti");
+    const scelta = el(doc, "select", "skp-scelta");
     scelta.setAttribute("aria-label", "scheda di destinazione per lo scheletro " + s.nome);
     if (!schede.length) {
       const v = el(doc, "option", "", "nessuna scheda in B");
@@ -135,7 +135,7 @@ export function pannelloScheletri(doc, r) {
     }
     atti.appendChild(scelta);
 
-    const applica = tasto(doc, "sk-btn sk-applica", "Applica a una scheda", "sostituisce le righe della scheda con quelle dello scheletro, senza carichi");
+    const applica = tasto(doc, "skp-btn skp-applica", "Applica a una scheda", "sostituisce le righe della scheda con quelle dello scheletro, senza carichi");
     applica.addEventListener("click", () => {
       const idScheda = String(scelta.value || "");
       const sh = schede.filter((x) => String(x.id) === idScheda)[0];
@@ -159,7 +159,7 @@ export function pannelloScheletri(doc, r) {
     });
     atti.appendChild(applica);
 
-    const elimina = tasto(doc, "sk-btn sk-elimina", "Elimina", "toglie lo scheletro dalla raccolta, non dalla scheda");
+    const elimina = tasto(doc, "skp-btn skp-elimina", "Elimina", "toglie lo scheletro dalla raccolta, non dalla scheda");
     elimina.addEventListener("click", () => {
       if (!mod || typeof mod.onCambia !== "function") {
         scriviEsito(doc, riga, "Questa pagina non ha un editor collegato: non ho scritto niente.", false);
