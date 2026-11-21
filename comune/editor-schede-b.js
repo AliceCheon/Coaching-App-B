@@ -193,6 +193,15 @@ export function creaEditorSchede(opzioni) {
       if (!letto || !letto.esiste) {
         return { ok: false, motivo: "la scheda non e' ancora in B: fai prima la copia" };
       }
+      /* B.21 commit 2 — lo scheletro non tocca la scheda: legge la struttura e
+       * scrive nella sua raccolta. Per questo sta PRIMA dei controlli della
+       * scheda (versione, peso): messo dopo, un rifiuto del peso spegneva il
+       * salvataggio e Alice vedeva solo la finestrella che si chiudeva. */
+      if (String(r.campo == null ? "" : r.campo) === "salva-scheletro") {
+        const sk = await salvaScheletroDaScheda(letto.dati, r, { db: db, uid: uid, quando: quando() });
+        if (!sk.ok) return { ok: false, motivo: sk.messaggio };
+        return { ok: true, testo: sk.messaggio, scheletro: sk.id, nome: sk.nome };
+      }
       const attesa = versioni[idScheda] == null ? versioneDi(letto.dati) : versioni[idScheda];
       const peso = misuraPeso(o.fotografia, [{ dati: letto.dati }]);
       if (!peso.sotto) return { ok: false, motivo: peso.avviso };
@@ -200,13 +209,6 @@ export function creaEditorSchede(opzioni) {
       /* serie e ripetizioni stanno sulla settimana, recupero e TUT
        * sull'esercizio: la tabella dice il campo, qui si sceglie la strada. */
       const campo = String(r.campo == null ? "" : r.campo);
-      /* B.21 commit 2 — lo scheletro non tocca la scheda: legge la struttura e
-       * scrive nella sua raccolta. Nessuna voce nel registro, nessun Annulla. */
-      if (campo === "salva-scheletro") {
-        const sk = await salvaScheletroDaScheda(letto.dati, r, { db: db, uid: uid, quando: quando() });
-        if (!sk.ok) return { ok: false, motivo: sk.messaggio };
-        return { ok: true, testo: sk.messaggio, scheletro: sk.id, nome: sk.nome };
-      }
       /* extra-3 — Applica: la scheda cambia in blocco, senza carichi. */
       if (campo === "applica-scheletro") {
         const idSk = String(r.idScheletro == null ? "" : r.idScheletro).trim();

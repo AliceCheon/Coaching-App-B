@@ -23,30 +23,30 @@ Regola di casa (guardia 42): `desktop/index.html` può differire da `pc/index.ht
 - righe 2993
 - righe 3003
 - righe 3218
-- righe 3219-3218
+- righe 3218
 - righe 3764
 - righe 3884
-- righe 4026
-- righe 4703
-- righe 4707
-- righe 5860-5868
-- righe 6564
-- righe 6939-6943
-- righe 7751-7787
-- righe 7929-7928
-- righe 7956-7983
-- righe 8028
-- righe 8074-8073
-- righe 8124-8125
-- righe 8476
-- righe 8633
-- righe 9021-9022
-- righe 9936
-- righe 10666-10675
-- righe 10786
-- righe 10788
-- righe 10790-10789
-- righe 10858-10862
+- righe 4008
+- righe 4689
+- righe 4689
+- righe 5842-5850
+- righe 6546
+- righe 6921-6925
+- righe 7733-7769
+- righe 7938-7965
+- righe 7938-7965
+- righe 8010
+- righe 8056
+- righe 8106-8107
+- righe 8458
+- righe 8615
+- righe 9003-9004
+- righe 9918
+- righe 10648-10657
+- righe 10772
+- righe 10772
+- righe 10772
+- righe 10840-10844
 : Blocchi rigenerati dal diff vero (git diff --no-index -U0 pc/index.html desktop/index.html) al passo B.20 del 16 novembre 2026: ogni numero e' quello attuale del file.
 
 : La voce di menu «Programma 1» diventa «Programma attivo · in corso», con sotto l'identificativo #nomeProgrammaAttivo per il nome letto da Firestore (modifica approvata da Alice).
@@ -1279,3 +1279,6 @@ Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spa
 - Valgono le stesse regole della compatta: Descr./Setup accorciata a 60 caratteri, etichette SS1/SS2 nella colonna JS, figlia tecnica sotto il padre con la freccetta e il nome in corsivo, spia Test col pallino, bianco e nero anche col tema scuro, riduzione del corpo fino a 7pt prima di mandare qualcosa in seconda pagina.
 - Il vecchio gestore inline del tasto (avviso a schermo e `window.print()` immediato) e' stato tolto: ora il tasto passa dal solo `stampeCollegate`, come la compatta. La stampa continua a non scrivere niente nei dati (confronto del riepilogo prima/dopo nei test).
 - Prove: `tests/100-stampa-compilare.test.mjs`, 6 controlli (selettore S1…S8 e settimana giusta nel foglio, una casella per serie con la misura 14x8 mm, superserie e figlia tecnica, colonne del modulo, due schede = due pagine senza toccare i dati, spia Test).
+- righe 3851
+- righe 3895
+- righe 3927
