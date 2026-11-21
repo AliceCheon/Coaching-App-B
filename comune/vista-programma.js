@@ -1942,10 +1942,10 @@ function schede(doc, r) {
 
   const extra = [];
   ["Stress", "Scheletri", "Analisi programmazione", "Periodizzazione"].forEach((titolo) => {
-    const spenta = titolo !== "Analisi programmazione";
+    const spenta = titolo !== "Analisi programmazione" && !(titolo === "Scheletri" && Array.isArray(r.scheletri));
     const COSA_ARRIVA = {
       Stress: "mostra lo stress percepito settimana per settimana (arriva col passo 6)",
-      Scheletri: "apre la pagina Scheletri, non ancora collegata ai salvataggi: per ora lo scheletro resta in B",
+      Scheletri: "apre la pagina Scheletri: la raccolta salvata in B, con Applica ed Elimina",
       Periodizzazione: "apre il generatore di periodizzazione: costruisce le otto settimane dai carichi",
     };
     const b = spenta
@@ -1955,7 +1955,7 @@ function schede(doc, r) {
     b.setAttribute("role", "tab");
     b.setAttribute("aria-selected", "false");
     if (!spenta) {
-      b.addEventListener("click", () => accendi(elenco.length));
+      b.addEventListener("click", () => accendi(titolo === "Scheletri" ? elenco.length + 1 : elenco.length));
       extra.push(b);
     }
     linguette.appendChild(b);
@@ -1975,6 +1975,15 @@ function schede(doc, r) {
   paneAnalisi.hidden = true;
   paneAnalisi.appendChild(analisi(doc, r));
   pannelli.appendChild(paneAnalisi);
+
+  /* extra-3 — la linguetta Scheletri: si accende solo se la vista riceve
+   * l'elenco degli scheletri (anche vuoto). Senza elenco resta spenta. */
+  if (Array.isArray(r.scheletri)) {
+    const paneScheletri = n(doc, "div", "pr-pannello");
+    paneScheletri.hidden = true;
+    paneScheletri.appendChild(pannelloScheletri(doc, r));
+    pannelli.appendChild(paneScheletri);
+  }
 
   c.appendChild(pannelli);
   accendi(0);
@@ -2143,7 +2152,10 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
     settimane: r.settimane || [],
     esercizi: r.esercizi == null ? null : r.esercizi,
     fonteSchede: r.fonteSchede || null,
-    modifica: r.modifica || null
+    modifica: r.modifica || null,
+    /* extra-3 — la raccolta degli scheletri: senza questa riga la linguetta
+     * Scheletri resta spenta anche quando la raccolta c'e'. */
+    scheletri: Array.isArray(r.scheletri) ? r.scheletri : null
   };
   contenitore.appendChild(testata(doc, pieno.modifica));
   const tre = n(doc, "div", "pr-grid");
@@ -2919,6 +2931,7 @@ function apriNonInB(doc, bottone, profilo, esito) {
 }
 
 import { nomeProposto } from "./scheletri.js";
+import { pannelloScheletri } from "./vista-scheletri.js";
 import { settimaneDiTest, settimaneTestDiRiga, testoTest } from "./settimane-test.js";
 
 /* B.21 commit 2 — «Salva come scheletro»: la struttura di QUESTA scheda,

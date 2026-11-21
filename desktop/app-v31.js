@@ -24,6 +24,7 @@ import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
+import { elencoScheletri } from "../comune/scheletri.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
@@ -537,6 +538,8 @@ export async function avvia(doc, win) {
      * desktop/diagnosi.html (temporanea) dice quali nomi usa davvero il
      * documento; quando li sapremo si collega il campo giusto. */
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
+    /* extra-3 — la linguetta Scheletri legge la raccolta arrivata con la zona B. */
+    rp.scheletri = elencoScheletri(zona.scheletri);
     const scorrimentoPrima = prendiScorrimento(doc, win);
     if (contenitore) {
       stato.ridisegni += 1;
