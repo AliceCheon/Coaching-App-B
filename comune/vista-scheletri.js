@@ -15,6 +15,7 @@
  */
 
 import { fraseApplica, fraseElimina } from "./scheletri.js";
+import { nomePulito } from "./nome-pulito.js";
 
 function el(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -113,14 +114,14 @@ export function pannelloScheletri(doc, r) {
     const riga = el(doc, "div", "skp-riga");
     riga.setAttribute("data-sk", String(s.id == null ? "" : s.id));
     const testa = el(doc, "div", "skp-testa");
-    testa.appendChild(el(doc, "b", "skp-nome", s.nome));
+    testa.appendChild(el(doc, "b", "skp-nome", nomePulito(s.nome)));
     testa.appendChild(el(doc, "span", "skp-data", s.data || "data non registrata"));
     testa.appendChild(el(doc, "span", "skp-conto", s.esercizi + (s.esercizi === 1 ? " esercizio" : " esercizi")));
     riga.appendChild(testa);
 
     const atti = el(doc, "div", "skp-atti");
     const scelta = el(doc, "select", "skp-scelta");
-    scelta.setAttribute("aria-label", "scheda di destinazione per lo scheletro " + s.nome);
+    scelta.setAttribute("aria-label", "scheda di destinazione per lo scheletro " + nomePulito(s.nome));
     if (!schede.length) {
       const v = el(doc, "option", "", "nessuna scheda in B");
       v.value = "";
@@ -150,11 +151,11 @@ export function pannelloScheletri(doc, r) {
       const sostituite = Number(sh.numeroEsercizi) >= 0 ? Number(sh.numeroEsercizi) : 0;
       chiediConferma(doc, riga, {
         titolo: "Applica lo scheletro",
-        righe: [fraseApplica(s.nome, Number(s.esercizi), sh.codice, sostituite)],
+        righe: [fraseApplica(nomePulito(s.nome), Number(s.esercizi), sh.codice, sostituite)],
         avviso: "Annulla rimette la scheda com'era: la pagina la rilegge da B.",
         conferma: "Applica",
         segno: "applica-scheletro",
-        onConferma: () => esegui(riga, mod.onCambia({ idScheda: String(sh.id), campo: "applica-scheletro", idScheletro: String(s.id), nome: s.nome }), "applica")
+        onConferma: () => esegui(riga, mod.onCambia({ idScheda: String(sh.id), campo: "applica-scheletro", idScheletro: String(s.id), nome: nomePulito(s.nome) }), "applica")
       });
     });
     atti.appendChild(applica);
@@ -167,12 +168,12 @@ export function pannelloScheletri(doc, r) {
       }
       chiediConferma(doc, riga, {
         titolo: "Elimina lo scheletro",
-        righe: [fraseElimina(s.nome, Number(s.esercizi))],
+        righe: [fraseElimina(nomePulito(s.nome), Number(s.esercizi))],
         avviso: "Le schede su cui l'hai gi\u00e0 applicato non cambiano.",
         conferma: "Elimina",
         rosso: true,
         segno: "elimina-scheletro",
-        onConferma: () => esegui(riga, mod.onCambia({ campo: "elimina-scheletro", idScheletro: String(s.id), nome: s.nome }), "elimina")
+        onConferma: () => esegui(riga, mod.onCambia({ campo: "elimina-scheletro", idScheletro: String(s.id), nome: nomePulito(s.nome) }), "elimina")
       });
     });
     atti.appendChild(elimina);

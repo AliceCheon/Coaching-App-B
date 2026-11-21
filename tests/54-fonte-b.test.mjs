@@ -102,7 +102,7 @@ test("54.1 le tre schermate leggono solo da bdB_atleti, mai da A", async () => {
   const zona = await leggiZonaBCompleta(f.db, "uid-di-prova");
   assert.equal(zona.esito.completa, true, "la zona di prova deve risultare completa");
   assert.ok(f.letture.indexOf("A:barbellDivaAccounts") === -1, "nessuna lettura dai dati di A");
-  assert.deepEqual(f.letture.slice().sort(), ["esclusioni", "fotografia:uid-di-prova", "programmi", "schede", "sedute"]);
+  assert.deepEqual(f.letture.slice().sort(), ["esclusioni", "fotografia:uid-di-prova", "programmi", "schede", "scheletri", "sedute"]);
 });
 
 test("54.2 le sedute si leggono dal campo session, con i due scarti dichiarati", async () => {
@@ -205,9 +205,9 @@ test('54.11 tutte le cinque letture partono prima che una risponda, risultato id
   const f = lettureControllate();
   const promessa = leggiZonaBCompleta(f.db, 'uid-di-prova');
   try {
-    assert.deepEqual(f.avviate, ['fotografia', 'programmi', 'schede', 'sedute', 'esclusioni']);
+    assert.deepEqual(f.avviate, ['fotografia', 'programmi', 'schede', 'sedute', 'esclusioni', 'scheletri']);
     let conclusa = false; promessa.then(() => { conclusa = true; });
-    for (const nome of ['esclusioni', 'sedute', 'schede', 'programmi']) f.pendenti[nome]();
+    for (const nome of ['esclusioni', 'sedute', 'schede', 'programmi', 'scheletri']) f.pendenti[nome]();
     await Promise.resolve(); await Promise.resolve(); assert.equal(conclusa, false, 'aspetta anche la fotografia');
     f.pendenti.fotografia();
     const atteso = await leggiZonaBCompleta(fintoZonaB(zonaPiena()).db, 'uid-di-prova');
