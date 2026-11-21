@@ -66,8 +66,13 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
     return riepilogo;
   }
 
+  /* PASSO 6f — il numero grande e' in SERIE, non in percentuale: le serie
+   * della settimana per la struttura piu' caricata. Le percentuali restano
+   * solo nella soglia di partenza e nella tacca sulla barra. */
   const piuCaricata = riepilogo.piuCaricata;
-  aggiorna(num, (piuCaricata ? Math.round(piuCaricata.percentuale) : 0) + "%");
+  aggiorna(num, piuCaricata && !riepilogo.tutteAZero
+    ? serieInParola(piuCaricata.massimo) + " serie"
+    : NON);
   aggiorna(stato, piuCaricata && !riepilogo.tutteAZero ? piuCaricata.articolazione : "non calcolabile");
   /* Tutte a zero non vuol dire «spalla 0%»: vuol dire che nessuno degli
    * esercizi letti ha dato punti (nomi non riconosciuti, o solo cardio). */
@@ -75,35 +80,45 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
     aggiorna(piu, "nessun esercizio ha dato punti");
   } else {
     aggiorna(piu, piuCaricata
-      ? piuCaricata.articolazione + " · " + Math.round(piuCaricata.percentuale) + "%"
+      ? piuCaricata.articolazione + " · " + serieInParola(piuCaricata.massimo) + " serie"
       : "non registrata");
   }
 
   /* La classifica sotto: otto righe, dalla piu' carica alla meno. */
   svuotaClassifica();
   if (classifica) {
-    const massimoPct = piuCaricata ? piuCaricata.percentuale : 0;
+    const massimoSerie = piuCaricata ? piuCaricata.massimo : 0;
     riepilogo.classifica.forEach((voce) => {
       const riga = doc.createElement("div");
       riga.className = "ck-red-r" + (voce.sopraCento ? " su" : "");
       riga.setAttribute("data-reds-r", voce.articolazione);
       const nome = doc.createElement("span");
       nome.className = "ck-red-rn";
-      nome.textContent = voce.articolazione;
+      const etichetta = doc.createElement("span");
+      etichetta.className = "ck-red-rnm";
+      etichetta.textContent = voce.articolazione;
+      const soglia = doc.createElement("span");
+      soglia.className = "ck-red-rs";
+      soglia.textContent = "soglia di partenza: " + serieInParola(voce.tolleranza);
+      nome.appendChild(etichetta);
+      nome.appendChild(soglia);
       const barra = doc.createElement("span");
       barra.className = "ck-red-rb";
       const pieno = doc.createElement("i");
-      pieno.style.width = (massimoPct > 0 ? (voce.percentuale / massimoPct) * 100 : 0).toFixed(2) + "%";
+      pieno.style.width = (massimoSerie > 0 ? (voce.massimo / massimoSerie) * 100 : 0).toFixed(2) + "%";
       barra.appendChild(pieno);
-      /* la tacca al 100% della tolleranza: c'e' solo se qualcosa lo passa */
-      if (massimoPct > 100) {
+      /* la tacca segna il 100% della tolleranza: c'e' solo se la riga lo passa */
+      if (voce.sopraCento && massimoSerie > 0) {
         const tacca = doc.createElement("em");
-        tacca.style.left = (100 / massimoPct) * 100 + "%";
+        tacca.style.left = (voce.tolleranza / massimoSerie) * 100 + "%";
+        tacca.title = "100% della tolleranza";
         barra.appendChild(tacca);
       }
       const valore = doc.createElement("span");
       valore.className = "ck-red-rv";
       valore.textContent = serieInParola(voce.massimo) + " serie";
+      riga.title = voce.articolazione + ": " + serieInParola(voce.massimo) + " serie su una soglia di partenza di "
+        + serieInParola(voce.tolleranza) + " (" + Math.round(voce.percentuale) + "% della tolleranza)";
       riga.appendChild(nome);
       riga.appendChild(barra);
       riga.appendChild(valore);
@@ -124,7 +139,7 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
       + ")" : "")
     + ".";
   const sopra = riepilogo.sopraCento.length
-    ? " Sopra il 100%: " + riepilogo.sopraCento.join(", ") + "."
+    ? " Oltre la soglia di partenza: " + riepilogo.sopraCento.join(", ") + "."
     : "";
 
   /* Su cosa e' calcolato: la settimana intera, dichiarata. */

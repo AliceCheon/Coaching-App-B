@@ -230,7 +230,11 @@ export const ALIAS = Object.freeze({
   "Rematore manubri panca 30Â°": "Rematore manubri panca 30°",
   "pulldown sbarra": "Pull down sbarra",
   "Stacco B stance con cavo": "Stacco B Stance cavo",
-  "Push ups": "Push Up"
+  "Push ups": "Push Up",
+  /* PASSO 6f: tre nomi che l'Excel scrive e il catalogo non ha */
+  "Affondo front squat machine": "Front squat machine",
+  "Pulley mono": "Pulley triangolo",
+  "Slanci laterali cavo basso": "Slanci cavo basso"
 });
 
 /* Il cardio: elencato, zero punti. Non e' un gesto articolare unico. */
@@ -326,6 +330,56 @@ export function nomeDelCatalogo(nome) {
   return { chiave: null, come: candidate.length > 1 ? "ambiguo" : null };
 }
 
+/* ---------- PASSO 6f: la schiena che PORTA carico ------------------------
+ *
+ * Un esercizio ha una principale (il muscolo che si muove) e delle secondarie.
+ * Ma nei modelli sotto la colonna lombare non «aiuta»: porta il carico con il
+ * resto del corpo. In quei casi vale 1 punto come una principale, non 0,5.
+ *
+ * I modelli, uno per uno, con il nome che finisce nel report:
+ *   squat (squat, goblet, hack, pendulum, pressa, front squat),
+ *   affondo (affondi, bulgaro),
+ *   stacco/hip hinge (stacco, RDL),
+ *   rematore (rematore, row, pendaly, krock, t bar, pulley, gentlemen),
+ *   military IN PIEDI (military, push press, lento avanti — non seduto).
+ *
+ * Il tetto di 2 punti per esercizio non si tocca: se la riga ha gia'
+ * principale + due secondarie, la seconda secondaria esce.
+ * ------------------------------------------------------------------------- */
+export const MODELLI_LOMBARE = Object.freeze([
+  { modello: "squat", prova: (n) => /squat|goblet|hack|pendulum|pressa/.test(n) },
+  { modello: "affondo", prova: (n) => /affond|bulgar/.test(n) },
+  { modello: "stacco", prova: (n) => /stacco|rdl/.test(n) },
+  /* i rematori appoggiati alla panca non portano carico sulla schiena */
+  { modello: "rematore", prova: (n) => /remator|reator|row|pendaly|krock|t bar|pulley|gentlemen/.test(n) && !/panca/.test(n) },
+  { modello: "military in piedi", prova: (n) => (/military|push press|lento avanti/.test(n) && !/panca ?70/.test(n)) }
+]);
+
+/* Il modello di carico di un nome del catalogo (null se non ne ha uno). */
+export function modelloDiCarico(nome) {
+  const n = nomeNormalizzato(nome);
+  if (!n) return null;
+  const trovato = MODELLI_LOMBARE.filter((m) => m.prova(n))[0];
+  return trovato ? trovato.modello : null;
+}
+
+/* Gli esercizi del catalogo che hanno preso il secondo principale: serve al
+ * report, perche' Alice deve vedere chi ha guadagnato peso. */
+export function eserciziConSecondoPrincipale() {
+  return chiaviCatalogo().map((chiave) => {
+    const art = articolazioniDi(chiave);
+    return {
+      catalogo: chiave,
+      modello: art.modello,
+      principale: art.principale,
+      secondarie: art.secondarie.slice(),
+      secondiPrincipali: (art.secondiPrincipali || []).slice(),
+      punti: Object.assign({}, art.punti)
+    };
+  }).filter((x) => x.secondiPrincipali.length > 0)
+    .sort((a, b) => a.catalogo.localeCompare(b.catalogo));
+}
+
 /* L'articolazione di un esercizio: { principale, secondarie, punti, cardio }.
  * Un nome che il catalogo non ha non inventa niente: resta senza articolazione
  * e lo si dice con "nonMappato". `catalogo` dice quale nome del catalogo ha
@@ -339,20 +393,29 @@ export function articolazioniDi(nome) {
   const punti = Object.create(null);
   punti[voce.p] = PUNTI_PRINCIPALE;
   voce.s.forEach((a) => { if (!punti[a]) punti[a] = PUNTI_SECONDARIA; });
-  /* Il tetto: se un giorno una voce avesse tre secondarie, la terza non entra. */
+  /* PASSO 6f: la colonna lombare che PORTA carico sale a 1 punto. */
+  const modello = modelloDiCarico(trovato.chiave);
+  const secondiPrincipali = [];
+  if (modello && punti["colonna lombare"] !== PUNTI_PRINCIPALE) {
+    punti["colonna lombare"] = PUNTI_PRINCIPALE;
+    secondiPrincipali.push("colonna lombare");
+  }
+  /* Il tetto: se si passa 2 punti, escono le secondarie piu' leggere (0,5). */
   const chiavi = Object.keys(punti);
   let somma = chiavi.reduce((acc, k) => acc + punti[k], 0);
   chiavi.sort((a, b) => punti[a] - punti[b]);
   for (let i = 0; i < chiavi.length && somma > TETTO_ESERCIZIO; i += 1) {
+    somma -= punti[chiavi[i]];
     delete punti[chiavi[i]];
-    somma -= PUNTI_SECONDARIA;
   }
   return {
     nome: canonico,
     catalogo: trovato.chiave,
     come: trovato.come,
+    modello: modello,
     principale: punti[voce.p] ? voce.p : null,
-    secondarie: voce.s.filter((a) => punti[a]),
+    secondarie: voce.s.filter((a) => punti[a] === PUNTI_SECONDARIA),
+    secondiPrincipali: secondiPrincipali,
     punti: punti,
     cardio: false,
     nonMappato: false

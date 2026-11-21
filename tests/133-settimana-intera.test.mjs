@@ -88,9 +88,9 @@ test("133.3 il numero grande è la struttura più caricata, non la media", () =>
   const dom = paginaNuova();
   const doc = dom.window.document;
   riempiRischioDaZonaBSicuro(doc, zona(settimana3, 3));
-  assert.equal(testo(doc, "[data-reds-num]"), "50%");
+  assert.equal(testo(doc, "[data-reds-num]"), "6 serie");
   assert.equal(testo(doc, "[data-reds-stato]"), "caviglia");
-  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 50%");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 6 serie");
   assert.doesNotMatch(testo(doc, "[data-reds-stato]"), /media/);
 });
 
@@ -107,7 +107,7 @@ test("133.4 la classifica scende, ha otto righe, barra sulla più carica e tacca
   riempiRischioDaZonaBSicuro(doc, zona(settimana3, 3));
   const righe = Array.from(doc.querySelectorAll("[data-reds-classifica] .ck-red-r"));
   assert.equal(righe.length, 8);
-  assert.equal(righe[0].querySelector(".ck-red-rn").textContent, "caviglia");
+  assert.equal(righe[0].querySelector(".ck-red-rnm").textContent, "caviglia");
   assert.equal(righe[0].querySelector(".ck-red-rv").textContent, "6 serie");
   assert.equal(Math.round(parseFloat(righe[0].querySelector(".ck-red-rb i").style.width)), 100, "la barra è proporzionata alla più carica");
   assert.equal(righe[0].querySelector(".ck-red-rb em"), null, "sotto il 100% la tacca non serve");
@@ -121,7 +121,7 @@ test("133.4 la classifica scende, ha otto righe, barra sulla più carica e tacca
   const prima = doc2.querySelector("[data-reds-classifica] .ck-red-r");
   assert.ok(prima.querySelector(".ck-red-rb em"), "la tacca al 100% c'è");
   assert.ok(prima.className.indexOf("su") > -1);
-  assert.equal(testo(doc2, "[data-reds-num]"), "108%");
+  assert.equal(testo(doc2, "[data-reds-num]"), "13 serie");
 });
 
 test("133.5 senza settimana determinabile: tutte le schede, e l'intervallo è scritto", () => {

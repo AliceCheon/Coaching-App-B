@@ -137,9 +137,9 @@ test("130.6 sulla pagina vera la carta mostra la struttura più caricata", () =>
   assert.ok(carta, "la carta RED-S c'è");
   assert.equal(carta.getAttribute("data-reds"), "calcolato");
   /* PASSO 6e: il numero grande e' la struttura piu' caricata, non la media */
-  assert.equal(carta.querySelector("[data-reds-num]").textContent, "42%");
+  assert.equal(carta.querySelector("[data-reds-num]").textContent, "5 serie");
   assert.equal(carta.querySelector("[data-reds-stato]").textContent, "caviglia");
-  assert.equal(carta.querySelector("[data-reds-piu]").textContent, "caviglia · 42%");
+  assert.equal(carta.querySelector("[data-reds-piu]").textContent, "caviglia · 5 serie");
   const nota = carta.querySelector("[data-reds-nota]").textContent;
   assert.match(nota, /Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza/);
   assert.match(nota, /6 righe lette/);

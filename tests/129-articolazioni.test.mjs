@@ -66,11 +66,17 @@ test("129.1 la mappa copre tutti i 179 esercizi del catalogo, con le articolazio
 });
 
 test("129.2 una principale e due secondarie danno 1 + 0,5 + 0,5 = 2, mai di piu'", () => {
+  /* PASSO 6f: nell'affondo la colonna lombare PORTA carico (1 punto), quindi
+   * le due secondarie a 0,5 escono e il tetto resta a 2. */
   const a = articolazioniDi("Affondi al multypower");
   assert.equal(a.principale, "anca");
-  assert.deepEqual(a.secondarie.slice().sort(), ["caviglia", "ginocchio"]);
+  assert.deepEqual(a.secondiPrincipali, ["colonna lombare"]);
+  assert.deepEqual(a.secondarie.slice().sort(), []);
   const totale = Object.keys(a.punti).reduce((acc, k) => acc + a.punti[k], 0);
   assert.equal(totale, 2);
+  /* una principale piu' due secondarie resta 2 quando non c'e' il carico */
+  const panca = articolazioniDi("Panca piana");
+  assert.deepEqual(Object.assign({}, panca.punti), { spalla: 1, gomito: 0.5 });
   Object.keys(MAPPA_ARTICOLARE).forEach((n) => {
     const art = articolazioniDi(n);
     const t = Object.keys(art.punti).reduce((acc, k) => acc + art.punti[k], 0);
