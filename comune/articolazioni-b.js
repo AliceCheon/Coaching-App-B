@@ -16,6 +16,7 @@
 
 import { contaNelVolume } from "./tecniche-b.js";
 import { settimaneDiEsercizio } from "./analisi-programmazione.js";
+import { TOLLERANZE } from "./tolleranze-b.js";
 
 /* Le articolazioni, nell'ordine in cui si leggono. Il collo non c'e': il
  * catalogo non ha un esercizio che lo carichi, e un'articolazione inventata
@@ -371,4 +372,69 @@ export function stressArticolazioni(scheda, opzioni) {
 export function serieInParola(v) {
   const n = Number(v) || 0;
   return (Math.round(n * 100) / 100).toString().replace(".", ",");
+}
+
+/* ---------- PASSO 6b: il riepilogo per la carta RED-S --------------------- */
+
+/* stressRiepilogo(scheda): parte da stressArticolazioni e restituisce, per ogni
+ * articolazione con una tolleranza, il carico massimo settimanale, quanto pesa
+ * sulla tolleranza (in percentuale) e in che settimana arriva il massimo.
+ * Piu' il riepilogo generale: media delle percentuali, articolazione piu'
+ * sollecitata ed elenco di quelle sopra il 100%.
+ *
+ * Se la scheda non e' leggibile non inventa zeri: leggebile = false e il
+ * motivo scritto, cosi' la carta puo' dirlo con parole sue. */
+export function stressRiepilogo(scheda) {
+  const conto = stressArticolazioni(scheda);
+  const righe = Array.isArray(scheda && scheda.esercizi) ? scheda.esercizi.length : 0;
+  if (conto.righeContate === 0) {
+    return {
+      leggibile: false,
+      motivo: righe === 0 ? "la scheda non ha esercizi da leggere" : "nessuna riga della scheda entra nel volume",
+      articolazioni: [],
+      media: null,
+      mediaIntera: null,
+      piuSollecitata: null,
+      sopraCento: [],
+      righeContate: 0
+    };
+  }
+
+  const articolazioni = ARTICOLAZIONI.filter((a) => TOLLERANZE[a] != null).map((a) => {
+    const trovata = conto.articolazioni.filter((x) => x.articolazione === a)[0] || null;
+    const settimane = trovata ? trovata.settimane : [];
+    let massimo = 0;
+    let massimoSettimana = 0;
+    settimane.forEach((v, i) => {
+      if (v > massimo) { massimo = v; massimoSettimana = i + 1; }
+    });
+    const tolleranza = TOLLERANZE[a];
+    const percentuale = (massimo / tolleranza) * 100;
+    return {
+      articolazione: a,
+      tolleranza: tolleranza,
+      massimo: massimo,
+      massimoSettimana: massimoSettimana,
+      percentuale: percentuale,
+      sopraCento: percentuale > 100
+    };
+  });
+
+  const somma = articolazioni.reduce((acc, x) => acc + x.percentuale, 0);
+  const media = articolazioni.length ? somma / articolazioni.length : null;
+  let piuSollecitata = null;
+  articolazioni.forEach((x) => {
+    if (!piuSollecitata || x.percentuale > piuSollecitata.percentuale) piuSollecitata = x;
+  });
+
+  return {
+    leggibile: true,
+    motivo: "",
+    articolazioni: articolazioni,
+    media: media,
+    mediaIntera: media == null ? null : Math.round(media),
+    piuSollecitata: piuSollecitata,
+    sopraCento: articolazioni.filter((x) => x.sopraCento).map((x) => x.articolazione),
+    righeContate: conto.righeContate
+  };
 }

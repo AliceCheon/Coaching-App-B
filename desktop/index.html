@@ -1754,17 +1754,17 @@ window.BDVAI=function(id,el){
           <header class="ck-h"><div><h4>Rischio strutturale (RED-S) <span class="ck-sub">· dal programma scritto</span></h4>
             <p>Quanto il programma stressa le strutture del corpo (0 = leggero).</p></div></header>
           <div class="ck-red-corpo">
-            <div class="ck-red-num"><b>—</b><span class="ck-pill mute">non calcolabile</span></div>
+            <div class="ck-red-num"><b data-reds-num>—</b><span class="ck-pill mute" data-reds-stato>non calcolabile</span></div>
             <div class="ck-red-bar"><i></i><em></em></div>
           </div>
           <div class="ck-dove">
             <div class="ck-dove-t">Da dove nasce</div>
-            <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l5 2v4.5c0 3-2.2 4.8-5 5.5-2.8-.7-5-2.5-5-5.5V4z"/><path d="M6 7.8l1.5 1.5L10.5 6"/></svg> <span>Articolazione più sollecitata</span><b class="mute">mappa articolare assente</b></div>
+            <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l5 2v4.5c0 3-2.2 4.8-5 5.5-2.8-.7-5-2.5-5-5.5V4z"/><path d="M6 7.8l1.5 1.5L10.5 6"/></svg> <span>Articolazione più sollecitata</span><b class="mute" data-reds-piu>mappa articolare assente</b></div>
             <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2.5"/><circle cx="8" cy="8" r=".6"/></svg> <span>Distretti in specializzazione</span><b>Spalle, Quadricipiti, Femorali</b></div>
             <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5v6M14 5v6M4.5 3.5v9M11.5 3.5v9M4.5 8h7"/></svg> <span>Volume oltre il massimo (MRV)</span><b class="mute">MRV non definiti</b></div>
           </div>
-          <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l6 10.5H2z"/><path d="M8 6.5v3M8 11.4v.1"/></svg> <span>Per calcolarlo servono due cose che il backup non ha: l'articolazione di ogni esercizio
-            e la tolleranza di recupero per articolazione. Le serie per distretto invece ci sono.</span></div>
+          <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l6 10.5H2z"/><path d="M8 6.5v3M8 11.4v.1"/></svg> <span data-reds-nota>Si calcola sulla scheda attiva con due cose che il backup non ha: l'articolazione di ogni esercizio
+            e la tolleranza di recupero per articolazione. Se la scheda non è leggibile, qui c'è il motivo invece di uno zero.</span></div>
         </article>
 
         <!-- ============ 6 · QUESTIONARI ATLETA ============ -->
