@@ -13,7 +13,6 @@
 
 import { stressRiepilogo } from "./articolazioni-b.js";
 import { programmaAttivo, settimanaCorrente } from "./lettura-dati.js";
-import { schedeDelProgrammaV2 } from "./schede-v2.js";
 import { nomePulito } from "./nome-pulito.js";
 
 const NON = "\u2014";
@@ -42,7 +41,8 @@ export function riempiRischioStrutturale(doc, scheda, opzioni) {
     aggiorna(num, NON);
     aggiorna(stato, "non calcolabile");
     aggiorna(piu, "non calcolabile");
-    aggiorna(nota, "Non calcolato: " + motivo + ". Nessuno zero al posto di un dato che manca.");
+    const diagnosi = o.diagnosi ? " " + String(o.diagnosi) : "";
+    aggiorna(nota, "Non calcolato: " + motivo + "." + diagnosi + " Nessuno zero al posto di un dato che manca.");
     carta.setAttribute("data-reds", "non-calcolabile");
     return riepilogo;
   }
@@ -60,6 +60,71 @@ export function riempiRischioStrutturale(doc, scheda, opzioni) {
     + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette)." + sopra);
   carta.setAttribute("data-reds", "calcolato");
   return riepilogo;
+}
+
+/* ---------------------------------------------------------------------------
+ * PASSO 6c-fix — le schede si cercano con tolleranza, come trovaProgramma.
+ *
+ * L'id che il profilo conosce (`programMeta.id`) non e' sempre la chiave con
+ * cui la zona B lega le schede: il documento si chiama `program-v2-meta-…`.
+ * Cercare solo l'id nudo faceva rispondere «non ha schede leggibili» anche
+ * quando le schede c'erano. Ordine: id esatto, id del documento, id in coda
+ * alla chiave, e infine l'id nudo ricavato togliendo il prefisso.
+ * La diagnosi porta i numeri, cosi' la carta spiega da sola cosa ha cercato.
+ * ------------------------------------------------------------------------- */
+function testoDi(valore) {
+  return String(valore == null ? "" : valore).trim();
+}
+
+const PREFISSO_PROGRAMMA = "program-v2-meta-";
+
+function gruppiDiSchede(ricostruzione) {
+  const per = ricostruzione && typeof ricostruzione === "object" ? ricostruzione.perProgramma : null;
+  if (!per || typeof per !== "object") return [];
+  return Object.keys(per).map((k) => per[k]).filter((g) => g && typeof g === "object");
+}
+
+function contaSchede(gruppo) {
+  if (!gruppo) return 0;
+  return (Array.isArray(gruppo.schede) ? gruppo.schede.length : 0)
+    + (Array.isArray(gruppo.archiviate) ? gruppo.archiviate.length : 0);
+}
+
+function gruppoDelProgramma(ricostruzione, programId) {
+  const id = testoDi(programId);
+  const gruppi = gruppiDiSchede(ricostruzione);
+  const chiave = (g) => testoDi(g.programId);
+  let gruppo = null;
+  let come = null;
+  if (id) {
+    gruppo = gruppi.filter((g) => chiave(g) === id)[0] || null;
+    if (gruppo) come = "id esatto";
+    if (!gruppo) {
+      gruppo = gruppi.filter((g) => chiave(g) === PREFISSO_PROGRAMMA + id)[0] || null;
+      if (gruppo) come = "id del documento";
+    }
+    if (!gruppo) {
+      gruppo = gruppi.filter((g) => chiave(g).endsWith(id))[0] || null;
+      if (gruppo) come = "id in coda alla chiave";
+    }
+    if (!gruppo && id.indexOf(PREFISSO_PROGRAMMA) === 0) {
+      const nudo = id.slice(PREFISSO_PROGRAMMA.length);
+      gruppo = gruppi.filter((g) => chiave(g) === nudo)[0] || null;
+      if (gruppo) come = "id nudo del documento";
+    }
+  }
+  return {
+    gruppo,
+    come,
+    idCercato: id,
+    gruppi: gruppi.length,
+    lette: gruppi.reduce((a, g) => a + contaSchede(g), 0),
+    legate: contaSchede(gruppo)
+  };
+}
+
+function quantiProgrammi(n) {
+  return n + (n === 1 ? " programma" : " programmi");
 }
 
 /* ---------------------------------------------------------------------------
@@ -85,21 +150,53 @@ export function schedaPerRischio(letture) {
   const elenco = Array.isArray(l) ? l : (Array.isArray(l.programmi) ? l.programmi : []);
   const attivo = programmaAttivo(elenco);
   if (!attivo || !attivo.programma) {
-    return { scheda: null, motivo: "nessun programma attivo", programma: null, settimana: null, fonte: null };
+    const cerca = gruppoDelProgramma(l.schedeV2, "");
+    return {
+      scheda: null,
+      motivo: "nessun programma attivo",
+      diagnosi: cerca.lette
+        ? "Ho letto " + cerca.lette + " schede in " + quantiProgrammi(cerca.gruppi)
+          + ", ma nessuno \u00e8 attivo: non c'\u00e8 un legame da seguire."
+        : "La zona B non portava nessuna scheda da leggere.",
+      numeri: { gruppi: cerca.gruppi, lette: cerca.lette, legate: 0, idCercato: "" },
+      programma: null,
+      settimana: null,
+      fonte: null
+    };
   }
   const programma = attivo.programma;
   /* Un programma archiviato non e' "attivo": meglio il motivo che i numeri di
    * un programma che Alice ha messo da parte. */
   if (programma.archivedAt || String(programma.status || "") === "archived") {
-    return { scheda: null, motivo: "nessun programma attivo: c'\u00e8 solo un programma archiviato", programma: programma, settimana: null, fonte: null };
+    const cerca = gruppoDelProgramma(l.schedeV2, programma.id);
+    return {
+      scheda: null,
+      motivo: "nessun programma attivo: c'\u00e8 solo un programma archiviato",
+      diagnosi: "id cercato \u00ab" + (cerca.idCercato || "nessuno") + "\u00bb: " + cerca.legate
+        + " schede legate; " + cerca.lette + " schede lette in tutto su " + quantiProgrammi(cerca.gruppi) + ".",
+      numeri: { gruppi: cerca.gruppi, lette: cerca.lette, legate: cerca.legate, idCercato: cerca.idCercato },
+      programma: programma,
+      settimana: null,
+      fonte: null
+    };
   }
   const nome = nomePulito(programma.name || programma.nome || "");
-  const gruppo = schedeDelProgrammaV2(l.schedeV2, programma.id);
+  const cerca = gruppoDelProgramma(l.schedeV2, programma.id);
+  const gruppo = cerca.gruppo;
+  const archiviate = gruppo && Array.isArray(gruppo.archiviate) ? gruppo.archiviate.length : 0;
   const schede = gruppo && Array.isArray(gruppo.schede) ? gruppo.schede.slice() : [];
+  const numeri = { gruppi: cerca.gruppi, lette: cerca.lette, legate: cerca.legate, idCercato: cerca.idCercato };
   if (!schede.length) {
+    const dove = gruppo
+      ? "gruppo trovato (" + cerca.come + ") con " + schede.length + " schede attive e "
+        + archiviate + " archiviate"
+      : "nessun gruppo trovato, 0 schede legate";
     return {
       scheda: null,
       motivo: "il programma attivo" + (nome ? " \u00ab" + nome + "\u00bb" : "") + " non ha schede leggibili",
+      diagnosi: "id cercato \u00ab" + (cerca.idCercato || "nessuno") + "\u00bb: " + dove + "; "
+        + cerca.lette + " schede lette in tutto su " + quantiProgrammi(cerca.gruppi) + ".",
+      numeri,
       programma: programma,
       settimana: null,
       fonte: null
@@ -120,6 +217,8 @@ export function schedaPerRischio(letture) {
   return {
     scheda: scelta,
     motivo: null,
+    diagnosi: null,
+    numeri,
     programma: programma,
     settimana: settimana,
     fonte: fonte,
@@ -131,6 +230,6 @@ export function schedaPerRischio(letture) {
 /* La scorciatoia usata dalla pagina: sceglie la scheda e riempie la carta. */
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
-  const riepilogo = riempiRischioStrutturale(doc, scelta.scheda, { motivo: scelta.motivo });
+  const riepilogo = riempiRischioStrutturale(doc, scelta.scheda, { motivo: scelta.motivo, diagnosi: scelta.diagnosi });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
 }

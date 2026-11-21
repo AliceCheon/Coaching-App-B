@@ -112,3 +112,58 @@ test("131.5 se la zona B non porta le schede la carta dice il motivo, non zero",
   assert.match(testo(doc, "[data-reds-nota]"), /Forza 1/);
   assert.match(testo(doc, "[data-reds-nota]"), /non ha schede leggibili/);
 });
+
+/* PASSO 6c-fix — la zona B puo' legare le schede all'id del DOCUMENTO
+ * (`program-v2-meta-…`) invece che all'id nudo del profilo: la carta deve
+ * trovarle lo stesso, e quando il legame manca davvero deve dire i numeri. */
+test("131.6 schede legate all'id del documento: si trovano e la carta calcola 22%", () => {
+  const legate = zona({
+    schedeV2: {
+      perProgramma: {
+        "program-v2-meta-p1": { programId: "program-v2-meta-p1", schede: [schedaA, schedaB], archiviate: [] }
+      },
+      totale: {}
+    }
+  });
+  const scelta = schedaPerRischio(legate);
+  assert.equal(scelta.motivo, null);
+  assert.equal(scelta.scheda.codice, "A");
+  assert.equal(scelta.numeri.legate, 2);
+
+  const dom = paginaNuova();
+  const doc = dom.window.document;
+  riempiRischioDaZonaB(doc, legate);
+  assert.equal(carta(doc).getAttribute("data-reds"), "calcolato");
+  assert.equal(testo(doc, "[data-reds-num]"), "22%");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 42%");
+
+  /* e vale anche quando la chiave e' un'altra cosa che finisce con l'id */
+  const coda = zona({
+    schedeV2: { perProgramma: { "vecchio-gruppo-p1": { programId: "vecchio-gruppo-p1", schede: [schedaA], archiviate: [] } }, totale: {} }
+  });
+  assert.equal(schedaPerRischio(coda).scheda.codice, "A");
+});
+
+test("131.7 legame davvero assente: la nota porta i numeri della diagnosi", () => {
+  const altrove = zona({
+    schedeV2: { perProgramma: { p9: { programId: "p9", schede: [schedaA, schedaB], archiviate: [schedaA] } }, totale: {} }
+  });
+  const scelta = schedaPerRischio(altrove);
+  assert.equal(scelta.scheda, null);
+  assert.match(scelta.diagnosi, /id cercato «p1»/);
+  assert.match(scelta.diagnosi, /nessun gruppo trovato, 0 schede legate/);
+  assert.match(scelta.diagnosi, /3 schede lette in tutto su 1 programma/);
+  assert.equal(scelta.numeri.lette, 3);
+  assert.equal(scelta.numeri.legate, 0);
+
+  const dom = paginaNuova();
+  const doc = dom.window.document;
+  riempiRischioDaZonaB(doc, altrove);
+  assert.equal(carta(doc).getAttribute("data-reds"), "non-calcolabile");
+  assert.equal(testo(doc, "[data-reds-num]"), "—");
+  const nota = testo(doc, "[data-reds-nota]");
+  assert.match(nota, /id cercato «p1»/);
+  assert.match(nota, /0 schede legate/);
+  assert.match(nota, /3 schede lette in tutto su 1 programma/);
+  assert.doesNotMatch(nota, /0%/);
+});
