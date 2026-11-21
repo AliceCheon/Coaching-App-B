@@ -50,14 +50,32 @@ export function riempiRischioStrutturale(doc, scheda, opzioni) {
   aggiorna(num, riepilogo.mediaIntera + "%");
   aggiorna(stato, "media delle 8 articolazioni");
   const massima = riepilogo.piuSollecitata;
-  aggiorna(piu, massima
-    ? massima.articolazione + " · " + Math.round(massima.percentuale) + "%"
-    : "non registrata");
+  /* Tutte a zero non vuol dire «spalla 0%»: vuol dire che nessuno degli
+   * esercizi letti ha dato punti (nomi non riconosciuti, o solo cardio). */
+  if (riepilogo.tutteAZero === true) {
+    aggiorna(piu, "nessun esercizio ha dato punti");
+  } else {
+    aggiorna(piu, massima
+      ? massima.articolazione + " · " + Math.round(massima.percentuale) + "%"
+      : "non registrata");
+  }
   const sopra = riepilogo.sopraCento.length
     ? " Sopra il 100%: " + riepilogo.sopraCento.join(", ") + "."
     : "";
+  /* PASSO 6c-fix-3 — i numeri veri della mappatura dei nomi, cosi' in un colpo
+   * si vede se il problema sono i nomi. I nomi passano da nomePulito perche'
+   * vengono dai dati (regola 44). */
+  const nonRiconosciuti = Array.isArray(riepilogo.nomiNonRiconosciuti) ? riepilogo.nomiNonRiconosciuti : [];
+  const nomi = nonRiconosciuti.map((n) => "\u00ab" + nomePulito(n) + "\u00bb").join(", ");
+  const mappatura = " Nomi: " + riepilogo.righeConArticolazione + " righe con articolazione, "
+    + riepilogo.righeSenza + " senza"
+    + (nonRiconosciuti.length ? " (non riconosciuti: " + nomi
+      + (riepilogo.nomiNonRiconosciutiTotale > nonRiconosciuti.length
+        ? " e altri " + (riepilogo.nomiNonRiconosciutiTotale - nonRiconosciuti.length) : "")
+      + ")" : "")
+    + ".";
   aggiorna(nota, "Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza"
-    + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette)." + sopra);
+    + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette)." + mappatura + sopra);
   carta.setAttribute("data-reds", "calcolato");
   return riepilogo;
 }
@@ -227,9 +245,30 @@ export function schedaPerRischio(letture) {
   };
 }
 
-/* La scorciatoia usata dalla pagina: sceglie la scheda e riempie la carta. */
+/* La scorciatoia usata dalla pagina: sceglie la scheda e riempie la carta.
+ * `riempiRischioDaZonaBSicuro` e' la stessa cosa, ma un difetto della carta
+ * (un conto che lancia) non deve portarsi dietro il resto della Dashboard:
+ * la nota scrive «Errore nel calcolo: <messaggio>» e la pagina va avanti. */
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
   const riepilogo = riempiRischioStrutturale(doc, scelta.scheda, { motivo: scelta.motivo, diagnosi: scelta.diagnosi });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
+}
+
+export function riempiRischioDaZonaBSicuro(doc, letture) {
+  try {
+    return riempiRischioDaZonaB(doc, letture);
+  } catch (e) {
+    const messaggio = e && e.message ? String(e.message) : String(e || "errore");
+    const carta = doc && typeof doc.querySelector === "function" ? doc.querySelector("#pag-dashboard .ck-red") : null;
+    if (carta) {
+      aggiorna(carta.querySelector("[data-reds-num]"), NON);
+      aggiorna(carta.querySelector("[data-reds-stato]"), "non calcolabile");
+      aggiorna(carta.querySelector("[data-reds-piu]"), "non calcolabile");
+      aggiorna(carta.querySelector("[data-reds-nota]"),
+        "Errore nel calcolo: " + messaggio + ". La carta si ferma qui: il resto della Dashboard non \u00e8 toccato.");
+      carta.setAttribute("data-reds", "errore");
+    }
+    return { scheda: null, motivo: "errore nel calcolo", errore: messaggio, riepilogo: null };
+  }
 }

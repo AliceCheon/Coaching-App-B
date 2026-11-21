@@ -250,14 +250,92 @@ export function eCardio(nome) {
   return CARDIO.indexOf(nomeCanonico(nome)) > -1;
 }
 
+/* ---------- PASSO 6c-fix-3: il nome puo' essere scritto un po' diverso -----
+ *
+ * Il catalogo e' congelato, ma i nomi arrivano da un file Excel e possono
+ * avere la maiuscola sbagliata, due spazi, un accento, un «1x» attaccato.
+ * La ricerca va in quest'ordine, e si ferma al primo passo che trova:
+ *   1. nome esatto (o alias dei doppioni) — come sempre;
+ *   2. nome NORMALIZZATO: minuscole, spazi compattati, accenti e punteggiatura
+ *      tolti, «1x» e simili ignorati — ma solo se la corrispondenza e' UNA;
+ *   3. il nome scritto CONTIENE una chiave del catalogo — ancora solo se e'
+ *      una sola.
+ * Se resta piu' d'un candidato non si indovina: «nonMappato», cosi' la carta
+ * puo' dirlo con i numeri invece di contare punti a caso.
+ * ------------------------------------------------------------------------- */
+export function nomeNormalizzato(nome) {
+  let s = String(nome == null ? "" : nome).toLowerCase();
+  /* gli accenti: "classìci" e "classici" sono la stessa parola */
+  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  /* «1x», «x10», «3x12»: un conto di serie non fa parte del nome */
+  s = s.replace(/\b\d+\s*[x×]\s*\d*\b/g, " ").replace(/\b[x×]\s*\d+\b/g, " ");
+  /* punteggiatura via (il grado di «45°» resta come numero), spazi compattati */
+  s = s.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  return s;
+}
+
+/* Una chiave per nome canonico: i doppioni non devono contarsi due volte. */
+let CHIAVI_CATALOGO = null;
+function chiaviCatalogo() {
+  if (CHIAVI_CATALOGO) return CHIAVI_CATALOGO;
+  const viste = Object.create(null);
+  const elenco = [];
+  Object.keys(MAPPA_ARTICOLARE).forEach((chiave) => {
+    const canonico = nomeCanonico(chiave);
+    if (viste[canonico]) return;
+    viste[canonico] = true;
+    elenco.push(canonico);
+  });
+  CHIAVI_CATALOGO = elenco;
+  return CHIAVI_CATALOGO;
+}
+
+/* Nome normalizzato -> nomi canonici che lo producono (di solito uno). */
+let INDICE_NORMALIZZATO = null;
+function indiceNormalizzato() {
+  if (INDICE_NORMALIZZATO) return INDICE_NORMALIZZATO;
+  const indice = Object.create(null);
+  chiaviCatalogo().forEach((canonico) => {
+    const n = nomeNormalizzato(canonico);
+    if (!n) return;
+    const elenco = indice[n] || (indice[n] = []);
+    if (elenco.indexOf(canonico) === -1) elenco.push(canonico);
+  });
+  INDICE_NORMALIZZATO = indice;
+  return INDICE_NORMALIZZATO;
+}
+
+/* { chiave, come }: la chiave del catalogo che corrisponde a `nome`, e per
+ * quale strada. chiave null = non riconosciuto (o ambiguo: non si indovina). */
+export function nomeDelCatalogo(nome) {
+  const canonico = nomeCanonico(nome);
+  if (MAPPA_ARTICOLARE[canonico]) return { chiave: canonico, come: "esatto" };
+  const n = nomeNormalizzato(nome);
+  if (!n) return { chiave: null, come: null };
+  const perNorma = indiceNormalizzato()[n];
+  if (perNorma && perNorma.length === 1) return { chiave: perNorma[0], come: "normalizzato" };
+  if (perNorma && perNorma.length > 1) return { chiave: null, come: "ambiguo" };
+  /* ultimo passo: il nome scritto contiene UNA chiave del catalogo */
+  let candidate = [];
+  chiaviCatalogo().forEach((chiave) => {
+    const nk = nomeNormalizzato(chiave);
+    if (nk.length < 3 || n === nk) return;
+    if (n.indexOf(nk) > -1) candidate.push(chiave);
+  });
+  if (candidate.length === 1) return { chiave: candidate[0], come: "contiene" };
+  return { chiave: null, come: candidate.length > 1 ? "ambiguo" : null };
+}
+
 /* L'articolazione di un esercizio: { principale, secondarie, punti, cardio }.
  * Un nome che il catalogo non ha non inventa niente: resta senza articolazione
- * e lo si dice con "nonMappato". */
+ * e lo si dice con "nonMappato". `catalogo` dice quale nome del catalogo ha
+ * risposto, `come` per quale strada: servono alla nota della carta. */
 export function articolazioniDi(nome) {
   const canonico = nomeCanonico(nome);
-  const voce = MAPPA_ARTICOLARE[canonico];
-  if (!voce) return { nome: canonico, principale: null, secondarie: [], punti: Object.create(null), cardio: false, nonMappato: true };
-  if (!voce.p) return { nome: canonico, principale: null, secondarie: [], punti: Object.create(null), cardio: true, nonMappato: false };
+  const trovato = nomeDelCatalogo(nome);
+  const voce = trovato.chiave ? MAPPA_ARTICOLARE[trovato.chiave] : null;
+  if (!voce) return { nome: canonico, catalogo: null, come: trovato.come, principale: null, secondarie: [], punti: Object.create(null), cardio: false, nonMappato: true };
+  if (!voce.p) return { nome: canonico, catalogo: trovato.chiave, come: trovato.come, principale: null, secondarie: [], punti: Object.create(null), cardio: true, nonMappato: false };
   const punti = Object.create(null);
   punti[voce.p] = PUNTI_PRINCIPALE;
   voce.s.forEach((a) => { if (!punti[a]) punti[a] = PUNTI_SECONDARIA; });
@@ -271,6 +349,8 @@ export function articolazioniDi(nome) {
   }
   return {
     nome: canonico,
+    catalogo: trovato.chiave,
+    come: trovato.come,
     principale: punti[voce.p] ? voce.p : null,
     secondarie: voce.s.filter((a) => punti[a]),
     punti: punti,
@@ -309,6 +389,9 @@ export function stressArticolazioni(scheda, opzioni) {
   let quante = 8;
   let righeContate = 0;
   let righeSaltate = 0;
+  let righeConArticolazione = 0;
+  let righeCardio = 0;
+  let righeNonMappate = 0;
 
   ARTICOLAZIONI.forEach((a) => {
     perArticolazione[a] = { articolazione: a, settimane: [], totale: 0, esercizi: [] };
@@ -325,8 +408,9 @@ export function stressArticolazioni(scheda, opzioni) {
     if (sett.length > quante) quante = sett.length;
 
     const art = articolazioniDi(nome);
-    if (art.cardio) { senzaPunti.push({ nome: nome, motivo: "cardio" }); return; }
-    if (art.nonMappato) { senzaPunti.push({ nome: nome, motivo: "nonMappato" }); nonMappati.push(nome); return; }
+    if (art.cardio) { senzaPunti.push({ nome: nome, motivo: "cardio" }); righeCardio += 1; return; }
+    if (art.nonMappato) { senzaPunti.push({ nome: nome, motivo: "nonMappato" }); nonMappati.push(nome); righeNonMappate += 1; return; }
+    righeConArticolazione += 1;
 
     sett.forEach((w, indice) => {
       const serie = serieDi(w);
@@ -363,7 +447,10 @@ export function stressArticolazioni(scheda, opzioni) {
     senzaPunti: senzaPunti,
     nonMappati: nonMappati,
     righeContate: righeContate,
-    righeSaltate: righeSaltate
+    righeSaltate: righeSaltate,
+    righeConArticolazione: righeConArticolazione,
+    righeCardio: righeCardio,
+    righeNonMappate: righeNonMappate
   };
 }
 
@@ -396,7 +483,13 @@ export function stressRiepilogo(scheda) {
       mediaIntera: null,
       piuSollecitata: null,
       sopraCento: [],
-      righeContate: 0
+      righeContate: 0,
+      righeConArticolazione: 0,
+      righeSenza: 0,
+      righeCardio: 0,
+      righeNonMappate: 0,
+      nomiNonRiconosciuti: [],
+      tutteAZero: false
     };
   }
 
@@ -435,6 +528,15 @@ export function stressRiepilogo(scheda) {
     mediaIntera: media == null ? null : Math.round(media),
     piuSollecitata: piuSollecitata,
     sopraCento: articolazioni.filter((x) => x.sopraCento).map((x) => x.articolazione),
-    righeContate: conto.righeContate
+    righeContate: conto.righeContate,
+    righeConArticolazione: conto.righeConArticolazione,
+    righeSenza: conto.righeCardio + conto.righeNonMappate,
+    righeCardio: conto.righeCardio,
+    righeNonMappate: conto.righeNonMappate,
+    /* i primi tre nomi che non ha riconosciuto: bastano per capire se e' il nome */
+    nomiNonRiconosciuti: conto.nonMappati.slice(0, 3),
+    nomiNonRiconosciutiTotale: conto.nonMappati.length,
+    /* tutte a zero: nessun esercizio ha dato punti (e la carta lo dice) */
+    tutteAZero: articolazioni.length > 0 && articolazioni.every((x) => x.massimo === 0)
   };
 }

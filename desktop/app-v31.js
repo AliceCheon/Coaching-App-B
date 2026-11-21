@@ -34,7 +34,7 @@ import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
-import { riempiRischioDaZonaB } from "../comune/vista-reds.js";
+import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -527,7 +527,9 @@ export async function avvia(doc, win) {
     /* Passo 6c — la carta «Rischio strutturale (RED-S)» della Dashboard legge la
      * scheda attiva dalla zona B già letta qui sopra: nessuna scrittura, nessun
      * tasto. Se non c'è un programma attivo la carta lo dice, non mostra zeri. */
-    riempiRischioDaZonaB(doc, { programmi: programmi.programmi || [], sedute: sedutePulite.sedute, schedeV2: schedeV2 });
+    /* 6c-fix-3: dentro c'è il try/catch — un difetto della carta non deve
+     * poter rompere la Dashboard. */
+    riempiRischioDaZonaBSicuro(doc, { programmi: programmi.programmi || [], sedute: sedutePulite.sedute, schedeV2: schedeV2 });
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
     const nomeVoce = doc.querySelector("#nomeProgrammaAttivo");
