@@ -370,3 +370,13 @@ test("126.18 il verbo applica-scarico-tutte: ridisegna la tabella come gli altri
   assert.equal(chiedeRilettura({ campo: "applica-scarico-tutte" }), true, "chiedeRilettura non riconosce applica-scarico-tutte");
   assert.equal(chiedeRilettura({ campo: "applica-scarico-tutte", idScheda: "sh-A" }), true, "chiedeRilettura perde il verbo quando c'e' la scheda");
 });
+
+test("126.19 il verbo applica-scheletro: ridisegna la tabella come gli altri", () => {
+  assert.equal(CAMPI_CHE_RIDISEGNANO.indexOf("applica-scheletro") !== -1, true, "applica-scheletro non e' nella lista che ridisegna");
+  assert.equal(chiedeRilettura({ campo: "applica-scheletro" }), true, "chiedeRilettura non riconosce applica-scheletro");
+});
+
+test("126.20 il verbo elimina-scheletro: anche la raccolta si ridisegna", () => {
+  assert.equal(CAMPI_CHE_RIDISEGNANO.indexOf("elimina-scheletro") !== -1, true, "elimina-scheletro non e' nella lista che ridisegna");
+  assert.equal(chiedeRilettura({ campo: "elimina-scheletro" }), true, "chiedeRilettura non riconosce elimina-scheletro");
+});

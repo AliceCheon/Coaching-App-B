@@ -33,7 +33,9 @@ export const CAMPI_CHE_RIDISEGNANO = Object.freeze([
   "superserie",
   "svuota-scheda",
   "ripristina-scheda",
-  "applica-scarico-tutte"
+  "applica-scarico-tutte",
+  "applica-scheletro",
+  "elimina-scheletro"
 ]);
 
 /* I campi che la cella mostra da sola: scrivono e NON ridisegnano. */
