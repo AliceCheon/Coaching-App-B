@@ -20,3 +20,4 @@ veloce2-6	2	tests/98-sup-giunzione.test.mjs tests/99-stampa-compatta.test.mjs
 7x-3	2	tests/74-scroll-pannello-progressioni.test.mjs tests/75-registro-array-firestore.test.mjs
 7x-4	2	tests/76-ctrl-z-registro-b.test.mjs tests/77-catalogo-selettore.test.mjs
 7x-5	2	tests/78-aggiunta-riga.test.mjs tests/79-piu-riga-selettore.test.mjs
+extra3-1	6	tests/123-guardia-ridisegno.test.mjs tests/128-scheletri.test.mjs tests/103-scheletro.test.mjs tests/118-caricatore-moduli.test.mjs
