@@ -210,3 +210,33 @@ test("128.7 applicare lo scheletro non porta nessun carico nella scheda", () => 
   assert.equal(tec.length, 1, "la riga tecnica c'e'");
   assert.equal(tec[0].padreId, panca.id);
 });
+
+/* extra-3 — la linguetta accesa: quando la vista riceve l'elenco degli
+ * scheletri (anche vuoto) la linguetta Scheletri e' viva, non porta la pillola
+ * e apre la pagina; Stress e Periodizzazione restano spente con la pillola.
+ * E' la faccia (b) della 108.4, che guarda la faccia (a): senza elenco, tutte
+ * e tre spente. */
+test("128.8 con l'elenco la linguetta Scheletri e' accesa e apre la pagina", () => {
+  const s = paginaVera();
+  const linguette = Array.from(s.doc.querySelectorAll("#programma-attivo .pr-ntab-extra"));
+  const trova = (parola) => linguette.filter((b) => String(b.textContent || "").indexOf(parola) === 0)[0];
+  const sk = trova("Scheletri");
+  assert.ok(sk, "la linguetta Scheletri c'e'");
+  assert.notEqual(sk.disabled, true, "con l'elenco la linguetta Scheletri e' viva");
+  assert.notEqual(sk.getAttribute("aria-disabled"), "true", "non e' dichiarata spenta");
+  assert.equal(sk.querySelector("i.pr-arrivo"), null, "una linguetta viva non porta la pillola");
+  assert.equal(String(sk.title || "").indexOf("in arrivo"), -1, "una linguetta viva non dice in arrivo: " + sk.title);
+  sk.dispatchEvent(new s.dom.window.Event("click"));
+  assert.equal(carta(s).parentNode.hidden, false, "la linguetta viva apre davvero la pagina Scheletri");
+  [["Stress", "stress percepito"], ["Periodizzazione", "otto settimane"]].forEach(([parola, pezzo]) => {
+    const b = trova(parola);
+    assert.ok(b, "la linguetta " + parola + " c'e'");
+    assert.equal(b.disabled, true, "la linguetta " + parola + " resta spenta");
+    assert.equal(b.getAttribute("aria-disabled"), "true", parola + " e' dichiarata spenta");
+    const p = b.querySelector("i.pr-arrivo");
+    assert.ok(p, "la linguetta " + parola + " porta la pillola in arrivo");
+    assert.equal(p.textContent, "in arrivo", "la pillola dice in arrivo");
+    assert.ok(String(b.title).indexOf("in arrivo:") !== -1, parola + " lo dichiara nel tooltip");
+    assert.ok(String(b.title).indexOf(pezzo) !== -1, parola + " spiega cosa fa: manca " + pezzo + " in " + b.title);
+  });
+});

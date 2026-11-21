@@ -44,8 +44,11 @@ function scena() {
     schedeV2: ricostruisciSchede([schedaDoc()]), indice: 0, totaleProgrammi: 1,
     oggi: new Date(Date.UTC(2026, 10, 16)), quante: 8
   });
+  /* Caso (a): la vista NON riceve l'elenco degli scheletri. Il caso (b), con
+   * l'elenco, sta nella 128.8 sulla pagina vera. */
+  delete r.scheletri;
   renderProgramma(doc, contenitore, { presente: true, numeroSedute: 0 }, Object.assign({}, r, { modifica: mod }));
-  return { doc, contenitore };
+  return { doc, contenitore, r };
 }
 
 /* Il tasto che contiene quella parola, dentro la zona indicata. */
@@ -101,11 +104,12 @@ test("108.3 Suggerimenti e Spiegazioni restano senza pillola", () => {
   });
 });
 
-test("108.4 le linguette spente portano la pillola: Stress, Scheletri, Periodizzazione", () => {
+test("108.4 senza elenco le linguette spente portano la pillola: Stress, Scheletri, Periodizzazione", () => {
   const s = scena();
+  assert.equal(Array.isArray(s.r.scheletri), false, "questa prova guarda il caso senza elenco (la faccia con l'elenco sta nella 128.8)");
   const linguette = Array.from(s.contenitore.querySelectorAll(".pr-ntab-extra"));
   const trova = (parola) => linguette.find((b) => (b.textContent || "").indexOf(parola) === 0);
-  [["Stress", "stress percepito"], ["Scheletri", "scheletro resta in B"], ["Periodizzazione", "otto settimane"]].forEach(([parola, pezzo]) => {
+  [["Stress", "stress percepito"], ["Scheletri", "raccolta salvata in B"], ["Periodizzazione", "otto settimane"]].forEach(([parola, pezzo]) => {
     const b = trova(parola);
     assert.ok(b, "la linguetta " + parola + " c'e'");
     assert.equal(b.disabled, true, "la linguetta " + parola + " resta spenta");
