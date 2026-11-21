@@ -1282,3 +1282,7 @@ Quando la superserie e' attiva, i cerchietti ab-sup per collegare/scollegare spa
 - righe 3851
 - righe 3895
 - righe 3927
+- righe 4685
+- righe 7910-7911
+- righe 10768
+- righe 10770
