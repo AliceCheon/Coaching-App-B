@@ -20,7 +20,7 @@ import { settimaneEsercizi } from "./piano-scheda.js";
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 
 import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
-import { codiceDistretto } from "./distretti-b.js";
+import { codiceDistretto, nomeDistretto } from "./distretti-b.js";
 import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
@@ -1756,70 +1756,37 @@ function analisi(doc, r) {
   const box = n(doc, "div", "t9-an");
   const schede = r.schede || [];
   const quante = settimaneDelleSchede(schede);
+  /* La tendina della settimana e' stata tolta: con la sola carta della
+   * sovrapposizione non cambierebbe un solo numero, e un comando che non
+   * cambia niente e' un comando finto. Il conto guarda tutto il blocco. */
   const testa = n(doc, "div", "t9-an-scelta");
-  testa.appendChild(n(doc, "span", "t9-sub", "Settimana:"));
-  const sel = doc.createElement("select");
-  sel.className = "t9-sel";
-  sel.setAttribute("data-analisi-settimana", "1");
-  sel.setAttribute("aria-label", "settimana da contare");
-  for (let i = 1; i <= quante; i += 1) {
-    const o = doc.createElement("option");
-    o.value = String(i);
-    o.textContent = "S" + i;
-    sel.appendChild(o);
-  }
-  const blocco = doc.createElement("option");
-  blocco.value = "blocco";
-  blocco.textContent = "tutto il blocco";
-  sel.appendChild(blocco);
-  testa.appendChild(sel);
+  testa.appendChild(n(doc, "span", "t9-sub", "Guarda tutto il blocco: qui sotto ogni distretto con le schede in cui compare."));
   box.appendChild(testa);
   const griglia = n(doc, "div", "t9-an-grid");
   box.appendChild(griglia);
   const disegna = () => {
-    const scelta = sel.value === "blocco" ? null : Number(sel.value);
-    const conto = analisiProgrammazione(schede, { settimana: scelta });
+    const conto = analisiProgrammazione(schede, { settimana: null });
     while (griglia.firstChild) griglia.removeChild(griglia.firstChild);
-    const c1 = n(doc, "div", "t9-card");
-    c1.setAttribute("data-analisi-carta", "distretti");
-    c1.appendChild(n(doc, "h4", "", "Serie per distretto"));
-    c1.appendChild(n(doc, "p", "t9-sub", conto.blocco ? "Tutte le settimane del blocco." : ("Somma delle serie della settimana " + conto.settimana + " di tutte le schede.")));
-    const totale = n(doc, "p", "t9-totale");
-    totale.setAttribute("data-analisi-totale", "1");
-    totale.textContent = String(conto.totaleSerie);
-    c1.appendChild(totale);
-    const d1 = n(doc, "div", "t9-dist");
-    if (!conto.distretti.length) {
-      d1.appendChild(n(doc, "p", "pg-vuoto", "Nessuna serie leggibile nelle schede: non si contano zeri al posto loro."));
-    } else {
-      const massimo = Math.max.apply(null, conto.distretti.map((x) => x.serie).concat([1]));
-      conto.distretti.forEach((x) => {
-        const riga = n(doc, "div", "t9-dist-r");
-        riga.appendChild(n(doc, "b", "t9-dist-c", x.codice));
-        const barra = n(doc, "i", "t9-dist-b");
-        barra.style.width = Math.round((x.serie / massimo) * 100) + "%";
-        riga.appendChild(barra);
-        riga.appendChild(n(doc, "span", "t9-dist-n", String(x.serie)));
-        d1.appendChild(riga);
-      });
-    }
-    c1.appendChild(d1);
-    const tonn = n(doc, "p", "t9-sub", "Tonnellaggio: " + tonnellaggioInParola(conto.totaleTonnellaggio, conto.tonnellaggioNoto));
-    tonn.setAttribute("data-analisi-tonnellaggio", "1");
-    c1.appendChild(tonn);
-    griglia.appendChild(c1);
+    /* Una carta sola: la "Serie per distretto" ripeteva il Riepilogo volume. */
     const c2 = n(doc, "div", "t9-card");
+    c2.setAttribute("data-analisi-carta", "sovrapposizione");
     c2.appendChild(n(doc, "h4", "", "Sovrapposizione tra schede"));
-    c2.appendChild(n(doc, "p", "t9-sub", "In quali schede compare ogni distretto: due o piu lettere = il gruppo e lavorato piu volte nel ciclo."));
+    c2.appendChild(n(doc, "p", "t9-sub", "Ogni distretto con le schede in cui compare. Quelli lavorati in piu' di una scheda sono in evidenza: e' li' che il volume si somma."));
     const d2 = n(doc, "div", "t9-ov");
     if (!conto.distretti.length) {
       d2.appendChild(n(doc, "p", "pg-vuoto", "Nessun distretto riconosciuto negli esercizi letti."));
     } else {
-      conto.distretti.forEach((x) => {
+      const ordine = conto.distretti.slice().sort((a, b) => (b.schede.length - a.schede.length) || nomeDistretto(a.codice).localeCompare(nomeDistretto(b.codice)));
+      ordine.forEach((x) => {
         const riga = n(doc, "div", "t9-ov-r");
-        riga.appendChild(n(doc, "b", "t9-dist-c", x.codice));
+        riga.setAttribute("data-analisi-distretto", x.codice);
+        riga.setAttribute("data-analisi-schede", String(x.schede.length));
+        riga.setAttribute("data-analisi-evidenza", x.schede.length > 1 ? "piu" : "una");
+        if (x.schede.length > 1) riga.style.fontWeight = "900";
+        else riga.style.opacity = "0.55";
+        riga.appendChild(n(doc, "b", "t9-dist-c", nomeDistretto(x.codice)));
         const chips = n(doc, "span", "t9-ov-s");
-        x.schede.forEach((codice) => chips.appendChild(n(doc, "span", "pr-rotchip", codice)));
+        x.schede.forEach((codice) => chips.appendChild(n(doc, "span", "pr-rotchip", "Scheda " + codice)));
         riga.appendChild(chips);
         d2.appendChild(riga);
       });
@@ -1827,7 +1794,6 @@ function analisi(doc, r) {
     c2.appendChild(d2);
     griglia.appendChild(c2);
   };
-  sel.addEventListener("change", disegna);
   disegna();
   return box;
 }
@@ -2948,14 +2914,22 @@ function apriSalvaScheletro(doc, bottone) {
     titolo: "Salva come scheletro",
     righe: ["Prendo la struttura di questa scheda: esercizi, distretto, serie, ripetizioni, nota, righe tecniche e superserie. Niente carichi e niente Logbook. Non porta la lettera: si potrà applicare a qualunque scheda."],
     campo: { etichetta: "Nome dello scheletro", valore: proposto },
-    avviso: "La pagina Scheletri non è ancora collegata: per ora lo scheletro resta in B.",
+    avviso: "Lo scheletro va nella pagina Scheletri, in B: da lì lo applichi a una scheda quando vuoi.",
     conferma: "Salva",
     segno: "salva-scheletro",
     onConferma: (scelto) => {
       const nome = String(scelto == null ? "" : scelto).trim() || proposto;
-      Promise.resolve(mod.onCambia({ idScheda: id, campo: "salva-scheletro", nome: nome }))
-        .then((esito) => mostraEsitoScheletro(doc, bottone, esito, nome))
-        .catch((e) => mostraEsitoScheletro(doc, bottone, { ok: false, motivo: (e && e.message) || "errore" }, nome));
+            /* La chiamata parte SUBITO (la prova 103.2 conta una chiamata sola al
+       * clic), ma un errore sincrono non deve piu' sparire nel nulla: prima
+       * la finestrella si chiudeva e non succedeva niente. */
+      try {
+        const attesa = mod.onCambia({ idScheda: id, campo: "salva-scheletro", nome: nome });
+        Promise.resolve(attesa)
+          .then((esito) => mostraEsitoScheletro(doc, bottone, esito, nome))
+          .catch((e) => mostraEsitoScheletro(doc, bottone, { ok: false, motivo: (e && e.message) || "errore" }, nome));
+      } catch (e) {
+        mostraEsitoScheletro(doc, bottone, { ok: false, motivo: (e && e.message) || "errore" }, nome);
+      }
     }
   });
 }

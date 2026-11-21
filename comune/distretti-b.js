@@ -33,3 +33,17 @@ export function codiceDistretto(muscolo) {
   return "\u2014";
 }
 
+/* I nomi interi dei distretti: servono a chi LEGGE una carta, non a chi conta.
+ * Stanno accanto ai codici perche' un codice con il suo nome in due posti
+ * diversi e' la strada per due nomi diversi. */
+export const NOMI_DISTRETTI = {
+  E: "Femorali", CS: "Centro schiena", D: "Dorsali", S: "Spalle", G: "Glutei",
+  B: "Bicipiti", T: "Tricipiti", P: "Pettorali", Q: "Quadricipiti e adduttori",
+  Z: "Polpacci", A: "Addominali", CA: "Cardio"
+};
+
+export function nomeDistretto(codice) {
+  const c = String(codice == null ? "" : codice).trim();
+  if (!c || c === "—") return "Muscolo non riconosciuto";
+  return NOMI_DISTRETTI[c] || c;
+}

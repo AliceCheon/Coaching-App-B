@@ -134,27 +134,36 @@ test("125.6 sulla pagina vera la tendina cambia la carta col numero della funzio
   await import("../desktop/app-v31.js");
 
   await attendiFinche(() => doc.querySelector("#programma-attivo .p8-tab"), 20000, "la tabella non si e' mai montata");
-  if (!doc.querySelector("[data-analisi-settimana]")) {
+  if (!doc.querySelector('[data-analisi-carta="sovrapposizione"]')) {
     const lingua = Array.from(doc.querySelectorAll("button")).filter((b) => String(b.textContent || "").indexOf("Analisi") !== -1)[0];
     assert.ok(lingua, "la linguetta Analisi non c'e'");
     lingua.click();
   }
-  await attendiFinche(() => doc.querySelector("[data-analisi-settimana]"), 12000, "la tendina della settimana non si e' disegnata");
-  const sel = doc.querySelector("[data-analisi-settimana]");
-  const numero = () => String((doc.querySelector("[data-analisi-totale]") || {}).textContent || "").trim();
-  const atteso = (n) => {
-    const r = analisiProgrammazione([
-      { codice: "A", esercizi: [
-        { muscolo: "dorsali", prescrizione: { elencoSettimane: otto(4, 6) } },
-        { muscolo: "dorsali", prescrizione: { elencoSettimane: otto(3, 3) } }
-      ] }
-    ], { settimana: n });
-    return String(r.totaleSerie);
-  };
-  assert.equal(sel.value, "1", "la tendina deve partire da S1");
-  assert.equal(numero(), atteso(1), "a schermo non c'e' il numero della funzione per S1: " + numero());
-  sel.value = "4";
-  sel.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-  await attendiFinche(() => numero() === atteso(4), 10000,
-    "dopo il cambio settimana la carta dice " + numero() + " invece di " + atteso(4));
+  await attendiFinche(() => doc.querySelector('[data-analisi-carta="sovrapposizione"]'), 15000, "la carta della sovrapposizione non si e' disegnata");
+  const carte = Array.from(doc.querySelectorAll("[data-analisi-carta]")).map((c) => String(c.getAttribute("data-analisi-carta")));
+  assert.deepEqual(carte.slice().sort(), ["sovrapposizione"], "deve restare una carta sola: " + carte.join(","));
+  const grigliaViva = doc.querySelector("[data-analisi-carta]").parentNode;
+  assert.equal(String(grigliaViva.textContent).indexOf("Serie per distretto"), -1, "la carta che ripeteva il volume e' ancora in pagina");
+  assert.equal(String(grigliaViva.textContent).indexOf("Somma delle serie della settimana"), -1, "la frase fissa della settimana 1 e' ancora in pagina");
+  assert.equal(doc.querySelector("[data-analisi-settimana]"), null, "la tendina della settimana non deve piu' esserci");
+  const righe = Array.from(doc.querySelectorAll("[data-analisi-distretto]"));
+  assert.ok(righe.length > 0, "nessun distretto disegnato");
+  const dorsali = righe.filter((r2) => String(r2.getAttribute("data-analisi-distretto")) === "D")[0];
+  assert.ok(dorsali, "manca il distretto D");
+  assert.match(String(dorsali.textContent), /Dorsali/, "il nome intero non c'e': " + dorsali.textContent);
+  const chips = Array.from(dorsali.querySelectorAll(".pr-rotchip")).map((c) => String(c.textContent).trim());
+  assert.ok(chips.length > 0, "il distretto D non porta nessuna scheda");
+  chips.forEach((t) => assert.match(t, /^Scheda [A-Z]$/, "scheda non scritta per esteso: " + t));
+  const conteggi = righe.map((r2) => Number(r2.getAttribute("data-analisi-schede")));
+  for (let i2 = 1; i2 < conteggi.length; i2 += 1) {
+    assert.ok(conteggi[i2 - 1] >= conteggi[i2], "l'ordine non mette prima i distretti in piu' schede: " + conteggi.join(","));
+  }
+  righe.forEach((r2) => {
+    const quanti2 = Number(r2.getAttribute("data-analisi-schede"));
+    assert.equal(r2.getAttribute("data-analisi-evidenza"), quanti2 > 1 ? "piu" : "una", "evidenza sbagliata per " + r2.getAttribute("data-analisi-distretto"));
+  });
+  const primoPiu = righe.filter((r2) => r2.getAttribute("data-analisi-evidenza") === "piu")[0];
+  if (primoPiu) assert.equal(String(primoPiu.style.fontWeight), "900", "il distretto in piu' schede non e' in evidenza");
+  const primoUno = righe.filter((r2) => r2.getAttribute("data-analisi-evidenza") === "una")[0];
+  if (primoUno) assert.ok(String(primoUno.style.opacity) === "0.55", "il distretto in una scheda sola non e' attenuato");
 });
