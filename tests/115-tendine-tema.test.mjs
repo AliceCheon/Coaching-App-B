@@ -65,7 +65,9 @@ test("115.2 le voci si leggono: contrasto oltre 4,5:1 in tutti e due i temi", ()
 
 test("115.3 la regola copre tutte le tendine dell'app, non solo quelle della testata", () => {
   /* le classi che l'app usa davvero (markup statico e righe scritte da JS) */
-  const classi = ["pr-sel", "pr-psel", "sel", "db-sel", "lb-sel", "t8-sel", "cv-cerca"];
+  /* "cv-cerca" e' uscita con la riscrittura di Curve di forza (passo 8: la
+   * sezione dichiara di non essere calcolata, quindi non ha piu' la ricerca). */
+  const classi = ["pr-sel", "pr-psel", "sel", "db-sel", "lb-sel", "t8-sel"];
   classi.forEach((classe) => {
     assert.ok(pagina.indexOf(classe) !== -1, "la classe " + classe + " non esiste piu' nella pagina: aggiorna il test");
   });
