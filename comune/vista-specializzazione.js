@@ -92,7 +92,7 @@ export function renderSpecializzazione(doc, contenitore, schede, opzioni) {
   let soloDiretto = o.soloDiretto === true;
 
   const disegna = () => {
-    const righe = righeDalleSchede(schede);
+    const righe = righeDalleSchede(schede, { esercizi: o.esercizi });
     contenitore.textContent = "";
 
     if (!Array.isArray(righe) || !righe.length) {

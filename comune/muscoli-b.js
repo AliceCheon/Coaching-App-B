@@ -17,61 +17,17 @@
  * Cosi' un esercizio nuovo di squat, domani, segue la regola da solo.
  */
 
+import {
+  DISTRETTI_MUSCOLI, catalogoBase, distrettoDaParola, normalizzaNome, risolviEsercizio
+} from "./riconoscimento-esercizio.js";
+
+/* PASSO 10: la normalizzazione del nome, le parole di A e i distretti della
+ * casa vivono in comune/riconoscimento-esercizio.js. Si riprendono qui per chi
+ * li importava da questo file: una sola copia in tutto il progetto. */
+export { DISTRETTI_MUSCOLI, distrettoDaParola, normalizzaNome };
+
 /* Le parole che fanno di un esercizio un'accosciata. */
 const PAROLE_ACCOSCIATA = ["squat", "affondo", "affondi", "bulgaro", "pressa", "pendulum", "goblet", "hack", "sissy", "front squat"];
-
-/* I distretti come li scrive la casa (le stesse etichette della scheda). */
-export const DISTRETTI_MUSCOLI = Object.freeze([
-  "Pettorali", "Dorsali", "Spalle", "Bicipiti", "Tricipiti",
-  "Quadricipiti", "Femorali", "Glutei", "Adduttori",
-  "Centro schiena", "Addominali", "Polpacci", "Cardio"
-]);
-
-/* Le parole di App A tradotte nei nostri distretti: A scrive «deltoidi
- * laterali», noi contiamo «Spalle»; A scrive «erettori spinali», noi contiamo
- * «Centro schiena». Quello che non si riconosce resta vuoto, mai indovinato. */
-const DA_PAROLA_A_DISTRETTO = [
-  [["pettorali", "pettorale", "petto", "chest"], "Pettorali"],
-  [["dorsali", "dorsale", "dorso", "lat", "gran dorsale"], "Dorsali"],
-  [["deltoidi", "deltoide", "spalle", "spalla"], "Spalle"],
-  [["bicipiti", "bicipite", "brachiali", "brachiale"], "Bicipiti"],
-  [["tricipiti", "tricipite"], "Tricipiti"],
-  [["quadricipiti", "quadricipite", "quads"], "Quadricipiti"],
-  [["femorali", "femorale", "hamstring", "ischio"], "Femorali"],
-  [["glutei", "gluteo"], "Glutei"],
-  [["adduttori", "adduttore"], "Adduttori"],
-  [["erettori", "lombari", "centro schiena", "schiena", "trapezio"], "Centro schiena"],
-  [["addominali", "addome", "obliqui", "core"], "Addominali"],
-  [["polpacci", "polpaccio", "calf"], "Polpacci"],
-  [["cardio", "corsa"], "Cardio"]
-];
-
-/* Come si legge un nome di esercizio: minuscolo, senza accenti, con gli spazi
- * al posto di trattini e trattini bassi. «Pressa45°_piedi_alti» e
- * «pressa45 piedi alti» sono lo stesso esercizio. */
-export function normalizzaNome(nome) {
-  return String(nome == null ? "" : nome)
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[\u00b0\u00ba]/g, "")
-    .replace(/[_\-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/* Una parola di A, il nostro distretto (o stringa vuota). */
-export function distrettoDaParola(parola) {
-  const t = " " + normalizzaNome(parola) + " ";
-  if (t.trim() === "") return "";
-  for (let i = 0; i < DA_PAROLA_A_DISTRETTO.length; i += 1) {
-    const chiavi = DA_PAROLA_A_DISTRETTO[i][0];
-    for (let k = 0; k < chiavi.length; k += 1) {
-      if (t.indexOf(chiavi[k]) !== -1) return DA_PAROLA_A_DISTRETTO[i][1];
-    }
-  }
-  return "";
-}
 
 export function eAccosciata(nome) {
   const t = " " + normalizzaNome(nome) + " ";
@@ -177,25 +133,50 @@ const PER_NOME = (() => {
   return mappa;
 })();
 
-/* I muscoli di un esercizio, o null se non e' in mappa. `distrettoNoto` e' il
- * gruppo che la scheda porta gia': serve da primario quando la mappa non c'e',
- * cosi' un esercizio senza secondari conta comunque come diretto. */
-export function muscoliEsercizio(nome, distrettoNoto) {
-  const k = normalizzaNome(nome);
-  const voce = k ? PER_NOME[k] : null;
-  const noto = distrettoDaParola(distrettoNoto) || "";
+/* Le chiavi della mappa, per il resolver. */
+let CHIAVI_MAPPA = null;
+function chiaviMappa() {
+  if (CHIAVI_MAPPA) return CHIAVI_MAPPA;
+  CHIAVI_MAPPA = Object.keys(PER_NOME);
+  return CHIAVI_MAPPA;
+}
+
+/* I muscoli di un esercizio, o null se non si riconosce in nessun modo.
+ *
+ * PASSO 10: il nome passa dal riconoscimento unico (esatto -> alias -> contiene
+ * -> contenuto), quindi «PULLEY   MONO» e «Affondo front squat machine» danno
+ * gli stessi muscoli del nome esatto. Se la mappa non ha il nome, la voce del
+ * catalogo dei 179 dà almeno il distretto; se nemmeno quella, il distretto che
+ * la riga porta già. Quello che resta sconosciuto torna null: chi chiama lo
+ * dichiara, e nessun punto si inventa.
+ *
+ * `eserciziZonaB` è facoltativo: la collezione esercizi della zona B, se chi
+ * chiama la ha letta. Serve solo per i nomi che né la mappa né il catalogo
+ * conoscono. */
+export function muscoliEsercizio(nome, distrettoNoto, eserciziZonaB) {
+  const mappa = risolviEsercizio(nome, { voci: chiaviMappa() });
+  const voce = mappa.chiave ? PER_NOME[normalizzaNome(mappa.chiave)] : null;
   if (voce) {
     const primari = voce.primari.slice();
+    const noto = distrettoDaParola(distrettoNoto) || "";
     if (!primari.length && noto) primari.push(noto);
-    return { primari, secondari: voce.secondari.slice(), fonte: voce.fonte };
+    return { primari, secondari: voce.secondari.slice(), fonte: voce.fonte, come: mappa.come, catalogo: mappa.chiave };
   }
-  if (noto) return { primari: [noto], secondari: [], fonte: "distretto della scheda" };
+  const catalogo = risolviEsercizio(nome, { voci: catalogoBase(), distretto: distrettoNoto, eserciziZonaB });
+  if (catalogo.distretto) {
+    return {
+      primari: [catalogo.distretto],
+      secondari: [],
+      fonte: catalogo.fonte === "catalogo esercizi" ? "catalogo esercizi" : catalogo.fonte,
+      come: catalogo.come,
+      catalogo: catalogo.chiave || null
+    };
+  }
   return null;
 }
 
 export function inMappa(nome) {
-  const k = normalizzaNome(nome);
-  return Boolean(k && PER_NOME[k]);
+  return Boolean(risolviEsercizio(nome, { voci: chiaviMappa() }).chiave);
 }
 
 /* Quanti esercizi la mappa conosce e quanti hanno i secondari. */

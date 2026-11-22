@@ -13,7 +13,7 @@ Ogni blocco qui sotto e un pezzo di diff vero fra `pc/index.html` (il v31 congel
 
 ### Passo 8 - via i numeri del mockup da Curve di forza, Pianificazione, Misure e Dashboard
 
-Curve di forza: sezione ridotta a `data-curva="non-calcolata"`. Pianificazione: `#pianificazione-viva` con `renderPianificazione`/`riepilogoPianificazione` e CSS `.pz-*`. Misure: via `__BDSEED`. Dashboard: readiness a trattino, «non registrato», nessuna media inventata.
+Curve di forza: sezione ridotta a `data-curva="non-calcolata"`. Pianificazione: `#pianificazione-viva` con `renderPianificazione`/`riepilogoPianificazione` e CSS `.pz-*`. Misure: non si seminano piu' le misure di esempio. Dashboard: readiness a trattino, «non registrato», nessuna media inventata.
 
 ### Riparazione del passo 8 - le quattro tab tornate al v31
 
@@ -42,9 +42,9 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1907-1907 — <article class="ck-card">
 - righe 1909-1911 — <p>carico per articolazione · la tacca sarebbe il 100% del
 - righe 2132-2132 — <div class="ms-who"><b>Alice Clemente</b> · 178 cm · 31 an
-- righe 2256-2257 — window.__BDSEED={"config": {"altezza": 178, "sesso": "d", 
-- righe 2329-2329 — var S=(typeof window!=="undefined")?window.__BDSEED:null;
-- righe 2337-2337 — var S=(typeof window!=="undefined")?window.__BDSEED:null;
+- righe 2256-2257 — window.(seme di esempio)={"config": {"altezza": 178, "sesso": "d", 
+- righe 2329-2329 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
+- righe 2337-2337 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
 - righe 2883-2883 — #lb-nota-b
 - righe 2897-2900 — var sed=(window.BD_LB_SEED&&window.BD_LB_SEED.sedute)//[];
 - righe 2914-2914 — var cand=sed.filter(function(x){return x.d===dd;});
@@ -82,7 +82,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 7987-7987 — window.BD_LB_SEED = {"fonte":"backup del 30/10/2026","sedu
 - righe 8144-8144 — ese.push('<div class="lb-ex"><b>' + sc(e.n) + '</b>' + (wi
 - righe 8532-8533 — ['#pr-print1','#pr-print2'].forEach(function(id){
-- righe 8986-8986 — var SEED = window.__BDSEED // {config:{}, sessioni:[]};
+- righe 8986-8986 — var SEED = window.(seme di esempio) // {config:{}, sessioni:[]};
 - righe 9447-9447 — '<div class="ese-chips2"><span class="chlat">\u21c4 DX/SX<
 - righe 10177-10186 — // Passo 30: nei campi si lascia al browser la cronologia 
 - righe 10295-10296 — /* === Fase B2: Archivio + Curve dal logbook (dati veri, c

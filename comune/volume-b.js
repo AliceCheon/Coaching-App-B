@@ -276,7 +276,9 @@ export function contaVolume(righe, opzioni) {
  * Qui si aggancia anche la mappa dei muscoli: nome esercizio -> primari e
  * secondari. Senza voce in mappa resta il distretto della scheda, e la riga
  * conta solo come diretta. */
-export function righeDalleSchede(schede) {
+export function righeDalleSchede(schede, opzioni) {
+  const o = opzioni && typeof opzioni === "object" ? opzioni : {};
+  const eserciziZonaB = Array.isArray(o.esercizi) ? o.esercizi : null;
   const out = [];
   const elenco = Array.isArray(schede) ? schede : [];
   elenco.forEach((scheda) => {
@@ -286,7 +288,7 @@ export function righeDalleSchede(schede) {
       if (!e || typeof e !== "object" || e.deletedAt) return;
       const nome = testo(e.n != null ? e.n : primoCampo(e, CAMPI_VOLUME.nome));
       const distretto = testo(primoCampo(e, CAMPI_VOLUME.distretto));
-      const muscoli = muscoliEsercizio(nome, distretto);
+      const muscoli = muscoliEsercizio(nome, distretto, eserciziZonaB);
       const comune = {
         id: testo(primoCampo(e, CAMPI_VOLUME.id)),
         padreId: testo(primoCampo(e, CAMPI_VOLUME.padre)),

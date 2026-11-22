@@ -118,7 +118,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
   const soloDiretto = o.soloDiretto === true;
 
   const disegna = () => {
-    const righe = righeDalleSchede(schede);
+    const righe = righeDalleSchede(schede, { esercizi: o.esercizi });
     const conto = contaVolume(righe, { quante, soloDiretto });
     contenitore.textContent = "";
 

@@ -17,6 +17,7 @@
 import { contaNelVolume } from "./tecniche-b.js";
 import { settimaneDiEsercizio } from "./analisi-programmazione.js";
 import { TOLLERANZE } from "./tolleranze-b.js";
+import { ALIAS_NOMI, nomeCanonico, nomeNormalizzato, normalizzaNome, risolviEsercizio } from "./riconoscimento-esercizio.js";
 
 /* Le articolazioni, nell'ordine in cui si leggono. Il collo non c'e': il
  * catalogo non ha un esercizio che lo carichi, e un'articolazione inventata
@@ -215,70 +216,15 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Y raises cavo alto": { p: "spalla", s: ["colonna toracica"] }
 });
 
-/* I doppioni: stesso esercizio, nome scritto due volte nel catalogo (carattere
- * rovinato, maiuscola, spazio). La destra e' il nome che si conta. */
-export const ALIAS = Object.freeze({
-  "Alzata laterale su panca inclinata 30Â°": "Alzata laterale su panca inclinata 30°",
-  "Alzate laterali + alzate frontali panca 70Â°": "Alzate laterali + alzate frontali panca 70°",
-  "Crunch gambe 90Â°": "Crunch gambe 90°",
-  "Curls martello panca inlinata 45Â°": "Curls martello panca inlinata 45°",
-  "Curls panca 45Â°": "Curls panca 45°",
-  "French press panca 40Â°": "French press panca 40°",
-  "Military al multypower panca70Â°": "Military al multypower panca70°",
-  "Pressa 45Â°": "Pressa 45°",
-  "Pressa45Â° piedi alti schienale chiuso": "Pressa45° piedi alti schienale chiuso",
-  "Rematore manubri panca 30Â°": "Rematore manubri panca 30°",
-  "pulldown sbarra": "Pull down sbarra",
-  "Stacco B stance con cavo": "Stacco B Stance cavo",
-  "Push ups": "Push Up",
-  /* PASSO 6f: tre nomi che l'Excel scrive e il catalogo non ha */
-  "Affondo front squat machine": "Front squat machine",
-  "Pulley mono": "Pulley triangolo",
-  "Slanci laterali cavo basso": "Slanci cavo basso"
-});
+/* PASSO 10: i doppioni e la tolleranza dei nomi stanno in un posto solo —
+ * comune/riconoscimento-esercizio.js. Qui restano le articolazioni. Il nome
+ * normalizzato e i due nomi canonici si riprendono da lì, così chi li importava
+ * da questo file continua a trovarli senza una seconda copia. */
+export { nomeCanonico, nomeNormalizzato };
+export { ALIAS_NOMI as ALIAS };
 
-/* Il cardio: elencato, zero punti. Non e' un gesto articolare unico. */
-export const CARDIO = Object.freeze([
-  "Burbees", "Cardio tapins + corsa", "Ellittica", "Sprawl", "Tabata",
-  "Tapins Roulant", "Vogatore"
-]);
-
-/* Il nome che si conta davvero: se e' un doppione, il suo nome canonico. */
-export function nomeCanonico(nome) {
-  const n = String(nome == null ? "" : nome).trim();
-  const a = ALIAS[n];
-  return a ? a : n;
-}
-
-export function eCardio(nome) {
-  return CARDIO.indexOf(nomeCanonico(nome)) > -1;
-}
-
-/* ---------- PASSO 6c-fix-3: il nome puo' essere scritto un po' diverso -----
- *
- * Il catalogo e' congelato, ma i nomi arrivano da un file Excel e possono
- * avere la maiuscola sbagliata, due spazi, un accento, un «1x» attaccato.
- * La ricerca va in quest'ordine, e si ferma al primo passo che trova:
- *   1. nome esatto (o alias dei doppioni) — come sempre;
- *   2. nome NORMALIZZATO: minuscole, spazi compattati, accenti e punteggiatura
- *      tolti, «1x» e simili ignorati — ma solo se la corrispondenza e' UNA;
- *   3. il nome scritto CONTIENE una chiave del catalogo — ancora solo se e'
- *      una sola.
- * Se resta piu' d'un candidato non si indovina: «nonMappato», cosi' la carta
- * puo' dirlo con i numeri invece di contare punti a caso.
- * ------------------------------------------------------------------------- */
-export function nomeNormalizzato(nome) {
-  let s = String(nome == null ? "" : nome).toLowerCase();
-  /* gli accenti: "classìci" e "classici" sono la stessa parola */
-  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  /* «1x», «x10», «3x12»: un conto di serie non fa parte del nome */
-  s = s.replace(/\b\d+\s*[x×]\s*\d*\b/g, " ").replace(/\b[x×]\s*\d+\b/g, " ");
-  /* punteggiatura via (il grado di «45°» resta come numero), spazi compattati */
-  s = s.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-  return s;
-}
-
-/* Una chiave per nome canonico: i doppioni non devono contarsi due volte. */
+/* Le chiavi del catalogo articolare, una per nome canonico (i doppioni del
+ * catalogo contano una volta). */
 let CHIAVI_CATALOGO = null;
 function chiaviCatalogo() {
   if (CHIAVI_CATALOGO) return CHIAVI_CATALOGO;
@@ -294,40 +240,11 @@ function chiaviCatalogo() {
   return CHIAVI_CATALOGO;
 }
 
-/* Nome normalizzato -> nomi canonici che lo producono (di solito uno). */
-let INDICE_NORMALIZZATO = null;
-function indiceNormalizzato() {
-  if (INDICE_NORMALIZZATO) return INDICE_NORMALIZZATO;
-  const indice = Object.create(null);
-  chiaviCatalogo().forEach((canonico) => {
-    const n = nomeNormalizzato(canonico);
-    if (!n) return;
-    const elenco = indice[n] || (indice[n] = []);
-    if (elenco.indexOf(canonico) === -1) elenco.push(canonico);
-  });
-  INDICE_NORMALIZZATO = indice;
-  return INDICE_NORMALIZZATO;
-}
-
-/* { chiave, come }: la chiave del catalogo che corrisponde a `nome`, e per
- * quale strada. chiave null = non riconosciuto (o ambiguo: non si indovina). */
+/* Il nome del catalogo che risponde per un nome scritto, e per quale dei
+ * quattro passi: chiave null = sconosciuto o ambiguo (non si indovina). */
 export function nomeDelCatalogo(nome) {
-  const canonico = nomeCanonico(nome);
-  if (MAPPA_ARTICOLARE[canonico]) return { chiave: canonico, come: "esatto" };
-  const n = nomeNormalizzato(nome);
-  if (!n) return { chiave: null, come: null };
-  const perNorma = indiceNormalizzato()[n];
-  if (perNorma && perNorma.length === 1) return { chiave: perNorma[0], come: "normalizzato" };
-  if (perNorma && perNorma.length > 1) return { chiave: null, come: "ambiguo" };
-  /* ultimo passo: il nome scritto contiene UNA chiave del catalogo */
-  let candidate = [];
-  chiaviCatalogo().forEach((chiave) => {
-    const nk = nomeNormalizzato(chiave);
-    if (nk.length < 3 || n === nk) return;
-    if (n.indexOf(nk) > -1) candidate.push(chiave);
-  });
-  if (candidate.length === 1) return { chiave: candidate[0], come: "contiene" };
-  return { chiave: null, come: candidate.length > 1 ? "ambiguo" : null };
+  const trovato = risolviEsercizio(nome, { voci: Object.keys(MAPPA_ARTICOLARE) });
+  return { chiave: trovato.chiave, come: trovato.come };
 }
 
 /* ---------- PASSO 6f: la schiena che PORTA carico ------------------------
