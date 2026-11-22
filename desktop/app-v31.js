@@ -24,6 +24,8 @@ import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
+import { riepilogoPianificazione } from "../comune/pianificazione.js";
+import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { elencoScheletri } from "../comune/scheletri.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
@@ -540,6 +542,20 @@ export async function avvia(doc, win) {
       oggi: new Date(),
       quante: 8
     });
+    /* Passo 8 — la Pianificazione disegna la rotazione che i logbook dimostrano,
+     * non piu' il calendario del mockup. Se il programma non ha un nome, la
+     * vista lo dichiara: qui non si inventa niente. */
+    const piazzaP = doc.querySelector("#pianificazione-viva");
+    if (piazzaP) {
+      const progAttivo = attivo && attivo.programma ? attivo.programma : null;
+      renderPianificazione(doc, piazzaP, {
+        programma: progAttivo ? {
+          nome: progAttivo.name || progAttivo.nome || "",
+          esplicito: Boolean(progAttivo.active || String(progAttivo.status || "") === "active"),
+          settimana: null
+        } : null
+      }, riepilogoPianificazione(sedutePulite.sedute, { oggi: new Date(), quante: 8, settimane: 8 }));
+    }
     /* La Fase: se il campo del documento ripete il nome del programma, non è
      * una fase. Non lo mostro: il campo resta a «non registrato». La pagina
      * desktop/diagnosi.html (temporanea) dice quali nomi usa davvero il
