@@ -550,7 +550,7 @@ export async function avvia(doc, win) {
       const progAttivo = attivo && attivo.programma ? attivo.programma : null;
       renderPianificazione(doc, piazzaP, {
         programma: progAttivo ? {
-          nome: progAttivo.name || progAttivo.nome || "",
+          nome: nomePulito(progAttivo.name || progAttivo.nome || ""),
           esplicito: Boolean(progAttivo.active || String(progAttivo.status || "") === "active"),
           settimana: null
         } : null

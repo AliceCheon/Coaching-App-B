@@ -257,18 +257,87 @@ export function prestazioniUltime(sedute, codici) {
   return out;
 }
 
+/* ---------------------------------------------------------------------------
+ * PASSO 9 — la ricerca delle schede, una sola per tutte le schermate.
+ *
+ * La zona B puo' legare le schede in due modi: al campo `programId` che porta
+ * l'id del programma (`prg111`), oppure all'id del DOCUMENTO che le contiene
+ * (`program-v2-meta-prg111`). Cercare solo l'id nudo faceva rispondere «non ha
+ * schede leggibili» anche quando le schede c'erano: Riepilogo volume,
+ * Specializzazione e la carta RED-S restavano vuoti.
+ *
+ * Ordine dichiarato: id esatto -> prefisso + id -> chiave che finisce con
+ * l'id -> id nudo ricavato togliendo il prefisso. Entra la ricostruzione,
+ * esce il gruppo con i numeri della ricerca: nessuna scrittura, nessun DOM.
+ * ------------------------------------------------------------------------- */
+export const PREFISSO_PROGRAMMA = "program-v2-meta-";
+
+function testoChiave(valore) {
+  return String(valore == null ? "" : valore).trim();
+}
+
+function gruppiSchede(schedeV2) {
+  const per = schedeV2 && typeof schedeV2 === "object" ? schedeV2.perProgramma : null;
+  if (!per || typeof per !== "object") return [];
+  return Object.keys(per).map((k) => per[k]).filter((g) => g && typeof g === "object");
+}
+
+export function contaSchedeGruppo(gruppo) {
+  if (!gruppo) return 0;
+  return (Array.isArray(gruppo.schede) ? gruppo.schede.length : 0)
+    + (Array.isArray(gruppo.archiviate) ? gruppo.archiviate.length : 0);
+}
+
+export function schedePerProgramma(schedeV2, profilo) {
+  const id = testoChiave(profilo && typeof profilo === "object" ? profilo.id : profilo);
+  const gruppi = gruppiSchede(schedeV2);
+  const chiave = (g) => testoChiave(g.programId);
+  let gruppo = null;
+  let come = null;
+  if (id) {
+    gruppo = gruppi.filter((g) => chiave(g) === id)[0] || null;
+    if (gruppo) come = "id esatto";
+    if (!gruppo) {
+      gruppo = gruppi.filter((g) => chiave(g) === PREFISSO_PROGRAMMA + id)[0] || null;
+      if (gruppo) come = "id del documento";
+    }
+    if (!gruppo) {
+      gruppo = gruppi.filter((g) => chiave(g).endsWith(id))[0] || null;
+      if (gruppo) come = "id in coda alla chiave";
+    }
+    if (!gruppo && id.indexOf(PREFISSO_PROGRAMMA) === 0) {
+      const nudo = id.slice(PREFISSO_PROGRAMMA.length);
+      gruppo = gruppi.filter((g) => chiave(g) === nudo)[0] || null;
+      if (gruppo) come = "id nudo del documento";
+    }
+  }
+  return {
+    gruppo,
+    come,
+    idCercato: id,
+    gruppi: gruppi.length,
+    lette: gruppi.reduce((a, g) => a + contaSchedeGruppo(g), 0),
+    legate: contaSchedeGruppo(gruppo)
+  };
+}
+
 export function riepilogoProgramma(programma, sedute, opzioni) {
   const o = opzioni || {};
   const profilo = profiloProgramma(programma);
   const dalDocumento = profilo.presente ? schedeDelProgramma(programma) : null;
-  const v2 = o.schedeV2 && o.schedeV2.perProgramma ? (o.schedeV2.perProgramma[profilo.id] || null) : null;
+  /* PASSO 9: la ricerca tollerante sta in `schedePerProgramma`, la stessa che
+   * usa la carta RED-S. Cercare solo `perProgramma[profilo.id]` lasciava
+   * `schede` null quando la zona B legava le schede all'id del documento. */
+  const cercaV2 = schedePerProgramma(o.schedeV2, profilo);
+  const v2 = cercaV2.gruppo;
   let schede = dalDocumento;
   let archiviate = [];
   let fonteSchede = dalDocumento ? "documento del programma (v1)" : null;
   if ((!schede || !schede.length) && v2) {
-    schede = v2.schede;
-    archiviate = v2.archiviate || [];
-    fonteSchede = "documenti v2 · program-v2-sheet- / -exercise-";
+    schede = Array.isArray(v2.schede) ? v2.schede : [];
+    archiviate = Array.isArray(v2.archiviate) ? v2.archiviate : [];
+    fonteSchede = "documenti v2 · program-v2-sheet- / -exercise-"
+      + (cercaV2.come ? " · legame: " + cercaV2.come : "");
   }
   let schedeMotivo = null;
   if (schede === null) {
@@ -301,6 +370,13 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
     archiviate,
     schedeMotivo,
     fonteSchede,
+    legameSchede: {
+      come: cercaV2.come,
+      idCercato: cercaV2.idCercato,
+      gruppi: cercaV2.gruppi,
+      lette: cercaV2.lette,
+      legate: cercaV2.legate
+    },
     rotazione,
     codiciVisti,
     osservato,
