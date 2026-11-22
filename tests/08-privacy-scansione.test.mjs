@@ -16,6 +16,9 @@ function tuttiFile(dir = radice, elenco = []) {
     if (nome === "node_modules" || nome === ".git" || nome === "tests" || nome === "tests-vecchio-b0.39" || nome === "pc" || nome === "package-lock.json" || nome === "package.json") continue;
     const percorso = join(dir, nome);
     const info = statSync(percorso);
+    /* La dichiarazione delle differenze dal v31 CITA le righe tolte (seme
+     * compreso): e' un documento di ciò che si è rimosso, non un sorgente. */
+    if (percorso === join(radice, "docs", "differenze-dal-v31.md")) continue;
     if (info.isDirectory()) tuttiFile(percorso, elenco);
     else if (/\.(js|mjs|html|webmanifest|md|sh)$/.test(nome)) elenco.push(percorso);
   }

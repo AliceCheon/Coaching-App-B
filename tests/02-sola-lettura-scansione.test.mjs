@@ -26,6 +26,9 @@ function fileSorgente(dir = radice, elenco = []) {
     if (nome === "node_modules" || nome === ".git" || nome === "package-lock.json") continue;
     const percorso = join(dir, nome);
     const info = statSync(percorso);
+    /* La dichiarazione delle differenze dal v31 CITA le righe tolte: per
+     * forza contiene il seme e le scritture che documenta. Non e' sorgente. */
+    if (percorso === join(radice, "docs", "differenze-dal-v31.md")) continue;
     if (info.isDirectory()) fileSorgente(percorso, elenco);
     else if (/\.(js|mjs|html|webmanifest|md|sh|json)$/.test(nome) && !nome.startsWith("package")) elenco.push(percorso);
   }
