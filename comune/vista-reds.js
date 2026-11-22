@@ -143,22 +143,7 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
     : "";
 
   /* Su cosa e' calcolato: la settimana intera, dichiarata. */
-  let apertura;
-  const calcolo = o.calcolo && typeof o.calcolo === "object" ? o.calcolo : null;
-  if (calcolo) {
-    const codici = Array.isArray(calcolo.codici) ? calcolo.codici.filter((c) => String(c == null ? "" : c).trim()) : [];
-    const quante = elenco.length;
-    const dove = codici.length ? "sedute " + codici.join(", ") : (quante === 1 ? "1 scheda" : quante + " schede");
-    apertura = calcolo.settimana != null && codici.length
-      ? "Calcolato sulle " + dove + " della settimana " + calcolo.settimana
-      : "Calcolato su tutte le schede del programma" + (codici.length ? " (" + codici.join(", ") + ")" : "");
-    apertura += " \u2014 " + quante + (quante === 1 ? " seduta" : " sedute")
-      + ", " + riepilogo.righeContate + " righe lette.";
-  } else {
-    apertura = "Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza"
-      + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette).";
-  }
-  aggiorna(nota, apertura + mappatura + sopra);
+  aggiorna(nota, aperturaCalcolo(riepilogo, elenco, o) + mappatura + sopra);
   carta.setAttribute("data-reds", "calcolato");
   return riepilogo;
 }
@@ -354,12 +339,118 @@ export function schedaPerRischio(letture) {
  * `riempiRischioDaZonaBSicuro` e' la stessa cosa, ma un difetto della carta
  * (un conto che lancia) non deve portarsi dietro il resto della Dashboard:
  * la nota scrive «Errore nel calcolo: <messaggio>» e la pagina va avanti. */
+/* L'apertura della nota: su cosa e' calcolato. Una sola funzione, cosi' le
+ * due carte (RED-S e Stress allenamento) dicono la stessa frase. */
+function aperturaCalcolo(riepilogo, elenco, o) {
+  const calcolo = o && o.calcolo && typeof o.calcolo === "object" ? o.calcolo : null;
+  if (calcolo) {
+    const codici = Array.isArray(calcolo.codici) ? calcolo.codici.filter((c) => String(c == null ? "" : c).trim()) : [];
+    const quante = elenco.length;
+    const dove = codici.length ? "sedute " + codici.join(", ") : (quante === 1 ? "1 scheda" : quante + " schede");
+    let apertura = calcolo.settimana != null && codici.length
+      ? "Calcolato sulle " + dove + " della settimana " + calcolo.settimana
+      : "Calcolato su tutte le schede del programma" + (codici.length ? " (" + codici.join(", ") + ")" : "");
+    apertura += " \u2014 " + quante + (quante === 1 ? " seduta" : " sedute")
+      + ", " + riepilogo.righeContate + " righe lette.";
+    return apertura;
+  }
+  return "Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza"
+    + " (serie equivalenti a settimana, " + riepilogo.righeContate + " righe lette).";
+}
+
+/* PASSO 6h — la carta «Stress allenamento»: le otto articolazioni.
+ *
+ * Riceve il riepilogo GIA' calcolato da stressSettimana: nessun secondo conto,
+ * quindi gli stessi numeri della carta RED-S. Otto righe, dalla piu' caricata
+ * alla meno, con la tacca della soglia di partenza solo dove la struttura la
+ * passa. Se il riepilogo non e' leggibile la carta dice il motivo, come il RED-S.
+ */
+export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
+  const o = opzioni && typeof opzioni === "object" ? opzioni : {};
+  const carta = doc.querySelector("#pag-dashboard .ck-st");
+  if (!carta) return null;
+  const righe = carta.querySelector("[data-stress-righe]");
+  const nota = carta.querySelector("[data-stress-nota]");
+  const svuota = () => {
+    if (!righe) return;
+    while (righe.firstChild) righe.removeChild(righe.firstChild);
+  };
+
+  if (!riepilogo || riepilogo.leggibile !== true) {
+    const motivo = o.motivo
+      ? String(o.motivo)
+      : ((riepilogo && riepilogo.motivo) || "la scheda non si riesce a leggere");
+    svuota();
+    aggiorna(nota, "Non calcolato: " + motivo + ". Nessuno zero al posto di un dato che manca.");
+    carta.setAttribute("data-stress", "non-calcolabile");
+    return riepilogo;
+  }
+
+  const piuCaricata = riepilogo.piuCaricata;
+  const massimoSerie = piuCaricata ? piuCaricata.massimo : 0;
+  svuota();
+  riepilogo.classifica.forEach((voce) => {
+    const riga = doc.createElement("div");
+    riga.className = "ck-st-r" + (voce.sopraCento ? " su" : "");
+    riga.setAttribute("data-stress-r", voce.articolazione);
+    const nome = doc.createElement("span");
+    nome.className = "ck-st-rn";
+    const etichetta = doc.createElement("span");
+    etichetta.className = "ck-st-rnm";
+    etichetta.textContent = voce.articolazione;
+    const soglia = doc.createElement("span");
+    soglia.className = "ck-st-rs";
+    soglia.textContent = "soglia di partenza: " + serieInParola(voce.tolleranza);
+    nome.appendChild(etichetta);
+    nome.appendChild(soglia);
+    const barra = doc.createElement("span");
+    barra.className = "ck-st-rb";
+    const pieno = doc.createElement("i");
+    pieno.style.width = (massimoSerie > 0 ? (voce.massimo / massimoSerie) * 100 : 0).toFixed(2) + "%";
+    barra.appendChild(pieno);
+    /* la tacca segna il 100% della tolleranza: c'e' solo se la riga lo passa */
+    if (voce.sopraCento && massimoSerie > 0) {
+      const tacca = doc.createElement("em");
+      tacca.style.left = (voce.tolleranza / massimoSerie) * 100 + "%";
+      tacca.title = "100% della tolleranza";
+      barra.appendChild(tacca);
+    }
+    const valore = doc.createElement("span");
+    valore.className = "ck-st-rv";
+    valore.textContent = serieInParola(voce.massimo) + " serie";
+    riga.title = voce.articolazione + ": " + serieInParola(voce.massimo) + " serie su una soglia di partenza di "
+      + serieInParola(voce.tolleranza) + " (" + Math.round(voce.percentuale) + "% della tolleranza)";
+    riga.appendChild(nome);
+    riga.appendChild(barra);
+    riga.appendChild(valore);
+    if (righe) righe.appendChild(riga);
+  });
+
+  const elenco = Array.isArray(o.schede) ? o.schede.filter((x) => x && typeof x === "object") : [];
+  const sopra = riepilogo.sopraCento.length
+    ? " Oltre la soglia di partenza: " + riepilogo.sopraCento.join(", ") + "."
+    : "";
+  aggiorna(nota, aperturaCalcolo(riepilogo, elenco, o)
+    + " Le otto articolazioni, dalla pi\u00f9 caricata alla meno: le serie sono le stesse"
+    + " della carta Rischio strutturale, un conto solo."
+    + (riepilogo.tutteAZero === true ? " Nessun esercizio letto ha dato punti." : sopra));
+  carta.setAttribute("data-stress", "calcolato");
+  return riepilogo;
+}
+
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
   const riepilogo = riempiRischioStrutturale(doc, scelta.schede, {
     motivo: scelta.motivo,
     diagnosi: scelta.diagnosi,
     calcolo: scelta.calcolo
+  });
+  /* PASSO 6h — la carta «Stress allenamento» legge LO STESSO riepilogo:
+   * un conto solo, quindi gli stessi numeri. */
+  riempiStressArticolazioni(doc, riepilogo, {
+    motivo: scelta.motivo,
+    calcolo: scelta.calcolo,
+    schede: scelta.schede
   });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
 }
@@ -378,6 +469,9 @@ export function riempiRischioDaZonaBSicuro(doc, letture) {
         "Errore nel calcolo: " + messaggio + ". La carta si ferma qui: il resto della Dashboard non \u00e8 toccato.");
       carta.setAttribute("data-reds", "errore");
     }
+    try {
+      riempiStressArticolazioni(doc, null, { motivo: "errore nel calcolo: " + messaggio });
+    } catch (e2) { /* la carta stress non deve fermare il resto della Dashboard */ }
     return { scheda: null, motivo: "errore nel calcolo", errore: messaggio, riepilogo: null };
   }
 }

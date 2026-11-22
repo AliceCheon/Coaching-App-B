@@ -620,6 +620,18 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .ck-red-rb em{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--testo);opacity:.55}
 .ck-red-r.su .ck-red-rv{color:#F08080}
 .ck-red-rv{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.ck-st-cla{margin-top:9px;display:flex;flex-direction:column;gap:5px}
+.ck-st-cla:empty{display:none}
+.ck-st-r{display:grid;grid-template-columns:112px 1fr 54px;align-items:center;gap:8px;font-size:10px}
+.ck-st-rn{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ck-st-rnm{color:var(--testo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-st-rs{font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-st-rb{position:relative;height:6px;border-radius:3px;background:#2A1A36;overflow:visible}
+.ck-st-rb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accento,#FF4FA3)}
+.ck-st-rb em{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--testo);opacity:.55}
+.ck-st-r.su .ck-st-rv{color:#F08080}
+.ck-st-rv{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.ck-st-nota{margin-top:8px;font-size:9px;line-height:1.4;color:var(--muted)}
 .ck-dove{margin-top:11px;border-top:1px solid var(--linea);padding-top:9px;display:flex;flex-direction:column;gap:6px}
 .ck-dove-t{font-size:8.6px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .ck-dove-r{display:flex;align-items:center;gap:7px;font-size:10.2px}
@@ -1891,15 +1903,11 @@ window.BDVAI=function(id,el){
               <div class="ck-spec">              <div class="ck-riga"><span class="ck-badge">S</span><span class="ck-nome">Spalle</span><span class="ck-bar"><i style="width:100%;background:#FF4FA3"></i></span><span class="ck-num">18 ser</span></div>              <div class="ck-riga"><span class="ck-badge">Q</span><span class="ck-nome">Quadricipiti</span><span class="ck-bar"><i style="width:61%;background:#A855F7"></i></span><span class="ck-num">11 ser</span></div>              <div class="ck-riga"><span class="ck-badge">F</span><span class="ck-nome">Femorali</span><span class="ck-bar"><i style="width:56%;background:#C9A7FF"></i></span><span class="ck-num">10 ser</span></div></div>
               <button class="ck-link" type="button" data-vai="volume">Apri analisi completa →</button>
             </article>
-            <article class="ck-card">
+            <article class="ck-card ck-st">
               <header><h4>Stress allenamento</h4>
-                <p>carico per articolazione · la tacca sarebbe il 100% della tolleranza</p></header>
-              <div class="ck-vuoto-c">
-                <span class="ck-ic-vuoto">!</span>
-                <div><b>Non mappato</b><p>35 esercizi su 35 non hanno un'articolazione
-                associata nel backup: senza quella mappa le barre sarebbero decorative.</p></div>
-              </div>
-              <button class="ck-link spento" type="button" disabled>Serve la mappa articolare</button>
+                <p>serie equivalenti a settimana per articolazione · la tacca è la soglia di partenza</p></header>
+              <div class="ck-st-cla" data-stress-righe></div>
+              <p class="ck-st-nota" data-stress-nota>Calcolo in corso…</p>
             </article>
           </aside>
         </div>
