@@ -149,9 +149,11 @@ function montaPagina(db, uid) {
   return {
     doc: doc, riga: riga, ponte: ponte,
     area: riga.querySelector("[data-anamnesi=\"area\"]"),
+    modifica: riga.querySelector("[data-anamnesi=\"modifica\"]"),
     salva: riga.querySelector("[data-anamnesi=\"salva\"]"),
     annulla: riga.querySelector("[data-anamnesi=\"annulla\"]"),
-    nota: riga.querySelector("[data-anamnesi=\"nota\"]")
+    nota: riga.querySelector("[data-anamnesi=\"nota\"]"),
+    rifattoTesto: () => riga.querySelector("[data-anamnesi=\"testo\"]")
   };
 }
 
@@ -166,6 +168,10 @@ test("144.1 clic vero su Salva: una scrittura, e dopo la ricarica il testo e' an
   const db = fintoDb();
   const pagina = montaPagina(db, "uid-1");
   assert.equal(pagina.nota.textContent, "non dichiarato");
+  assert.equal(pagina.area.style.display, "none", "a riposo niente area modificabile");
+
+  pagina.modifica.onclick();
+  assert.equal(pagina.area.style.display, "block", "il tasto apre l'area");
 
   pagina.area.value = "lombalgia cronica, fastidio al ginocchio destro";
   pagina.area.oninput();
@@ -180,10 +186,15 @@ test("144.1 clic vero su Salva: una scrittura, e dopo la ricarica il testo e' an
   assert.equal(voce.campo, "anamnesi-lite");
   assert.equal(voce.dopo, "lombalgia cronica, fastidio al ginocchio destro");
   assert.match(pagina.nota.textContent, /^Salvato alle \d\d:\d\d$/, pagina.nota.textContent);
+  assert.equal(pagina.riga.getAttribute("data-modo-anamnesi"), "letto", "Salva chiude e torna in sola lettura");
+  assert.equal(pagina.area.style.display, "none");
+  assert.equal(pagina.riga.querySelector("[data-anamnesi=\"quando\"]").textContent, "dichiarato il 23/11/2026 alle 14:00");
 
   /* ricarica: la pagina riparte da zero e legge il registro */
   const dopo = await ricarica(db, "uid-1");
-  assert.equal(dopo.area.value, "lombalgia cronica, fastidio al ginocchio destro", "dopo la ricarica il testo c'e' ancora");
+  assert.equal(dopo.riga.getAttribute("data-modo-anamnesi"), "letto", "dopo la ricarica e' in sola lettura");
+  assert.equal(dopo.rifattoTesto().textContent, "lombalgia cronica, fastidio al ginocchio destro");
+  assert.equal(dopo.area.style.display, "none", "nessuna area modificabile a riposo");
   assert.match(dopo.nota.textContent, /^Salvato alle /);
   assert.equal(dopo.salva.disabled, true, "niente da salvare: il testo e' quello letto");
 });
@@ -195,6 +206,7 @@ test("144.2 il registro nega la lettura: «non ho potuto leggere», non «non di
   assert.ok(/^Non ho potuto leggere la dichiarazione: permission-denied/.test(testo), testo);
   assert.ok(testo.indexOf("non dichiarato") === -1, "non deve mai dire «non dichiarato» se la lettura e' fallita");
   assert.equal(pagina.salva.disabled, true, "senza lettura non si sovrascrive niente");
+  assert.equal(pagina.modifica.style.display, "none", "niente tasto Modifica senza lettura");
 
   const letto = await caricaDichiarazione(db, "uid-1");
   assert.equal(letto.ok, false);
@@ -205,6 +217,7 @@ test("144.2 il registro nega la lettura: «non ho potuto leggere», non «non di
 test("144.3 il registro nega la scrittura: «Non ho salvato» sotto il tasto", async () => {
   const db = fintoDb({ permesso: { registro: "write" } });
   const pagina = montaPagina(db, "uid-1");
+  pagina.modifica.onclick();
   pagina.area.value = "ginocchio destro";
   pagina.area.oninput();
   await pagina.salva.onclick();
@@ -217,6 +230,7 @@ test("144.4 scritto ma riletto diverso: lo dice, non fa finta di niente", async 
   /* il finto «perde» una parola: simula una scrittura che non torna com'e' */
   const db = fintoDb({ trasforma: (dati) => Object.assign({}, dati, { dopo: "ginocchio" }) });
   const pagina = montaPagina(db, "uid-1");
+  pagina.modifica.onclick();
   pagina.area.value = "ginocchio destro e spalla";
   pagina.area.oninput();
   await pagina.salva.onclick();
@@ -224,23 +238,27 @@ test("144.4 scritto ma riletto diverso: lo dice, non fa finta di niente", async 
   assert.ok(pagina.nota.textContent.indexOf("ginocchio") !== -1);
 });
 
-test("144.5 Annulla: torna il testo di prima, e la ricarica lo conferma", async () => {
+test("144.5 Annulla chiude senza scrivere, e resta il testo letto", async () => {
   const db = fintoDb();
   const pagina = montaPagina(db, "uid-1");
+  pagina.modifica.onclick();
   pagina.area.value = "lombalgia";
   pagina.area.oninput();
   await pagina.salva.onclick();
-  pagina.area.value = "lombalgia e ginocchio";
-  pagina.area.oninput();
-  await pagina.salva.onclick();
-  assert.equal(Object.keys(db.store.registro).length, 2);
+  assert.equal(Object.keys(db.store.registro).length, 1);
 
   const dopo = await ricarica(db, "uid-1");
-  assert.equal(dopo.area.value, "lombalgia e ginocchio");
-  await dopo.annulla.onclick();
-  assert.equal(Object.keys(db.store.registro).length, 3, "l'annullamento e' una voce, non una cancellazione");
-  assert.equal(dopo.area.value, "lombalgia", "il campo torna al testo di prima");
+  assert.equal(dopo.rifattoTesto().textContent, "lombalgia");
+  dopo.modifica.onclick();
+  dopo.area.value = "lombalgia e ginocchio";
+  dopo.area.oninput();
+  dopo.annulla.onclick();
+
+  assert.equal(Object.keys(db.store.registro).length, 1, "Annulla non scrive NIENTE: il registro resta di una voce");
+  assert.equal(dopo.riga.getAttribute("data-modo-anamnesi"), "letto", "e chiude l'area");
+  assert.equal(dopo.area.value, "lombalgia", "il campo torna al testo letto");
+  assert.equal(dopo.rifattoTesto().textContent, "lombalgia");
 
   const terza = await ricarica(db, "uid-1");
-  assert.equal(terza.area.value, "lombalgia", "e dopo la ricarica resta quello");
+  assert.equal(terza.rifattoTesto().textContent, "lombalgia", "dopo la ricarica resta quello che c'era");
 });

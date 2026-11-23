@@ -550,7 +550,6 @@ let tokenAnamnesi = 0;
     let ponteAnamnesi = null;
     const disegnaAnamnesi = (st) => montaCampoAnamnesi(doc, st.dichiarazione, {
       onSalva: (t2) => ponteAnamnesi.salva(t2),
-      onAnnulla: () => ponteAnamnesi.annulla(),
       erroreLettura: st.erroreLettura || zona.registroErrore || null,
       esito: st.esito,
       token: st.token,

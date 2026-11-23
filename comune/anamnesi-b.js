@@ -264,6 +264,14 @@ export function oraBreve(quando) {
   return t2 ? t2 : "";
 }
 
+/* La data come la legge una persona: 23/11/2026 da una data ISO. */
+export function dataBreve(quando) {
+  const t2 = testo(quando);
+  const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(t2);
+  if (m) return m[3] + "/" + m[2] + "/" + m[1];
+  return "";
+}
+
 /* Il salvataggio: UNA voce di registro, con prima, dopo e le due versioni.
  * Non scrive: la voce la consegna la pagina a scriviVoceRegistro.
  *

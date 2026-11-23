@@ -186,23 +186,46 @@ test("143.5 Annulla: una voce che cita la sua e rimette il testo di prima", () =
   assert.equal(annullaAnamnesi(dichiarazioneDalRegistro([])).ok, false, "senza dichiarazione non c'e' niente da annullare");
 });
 
-test("143.6 il campo: esito sempre presente, Salva spento quando il testo e' identico", () => {
+test("143.6 il campo: a riposo sola lettura, il tasto apre, Salva spento se il testo e' identico", () => {
   const { doc, riga } = paginaAnamnesi();
   let salvato = null;
   montaCampoAnamnesi(doc, null, { onSalva: (t) => { salvato = t; } });
   const area = riga.querySelector("[data-anamnesi=\"area\"]");
   const salva = riga.querySelector("[data-anamnesi=\"salva\"]");
   const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
-  assert.ok(area && salva && nota, "area, Salva e la riga d'esito ci sono");
-  assert.equal(nota.textContent, "non dichiarato", "senza dichiarazione la riga dice «non dichiarato»");
+  const modifica = riga.querySelector("[data-anamnesi=\"modifica\"]");
+  assert.ok(area && salva && nota && modifica, "area, Salva, la riga d'esito e il tasto ci sono");
+
+  /* PASSO 14e — a riposo: area e tasti nascosti, nessuna area modificabile */
+  assert.equal(riga.getAttribute("data-modo-anamnesi"), "letto");
+  assert.equal(area.style.display, "none", "a riposo niente area modificabile");
+  assert.equal(riga.querySelector("[data-anamnesi=\"tasti\"]").style.display, "none", "a riposo niente tasti");
+  assert.equal(modifica.textContent, "Dichiara", "senza dichiarazione il tasto dice «Dichiara»");
+  assert.equal(riga.querySelector("[data-anamnesi=\"testo\"]").textContent, "non dichiarato");
+  assert.equal(nota.textContent, "non dichiarato", "la riga d'esito dice «non dichiarato»");
+
+  /* il tasto apre */
+  modifica.onclick();
+  assert.equal(riga.getAttribute("data-modo-anamnesi"), "modifica");
+  assert.equal(area.style.display, "block");
   assert.equal(salva.disabled, true, "Salva spento: non c'e' niente da salvare");
 
   area.value = "ginocchio destro";
   area.oninput();
   assert.equal(salva.disabled, false, "con testo nuovo Salva si accende");
-  area.oninput();
   salva.onclick();
   assert.equal(salvato, "ginocchio destro");
+
+  /* Annulla chiude senza scrivere */
+  let annullate = 0;
+  montaCampoAnamnesi(doc, null, { onAnnulla: () => { annullate += 1; } });
+  riga.querySelector("[data-anamnesi=\"modifica\"]").onclick();
+  area.value = "spalla";
+  area.oninput();
+  riga.querySelector("[data-anamnesi=\"annulla\"]").onclick();
+  assert.equal(annullate, 0, "Annulla non chiama nessuna scrittura");
+  assert.equal(riga.getAttribute("data-modo-anamnesi"), "letto");
+  assert.equal(area.value, "", "torna al testo letto");
 });
 
 test("143.7 la riga mostra l'esito ricevuto e non lo perde al ridisegno", () => {
@@ -212,6 +235,12 @@ test("143.7 la riga mostra l'esito ricevuto e non lo perde al ridisegno", () => 
   const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
   assert.equal(nota.textContent, "Salvato alle 14:04");
   assert.equal(oraBreve("2026-11-23T14:04:00.000Z"), "14:04");
+
+  /* a riposo: il testo salvato, la data dichiarata e la nota riconosciute */
+  assert.equal(riga.querySelector("[data-anamnesi=\"testo\"]").textContent, "lombalgia");
+  assert.equal(riga.querySelector("[data-anamnesi=\"quando\"]").textContent, "dichiarato il 23/11/2026 alle 14:04");
+  assert.equal(riga.querySelector("[data-anamnesi=\"riconosciute\"]").textContent, "Riconosciute: colonna lombare.");
+  assert.equal(riga.querySelector("[data-anamnesi=\"modifica\"]").textContent, "Modifica");
 
   /* ridisegno con lo stesso token: l'esito resta */
   montaCampoAnamnesi(doc, dich, { token: 1, esito: null });

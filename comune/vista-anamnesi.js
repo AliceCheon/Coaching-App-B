@@ -1,23 +1,26 @@
-/* Barbell Diva B — PASSO 14d: il campo «Patologie o infortuni».
+/* Barbell Diva B — PASSO 14e: a riposo si legge, si modifica su richiesta.
  *
- * In Dati cliente → Anamnesi → Salute la riga «Patologie o infortuni» e'
- * un'area di testo con «Salva» e «Annulla», e nient'altro: il resto
- * dell'anamnesi resta in sola lettura con «non registrato».
+ * In Dati cliente → Anamnesi → Salute la riga «Patologie o infortuni» mostra,
+ * a riposo, LA DICHIARAZIONE SALVATA come testo: niente area modificabile,
+ * niente tasti di salvataggio. Sotto: «dichiarato il 23/11/2026 alle 14:12»
+ * (dalla voce di registro) oppure «non dichiarato», e la nota di quel che si
+ * e' riconosciuto («Riconosciute: colonna lombare, ginocchio»), che serve a
+ * colpo d'occhio. A destra un tasto solo: «Modifica», o «Dichiara» se non
+ * c'e' ancora niente.
+ *
+ * «Modifica» apre l'area di testo con Salva e Annulla e la riga d'esito.
+ * Salva chiude e torna in sola lettura («Salvato alle HH:MM» + «dichiarato
+ * il …»); Annulla torna al testo letto e chiude SENZA scrivere.
+ *
+ * Se il registro non si e' letto non c'e' nessun tasto: la riga dice
+ * «non ho potuto leggere la dichiarazione: <motivo>». Mai «non dichiarato»
+ * quando la lettura e' fallita: nullo ≠ errore.
  *
  * Il markup del v31 (desktop/index.html) NON si tocca: la riga si sostituisce
  * da qui, dentro il pannello che c'e' gia'. Cosi' la guardia 42 resta verde.
- *
- * Accanto ai due tasti c'e' SEMPRE una riga d'esito:
- *   «Salvato alle HH:MM» · «Non ho salvato: <motivo>» · «non dichiarato» ·
- *   «Non ho potuto leggere la dichiarazione: <motivo>» · «Sto salvando…».
- * Resta finche' non cambia il testo. L'errore sta qui, accanto al campo, non
- * solo nella riga di stato in cima alla pagina.
- *
- * Questo modulo non scrive e non legge: riceve `onSalva(testo)` e `onAnnulla()`
- * dalla pagina, e ridisegna solo quello che gli viene detto.
  */
 
-import { riconosciArticolazioni, NON_DICHIARATO } from "./anamnesi-b.js";
+import { riconosciArticolazioni, NON_DICHIARATO, oraBreve, dataBreve } from "./anamnesi-b.js";
 import { testoEsito } from "./anamnesi-viva.js";
 
 function nodo(doc, tag, classe, testo) {
@@ -25,6 +28,11 @@ function nodo(doc, tag, classe, testo) {
   if (classe) e.className = classe;
   if (testo != null) e.textContent = String(testo);
   return e;
+}
+
+function stile(e, mappa) {
+  if (!e || !e.style) return;
+  Object.keys(mappa).forEach((k) => { e.style[k] = mappa[k]; });
 }
 
 function pannelloAnamnesi(doc) {
@@ -66,6 +74,84 @@ export function notaRiconoscimento(riconosciute) {
   return pezzi.join(" ");
 }
 
+/* Quando e' stata dichiarata: «dichiarato il 23/11/2026 alle 14:12». */
+export function quandoDichiarato(quando) {
+  const data = dataBreve(quando);
+  const ora = oraBreve(quando);
+  if (data && ora) return "dichiarato il " + data + " alle " + ora;
+  if (data) return "dichiarato il " + data;
+  if (ora) return "dichiarata alle " + ora;
+  return "";
+}
+
+/* La struttura si costruisce una volta sola; da li' in poi si aggiorna.
+ * `riga.modoAnamnesi` e' «letto» oppure «modifica». */
+function costruisci(doc, riga) {
+  while (riga.firstChild) riga.removeChild(riga.firstChild);
+  riga.setAttribute("data-anamnesi", "campo");
+  stile(riga, { display: "block", alignItems: "stretch" });
+
+  const testata = nodo(doc, "div", "dc-anam-r1");
+  stile(testata, { display: "flex", gap: "8px", alignItems: "center", justifyContent: "space-between" });
+  const etichetta = nodo(doc, "b", "", "Patologie o infortuni");
+  const modifica = nodo(doc, "button", "dc-btn ghost", "Modifica");
+  modifica.setAttribute("type", "button");
+  modifica.setAttribute("data-anamnesi", "modifica");
+  testata.appendChild(etichetta);
+  testata.appendChild(modifica);
+  riga.appendChild(testata);
+
+  const corpoLetto = nodo(doc, "div", "dc-anam-letto");
+  stile(corpoLetto, { display: "block", marginTop: "4px" });
+  const testoEl = nodo(doc, "span", "dc-anam-val", "");
+  testoEl.setAttribute("data-anamnesi", "testo");
+  stile(testoEl, { display: "block", font: "600 12.5px/1.5 inherit", whiteSpace: "pre-wrap" });
+  const quandoEl = nodo(doc, "span", "", "");
+  quandoEl.setAttribute("data-anamnesi", "quando");
+  stile(quandoEl, { display: "block", marginTop: "2px", font: "600 10.5px/1.5 inherit", opacity: ".8" });
+  const riconEl = nodo(doc, "span", "", "");
+  riconEl.setAttribute("data-anamnesi", "riconosciute");
+  stile(riconEl, { display: "block", marginTop: "2px", font: "600 10.5px/1.5 inherit", color: "rgba(255,224,102,.92)" });
+  corpoLetto.appendChild(testoEl);
+  corpoLetto.appendChild(quandoEl);
+  corpoLetto.appendChild(riconEl);
+  riga.appendChild(corpoLetto);
+
+  const area = nodo(doc, "textarea", "dc-anam-t");
+  area.setAttribute("data-anamnesi", "area");
+  area.setAttribute("rows", "3");
+  area.setAttribute("aria-label", "Patologie o infortuni");
+  area.setAttribute("placeholder", "Scrivi a parole: per esempio \u00ablombalgia cronica, fastidio al ginocchio destro\u00bb");
+  stile(area, {
+    width: "100%", marginTop: "6px", background: "rgba(0,0,0,.25)", color: "inherit",
+    border: "1px solid rgba(255,224,102,.35)", borderRadius: "8px", padding: "8px",
+    font: "600 12px/1.5 inherit", resize: "vertical"
+  });
+  riga.appendChild(area);
+
+  const tasti = nodo(doc, "div", "dc-anam-b");
+  tasti.setAttribute("data-anamnesi", "tasti");
+  stile(tasti, { display: "flex", gap: "8px", marginTop: "8px", alignItems: "center" });
+  const salva = nodo(doc, "button", "dc-btn", "Salva");
+  salva.setAttribute("type", "button");
+  salva.setAttribute("data-anamnesi", "salva");
+  const annulla = nodo(doc, "button", "dc-btn ghost", "Annulla");
+  annulla.setAttribute("type", "button");
+  annulla.setAttribute("data-anamnesi", "annulla");
+  tasti.appendChild(salva);
+  tasti.appendChild(annulla);
+  riga.appendChild(tasti);
+
+  const esitoEl = nodo(doc, "span", "dc-anam-n", "");
+  esitoEl.setAttribute("data-anamnesi", "nota");
+  esitoEl.setAttribute("role", "status");
+  stile(esitoEl, { display: "block", marginTop: "6px", font: "600 10.5px/1.5 inherit", color: "inherit", opacity: ".9" });
+  riga.appendChild(esitoEl);
+
+  riga.refAnamnesi = { testata, etichetta, modifica, corpoLetto, testoEl, quandoEl, riconEl, area, tasti, salva, annulla, esitoEl };
+  return riga.refAnamnesi;
+}
+
 /* Il montaggio. `dichiarazione` e' quella letta dal registro (o null).
  * `opzioni.esito` + `opzioni.token`: l'esito si applica solo quando il token
  * cambia, cosi' un ridisegno non cancella la riga appena scritta. */
@@ -78,137 +164,132 @@ export function montaCampoAnamnesi(doc, dichiarazione, opzioni) {
   if (!riga) return null;
 
   const dich = dichiarazione && typeof dichiarazione === "object" ? dichiarazione : null;
-  const letto = dich && !dich.errore && dich.presente ? String(dich.testo == null ? "" : dich.testo) : "";
+  const grezzo = dich && !dich.errore && dich.presente && dich.testo != null ? String(dich.testo) : "";
+  const presente = grezzo.trim() !== "";
+  const letto = presente ? grezzo : "";
   const erroreLettura = o.erroreLettura || (dich && dich.errore ? dich.errore : null);
   const scrivendo = o.scrivendo === true;
 
-  const gia = typeof riga.querySelector === "function" ? riga.querySelector("[data-anamnesi]") : null;
-  const area = gia ? riga.querySelector("[data-anamnesi=\"area\"]") : null;
-  const attivo = doc.activeElement;
+  const primoGiro = !(riga.refAnamnesi && typeof riga.querySelector === "function" && riga.querySelector("[data-anamnesi=\"area\"]"));
+  const n = primoGiro ? costruisci(doc, riga) : riga.refAnamnesi;
+  if (primoGiro) {
+    riga.modoAnamnesi = "letto";
+    riga.dirty = false;
+    riga.esitoAnamnesi = o.esito || null;
+    riga.tokenAnamnesi = o.token == null ? "" : String(o.token);
+    n.modifica.onclick = () => apri(riga, n, o);
+    n.annulla.onclick = () => chiudi(riga, n);
+    n.salva.onclick = () => (typeof o.onSalva === "function" ? o.onSalva(String(n.area.value || "")) : undefined);
+    n.area.oninput = () => {
+      riga.dirty = String(n.area.value || "").trim() !== riga.lettoAnamnesi.trim();
+      if (riga.dirty) riga.esitoAnamnesi = null;
+      applica(doc, riga, n, { erroreLettura, scrivendo });
+    };
+  }
 
-  if (gia && area) {
-    /* L'esito nuovo entra solo se il token e' cambiato: un giro di pagina non
-     * deve riscrivere «Salvato alle…» sopra un errore appena comparso. */
-    const token = o.token == null ? null : String(o.token);
-    if (token != null && token !== String(riga.tokenAnamnesi || "")) {
-      riga.esitoAnamnesi = o.esito || null;
-      riga.tokenAnamnesi = token;
-      /* L'esito non tocca il testo ne' lo stato «modificato»: se l'utente ha
-       * scritto qualcosa e il salvataggio fallisce, quello che ha scritto
-       * resta dov'e'. */
-      if (!riga.dirty) riga.datiAnamnesi = { testo: letto, presente: Boolean(dich && dich.presente && !dich.errore), aggiornato: (dich && dich.aggiornato) || "" };
+  riga.lettoAnamnesi = letto;
+  riga.presenteAnamnesi = presente;
+  riga.aggiornatoAnamnesi = presente && dich ? String(dich.aggiornato || "") : "";
+  riga.quandoAnamnesi = presente && dich ? quandoDichiarato(dich.aggiornato) : "";
+  riga.riconosciuteAnamnesi = presente ? notaRiconoscimento(riconosciArticolazioni(letto)) : "";
+
+  /* L'esito nuovo entra solo se il token e' cambiato. Un salvataggio riuscito
+   * chiude l'area e torna in sola lettura: e' quello che deve succedere. */
+  const token = o.token == null ? null : String(o.token);
+  if (token != null && token !== String(riga.tokenAnamnesi || "")) {
+    riga.esitoAnamnesi = o.esito || null;
+    riga.tokenAnamnesi = token;
+    const tipo = riga.esitoAnamnesi && riga.esitoAnamnesi.tipo;
+    if (tipo === "salvato" || tipo === "diverso") {
+      riga.modoAnamnesi = "letto";
+      riga.dirty = false;
     }
-    /* Il valore si riscrive solo se non ci sono modifiche in corso: chi sta
-     * scrivendo non perde una lettera, e un errore accanto al tasto non
-     * cancella il testo che l'ha causato. */
-    if (attivo !== area && !riga.dirty) {
-      area.value = letto;
-      riga.datiAnamnesi = { testo: letto, presente: Boolean(dich && dich.presente && !dich.errore), aggiornato: (dich && dich.aggiornato) || "" };
-    }
-    aggiorna(doc, riga, area, { letto, erroreLettura, scrivendo });
-    return { aggiornato: true };
   }
 
-  /* Prima volta: la riga diventa una colonna, con l'etichetta in testa. */
-  while (riga.firstChild) riga.removeChild(riga.firstChild);
-  riga.setAttribute("data-anamnesi", "campo");
-  if (riga.style) { riga.style.display = "block"; riga.style.alignItems = "stretch"; }
-  riga.datiAnamnesi = { testo: letto, presente: Boolean(dich && dich.presente && !dich.errore), aggiornato: (dich && dich.aggiornato) || "" };
-  riga.esitoAnamnesi = o.esito || null;
-  riga.tokenAnamnesi = o.token == null ? "" : String(o.token);
-  riga.dirty = false;
-
-  riga.appendChild(nodo(doc, "b", "", "Patologie o infortuni"));
-
-  const area2 = nodo(doc, "textarea", "dc-anam-t");
-  area2.setAttribute("data-anamnesi", "area");
-  area2.setAttribute("rows", "3");
-  area2.setAttribute("aria-label", "Patologie o infortuni");
-  area2.value = letto;
-  area2.setAttribute("placeholder", "Scrivi a parole: per esempio \u00ablombalgia cronica, fastidio al ginocchio destro\u00bb");
-  if (area2.style) {
-    area2.style.width = "100%";
-    area2.style.marginTop = "6px";
-    area2.style.background = "rgba(0,0,0,.25)";
-    area2.style.color = "inherit";
-    area2.style.border = "1px solid rgba(255,224,102,.35)";
-    area2.style.borderRadius = "8px";
-    area2.style.padding = "8px";
-    area2.style.font = "600 12px/1.5 inherit";
-    area2.style.resize = "vertical";
+  /* Il valore si riscrive solo se non ci sono modifiche in corso: chi sta
+   * scrivendo non perde una lettera, e un errore accanto al tasto non
+   * cancella il testo che l'ha causato. */
+  if (riga.modoAnamnesi !== "modifica" || (!riga.dirty && doc.activeElement !== n.area)) {
+    n.area.value = letto;
   }
-  riga.appendChild(area2);
 
-  const fila = nodo(doc, "div", "dc-anam-b");
-  if (fila.style) { fila.style.display = "flex"; fila.style.gap = "8px"; fila.style.marginTop = "8px"; fila.style.alignItems = "center"; }
-  const salva = nodo(doc, "button", "dc-btn", "Salva");
-  salva.setAttribute("type", "button");
-  salva.setAttribute("data-anamnesi", "salva");
-  const annulla = nodo(doc, "button", "dc-btn ghost", "Annulla");
-  annulla.setAttribute("type", "button");
-  annulla.setAttribute("data-anamnesi", "annulla");
-  fila.appendChild(salva);
-  fila.appendChild(annulla);
-  riga.appendChild(fila);
-
-  const linea = nodo(doc, "span", "dc-anam-n", "");
-  linea.setAttribute("data-anamnesi", "nota");
-  linea.setAttribute("role", "status");
-  if (linea.style) {
-    linea.style.display = "block";
-    linea.style.marginTop = "6px";
-    linea.style.font = "600 10.5px/1.5 inherit";
-    linea.style.color = "inherit";
-    linea.style.opacity = ".9";
-  }
-  riga.appendChild(linea);
-
-  salva.onclick = () => (typeof o.onSalva === "function" ? o.onSalva(String(area2.value || "")) : undefined);
-  annulla.onclick = () => (typeof o.onAnnulla === "function" ? o.onAnnulla() : undefined);
-  area2.oninput = () => {
-    riga.dirty = String(area2.value || "") !== letto;
-    if (riga.dirty) riga.esitoAnamnesi = null;
-    aggiorna(doc, riga, area2, { letto, erroreLettura, scrivendo });
-  };
-
-  aggiorna(doc, riga, area2, { letto, erroreLettura, scrivendo });
-  return { montato: true, testo: letto };
+  applica(doc, riga, n, { erroreLettura, scrivendo });
+  return { montato: primoGiro, modo: riga.modoAnamnesi, testo: letto };
 }
 
-/* Riga d'esito e stato dei tasti. Una funzione sola: la riga accanto al campo
- * e la riga in cima dicono la stessa cosa. */
-function aggiorna(doc, riga, area, stato) {
-  const linea = typeof riga.querySelector === "function" ? riga.querySelector("[data-anamnesi=\"nota\"]") : null;
-  const salva = typeof riga.querySelector === "function" ? riga.querySelector("[data-anamnesi=\"salva\"]") : null;
-  const annulla = typeof riga.querySelector === "function" ? riga.querySelector("[data-anamnesi=\"annulla\"]") : null;
-  const valore = String(area && area.value != null ? area.value : "");
-  const sporco = valore.trim() !== String(stato.letto || "").trim();
+function apri(riga, n, o) {
+  riga.modoAnamnesi = "modifica";
+  riga.dirty = false;
+  riga.esitoAnamnesi = null;
+  n.area.value = riga.lettoAnamnesi || "";
+  applica(null, riga, n, { erroreLettura: null, scrivendo: false });
+  if (n.area && typeof n.area.focus === "function") n.area.focus();
+  if (typeof o.onModifica === "function") o.onModifica();
+}
+
+/* Annulla: si torna al testo letto e si chiude. NON scrive niente. */
+function chiudi(riga, n) {
+  riga.modoAnamnesi = "letto";
+  riga.dirty = false;
+  riga.esitoAnamnesi = null;
+  n.area.value = riga.lettoAnamnesi || "";
+  applica(null, riga, n, { erroreLettura: null, scrivendo: false });
+}
+
+/* Testi, visibilita' e stato dei tasti. Una funzione sola. */
+function applica(doc, riga, n, stato) {
+  const modo = riga.modoAnamnesi === "modifica" ? "modifica" : "letto";
+  const erroreLettura = stato.erroreLettura || null;
+  const scrivendo = stato.scrivendo === true;
+  const presente = riga.presenteAnamnesi === true;
+
+  riga.setAttribute("data-modo-anamnesi", modo);
+
+  /* A riposo: il testo salvato, com'e'. */
+  n.testoEl.textContent = erroreLettura ? "" : (presente ? riga.lettoAnamnesi : NON_DICHIARATO);
+  n.quandoEl.textContent = erroreLettura
+    ? ""
+    : (presente ? (riga.quandoAnamnesi || "dichiarata, data non nota") : NON_DICHIARATO);
+  n.riconEl.textContent = erroreLettura ? "" : (riga.riconosciuteAnamnesi || "");
+
+  /* Il tasto unico: «Modifica», o «Dichiara» se non c'e' ancora niente. */
+  n.modifica.textContent = presente ? "Modifica" : "Dichiara";
+  n.modifica.disabled = Boolean(erroreLettura) || scrivendo;
+  n.modifica.title = erroreLettura ? "non ho potuto leggere la dichiarazione" : "";
+
+  if (erroreLettura) n.modifica.style.display = "none";
+  else n.modifica.style.display = "";
+
+  const valore = String(n.area && n.area.value != null ? n.area.value : "");
+  const sporco = valore.trim() !== String(riga.lettoAnamnesi || "").trim();
+
   const base = {
-    dichiarazione: riga.datiAnamnesi ? {
-      presente: riga.datiAnamnesi.presente,
-      testo: riga.datiAnamnesi.testo,
-      aggiornato: riga.datiAnamnesi.aggiornato
-    } : null,
-    erroreLettura: stato.erroreLettura,
+    dichiarazione: presente
+      ? { presente: true, testo: riga.lettoAnamnesi, aggiornato: riga.aggiornatoAnamnesi }
+      : { presente: false, testo: "", aggiornato: "" },
+    erroreLettura: erroreLettura,
     esito: riga.esitoAnamnesi,
-    scrivendo: stato.scrivendo
+    scrivendo: scrivendo
   };
   let testo = testoEsito(base);
-  if (!stato.erroreLettura && !stato.scrivendo && !riga.esitoAnamnesi && sporco) testo = "Modifiche non salvate";
-  if (linea) {
-    linea.textContent = testo;
-    const errore = Boolean(stato.erroreLettura) || Boolean(riga.esitoAnamnesi && riga.esitoAnamnesi.tipo === "errore");
-    linea.setAttribute("data-esito", errore ? "errore" : (sporco ? "sporco" : "letto"));
-    linea.title = testo;
-    if (linea.style) linea.style.color = errore ? "#ff9aa2" : "inherit";
-  }
-  if (salva) {
-    salva.disabled = Boolean(stato.scrivendo) || Boolean(stato.erroreLettura) || !sporco;
-    salva.title = !sporco ? "il testo e' identico a quello letto" : (stato.erroreLettura ? "non ho potuto leggere la dichiarazione" : "");
-  }
-  if (annulla) {
-    const presente = Boolean(riga.datiAnamnesi && riga.datiAnamnesi.presente);
-    annulla.disabled = Boolean(stato.scrivendo) || !presente;
-  }
+  if (modo === "modifica" && !erroreLettura && !scrivendo && !riga.esitoAnamnesi && sporco) testo = "Modifiche non salvate";
+
+  /* Visibilita': a riposo si legge e basta; l'area e i tasti solo in modifica. */
+  n.corpoLetto.style.display = modo === "letto" && !erroreLettura ? "block" : "none";
+  n.area.style.display = modo === "modifica" ? "block" : "none";
+  n.tasti.style.display = modo === "modifica" ? "flex" : "none";
+
+  const notaVisibile = modo === "modifica" || Boolean(erroreLettura) || Boolean(riga.esitoAnamnesi);
+  n.esitoEl.style.display = notaVisibile ? "block" : "none";
+
+  const errore = Boolean(erroreLettura) || Boolean(riga.esitoAnamnesi && riga.esitoAnamnesi.tipo === "errore");
+  n.esitoEl.textContent = testo;
+  n.esitoEl.setAttribute("data-esito", errore ? "errore" : (modo === "modifica" && sporco ? "sporco" : (modo === "modifica" ? "modifica" : "letto")));
+  n.esitoEl.title = testo;
+  n.esitoEl.style.color = errore ? "#ff9aa2" : "inherit";
+
+  n.salva.disabled = Boolean(scrivendo) || Boolean(erroreLettura) || !sporco;
+  n.salva.title = erroreLettura ? "non ho potuto leggere la dichiarazione" : (!sporco ? "il testo e' identico a quello letto" : "");
+  n.annulla.disabled = Boolean(scrivendo);
   return testo;
 }
