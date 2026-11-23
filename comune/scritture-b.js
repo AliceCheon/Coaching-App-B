@@ -26,8 +26,7 @@ const AMMESSE = Object.freeze([
   SOTTO_B.sedute,
   SOTTO_B.esclusioni,
   SOTTO_B.registro,
-  SOTTO_B.scheletri,
-  SOTTO_B.anamnesiLite
+  SOTTO_B.scheletri
 ]);
 
 /* uid e id ammessi: testo non vuoto, senza barre (niente percorsi dentro). */
@@ -122,21 +121,6 @@ export function scriviVoceRegistro(db, uid, id, dati) {
 /* La fotografia e' il documento radice della zona B (bdB_atleti/{uid}). */
 export function scriviFotografia(db, uid, dati) {
   return radiceB(db, uid).set(dati || {});
-}
-
-/* ---------- «Patologie o infortuni» (PASSO 14, versione semplice) --------
- * Un documento solo per atleta, con la forma delle altre fotografie singole:
- * `bdB_atleti/{uid}/anamnesi-lite` = { testo, aggiornato, versione }.
- * Si scrive da qui, come tutto il resto della zona B.
- */
-export function scriviAnamnesiLite(db, uid, dati) {
-  return riferimentoB(db, uid, SOTTO_B.anamnesiLite, uid).set(senzaUndefined(dati || {}));
-}
-
-export function leggiAnamnesiLite(db, uid) {
-  return riferimentoB(db, uid, SOTTO_B.anamnesiLite, uid)
-    .get()
-    .then((istantanea) => (istantanea && istantanea.exists ? istantanea.data() || {} : null));
 }
 
 /* ---------- Letture della zona B (per il confronto finale) ---------- */

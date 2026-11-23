@@ -35,10 +35,7 @@ export const CAMPI_CHE_RIDISEGNANO = Object.freeze([
   "ripristina-scheda",
   "applica-scarico-tutte",
   "applica-scheletro",
-  "elimina-scheletro",
-  /* PASSO 14: «Patologie o infortuni» scrive un documento suo: senza
-   * rileggere, le carte resterebbero com'erano prima del salvataggio. */
-  "anamnesi-lite"
+  "elimina-scheletro"
 ]);
 
 /* I campi che la cella mostra da sola: scrivono e NON ridisegnano. */

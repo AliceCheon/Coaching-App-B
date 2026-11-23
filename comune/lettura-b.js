@@ -18,11 +18,21 @@
  */
 
 import { SOTTO_B } from "./modello-dati.js";
-import { leggiZonaB, leggiFotografia, leggiAnamnesiLite } from "./scritture-b.js";
+import { leggiZonaB, leggiFotografia } from "./scritture-b.js";
 import { ricostruisciSchede } from "./schede-v2.js";
 
 function testo(valore) {
   return valore == null ? "" : String(valore).trim();
+}
+
+/* Un errore di lettura detto come sta: codice e messaggio. Serve a distinguere
+ * «non c'e' niente» (nullo) da «non ho potuto leggere» (errore). */
+export function motivoLettura(errore) {
+  if (!errore) return "motivo non riportato";
+  const codice = testo(errore.code || errore.codice);
+  const messaggio = testo(errore.message || errore.messaggio || errore);
+  if (codice && messaggio) return codice + ": " + messaggio;
+  return messaggio || codice || "errore senza messaggio";
 }
 
 function confrontaTesto(a, b) {
@@ -223,18 +233,26 @@ export function statoZonaB(letture) {
  * quelle. */
 export async function leggiZonaBCompleta(db, uid) {
   // Passo 31: letture indipendenti in parallelo, stessi risultati e ripieghi.
-  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni, documentiScheletri, anamnesi] = await Promise.all([
-    leggiFotografia(db, uid).catch(() => null),
+  const prendi = (promessa) => promessa.then(
+    (valore) => ({ ok: true, valore: valore, errore: null }),
+    (errore) => ({ ok: false, valore: null, errore: motivoLettura(errore) })
+  );
+  const [fotografiaE, documentiProgrammi, documentiSchede, documentiSedute, esclusioniE, documentiScheletriE, registroE] = await Promise.all([
+    prendi(leggiFotografia(db, uid)),
     leggiZonaB(db, uid, SOTTO_B.programmi),
     leggiZonaB(db, uid, SOTTO_B.schede),
     leggiZonaB(db, uid, SOTTO_B.sedute),
-    leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => []),
-    leggiZonaB(db, uid, SOTTO_B.scheletri).catch(() => []),
-    /* PASSO 14: «Patologie o infortuni», scritto a parole. Se la lettura
-     * fallisce o il documento non c'e', resta null: la zona dice «non
-     * dichiarato», non finge un testo vuoto che sembra un dato. */
-    leggiAnamnesiLite(db, uid).catch(() => null)
+    prendi(leggiZonaB(db, uid, SOTTO_B.esclusioni)),
+    prendi(leggiZonaB(db, uid, SOTTO_B.scheletri)),
+    /* PASSO 14d — la dichiarazione «Patologie o infortuni» vive nel registro,
+     * che si scrive gia' da tutti i passi. La lettura entra qui con il suo
+     * errore: se fallisce lo si DICHIARA (`registroErrore`), non si finge un
+     * registro vuoto. Nullo ≠ errore. */
+    prendi(leggiZonaB(db, uid, SOTTO_B.registro))
   ]);
+  const fotografia = fotografiaE.valore;
+  const esclusioni = esclusioniE.ok ? esclusioniE.valore : [];
+  const documentiScheletri = documentiScheletriE.ok ? documentiScheletriE.valore : [];
 
   const p = programmiDaDocumenti(documentiProgrammi);
   const s = seduteDaDocumenti(documentiSedute);
@@ -248,8 +266,16 @@ export async function leggiZonaBCompleta(db, uid) {
     schedeV2,
     scheletri: documentiScheletri,
     esclusioni,
-    anamnesi: anamnesi,
-    anamnesiPresente: Boolean(anamnesi && typeof anamnesi === "object"),
+    registro: registroE.valore,
+    registroErrore: registroE.errore,
+    /* Le letture facoltative: dove l'errore c'e' stato, si vede. Un elenco
+     * vuoto (nullo) e un errore non sono la stessa cosa. */
+    erroriLettura: {
+      fotografia: fotografiaE.errore,
+      esclusioni: esclusioniE.errore,
+      scheletri: documentiScheletriE.errore,
+      registro: registroE.errore
+    },
     esito: statoZonaB({
       fotografia,
       programmi: p.programmi,

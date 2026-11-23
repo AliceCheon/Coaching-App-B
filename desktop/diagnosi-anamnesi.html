@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barbell Diva B · diagnosi della dichiarazione</title>
+<link rel="stylesheet" href="../comune/tema-b.css">
+<style>
+  body { margin: 0; padding: 24px 18px 60px; background: #090918; color: #f2eefb;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; color: #c9b8ee; letter-spacing: .04em; text-transform: uppercase; }
+  p { margin: 8px 0; }
+  .tenue { color: #a99fc4; font-size: 13px; }
+  .riquadro { background: #131324; border: 1px solid #2a2745; border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+  button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 1px solid #4a3f7a;
+           background: #2b2150; color: #f2eefb; cursor: pointer; margin: 6px 6px 6px 0; }
+  button:disabled { opacity: .45; cursor: default; }
+  #prova { background: #1f3a4d; border-color: #2f6a86; font-weight: 700; }
+  .passo { border-left: 3px solid #3a3560; padding: 8px 12px; margin: 8px 0; background: #131324; border-radius: 0 10px 10px 0; }
+  .passo.ok { border-left-color: #6ee7a8; }
+  .passo.errore { border-left-color: #ff9aa2; }
+  .passo b { display: block; font-size: 14px; }
+  .passo code, .verdetto code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #ffe9b0; }
+  .passo .dettaglio { font-size: 12.5px; color: #c9b8ee; white-space: pre-wrap; }
+  .verdetto { border: 1px solid #4a3f7a; border-radius: 12px; padding: 14px 16px; margin: 14px 0; font-size: 14px; }
+  .verdetto.regola { border-color: #ffb347; background: rgba(255,179,71,.07); }
+  .verdetto.codice { border-color: #ff9aa2; background: rgba(255,154,162,.07); }
+  .verdetto.ok { border-color: #6ee7a8; background: rgba(110,231,168,.07); }
+  .verdetto b { display: block; font-size: 16px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Diagnosi della dichiarazione «Patologie o infortuni»</h1>
+  <p class="tenue">Legge il registro, scrive <strong>una voce di prova</strong>, la rilegge, la annulla e
+  dice in italiano cosa è riuscito e cosa no, con il percorso esatto e il codice dell'errore
+  (<code>permission-denied</code> compreso). Serve a rispondere a una domanda sola: se il salvataggio
+  non torna dopo la ricarica, il problema è la <strong>regola di Firestore</strong> o il <strong>codice</strong>?</p>
+  <p class="tenue">Il registro è <code>bdB_atleti/{uid}/registro</code>: la stessa raccolta che l'app scrive
+  da tutti i passi. La voce di prova nasce con <code>origine: "diagnosi-anamnesi"</code> e viene annullata
+  subito dopo: il registro resta con due voci in più, e la dichiarazione torna com'era.</p>
+
+  <p>Collegato come: <strong id="chi">verifico…</strong> · uid <code id="uid">—</code></p>
+  <button id="entra">Entra con Google</button>
+  <button id="esci" hidden>Esci</button>
+
+  <div id="corpo" hidden>
+    <button id="prova">Prova: scrivi → rileggi → annulla</button>
+    <span class="tenue" id="stato"></span>
+    <div class="riquadro">
+      <p><strong>Dichiarazione letta adesso:</strong> <span id="corrente">—</span></p>
+      <p class="tenue" id="corrente-dettaglio"></p>
+    </div>
+    <h2>Passo per passo</h2>
+    <div id="passi"><p class="tenue">Nessuna prova ancora: premi il tasto qui sopra.</p></div>
+    <div id="verdetto"></div>
+  </div>
+</main>
+
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script type="module" src="./diagnosi-anamnesi.js"></script>
+</body>
+</html>

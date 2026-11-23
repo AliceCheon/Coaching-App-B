@@ -20,7 +20,7 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia, scriviAnamnesiLite, scriviVoceRegistro } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
@@ -37,7 +37,8 @@ import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
-import { riconosciArticolazioni, salvaAnamnesi, annullaAnamnesi, ultimaVoceAnamnesi } from "../comune/anamnesi-b.js";
+import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anamnesi-b.js";
+import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
@@ -418,6 +419,10 @@ export async function avvia(doc, win) {
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
   let editorCorrente = null;
+/* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
+ * «Salvato alle 15:04» sparirebbe al primo giro di pagina. */
+let esitoAnamnesi = null;
+let tokenAnamnesi = 0;
   /* B.21 — la fotografia di APERTURA delle schede: si prende una volta sola,
    * alla prima lettura riuscita della sessione, e non si rinfresca più.
    * Dopo ogni scrittura la pagina rilegge (sincronizza -> leggi): se la
@@ -447,9 +452,12 @@ export async function avvia(doc, win) {
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = { programmi: zona.programmi };
     const schedeV2 = zona.schedeV2;
-    /* PASSO 14 — «Patologie o infortuni»: il documento singolo della zona B.
-     * Se non c'e', resta null e le carte dicono «non dichiarato». */
-    const anamnesiB = zona.anamnesi || null;
+    /* PASSO 14d — «Patologie o infortuni» vive nel registro: la dichiarazione
+     * e' l'ultima voce che nessuno ha annullato. Se il registro non si e' letto,
+     * la dichiarazione porta l'errore e la pagina lo DICE. */
+    const anamnesiDichiarazione = zona.registroErrore
+      ? { presente: false, testo: "", aggiornato: "", versione: 0, voce: null, idVoce: "", errore: zona.registroErrore }
+      : dichiarazioneDalRegistro(zona.registro || []);
     if (!rigaStato) rigaStato = creaRigaStato(doc);
     /* Passo 9 — l'editor delle schede: serie e ripetizioni di una settimana,
      * scritte SOLO nella zona B, una alla volta e con il controllo di versione. */
@@ -536,55 +544,39 @@ export async function avvia(doc, win) {
      * tasto. Se non c'è un programma attivo la carta lo dice, non mostra zeri. */
     /* 6c-fix-3: dentro c'è il try/catch — un difetto della carta non deve
      * poter rompere la Dashboard. */
-    /* PASSO 14 (versione semplice) — «Patologie o infortuni» si scrive a parole.
-     * Salva = UNA scrittura di anamnesi-lite + UNA voce di registro; Annulla =
-     * una voce nuova che rimette il testo di prima. Poi si rilegge. */
-    let ultimaAnamnesi = ultimaVoceAnamnesi(registroB);
-    const scriviAnamnesi = (lavoro, esito) => {
-      modificheInVolo += 1;
-      return scriviAnamnesiLite(db, utente.uid, esito.documento)
-        .then(() => scriviVoceRegistro(db, utente.uid, esito.voce.idVoce, esito.voce))
-        .then(() => {
-          modificheInVolo = Math.max(0, modificheInVolo - 1);
-          ultimaAnamnesi = lavoro === "salva" ? esito.voce : null;
-          segnalaModifica(esito.esitoTesto, "ok");
-          return chiedeRilettura({ campo: "anamnesi-lite" })
-            ? sincronizza(utente, { forza: true, motivo: "anamnesi" })
-            : { ok: true };
-        }, (e) => {
-          modificheInVolo = Math.max(0, modificheInVolo - 1);
-          segnalaModifica("scrittura non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
-          return { ok: false };
-        });
-    };
-    const salvaAnamnesiTesto = (testoScritto) => {
-      const esito = salvaAnamnesi(anamnesiB, testoScritto, { quando: new Date().toISOString(), uid: utente.uid });
-      if (!esito.ok) {
-        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
-        return Promise.resolve({ ok: false, motivo: esito.motivo || "" });
-      }
-      return scriviAnamnesi("salva", esito);
-    };
-    const annullaAnamnesiTesto = () => {
-      if (!ultimaAnamnesi) {
-        segnalaModifica("nessuna dichiarazione da annullare", "errore");
-        return Promise.resolve({ ok: false });
-      }
-      const esito = annullaAnamnesi(anamnesiB, ultimaAnamnesi, { quando: new Date().toISOString(), uid: utente.uid });
-      if (!esito.ok) {
-        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
-        return Promise.resolve({ ok: false });
-      }
-      return scriviAnamnesi("annulla", esito);
-    };
-    const riconosciute = riconosciArticolazioni(anamnesiB && anamnesiB.testo ? anamnesiB.testo : "");
-    montaCampoAnamnesi(doc, anamnesiB, { onSalva: salvaAnamnesiTesto, onAnnulla: annullaAnamnesiTesto });
+    /* PASSO 14d — il campo «Patologie o infortuni» e il ponte col registro.
+     * Salva = UNA voce di registro (dichiarazione-anamnesi); Annulla = una voce
+     * che la cita. Dopo ogni scrittura si rilegge: il campo mostra il registro. */
+    let ponteAnamnesi = null;
+    const disegnaAnamnesi = (st) => montaCampoAnamnesi(doc, st.dichiarazione, {
+      onSalva: (t2) => ponteAnamnesi.salva(t2),
+      onAnnulla: () => ponteAnamnesi.annulla(),
+      erroreLettura: st.erroreLettura || zona.registroErrore || null,
+      esito: st.esito,
+      token: st.token,
+      scrivendo: st.scrivendo === true
+    });
+    ponteAnamnesi = creaPonteAnamnesi({
+      db: db,
+      uid: utente.uid,
+      dichiarazione: anamnesiDichiarazione,
+      erroreLettura: zona.registroErrore || null,
+      esito: esitoAnamnesi,
+      token: tokenAnamnesi,
+      segnala: segnalaModifica,
+      monta: disegnaAnamnesi,
+      suStato: (st) => { esitoAnamnesi = st.esito; tokenAnamnesi = st.token; },
+      ricarica: () => sincronizza(utente, { forza: true, motivo: "anamnesi" })
+    });
+    disegnaAnamnesi(ponteAnamnesi.quadro);
+    const riconosciute = zona.registroErrore
+      ? { articolazioni: [] }
+      : riconosciArticolazioni(anamnesiDichiarazione.testo || "");
     riempiRischioDaZonaBSicuro(doc, {
       programmi: programmi.programmi || [],
       sedute: sedutePulite.sedute,
       schedeV2: schedeV2,
-      dichiarate: riconosciute.articolazioni,
-      anamnesi: anamnesiB
+      dichiarate: riconosciute.articolazioni
     });
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");

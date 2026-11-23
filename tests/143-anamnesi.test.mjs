@@ -1,27 +1,25 @@
-/* Passo 14 (versione semplice) — «Patologie o infortuni» si scrive a parole.
+/* Passo 14d — la dichiarazione vive nel REGISTRO (una raccolta che si scrive
+ * gia' da tutti i passi), non in un documento nuovo.
  *
- * Tre cose che devono restare vere:
- *  1. la scrittura: UNA voce di registro con prima e dopo (testo), l'Annulla
- *     rimette il testo di prima con una voce che cita la sua, la versione
- *     avanza e il confronto di versione si vede nella voce;
- *  2. il riconoscimento: «lombalgia cronica, fastidio al ginocchio destro» da'
- *     colonna lombare + ginocchio, e le frasi non capite si riportano;
- *  3. la pagina vera: il campo c'e', Salva chiama la scrittura, Annulla
- *     riporta il testo di prima, e le articolazioni riconosciute portano il
- *     segno «dichiarata» nelle due carte; campo vuoto = «non dichiarato».
+ * Qui si provano, senza browser:
+ *  - il riconoscimento delle articolazioni dal testo (tabella di parole);
+ *  - la lettura: l'ultima dichiarazione che nessuno ha annullato;
+ *  - il salvataggio: UNA voce con prima/dopo e le due versioni;
+ *  - l'Annulla: una voce che cita la sua e rimette il testo di prima;
+ *  - il campo: riga d'esito sempre presente, Salva spento quando il testo e'
+ *    identico e durante la scrittura, «non dichiarato» quando non c'e' niente;
+ *  - le due carte: le articolazioni riconosciute portano il segno.
  */
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  riconosciArticolazioni, salvaAnamnesi, annullaAnamnesi, ultimaVoceAnamnesi,
-  ARTICOLAZIONI, NON_DICHIARATO, testoAnamnesi, fraseArticolazioniDaAnamnesi
+  riconosciArticolazioni, dichiarazioneDalRegistro, salvaAnamnesi, annullaAnamnesi,
+  testoDichiarazione, fraseArticolazioniDaAnamnesi, ARTICOLAZIONI, NON_DICHIARATO, oraBreve
 } from "../comune/anamnesi-b.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
-import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { riempiRischioStrutturale, riempiStressArticolazioni } from "../comune/vista-reds.js";
 
-/* ---------- un DOM minimo, con i selettori che servono ---------- */
 function cerca(radice, sel) {
   const m = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(sel || "");
   if (!m) return null;
@@ -42,7 +40,7 @@ function cerca(radice, sel) {
 
 function nodo(tag) {
   return {
-    tagName: tag, className: "", style: {}, attributi: {}, figli: [], testo: "", value: "",
+    tagName: tag, className: "", style: {}, attributi: {}, figli: [], testo: "", value: "", disabled: false,
     appendChild(f) { this.figli.push(f); return f; },
     removeChild(f) { this.figli = this.figli.filter((x) => x !== f); return f; },
     setAttribute(k, v) { this.attributi[k] = String(v); },
@@ -64,8 +62,6 @@ function nodo(tag) {
   };
 }
 
-/* Il pannello Anamnesi come lo trova la vista: .dc-pan[data-pan="anamnesi"]
- * con dentro il riquadro .dc-warn e la riga «Patologie o infortuni». */
 function paginaAnamnesi() {
   const pannello = nodo("div");
   pannello.className = "dc-pan";
@@ -91,180 +87,167 @@ function paginaAnamnesi() {
     createElement: (tag) => nodo(tag),
     createTextNode: (t) => ({ textContent: String(t) }),
     querySelectorAll(sel) {
-      if (sel === "[data-pan]") return [pannello];
-      if (sel === "[data-pan=\"anamnesi\"]") return [pannello];
+      if (sel === "[data-pan]" || sel === "[data-pan=\"anamnesi\"]") return [pannello];
       return [];
     },
-    querySelector(sel) {
-      if (sel === "[data-pan=\"anamnesi\"]") return pannello;
-      return null;
+    querySelector(sel) { return sel === "[data-pan=\"anamnesi\"]" ? pannello : null; }
+  };
+  return { doc, pannello, riga };
+}
+
+function voce(idVoce, quando, prima, dopo, versionePrima) {
+  return {
+    id: idVoce,
+    dati: {
+      idVoce: idVoce, quando: quando, tipo: "dichiarazione-anamnesi", campo: "anamnesi-lite",
+      prima: prima, dopo: dopo, versionePrima: versionePrima, versioneDopo: versionePrima + 1
     }
   };
-  return { doc, pannello, riga, altra };
 }
 
-function contaClasse(n, classe) {
-  let quanti = 0;
-  if (String(n.className || "").split(" ").indexOf(classe) !== -1) quanti += 1;
-  (n.figli || []).forEach((f) => { quanti += contaClasse(f, classe); });
-  return quanti;
-}
-
-/* ---------- 1. la scrittura ---------- */
-test("143.1 salva = una voce di registro, con prima e dopo", () => {
-  const primo = salvaAnamnesi(null, "lombalgia cronica", { quando: "2026-11-23T15:10:00Z" });
-  assert.equal(primo.ok, true);
-  assert.equal(primo.documento.testo, "lombalgia cronica");
-  assert.equal(primo.documento.versione, 1);
-  assert.equal(primo.voce.tipo, "anamnesi-lite");
-  assert.equal(primo.voce.campo, "anamnesi-lite");
-  assert.equal(primo.voce.prima, "");
-  assert.equal(primo.voce.dopo, "lombalgia cronica");
-  assert.deepEqual(primo.voce.articolazioni, ["colonna lombare"]);
-
-  const secondo = salvaAnamnesi(primo.documento, "lombalgia cronica e ginocchio destro", { quando: "2026-11-23T15:20:00Z" });
-  assert.equal(secondo.documento.versione, 2);
-  assert.equal(secondo.voce.prima, "lombalgia cronica");
-  assert.equal(secondo.voce.versionePrima, 1);
-  assert.equal(secondo.voce.versioneDopo, 2);
-  assert.deepEqual(secondo.documento.testo, "lombalgia cronica e ginocchio destro");
-
-  /* niente da scrivere se il testo non e' cambiato */
-  const fermo = salvaAnamnesi(secondo.documento, "lombalgia cronica e ginocchio destro");
-  assert.equal(fermo.ok, false);
-  assert.ok(/non e' cambiato/.test(fermo.motivo), fermo.motivo);
-});
-
-test("143.2 l'Annulla rimette il testo di prima, con una voce che la cita", () => {
-  const salvato = salvaAnamnesi({ testo: "spalla destra", aggiornato: "2026-11-20T09:00:00Z", versione: 4 }, "spalla destra e collo", { quando: "2026-11-23T15:30:00Z" });
-  assert.equal(salvato.documento.versione, 5);
-  const indietro = annullaAnamnesi(salvato.documento, salvato.voce, { quando: "2026-11-23T15:40:00Z" });
-  assert.equal(indietro.ok, true);
-  assert.equal(indietro.documento.testo, "spalla destra", "torna il testo di prima");
-  assert.equal(indietro.documento.versione, 6, "la versione avanza, non torna indietro");
-  assert.equal(indietro.voce.tipo, "annulla-modifica");
-  assert.equal(indietro.voce.annullaDi, salvato.voce.idVoce);
-  assert.equal(indietro.voce.versionePrima, 5);
-});
-
-test("143.3 l'ultima dichiarazione salvata e' quella con la data piu' avanti", () => {
-  const registro = [
-    { dati: { campo: "anamnesi-lite", tipo: "anamnesi-lite", quando: "2026-11-21T10:00:00Z", idVoce: "a" } },
-    { dati: { campo: "serie", tipo: "modifica-rec-tut", quando: "2026-11-22T10:00:00Z", idVoce: "b" } },
-    { dati: { campo: "anamnesi-lite", tipo: "anamnesi-lite", quando: "2026-11-23T10:00:00Z", idVoce: "c" } },
-    { dati: { campo: "anamnesi-lite", tipo: "annulla-modifica", quando: "2026-11-23T11:00:00Z", idVoce: "d" } }
-  ];
-  assert.equal(ultimaVoceAnamnesi(registro).idVoce, "c");
-  assert.equal(ultimaVoceAnamnesi([]), null);
-});
-
-/* ---------- 2. il riconoscimento ---------- */
-test("143.4 «lombalgia cronica, fastidio al ginocchio destro»: lombare + ginocchio", () => {
+test("143.1 «lombalgia cronica, fastidio al ginocchio destro»: lombare + ginocchio", () => {
   const r = riconosciArticolazioni("lombalgia cronica, fastidio al ginocchio destro");
-  /* l'ordine e' quello delle tolleranze: spalla, gomito, polso, anca,
-   * ginocchio, caviglia, lombare, toracica */
   assert.deepEqual(r.articolazioni, ["ginocchio", "colonna lombare"], "nell'ordine delle tolleranze");
-  assert.deepEqual(r.nonRiconosciute, [], "tutte e due le frasi sono state capite");
+  assert.deepEqual(r.nonRiconosciute, []);
   assert.equal(r.vuoto, false);
 });
 
-test("143.5 le altre articolazioni, le frasi non capite e il collo", () => {
+test("143.2 le altre articolazioni, le frasi non capite e il collo", () => {
   const r = riconosciArticolazioni("Spalle contratte. Polso destro: tunnel carpale. Anche sinistra fastidio. Collo rigido. Un po' di stanchezza generale.");
-  assert.ok(r.articolazioni.indexOf("spalla") !== -1, "spalle -> spalla");
+  assert.ok(r.articolazioni.indexOf("spalla") !== -1);
   assert.ok(r.articolazioni.indexOf("polso") !== -1);
   assert.ok(r.articolazioni.indexOf("anca") !== -1, "«anche sinistra» vuol dire anca");
   assert.ok(r.collo.indexOf("collo") !== -1, "il collo si riconosce ma non e' un'articolazione");
-  assert.equal(r.articolazioni.indexOf("colonna lombare"), -1, "il collo non e' la lombare");
-  assert.ok(r.nonRiconosciute.some((f) => /stanchezza/.test(f)), "la frase non capita si riporta: " + r.nonRiconosciute.join(" | "));
-
-  /* «anche» come parola italiana non deve segnare l'anca */
-  const falso = riconosciArticolazioni("mi fa male anche il ginocchio");
-  assert.deepEqual(falso.articolazioni, ["ginocchio"], "«anche» qui vuol dire «also»");
-});
-
-test("143.6 campo vuoto o assente: «non dichiarato», mai un elenco vuoto travestito", () => {
-  assert.equal(testoAnamnesi(null), NON_DICHIARATO);
-  assert.equal(testoAnamnesi({ testo: "", versione: 2 }), NON_DICHIARATO);
-  assert.equal(fraseArticolazioniDaAnamnesi(null), NON_DICHIARATO);
-  assert.equal(riconosciArticolazioni("").articolazioni.length, 0);
-  assert.equal(riconosciArticolazioni("").vuoto, true);
-  const scritto = fraseArticolazioniDaAnamnesi({ testo: "ginocchio destro", versione: 1 });
-  assert.ok(/ginocchio/.test(scritto), scritto);
+  assert.ok(r.nonRiconosciute.some((f) => /stanchezza/.test(f)));
+  assert.deepEqual(riconosciArticolazioni("mi fa male anche il ginocchio").articolazioni, ["ginocchio"]);
   assert.equal(ARTICOLAZIONI.length, 8);
 });
 
-/* ---------- 3. la lettura della zona ---------- */
-function dbFinto(anamnesi) {
-  const documento = (esiste, dati) => ({ get: async () => ({ exists: esiste, data: () => dati }) });
-  const raccolta = () => ({
-    get: async () => ({ docs: [] }),
-    doc: (id) => (anamnesi && id === "uid-1" ? documento(true, anamnesi) : documento(false, null))
-  });
-  return { collection: () => ({ doc: () => ({ get: async () => ({ exists: false }), collection: () => raccolta() }) }) };
-}
+test("143.3 dal registro: l'ultima dichiarazione che nessuno ha annullato", () => {
+  const registro = [
+    voce("mod-a", "2026-11-21T10:00:00.000Z", "", "lombalgia", 0),
+    voce("mod-b", "2026-11-22T10:00:00.000Z", "lombalgia", "lombalgia e ginocchio", 1)
+  ];
+  const d = dichiarazioneDalRegistro(registro);
+  assert.equal(d.presente, true);
+  assert.equal(d.testo, "lombalgia e ginocchio");
+  assert.equal(d.versione, 2);
+  assert.equal(d.idVoce, "mod-b");
 
-test("143.7 senza documento la zona dice anamnesiPresente: false", async () => {
-  const vuota = await leggiZonaBCompleta(dbFinto(null), "uid-1");
-  assert.equal(vuota.anamnesiPresente, false);
-  assert.equal(vuota.anamnesi, null);
+  /* l'annullamento cita mod-b: torna la dichiarazione precedente */
+  registro.push({ dati: { idVoce: "mod-c", quando: "2026-11-22T11:00:00.000Z", tipo: "annulla-modifica", campo: "anamnesi-lite", annullaDi: "mod-b" } });
+  const dopo = dichiarazioneDalRegistro(registro);
+  assert.equal(dopo.testo, "lombalgia", "torna il dopo della dichiarazione precedente");
+  assert.equal(dopo.idVoce, "mod-a");
 
-  const piena = await leggiZonaBCompleta(dbFinto({ testo: "lombalgia", aggiornato: "2026-11-22T09:00:00Z", versione: 3 }), "uid-1");
-  assert.equal(piena.anamnesiPresente, true);
-  assert.equal(piena.anamnesi.testo, "lombalgia");
+  /* registro illeggibile: errore, non «non dichiarato» */
+  const guasto = dichiarazioneDalRegistro(null);
+  assert.equal(guasto.presente, false);
+  assert.ok(guasto.errore, "il registro non letto porta un errore");
+  assert.equal(testoDichiarazione(guasto), NON_DICHIARATO, "a schermo resta «non dichiarato» solo con un documento letto e vuoto");
+  assert.equal(dichiarazioneDalRegistro([]).errore, null, "un registro vuoto e' letto: nessun errore");
+  assert.equal(dichiarazioneDalRegistro([]).presente, false);
 });
 
-/* ---------- 4. la pagina vera ---------- */
-test("143.8 il campo c'e', Salva scrive e Annulla rimette il testo di prima", () => {
+test("143.4 salva = una voce con prima, dopo e le due versioni", () => {
+  const prima = dichiarazioneDalRegistro([voce("mod-a", "2026-11-21T10:00:00.000Z", "", "lombalgia", 0)]);
+  const esito = salvaAnamnesi(prima, "lombalgia e ginocchio destro", { quando: "2026-11-23T15:04:00.000Z" });
+  assert.equal(esito.ok, true);
+  assert.equal(esito.voce.tipo, "dichiarazione-anamnesi");
+  assert.equal(esito.voce.campo, "anamnesi-lite");
+  assert.equal(esito.voce.prima, "lombalgia");
+  assert.equal(esito.voce.dopo, "lombalgia e ginocchio destro");
+  assert.equal(esito.voce.versionePrima, 1);
+  assert.equal(esito.voce.versioneDopo, 2);
+  assert.deepEqual(esito.voce.articolazioni, ["ginocchio", "colonna lombare"]);
+
+  const fermo = salvaAnamnesi(prima, "lombalgia");
+  assert.equal(fermo.ok, false, "testo identico: non si scrive");
+  const vecchia = salvaAnamnesi(prima, "altro", { versioneAttesa: 5 });
+  assert.equal(vecchia.ok, false, "versione attesa sbagliata: non si scrive");
+  assert.ok(/cambiata nel frattempo/.test(vecchia.motivo), vecchia.motivo);
+});
+
+test("143.5 Annulla: una voce che cita la sua e rimette il testo di prima", () => {
+  const registro = [
+    voce("mod-a", "2026-11-21T10:00:00.000Z", "", "lombalgia", 0),
+    voce("mod-b", "2026-11-22T10:00:00.000Z", "lombalgia", "lombalgia e ginocchio", 1)
+  ];
+  const dich = dichiarazioneDalRegistro(registro);
+  const esito = annullaAnamnesi(dich, { quando: "2026-11-23T15:10:00.000Z" });
+  assert.equal(esito.ok, true);
+  assert.equal(esito.voce.tipo, "annulla-modifica");
+  assert.equal(esito.voce.annullaDi, "mod-b");
+  assert.equal(esito.voce.dopo, "lombalgia");
+  assert.equal(esito.voce.versionePrima, 2);
+  assert.equal(esito.voce.versioneDopo, 3);
+  registro.push({ dati: esito.voce });
+  assert.equal(dichiarazioneDalRegistro(registro).testo, "lombalgia");
+  assert.equal(annullaAnamnesi(dichiarazioneDalRegistro([])).ok, false, "senza dichiarazione non c'e' niente da annullare");
+});
+
+test("143.6 il campo: esito sempre presente, Salva spento quando il testo e' identico", () => {
   const { doc, riga } = paginaAnamnesi();
   let salvato = null;
-  let annullato = 0;
-  montaCampoAnamnesi(doc, null, { onSalva: (t) => { salvato = t; }, onAnnulla: () => { annullato += 1; } });
-
+  montaCampoAnamnesi(doc, null, { onSalva: (t) => { salvato = t; } });
   const area = riga.querySelector("[data-anamnesi=\"area\"]");
-  assert.ok(area, "l'area di testo e' montata dentro la riga «Patologie o infortuni»");
-  assert.equal(area.value, "", "senza documento il campo e' vuoto, non un trattino");
   const salva = riga.querySelector("[data-anamnesi=\"salva\"]");
-  const annulla = riga.querySelector("[data-anamnesi=\"annulla\"]");
-  assert.ok(salva && annulla, "ci sono Salva e Annulla");
+  const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
+  assert.ok(area && salva && nota, "area, Salva e la riga d'esito ci sono");
+  assert.equal(nota.textContent, "non dichiarato", "senza dichiarazione la riga dice «non dichiarato»");
+  assert.equal(salva.disabled, true, "Salva spento: non c'e' niente da salvare");
 
-  area.value = "lombalgia cronica, fastidio al ginocchio destro";
+  area.value = "ginocchio destro";
+  area.oninput();
+  assert.equal(salva.disabled, false, "con testo nuovo Salva si accende");
+  area.oninput();
   salva.onclick();
-  assert.equal(salvato, "lombalgia cronica, fastidio al ginocchio destro", "Salva passa il testo scritto");
-
-  /* dopo il salvataggio la pagina rilegge: il campo si riempie e la nota dice cosa ha capito */
-  doc.activeElement = null;
-  montaCampoAnamnesi(doc, { testo: "lombalgia cronica, fastidio al ginocchio destro", aggiornato: "2026-11-23T15:00:00Z", versione: 1 }, {});
-  const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
-  assert.ok(/colonna lombare/.test(nota.textContent), nota.textContent);
-  assert.ok(/ginocchio/.test(nota.textContent), nota.textContent);
-
-  annulla.onclick();
-  assert.equal(annullato, 1, "Annulla chiama la scrittura di annullamento");
-  assert.equal(area.value, "lombalgia cronica, fastidio al ginocchio destro", "e il campo torna al testo di prima");
-
-  /* il resto dell'anamnesi non si tocca */
-  assert.ok(riga.textContent.indexOf("Patologie o infortuni") !== -1);
+  assert.equal(salvato, "ginocchio destro");
 });
 
-test("143.9 campo vuoto: la nota dice «non dichiarato»", () => {
+test("143.7 la riga mostra l'esito ricevuto e non lo perde al ridisegno", () => {
   const { doc, riga } = paginaAnamnesi();
-  montaCampoAnamnesi(doc, null, {});
+  const dich = { presente: true, testo: "lombalgia", aggiornato: "2026-11-23T14:04:00.000Z", versione: 2 };
+  montaCampoAnamnesi(doc, dich, { token: 1, esito: { tipo: "salvato", quando: "2026-11-23T14:04:00.000Z" } });
   const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
-  assert.equal(nota.textContent, NON_DICHIARATO);
+  assert.equal(nota.textContent, "Salvato alle 14:04");
+  assert.equal(oraBreve("2026-11-23T14:04:00.000Z"), "14:04");
+
+  /* ridisegno con lo stesso token: l'esito resta */
+  montaCampoAnamnesi(doc, dich, { token: 1, esito: null });
+  assert.equal(riga.querySelector("[data-anamnesi=\"nota\"]").textContent, "Salvato alle 14:04");
+
+  /* errore di scrittura: sta accanto al campo */
+  montaCampoAnamnesi(doc, dich, { token: 2, esito: { tipo: "errore", motivo: "permission-denied: negato" } });
+  assert.equal(riga.querySelector("[data-anamnesi=\"nota\"]").textContent, "Non ho salvato: permission-denied: negato");
+
+  /* lettura fallita: lo dice, non «non dichiarato» */
+  montaCampoAnamnesi(doc, null, { token: 3, erroreLettura: "permission-denied: negato" });
+  const testo = riga.querySelector("[data-anamnesi=\"nota\"]").textContent;
+  assert.ok(/^Non ho potuto leggere la dichiarazione: permission-denied/.test(testo), testo);
+  assert.ok(testo.indexOf("non dichiarato") === -1, "non deve mai dire «non dichiarato» se la lettura e' fallita");
+  assert.equal(riga.querySelector("[data-anamnesi=\"salva\"]").disabled, true);
 });
 
-/* ---------- 5. le due carte ---------- */
+test("143.8 campo vuoto: «non dichiarato», mai un elenco travestito", () => {
+  assert.equal(testoDichiarazione(null), NON_DICHIARATO);
+  assert.equal(testoDichiarazione({ presente: true, testo: "" }), NON_DICHIARATO);
+  assert.equal(fraseArticolazioniDaAnamnesi(null), NON_DICHIARATO);
+  assert.ok(/ginocchio/.test(fraseArticolazioniDaAnamnesi({ presente: true, testo: "ginocchio destro" })));
+});
+
+/* ---------- le due carte ---------- */
 function paginaCarte() {
   const reds = nodo("article");
   reds.className = "ck-card ck-red";
-  const classificaReds = nodo("div");
-  classificaReds.setAttribute("data-reds-classifica", "");
+  const classifica = nodo("div");
+  classifica.setAttribute("data-reds-classifica", "");
   ["num", "stato", "piu", "nota"].forEach((k) => {
     const s = nodo("span");
     s.setAttribute("data-reds-" + k, "");
     reds.appendChild(s);
   });
-  reds.appendChild(classificaReds);
+  reds.appendChild(classifica);
   const stress = nodo("article");
   stress.className = "ck-card ck-st";
   const righe = nodo("div");
@@ -286,56 +269,35 @@ function paginaCarte() {
   return { doc, reds, stress };
 }
 
-/* Una scheda normalizzata come quelle che la zona B consegna alle carte. */
-const SCHEDE = [{
-  codice: "A",
-  esercizi: [
-    { id: "e1", n: "Panca piana", muscolo: "Pettorali", contaVolume: true, prescrizione: { settimane: 1, elencoSettimane: [{ settimana: 1, serie: 5, ripetizioni: 8 }] } },
-    { id: "e2", n: "Stacco da terra", muscolo: "Dorsali", contaVolume: true, prescrizione: { settimane: 1, elencoSettimane: [{ settimana: 1, serie: 5, ripetizioni: 5 }] } }
-  ]
-}];
+const RIEPILOGO = {
+  leggibile: true, righeContate: 4,
+  classifica: [
+    { articolazione: "colonna lombare", massimo: 10, tolleranza: 18, sopraCento: false, percentuale: 55 },
+    { articolazione: "ginocchio", massimo: 4, tolleranza: 22, sopraCento: false, percentuale: 18 }
+  ],
+  piuCaricata: { articolazione: "colonna lombare", massimo: 10 },
+  sopraCento: [], tutteAZero: false
+};
 
-function riempiCarte(dichiarate) {
-  const { doc, reds, stress } = paginaCarte();
-  const riepilogo = riempiRischioStrutturale(doc, SCHEDE, { dichiarate: dichiarate });
-  riempiStressArticolazioni(doc, riepilogo, { dichiarate: dichiarate, schede: SCHEDE, calcolo: null });
-  return { doc, reds, stress, riepilogo };
-}
-
-test("143.10 le articolazioni riconosciute portano il segno, e la carta dice da dove viene", () => {
+test("143.9 le articolazioni riconosciute portano il segno nelle due carte", () => {
   const { doc, stress, reds } = paginaCarte();
-  const riepilogo = {
-    leggibile: true, righeContate: 4,
-    classifica: [
-      { articolazione: "colonna lombare", massimo: 10, tolleranza: 18, sopraCento: false, percentuale: 55 },
-      { articolazione: "ginocchio", massimo: 4, tolleranza: 22, sopraCento: false, percentuale: 18 }
-    ],
-    piuCaricata: { articolazione: "colonna lombare", massimo: 10 },
-    sopraCento: [], tutteAZero: false
-  };
-  riempiStressArticolazioni(doc, riepilogo, { dichiarate: ["colonna lombare"], schede: [], calcolo: null });
+  const dich = dichiarazioneDalRegistro([voce("mod-a", "2026-11-23T10:00:00.000Z", "", "lombalgia cronica", 0)]);
+  const riconosciute = riconosciArticolazioni(dich.testo).articolazioni;
+  riempiStressArticolazioni(doc, RIEPILOGO, { dichiarate: riconosciute, schede: [], calcolo: null });
+  riempiRischioStrutturale(doc, [], { dichiarate: riconosciute });
   const riga = stress.querySelector("[data-stress-r=\"colonna lombare\"]");
-  assert.ok(riga, "la riga della lombare c'e'");
   assert.ok(riga.textContent.indexOf("dichiarata") !== -1, "il segno c'e': " + riga.textContent);
   const ginocchio = stress.querySelector("[data-stress-r=\"ginocchio\"]");
   assert.ok(ginocchio.textContent.indexOf("dichiarata") === -1, "chi non e' nel testo non porta segni");
-  assert.ok(stress.textContent.indexOf("dichiarate in anamnesi") !== -1, "la carta dice da dove viene: " + stress.textContent);
-
-  /* la carta RED-S: la nota c'e' anche quando non riesce a calcolare */
-  riempiRischioStrutturale(doc, [], { dichiarate: ["colonna lombare"] });
-  assert.ok(reds.textContent.indexOf("dichiarate in anamnesi") !== -1, "RED-S: " + reds.textContent);
+  assert.ok(stress.textContent.indexOf("dichiarate in anamnesi") !== -1);
+  assert.ok(reds.textContent.indexOf("dichiarate in anamnesi") !== -1);
 });
 
-test("143.11 anamnesi vuota: le carte dicono «non dichiarato» e nessun segno", () => {
+test("143.10 anamnesi non dichiarata: le carte lo dicono, nessun segno", () => {
   const { doc, stress, reds } = paginaCarte();
-  const riepilogo = {
-    leggibile: true, righeContate: 2,
-    classifica: [{ articolazione: "ginocchio", massimo: 4, tolleranza: 22, sopraCento: false, percentuale: 18 }],
-    piuCaricata: { articolazione: "ginocchio", massimo: 4 }, sopraCento: [], tutteAZero: false
-  };
-  riempiStressArticolazioni(doc, riepilogo, { dichiarate: [], schede: [], calcolo: null });
+  riempiStressArticolazioni(doc, RIEPILOGO, { dichiarate: [], schede: [], calcolo: null });
   riempiRischioStrutturale(doc, [], { dichiarate: [] });
-  assert.equal(contaClasse(stress, "ck-dol-p"), 0);
-  assert.ok(stress.textContent.indexOf("non dichiarato") !== -1, "Stress: " + stress.textContent);
-  assert.ok(reds.textContent.indexOf("non dichiarato") !== -1, "RED-S: " + reds.textContent);
+  assert.ok(stress.textContent.indexOf("non dichiarato") !== -1, stress.textContent);
+  assert.ok(reds.textContent.indexOf("non dichiarato") !== -1, reds.textContent);
+  assert.ok(stress.querySelector("[data-stress-r=\"colonna lombare\"]").textContent.indexOf("dichiarata") === -1);
 });
