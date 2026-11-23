@@ -41,7 +41,15 @@ function fintoZonaB(zone) {
             get: async () => {
               letture.push(sotto);
               return { docs: (dati[sotto] || []).map((d) => ({ id: d.id, data: () => d.dati })) };
-            }
+            },
+            doc: (id) => ({
+              get: async () => {
+                letture.push(sotto + ":" + id);
+                const v = dati[sotto];
+                if (v == null) return { exists: false, data: () => null };
+                return { exists: true, data: () => (v.dati != null ? v.dati : v) };
+              }
+            })
           })
         })
       };
@@ -102,7 +110,7 @@ test("54.1 le tre schermate leggono solo da bdB_atleti, mai da A", async () => {
   const zona = await leggiZonaBCompleta(f.db, "uid-di-prova");
   assert.equal(zona.esito.completa, true, "la zona di prova deve risultare completa");
   assert.ok(f.letture.indexOf("A:barbellDivaAccounts") === -1, "nessuna lettura dai dati di A");
-  assert.deepEqual(f.letture.slice().sort(), ["esclusioni", "fotografia:uid-di-prova", "programmi", "schede", "scheletri", "sedute"]);
+  assert.deepEqual(f.letture.slice().sort(), ["anamnesi-lite:uid-di-prova", "esclusioni", "fotografia:uid-di-prova", "programmi", "schede", "scheletri", "sedute"]);
 });
 
 test("54.2 le sedute si leggono dal campo session, con i due scarti dichiarati", async () => {
@@ -197,7 +205,8 @@ function lettureControllate(errori = []) {
   }); };
   const db = { collection: nome => {
     assert.equal(nome, 'bdB_atleti');
-    return { doc: () => ({ get: () => get('fotografia'), collection: sotto => ({ get: () => get(sotto) }) }) };
+    return { doc: () => ({ get: () => get('fotografia'), collection: sotto => ({
+      get: () => get(sotto), doc: () => ({ get: () => get(sotto) }) }) }) };
   } };
   return { db, avviate, pendenti };
 }
@@ -205,9 +214,11 @@ test('54.11 tutte le cinque letture partono prima che una risponda, risultato id
   const f = lettureControllate();
   const promessa = leggiZonaBCompleta(f.db, 'uid-di-prova');
   try {
-    assert.deepEqual(f.avviate, ['fotografia', 'programmi', 'schede', 'sedute', 'esclusioni', 'scheletri']);
+    assert.ok(f.avviate.includes('anamnesi-lite'), 'legge anche anamnesi-lite');
+    const senzaAnamnesi = f.avviate.filter(x => x !== 'anamnesi-lite');
+    assert.deepEqual(senzaAnamnesi, ['fotografia', 'programmi', 'schede', 'sedute', 'esclusioni', 'scheletri']);
     let conclusa = false; promessa.then(() => { conclusa = true; });
-    for (const nome of ['esclusioni', 'sedute', 'schede', 'programmi', 'scheletri']) f.pendenti[nome]();
+    for (const nome of ['esclusioni', 'sedute', 'schede', 'programmi', 'scheletri', 'anamnesi-lite']) f.pendenti[nome]();
     await Promise.resolve(); await Promise.resolve(); assert.equal(conclusa, false, 'aspetta anche la fotografia');
     f.pendenti.fotografia();
     const atteso = await leggiZonaBCompleta(fintoZonaB(zonaPiena()).db, 'uid-di-prova');

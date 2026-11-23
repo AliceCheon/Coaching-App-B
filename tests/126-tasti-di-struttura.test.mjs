@@ -13,7 +13,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { JSDOM, VirtualConsole } from "jsdom";
@@ -359,9 +359,14 @@ test("126.16 scheletro: Salva come scheletro chiede il nome e scrive lo scheletr
   await coda();
 });
 
-test("126.17 guardia: ogni verbo di chiedeRilettura ha una prova col suo nome in questa tabella", () => {
-  const fonte = readFileSync(fileURLToPath(import.meta.url), "utf8");
-  const senza = CAMPI_CHE_RIDISEGNANO.filter((v) => fonte.indexOf(" " + v + ":") === -1);
+test("126.17 guardia: ogni verbo di chiedeRilettura ha una prova col suo nome, in questa tabella o in un'altra", () => {
+  // I verbi dei tasti di struttura si provano qui; un verbo che nasce in un'altra
+  // area (anamnesi-lite viene dal modulo dell'anamnesi) si prova nel suo file:
+  // la guardia vuole una prova, non un posto preciso.
+  const cartella = join(dirname(fileURLToPath(import.meta.url)));
+  const fonti = readdirSync(cartella).filter((f) => f.endsWith(".test.mjs"))
+    .map((f) => readFileSync(join(cartella, f), "utf8")).join(String.fromCharCode(10));
+  const senza = CAMPI_CHE_RIDISEGNANO.filter((v) => fonti.indexOf(" " + v + ":") === -1 && fonti.indexOf("'" + v + "'") === -1 && fonti.indexOf('"' + v + '"') === -1);
   assert.deepEqual(senza, [], "questi verbi non hanno nessuna prova col loro nome: " + senza.join(", "));
 });
 
