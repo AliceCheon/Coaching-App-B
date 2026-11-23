@@ -61,6 +61,23 @@ function verdetto(classe, titolo, testo) {
   box.appendChild(v);
 }
 
+/* Il motivo dell'accesso, in italiano: i codici di Firebase Auth non dicono
+ * niente a chi li legge, e il piu' probabile qui e' il dominio non autorizzato. */
+function motivoAccesso(errore) {
+  const codice = String((errore && (errore.code || errore.codice)) || "");
+  if (codice === "auth/unauthorized-domain") {
+    return "Questo indirizzo non e' fra i domini autorizzati di Firebase (auth/unauthorized-domain): "
+      + "si autorizza in Firebase → Authentication → Settings → Authorized domains.";
+  }
+  if (codice === "auth/popup-blocked") return "Il browser ha bloccato la finestra di Google (auth/popup-blocked): riprova.";
+  if (codice === "auth/popup-closed-by-user") return "La finestra di Google si e' chiusa prima di scegliere l'account.";
+  if (codice === "auth/operation-not-supported-in-this-environment") {
+    return "Questo ambiente non permette la finestra di Google (" + codice + "): usa la pagina dal browser.";
+  }
+  if (codice === "auth/network-request-failed") return "Nessuna rete, o la rete blocca Google (auth/network-request-failed).";
+  return "Accesso non riuscito: " + (codice || motivoLettura(errore) || "motivo non dichiarato");
+}
+
 function codiceDi(errore) {
   return String((errore && (errore.code || errore.codice)) || "");
 }
@@ -262,10 +279,21 @@ async function avvia() {
   auth = authDi(app);
   db = firestoreDi(app);
   persistenzaLocale(auth, sdk).catch(() => {});
-  el("entra").onclick = () => entraConGoogle(sdk, auth, { mobile: false })
-    .catch((e) => { el("stato").textContent = motivoLettura(e); });
+  el("entra").onclick = () => {
+    el("stato").textContent = "apro la finestra di Google…";
+    return entraConGoogle(sdk, auth, { mobile: false })
+      .then((esito) => { el("stato").textContent = esito && esito.via === "redirect" ? "ti porto su Google…" : ""; })
+      .catch((e) => { el("stato").textContent = motivoAccesso(e); });
+  };
   el("esci").onclick = () => esci(auth);
   el("prova").onclick = () => { prova().catch((e) => { el("stato").textContent = motivoLettura(e); el("prova").disabled = false; }); };
+  const dove = el("dove");
+  if (dove) {
+    const f = (config && config.firebase) || {};
+    dove.textContent = "pagina: " + String((window.location && window.location.href) || "")
+      + " · accesso Google su: " + String(f.authDomain || "dominio non dichiarato")
+      + " · progetto: " + String(f.projectId || "—");
+  }
   ascoltaStato(auth, mostraAccesso);
 }
 

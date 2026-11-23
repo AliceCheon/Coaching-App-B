@@ -45,10 +45,13 @@
   <p>Collegato come: <strong id="chi">verifico…</strong> · uid <code id="uid">—</code></p>
   <button id="entra">Entra con Google</button>
   <button id="esci" hidden>Esci</button>
+  <!-- L'esito dell'accesso sta FUORI dal riquadro che si nasconde senza
+       sessione: se l'accesso non riesce, il motivo deve vedersi. -->
+  <p class="tenue" id="stato"></p>
+  <p class="tenue" id="dove"></p>
 
   <div id="corpo" hidden>
     <button id="prova">Prova: scrivi → rileggi → annulla</button>
-    <span class="tenue" id="stato"></span>
     <div class="riquadro">
       <p><strong>Dichiarazione letta adesso:</strong> <span id="corrente">—</span></p>
       <p class="tenue" id="corrente-dettaglio"></p>
