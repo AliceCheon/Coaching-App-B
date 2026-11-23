@@ -111,6 +111,15 @@ function mappaSettimane(doc, conto, quante, soloDiretto) {
 
 /* Righe -> conto -> schermo. Lo switch (cosa conta) rifà il conto da capo:
  * non aggiusta i numeri dopo. */
+/* PASSO 11: le frasi del vuoto, in un posto solo. La pagina di diagnosi degli
+ * esercizi le rilegge da qui (e non le riscrive): la frase che si vede in
+ * «Riepilogo volume» e quella in testa alla diagnosi sono la stessa stringa. */
+export const FRASI_VUOTO_VOLUME = Object.freeze({
+  nessunaRiga: "Nessuna riga da contare: le schede di questo programma non portano esercizi leggibili. Non si mettono zeri al posto loro.",
+  nessunDistretto: "Nessun distretto riconosciuto: il documento non porta il gruppo muscolare e la mappa non conosce questi nomi. Il conto non lo inventa.",
+  nienteMappa: "Niente da disegnare: nessun distretto attribuito."
+});
+
 export function renderVolume(doc, contenitore, schede, opzioni) {
   if (!doc || !contenitore) return null;
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
@@ -164,7 +173,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     contenitore.appendChild(kpi);
 
     if (!conto.righeContate) {
-      contenitore.appendChild(n(doc, "p", "pg-vuoto", "Nessuna riga da contare: le schede di questo programma non portano esercizi leggibili. Non si mettono zeri al posto loro."));
+      contenitore.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nessunaRiga));
       return conto;
     }
 
@@ -174,7 +183,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     ch1.appendChild(n(doc, "span", "", conto.righeContate + " righe contate \u00b7 " + conto.fuoriVolume + " fuori volume"));
     cardDistretti.appendChild(ch1);
     if (!conto.distretti.length) {
-      cardDistretti.appendChild(n(doc, "p", "pg-vuoto", "Nessun distretto riconosciuto: il documento non porta il gruppo muscolare e la mappa non conosce questi nomi. Il conto non lo inventa."));
+      cardDistretti.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nessunDistretto));
     } else {
       cardDistretti.appendChild(tabella(
         doc,
@@ -195,7 +204,7 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     ch2.appendChild(n(doc, "span", "", soloDiretto ? "solo diretto" : "con le sinergie dentro"));
     cardMappa.appendChild(ch2);
     if (conto.distretti.length) cardMappa.appendChild(mappaSettimane(doc, conto, quante, soloDiretto));
-    else cardMappa.appendChild(n(doc, "p", "pg-vuoto", "Niente da disegnare: nessun distretto attribuito."));
+    else cardMappa.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nienteMappa));
     contenitore.appendChild(cardMappa);
 
     const cardSettimane = n(doc, "div", "rv-card");

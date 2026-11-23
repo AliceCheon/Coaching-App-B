@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barbell Diva B · diagnosi degli esercizi</title>
+<link rel="stylesheet" href="../comune/tema-b.css">
+<style>
+  body { margin: 0; padding: 24px 18px 60px; background: #090918; color: #f2eefb;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+  main { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; color: #c9b8ee; letter-spacing: .04em; text-transform: uppercase; }
+  p { margin: 8px 0; }
+  .tenue { color: #a99fc4; font-size: 13px; }
+  .riquadro { background: #131324; border: 1px solid #2a2745; border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+  button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 1px solid #4a3f7a;
+           background: #2b2150; color: #f2eefb; cursor: pointer; margin: 6px 6px 6px 0; }
+  button:disabled { opacity: .45; cursor: default; }
+  #leggi { background: #1f3a4d; border-color: #2f6a86; font-weight: 600; }
+  #copia-tutto { background: #6d3fa8; border-color: #8f5fd0; font-weight: 600; }
+  .kpi { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+  .kpi div { flex: 1 1 160px; background: #131324; border: 1px solid #2a2745; border-radius: 12px; padding: 10px 14px; }
+  .kpi b { display: block; font-size: 24px; line-height: 1.2; }
+  .kpi span { color: #a99fc4; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #2a2745; vertical-align: top; }
+  th { color: #a99fc4; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+       position: sticky; top: 0; background: #090918; }
+  td.nome { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; color: #ffe9b0; }
+  td.ok { color: #6ee7a8; }
+  td.errore { color: #ff9aa2; }
+  tr.fuori td { color: #8d86a8; }
+  .avviso { color: #ffd08a; }
+  code { background: #131324; padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+  .fonte { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #c9b8ee; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Diagnosi degli esercizi</h1>
+  <p class="tenue">Legge la zona B con le stesse funzioni dell'app e, per ogni riga della scheda del
+  programma attivo, dice: il nome com'è scritto nel documento, cosa risponde il resolver, che distretto
+  e che articolazioni ne escono, se la riga conta nel volume, e da dove arrivano le schede.
+  <strong>Sola lettura</strong>: questa pagina non scrive niente, in nessun caso.</p>
+
+  <p>Collegato come: <strong id="chi">verifico…</strong> · uid <code id="uid">—</code></p>
+  <button id="entra">Entra con Google</button>
+  <button id="esci" hidden>Esci</button>
+
+  <div id="corpo" hidden>
+    <button id="leggi">Rileggi e diagnostica (sola lettura)</button>
+    <button id="copia-tutto" disabled>Copia tutto</button>
+    <span class="tenue" id="stato"></span>
+
+    <div id="testa" hidden>
+      <div class="kpi">
+        <div><span>righe lette</span><b id="k-lette">—</b></div>
+        <div><span>riconosciute</span><b id="k-riconosciute">—</b></div>
+        <div><span>senza distretto</span><b id="k-senza">—</b></div>
+        <div><span>distretti distinti</span><b id="k-distretti">—</b></div>
+        <div><span>fuori volume</span><b id="k-fuori">—</b></div>
+      </div>
+      <div class="riquadro">
+        <p><strong>fonte schede:</strong> <span class="fonte" id="fonte-schede">—</span></p>
+        <p><strong>programma:</strong> <span id="programma">—</span></p>
+        <p><strong>Riepilogo volume:</strong> <span id="frase-volume">—</span></p>
+        <p class="tenue" id="legame"></p>
+      </div>
+    </div>
+
+    <h2>Riga per riga</h2>
+    <p class="tenue">Il nome è riportato fra virgolette esattamente come sta nel documento: spazi doppi
+    compresi, senza pulizia. Se una riga non si riconosce, il motivo è dichiarato: «nessun candidato»
+    oppure «ambiguo» con i candidati.</p>
+    <table id="tabella" hidden>
+      <thead>
+        <tr>
+          <th>Scheda</th>
+          <th>Proviene da</th>
+          <th>Nome come sta scritto</th>
+          <th>Muscolo della riga</th>
+          <th>Resolver</th>
+          <th>Distretto</th>
+          <th>Articolazioni</th>
+          <th>Nel volume</th>
+        </tr>
+      </thead>
+      <tbody id="righe"></tbody>
+    </table>
+    <p class="tenue" id="vuoto" hidden>Nessuna riga da diagnosticare.</p>
+  </div>
+</main>
+
+<script src="../app-config-b.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script type="module" src="./diagnosi-esercizi.js"></script>
+</body>
+</html>
