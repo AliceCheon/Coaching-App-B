@@ -255,10 +255,15 @@ function mostraAccesso(utente) {
 }
 
 async function avvia() {
-  app = inizializzaAppB(config, sdk);
+  /* L'ordine degli argomenti e' quello del modulo: (sdk, config) — e
+   * entraConGoogle vuole (sdk, auth). Prima erano scambiati e la pagina non
+   * partiva affatto: il tasto «Entra con Google» restava muto. */
+  app = inizializzaAppB(sdk, config);
   auth = authDi(app);
   db = firestoreDi(app);
-  el("entra").onclick = () => entraConGoogle(auth).catch((e) => { el("stato").textContent = motivoLettura(e); });
+  persistenzaLocale(auth, sdk).catch(() => {});
+  el("entra").onclick = () => entraConGoogle(sdk, auth, { mobile: false })
+    .catch((e) => { el("stato").textContent = motivoLettura(e); });
   el("esci").onclick = () => esci(auth);
   el("prova").onclick = () => { prova().catch((e) => { el("stato").textContent = motivoLettura(e); el("prova").disabled = false; }); };
   ascoltaStato(auth, mostraAccesso);
