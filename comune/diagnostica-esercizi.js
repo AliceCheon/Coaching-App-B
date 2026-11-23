@@ -245,7 +245,10 @@ export function fraseRiepilogoVolume(conto) {
     }
     return FRASI_VUOTO_VOLUME.nessunaRiga;
   }
-  if (!Array.isArray(c.distretti) || !c.distretti.length) return FRASI_VUOTO_VOLUME.nessunDistretto;
+  if (!Array.isArray(c.distretti) || !c.distretti.length) {
+    /* PASSO 13: stessa scelta della vista, stessa stringa. */
+    return c.righeSenzaSettimane ? FRASI_VUOTO_VOLUME.nessunaSettimana : FRASI_VUOTO_VOLUME.nessunDistretto;
+  }
   return "Serie per distretto: "
     + c.distretti.map((d) => d.distretto + " " + formattaNumero(d.dirette) + " dirette").join(" \u00b7 ")
     + " (" + c.righeLette + " righe lette \u00b7 " + c.righeSenzaNome + " senza nome \u00b7 "

@@ -117,6 +117,8 @@ function mappaSettimane(doc, conto, quante, soloDiretto) {
 export const FRASI_VUOTO_VOLUME = Object.freeze({
   nessunaRiga: "Nessuna riga da contare: le schede di questo programma non portano esercizi leggibili. Non si mettono zeri al posto loro.",
   nessunDistretto: "Nessun distretto riconosciuto: il documento non porta il gruppo muscolare e la mappa non conosce questi nomi. Il conto non lo inventa.",
+  /* PASSO 13: il distretto c'e', manca l'elenco delle settimane. */
+  nessunaSettimana: "Nessuna settimana scritta: le righe hanno nome e distretto, ma la scheda non porta l'elenco delle settimane. Il conto non lo inventa.",
   nienteMappa: "Niente da disegnare: nessun distretto attribuito."
 });
 
@@ -197,7 +199,10 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     ch1.appendChild(n(doc, "span", "", conto.righeLette + " righe lette \u00b7 " + conto.righeSenzaNome + " senza nome \u00b7 " + conto.fuoriVolume + " fuori volume"));
     cardDistretti.appendChild(ch1);
     if (!conto.distretti.length) {
-      cardDistretti.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nessunDistretto));
+      const frase = conto.righeSenzaSettimane
+        ? FRASI_VUOTO_VOLUME.nessunaSettimana
+        : FRASI_VUOTO_VOLUME.nessunDistretto;
+      cardDistretti.appendChild(n(doc, "p", "pg-vuoto", frase));
     } else {
       cardDistretti.appendChild(tabella(
         doc,

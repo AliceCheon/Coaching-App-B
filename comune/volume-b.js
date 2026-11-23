@@ -56,6 +56,37 @@ function primoCampo(oggetto, nomi) {
   return undefined;
 }
 
+/* Il primo campo che e' DAVVERO un elenco: un campo-conteggio non deve
+ * coprire l'elenco che gli sta accanto (stessa idea di primoCampoPieno in
+ * schede-v2.js). PASSO 13: la scheda normalizzata porta
+ * prescrizione.settimane = 2 (quante sono) e prescrizione.elencoSettimane = [...]:
+ * con primoCampo vinceva il numero, che non e' un elenco, e ogni riga restava
+ * a zero settimane. */
+function primoElenco(oggetto, nomi) {
+  if (!oggetto || typeof oggetto !== "object") return null;
+  for (let i = 0; i < nomi.length; i += 1) {
+    const nome = nomi[i];
+    if (!Object.prototype.hasOwnProperty.call(oggetto, nome)) continue;
+    if (Array.isArray(oggetto[nome])) return oggetto[nome];
+  }
+  return null;
+}
+
+/* Le ripetizioni scritte serie per serie: somma e quante sono. Un elenco
+ * senza numeri non e' un dato (resta «ripetizioni mancanti»). */
+function numeriDaElenco(valore) {
+  if (!Array.isArray(valore)) return null;
+  let somma = 0;
+  let quanti = 0;
+  valore.forEach((v) => {
+    const n = numeroDaTesto(v);
+    if (n == null) return;
+    somma += n;
+    quanti += 1;
+  });
+  return quanti ? { somma, quanti } : null;
+}
+
 function testo(valore) {
   if (valore == null) return "";
   return String(valore).trim();
@@ -94,13 +125,22 @@ export function testoVolume(valore) {
 }
 
 function settimaneDellaRiga(riga) {
-  const dirette = primoCampo(riga, CAMPI_VOLUME.settimane);
-  if (Array.isArray(dirette)) return dirette;
-  const prescrizione = riga && riga.prescrizione && typeof riga.prescrizione === "object" ? riga.prescrizione : null;
+  if (!riga || typeof riga !== "object") return [];
+  /* PASSO 13: prima l'elenco vero, poi il conteggio. `settimane: 2` non e' la
+   * settimana: e' quante sono, e non deve zittire `elencoSettimane`. */
+  const dirette = primoElenco(riga, CAMPI_VOLUME.settimane);
+  if (dirette) return dirette;
+  const prescrizione = riga.prescrizione && typeof riga.prescrizione === "object" ? riga.prescrizione : null;
   if (prescrizione) {
-    const dentro = primoCampo(prescrizione, CAMPI_VOLUME.settimane);
-    if (Array.isArray(dentro)) return dentro;
+    const dentro = primoElenco(prescrizione, CAMPI_VOLUME.settimane);
+    if (dentro) return dentro;
+    const progressione = prescrizione.progression && typeof prescrizione.progression === "object" ? prescrizione.progression : null;
+    const nellaProgressione = progressione ? primoElenco(progressione, ["weeks", "settimane"]) : null;
+    if (nellaProgressione) return nellaProgressione;
   }
+  const grezza = riga.progression && typeof riga.progression === "object" ? riga.progression : null;
+  const fuori = grezza ? primoElenco(grezza, ["weeks", "settimane"]) : null;
+  if (fuori) return fuori;
   return [];
 }
 
@@ -163,6 +203,7 @@ export function contaVolume(righe, opzioni) {
   let senzaSecondari = 0;
   let senzaDistretto = 0;
   let senzaNome = 0;
+  let senzaSettimane = 0;
 
   const cellaDistretto = (d) => {
     if (!distretti[d]) { distretti[d] = cella(); mappa[d] = Object.create(null); }
@@ -200,13 +241,25 @@ export function contaVolume(righe, opzioni) {
     if (!secondari.length) senzaSecondari += 1;
 
     const suo = settimaneDellaRiga(riga);
+    /* PASSO 13: la riga ha nome e distretto ma nessuna settimana scritta:
+     * non e' zero, e' un dato che manca, e la pagina lo dice. */
+    if (!suo.length) senzaSettimane += 1;
     for (let k = 0; k < suo.length; k += 1) {
       const grezza = suo[k] && typeof suo[k] === "object" ? suo[k] : null;
       if (!grezza) continue;
-      const serie = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.serie));
+      /* PASSO 13, secondo punto: se le ripetizioni sono scritte serie per
+       * serie (elenco), si sommano; se le serie non sono scritte, le detta
+       * l'elenco. Un elenco non deve fermare il conto come se fosse testo. */
+      const ripGrezze = primoCampo(grezza, CAMPI_VOLUME.ripetizioni);
+      const perSerie = numeriDaElenco(ripGrezze);
+      const serieScritte = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.serie));
+      const serie = serieScritte != null ? serieScritte : (perSerie ? perSerie.quanti : null);
       if (serie == null || serie <= 0) continue;
-      const ripetizioni = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioni));
-      const totali = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioniTotali));
+      const ripetizioni = perSerie ? null : numeroDaTesto(ripGrezze);
+      const totaliGrezzi = primoCampo(grezza, CAMPI_VOLUME.ripetizioniTotali);
+      const totaliElenco = numeriDaElenco(totaliGrezzi);
+      const totaliScritti = numeroDaTesto(totaliGrezzi);
+      const totali = totaliScritti != null ? totaliScritti : (totaliElenco ? totaliElenco.somma : (perSerie ? perSerie.somma : null));
       const mancanti = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.ripetizioniMancanti));
       const numeroGrezzo = numeroDaTesto(primoCampo(grezza, CAMPI_VOLUME.numeroSettimana));
       const numero = numeroGrezzo != null && numeroGrezzo >= 0 ? Math.floor(numeroGrezzo) : k + 1;
@@ -279,6 +332,7 @@ export function contaVolume(righe, opzioni) {
     righeContate: contate,
     fuoriVolume,
     righeSenzaNome: senzaNome,
+    righeSenzaSettimane: senzaSettimane,
     righeSenzaSecondari: senzaSecondari,
     righeSenzaDistretto: senzaDistretto
   };
