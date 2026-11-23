@@ -233,18 +233,21 @@ test("143.7 la riga mostra l'esito ricevuto e non lo perde al ridisegno", () => 
   const dich = { presente: true, testo: "lombalgia", aggiornato: "2026-11-23T14:04:00.000Z", versione: 2 };
   montaCampoAnamnesi(doc, dich, { token: 1, esito: { tipo: "salvato", quando: "2026-11-23T14:04:00.000Z" } });
   const nota = riga.querySelector("[data-anamnesi=\"nota\"]");
-  assert.equal(nota.textContent, "Salvato alle 14:04");
-  assert.equal(oraBreve("2026-11-23T14:04:00.000Z"), "14:04");
+  /* L'ora si legge nel fuso del dispositivo: l'attesa si ricava dalla stessa
+   * data, cosi' la prova vale a Greenwich come a Roma e d'estate come d'inverno. */
+  const alle = (iso) => String(new Date(iso).getHours()).padStart(2, "0") + ":" + String(new Date(iso).getMinutes()).padStart(2, "0");
+  assert.equal(nota.textContent, "Salvato alle " + alle("2026-11-23T14:04:00.000Z"));
+  assert.equal(oraBreve("2026-11-23T14:04:00.000Z"), alle("2026-11-23T14:04:00.000Z"));
 
   /* a riposo: il testo salvato, la data dichiarata e la nota riconosciute */
   assert.equal(riga.querySelector("[data-anamnesi=\"testo\"]").textContent, "lombalgia");
-  assert.equal(riga.querySelector("[data-anamnesi=\"quando\"]").textContent, "dichiarato il 23/11/2026 alle 14:04");
+  assert.equal(riga.querySelector("[data-anamnesi=\"quando\"]").textContent, "dichiarato il 23/11/2026 alle " + alle("2026-11-23T14:04:00.000Z"));
   assert.equal(riga.querySelector("[data-anamnesi=\"riconosciute\"]").textContent, "Riconosciute: colonna lombare.");
   assert.equal(riga.querySelector("[data-anamnesi=\"modifica\"]").textContent, "Modifica");
 
   /* ridisegno con lo stesso token: l'esito resta */
   montaCampoAnamnesi(doc, dich, { token: 1, esito: null });
-  assert.equal(riga.querySelector("[data-anamnesi=\"nota\"]").textContent, "Salvato alle 14:04");
+  assert.equal(riga.querySelector("[data-anamnesi=\"nota\"]").textContent, "Salvato alle " + alle("2026-11-23T14:04:00.000Z"));
 
   /* errore di scrittura: sta accanto al campo */
   montaCampoAnamnesi(doc, dich, { token: 2, esito: { tipo: "errore", motivo: "permission-denied: negato" } });

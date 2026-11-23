@@ -188,7 +188,7 @@ test("144.1 clic vero su Salva: una scrittura, e dopo la ricarica il testo e' an
   assert.match(pagina.nota.textContent, /^Salvato alle \d\d:\d\d$/, pagina.nota.textContent);
   assert.equal(pagina.riga.getAttribute("data-modo-anamnesi"), "letto", "Salva chiude e torna in sola lettura");
   assert.equal(pagina.area.style.display, "none");
-  assert.equal(pagina.riga.querySelector("[data-anamnesi=\"quando\"]").textContent, "dichiarato il 23/11/2026 alle 14:00");
+  assert.match(pagina.riga.querySelector("[data-anamnesi=\"quando\"]").textContent, /^dichiarato il 23\/11\/2026 alle \d\d:\d\d$/, "la data si legge nel fuso del dispositivo");
 
   /* ricarica: la pagina riparte da zero e legge il registro */
   const dopo = await ricarica(db, "uid-1");

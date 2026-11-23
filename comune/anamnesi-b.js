@@ -256,20 +256,34 @@ export function fraseArticolazioniDaAnamnesi(dichiarazione) {
     : base;
 }
 
-/* L'ora come la legge una persona: HH:MM da una data ISO. */
-export function oraBreve(quando) {
+/* L'ora come la legge una persona: HH:MM da una data ISO, NEL FUSO DEL
+ * DISPOSITIVO. Il testo ISO e' in UTC (`toISOString`): leggendo le cifre
+ * dell'ISO si mostrava l'ora di Greenwich, un'ora indietro a Roma d'inverno
+ * e due d'estate. Si passa dalla data vera, cosi' l'ora legale si aggiusta da
+ * sola e non c'e' nessun fuso scritto a mano. */
+function comeData(quando) {
   const t2 = testo(quando);
-  const m = /T(\d\d):(\d\d)/.exec(t2);
-  if (m) return m[1] + ":" + m[2];
-  return t2 ? t2 : "";
+  if (!t2) return null;
+  const d = new Date(t2);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/* La data come la legge una persona: 23/11/2026 da una data ISO. */
+function due(n) {
+  return String(n).padStart(2, "0");
+}
+
+/* L'ora come la legge una persona: HH:MM nel fuso del dispositivo. */
+export function oraBreve(quando) {
+  const d = comeData(quando);
+  if (!d) return testo(quando);
+  return due(d.getHours()) + ":" + due(d.getMinutes());
+}
+
+/* La data come la legge una persona: 23/11/2026 nel fuso del dispositivo. */
 export function dataBreve(quando) {
-  const t2 = testo(quando);
-  const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(t2);
-  if (m) return m[3] + "/" + m[2] + "/" + m[1];
-  return "";
+  const d = comeData(quando);
+  if (!d) return "";
+  return due(d.getDate()) + "/" + due(d.getMonth() + 1) + "/" + d.getFullYear();
 }
 
 /* Il salvataggio: UNA voce di registro, con prima, dopo e le due versioni.
