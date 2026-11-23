@@ -36,9 +36,9 @@ export const CAMPI_CHE_RIDISEGNANO = Object.freeze([
   "applica-scarico-tutte",
   "applica-scheletro",
   "elimina-scheletro",
-  /* PASSO 14: il tasto «Dove ti fa male» scrive un documento suo: senza
-   * rileggere, la carta resterebbe com'era prima del tocco. */
-  "dolori"
+  /* PASSO 14: «Patologie o infortuni» scrive un documento suo: senza
+   * rileggere, le carte resterebbero com'erano prima del salvataggio. */
+  "anamnesi-lite"
 ]);
 
 /* I campi che la cella mostra da sola: scrivono e NON ridisegnano. */

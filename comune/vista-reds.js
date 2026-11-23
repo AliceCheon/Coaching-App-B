@@ -15,7 +15,6 @@ import { stressSettimana, serieInParola } from "./articolazioni-b.js";
 import { schedePerProgramma } from "./programma.js";
 import { programmaAttivo, settimanaCorrente } from "./lettura-dati.js";
 import { nomePulito } from "./nome-pulito.js";
-import { ARTICOLAZIONI, normalizzaDolori } from "./dolori-b.js";
 
 const NON = "\u2014";
 
@@ -33,6 +32,25 @@ function aggiorna(nodo, testo) {
  *
  * opzioni.calcolo = { codici: ["A","B"], settimana: 3 } dice alla nota su cosa
  * si e' calcolato. Se manca, la nota parla de «la scheda attiva». */
+/* PASSO 14 — da dove vengono le articolazioni segnate: dall'anamnesi scritta a
+ * parole. Se non c'e', la carta dice «non dichiarato» invece di far credere che
+ * nessuno abbia niente. */
+function notaAnamnesi(doc, carta, dove, dichiarate) {
+  if (!doc || !carta) return null;
+  let riga = typeof carta.querySelector === "function" ? carta.querySelector("[data-anamnesi-carte=\"" + dove + "\"]") : null;
+  if (!riga) {
+    riga = doc.createElement("p");
+    riga.className = "ck-anam-n";
+    riga.setAttribute("data-anamnesi-carte", dove);
+    carta.appendChild(riga);
+  }
+  const elenco = Array.isArray(dichiarate) ? dichiarate : [];
+  riga.textContent = elenco.length
+    ? "Articolazioni dichiarate in anamnesi: " + elenco.join(", ") + "."
+    : "Anamnesi: non dichiarato.";
+  return riga;
+}
+
 export function riempiRischioStrutturale(doc, schede, opzioni) {
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   const carta = doc.querySelector("#pag-dashboard .ck-red");
@@ -42,6 +60,7 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
   const piu = carta.querySelector("[data-reds-piu]");
   const nota = carta.querySelector("[data-reds-nota]");
   const classifica = carta.querySelector("[data-reds-classifica]");
+  const dichiarate = Array.isArray(o.dichiarate) ? o.dichiarate : [];
 
   const elenco = (Array.isArray(schede) ? schede : (schede && typeof schede === "object" ? [schede] : []))
     .filter((x) => x && typeof x === "object");
@@ -65,6 +84,9 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
     const diagnosi = o.diagnosi ? " " + String(o.diagnosi) : "";
     aggiorna(nota, "Non calcolato: " + motivo + "." + diagnosi + " Nessuno zero al posto di un dato che manca.");
     carta.setAttribute("data-reds", "non-calcolabile");
+    /* PASSO 14 — anche quando la carta non sa calcolare, da dove vengono le
+     * articolazioni segnate lo dice lo stesso. */
+    notaAnamnesi(doc, carta, "reds", dichiarate);
     return riepilogo;
   }
 
@@ -103,6 +125,14 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
       soglia.className = "ck-red-rs";
       soglia.textContent = "soglia di partenza: " + serieInParola(voce.tolleranza);
       nome.appendChild(etichetta);
+      /* PASSO 14 — l'evidenza: chi compare nell'anamnesi porta il segno
+       * accanto al nome. Se e' anche sopra soglia resta rosso e il segno resta. */
+      if (dichiarate.indexOf(voce.articolazione) !== -1) {
+        const segno = doc.createElement("span");
+        segno.className = "ck-dol-p";
+        segno.textContent = "dichiarata";
+        nome.appendChild(segno);
+      }
       nome.appendChild(soglia);
       const barra = doc.createElement("span");
       barra.className = "ck-red-rb";
@@ -127,6 +157,7 @@ export function riempiRischioStrutturale(doc, schede, opzioni) {
       classifica.appendChild(riga);
     });
   }
+  notaAnamnesi(doc, carta, "reds", dichiarate);
 
   /* PASSO 6c-fix-3 — i numeri veri della mappatura dei nomi, cosi' in un colpo
    * si vede se il problema sono i nomi. I nomi passano da nomePulito perche'
@@ -391,6 +422,7 @@ export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
     riga.appendChild(valore);
     if (righe) righe.appendChild(riga);
   });
+  notaAnamnesi(doc, carta, "stress", dichiarate);
 
   const elenco = Array.isArray(o.schede) ? o.schede.filter((x) => x && typeof x === "object") : [];
   const sopra = riepilogo.sopraCento.length
@@ -404,86 +436,23 @@ export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
   return riepilogo;
 }
 
-/* PASSO 14 — «Dove ti fa male»: sotto la classifica, le otto articolazioni
- * come bottoni acceso/spento. Il tocco non calcola niente: chiama `onCambia`,
- * che scrive subito e fa rileggere la pagina. Se nessuno ha mai dichiarato
- * niente la riga dice «non dichiarato» e non mostra segni.
- */
-export function riempiDoloriArticolazioni(doc, dolori, opzioni) {
-  const o = opzioni && typeof opzioni === "object" ? opzioni : {};
-  if (!doc || typeof doc.querySelector !== "function") return null;
-  const carta = doc.querySelector("#pag-dashboard .ck-st");
-  if (!carta) return null;
-  const letto = normalizzaDolori(dolori);
-  let blocco = typeof carta.querySelector === "function" ? carta.querySelector("[data-dolori]") : null;
-  if (!blocco) {
-    blocco = doc.createElement("div");
-    blocco.className = "ck-st-dol";
-    blocco.setAttribute("data-dolori", "riga");
-    carta.appendChild(blocco);
-  }
-  while (blocco.firstChild) blocco.removeChild(blocco.firstChild);
-
-  const titolo = doc.createElement("p");
-  titolo.className = "ck-st-dolt";
-  titolo.textContent = "Dove ti fa male";
-  blocco.appendChild(titolo);
-
-  const fila = doc.createElement("div");
-  fila.className = "ck-st-dolf";
-  ARTICOLAZIONI.forEach((articolazione) => {
-    const acceso = letto.articolazioni.indexOf(articolazione) !== -1;
-    const b = doc.createElement("button");
-    b.className = "ck-dol-b" + (acceso ? " on" : "");
-    b.setAttribute("type", "button");
-    b.setAttribute("data-dolore", articolazione);
-    b.setAttribute("aria-pressed", acceso ? "true" : "false");
-    b.textContent = articolazione;
-    if (acceso) {
-      const segno = doc.createElement("span");
-      segno.className = "ck-dol-p";
-      segno.textContent = "dichiarata";
-      b.appendChild(segno);
-    }
-    b.onclick = () => {
-      if (typeof o.onCambia === "function") o.onCambia(articolazione, acceso);
-    };
-    fila.appendChild(b);
-  });
-  blocco.appendChild(fila);
-
-  const nota = doc.createElement("p");
-  nota.className = "ck-st-doln";
-  nota.textContent = !letto.presente
-    ? "non dichiarato: nessuna articolazione segnata (il tocco la scrive)"
-    : (letto.articolazioni.length
-      ? "Dichiarate: " + letto.articolazioni.join(", ") + (letto.aggiornato ? " · aggiornato il " + letto.aggiornato.slice(0, 10) : "")
-      : "nessuna articolazione: il documento c'e' e dice che adesso non fa male niente");
-  blocco.appendChild(nota);
-  return letto;
-}
-
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
+  /* PASSO 14 (versione semplice) — le articolazioni non si scelgono con i
+   * bottoni: si leggono dal testo scritto in anamnesi. Chi le riconosce e'
+   * anamnesi-b.js, una volta sola. */
+  const dichiarate = Array.isArray(letture && letture.dichiarate) ? letture.dichiarate : [];
   const riepilogo = riempiRischioStrutturale(doc, scelta.schede, {
     motivo: scelta.motivo,
     diagnosi: scelta.diagnosi,
-    calcolo: scelta.calcolo
+    calcolo: scelta.calcolo,
+    dichiarate: dichiarate
   });
-  /* PASSO 6h — la carta «Stress allenamento» legge LO STESSO riepilogo:
-   * un conto solo, quindi gli stessi numeri. */
-  const dolori = letture && typeof letture === "object" ? letture.dolori : null;
-  const dichiarate = normalizzaDolori(dolori).articolazioni;
   riempiStressArticolazioni(doc, riepilogo, {
     motivo: scelta.motivo,
     calcolo: scelta.calcolo,
     schede: scelta.schede,
     dichiarate: dichiarate
-  });
-  /* PASSO 14 — la riga «Dove ti fa male», sotto la classifica. Il tocco scrive
-   * subito: la scrittura la fa la pagina (onCambia), qui non si scrive niente. */
-  riempiDoloriArticolazioni(doc, dolori, {
-    onCambia: letture && typeof letture === "object" ? letture.onCambiaDolori : null
   });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
 }

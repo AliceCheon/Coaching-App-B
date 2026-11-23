@@ -118,7 +118,7 @@ export const SOTTO_B = Object.freeze({
   esclusioni: "esclusioni",
   registro: "registro",
   scheletri: "scheletri",
-  dolori: "dolori"
+  anamnesiLite: "anamnesi-lite"
 });
 
 /* Errore esplicito per qualunque scrittura fuori dalla zona B. */

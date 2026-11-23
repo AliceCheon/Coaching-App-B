@@ -20,7 +20,7 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia, scriviDolori, scriviVoceRegistro } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia, scriviAnamnesiLite, scriviVoceRegistro } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
@@ -37,7 +37,8 @@ import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
-import { dichiarazioneDolori } from "../comune/dolori-b.js";
+import { riconosciArticolazioni, salvaAnamnesi, annullaAnamnesi, ultimaVoceAnamnesi } from "../comune/anamnesi-b.js";
+import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -446,9 +447,9 @@ export async function avvia(doc, win) {
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = { programmi: zona.programmi };
     const schedeV2 = zona.schedeV2;
-    /* PASSO 14 — «Dove ti fa male»: il documento singolo della zona B. Se non
-     * c'e', resta null e la carta dice «non dichiarato». */
-    const doloriB = zona.dolori || null;
+    /* PASSO 14 — «Patologie o infortuni»: il documento singolo della zona B.
+     * Se non c'e', resta null e le carte dicono «non dichiarato». */
+    const anamnesiB = zona.anamnesi || null;
     if (!rigaStato) rigaStato = creaRigaStato(doc);
     /* Passo 9 — l'editor delle schede: serie e ripetizioni di una settimana,
      * scritte SOLO nella zona B, una alla volta e con il controllo di versione. */
@@ -535,24 +536,20 @@ export async function avvia(doc, win) {
      * tasto. Se non c'è un programma attivo la carta lo dice, non mostra zeri. */
     /* 6c-fix-3: dentro c'è il try/catch — un difetto della carta non deve
      * poter rompere la Dashboard. */
-    /* PASSO 14 — il tocco su un'articolazione scrive subito: UNA scrittura del
-     * documento, UNA voce di registro con prima e dopo (l'Annulla rimette
-     * l'elenco di prima), poi la rilettura chiesta da chiedeRilettura. */
-    const cambiaDolore = (articolazione) => {
-      const richiesta = { campo: "dolori" };
-      const esito = dichiarazioneDolori(doloriB, articolazione, { quando: new Date().toISOString(), uid: utente.uid });
-      if (!esito.ok) {
-        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
-        return Promise.resolve({ ok: false, motivo: esito.motivo || "" });
-      }
+    /* PASSO 14 (versione semplice) — «Patologie o infortuni» si scrive a parole.
+     * Salva = UNA scrittura di anamnesi-lite + UNA voce di registro; Annulla =
+     * una voce nuova che rimette il testo di prima. Poi si rilegge. */
+    let ultimaAnamnesi = ultimaVoceAnamnesi(registroB);
+    const scriviAnamnesi = (lavoro, esito) => {
       modificheInVolo += 1;
-      return scriviDolori(db, utente.uid, esito.documento)
+      return scriviAnamnesiLite(db, utente.uid, esito.documento)
         .then(() => scriviVoceRegistro(db, utente.uid, esito.voce.idVoce, esito.voce))
         .then(() => {
           modificheInVolo = Math.max(0, modificheInVolo - 1);
+          ultimaAnamnesi = lavoro === "salva" ? esito.voce : null;
           segnalaModifica(esito.esitoTesto, "ok");
-          return chiedeRilettura(richiesta)
-            ? sincronizza(utente, { forza: true, motivo: "dolori" })
+          return chiedeRilettura({ campo: "anamnesi-lite" })
+            ? sincronizza(utente, { forza: true, motivo: "anamnesi" })
             : { ok: true };
         }, (e) => {
           modificheInVolo = Math.max(0, modificheInVolo - 1);
@@ -560,12 +557,34 @@ export async function avvia(doc, win) {
           return { ok: false };
         });
     };
+    const salvaAnamnesiTesto = (testoScritto) => {
+      const esito = salvaAnamnesi(anamnesiB, testoScritto, { quando: new Date().toISOString(), uid: utente.uid });
+      if (!esito.ok) {
+        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+        return Promise.resolve({ ok: false, motivo: esito.motivo || "" });
+      }
+      return scriviAnamnesi("salva", esito);
+    };
+    const annullaAnamnesiTesto = () => {
+      if (!ultimaAnamnesi) {
+        segnalaModifica("nessuna dichiarazione da annullare", "errore");
+        return Promise.resolve({ ok: false });
+      }
+      const esito = annullaAnamnesi(anamnesiB, ultimaAnamnesi, { quando: new Date().toISOString(), uid: utente.uid });
+      if (!esito.ok) {
+        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+        return Promise.resolve({ ok: false });
+      }
+      return scriviAnamnesi("annulla", esito);
+    };
+    const riconosciute = riconosciArticolazioni(anamnesiB && anamnesiB.testo ? anamnesiB.testo : "");
+    montaCampoAnamnesi(doc, anamnesiB, { onSalva: salvaAnamnesiTesto, onAnnulla: annullaAnamnesiTesto });
     riempiRischioDaZonaBSicuro(doc, {
       programmi: programmi.programmi || [],
       sedute: sedutePulite.sedute,
       schedeV2: schedeV2,
-      dolori: doloriB,
-      onCambiaDolori: cambiaDolore
+      dichiarate: riconosciute.articolazioni,
+      anamnesi: anamnesiB
     });
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");

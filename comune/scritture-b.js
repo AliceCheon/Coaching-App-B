@@ -27,7 +27,7 @@ const AMMESSE = Object.freeze([
   SOTTO_B.esclusioni,
   SOTTO_B.registro,
   SOTTO_B.scheletri,
-  SOTTO_B.dolori
+  SOTTO_B.anamnesiLite
 ]);
 
 /* uid e id ammessi: testo non vuoto, senza barre (niente percorsi dentro). */
@@ -124,18 +124,17 @@ export function scriviFotografia(db, uid, dati) {
   return radiceB(db, uid).set(dati || {});
 }
 
-/* ---------- «Dove ti fa male» (PASSO 14) ------------------------------
+/* ---------- «Patologie o infortuni» (PASSO 14, versione semplice) --------
  * Un documento solo per atleta, con la forma delle altre fotografie singole:
- * `bdB_atleti/{uid}/dolori/{uid}`. Non e' un elenco di voci: e' la fotografia
- * di cosa fa male adesso, con la versione che cresce a ogni dichiarazione e
- * la data dell'ultima. Si scrive da qui, come tutto il resto.
+ * `bdB_atleti/{uid}/anamnesi-lite` = { testo, aggiornato, versione }.
+ * Si scrive da qui, come tutto il resto della zona B.
  */
-export function scriviDolori(db, uid, dati) {
-  return riferimentoB(db, uid, SOTTO_B.dolori, uid).set(senzaUndefined(dati || {}));
+export function scriviAnamnesiLite(db, uid, dati) {
+  return riferimentoB(db, uid, SOTTO_B.anamnesiLite, uid).set(senzaUndefined(dati || {}));
 }
 
-export function leggiDolori(db, uid) {
-  return riferimentoB(db, uid, SOTTO_B.dolori, uid)
+export function leggiAnamnesiLite(db, uid) {
+  return riferimentoB(db, uid, SOTTO_B.anamnesiLite, uid)
     .get()
     .then((istantanea) => (istantanea && istantanea.exists ? istantanea.data() || {} : null));
 }
