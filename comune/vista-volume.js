@@ -172,15 +172,29 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
     kpi.appendChild(cartaKpi(doc, "Sinergie", conto.sinergiePct == null ? "\u2014" : formattaNumero(conto.sinergiePct) + "%", "del volume totale"));
     contenitore.appendChild(kpi);
 
-    if (!conto.righeContate) {
-      contenitore.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nessunaRiga));
+    /* PASSO 12: i conteggi si vedono SEMPRE, anche quando non c'e' niente da
+     * contare. «33 righe lette · 33 senza nome · 0 fuori volume» dice da solo
+     * che il problema e' il nome, non il distretto. */
+    const conteggi = n(doc, "p", "rv-nota");
+    conteggi.appendChild(n(doc, "b", "", conto.righeLette + " righe lette"));
+    conteggi.appendChild(doc.createTextNode(" \u00b7 " + conto.righeSenzaNome + " senza nome \u00b7 "
+      + conto.fuoriVolume + " fuori volume \u00b7 " + conto.righeContate + " contate"));
+    contenitore.appendChild(conteggi);
+
+    if (!conto.righeUtili) {
+      const frase = conto.righeSenzaNome
+        ? "Nessuna riga da contare: " + conto.righeSenzaNome
+          + (conto.righeSenzaNome === 1 ? " riga letta non porta" : " righe lette non portano")
+          + " il nome dell'esercizio, e senza nome il distretto non si riconosce. Il conto non lo inventa."
+        : FRASI_VUOTO_VOLUME.nessunaRiga;
+      contenitore.appendChild(n(doc, "p", "pg-vuoto", frase));
       return conto;
     }
 
     const cardDistretti = n(doc, "div", "rv-card");
     const ch1 = n(doc, "div", "rv-ch");
     ch1.appendChild(n(doc, "h4", "", "Serie per distretto"));
-    ch1.appendChild(n(doc, "span", "", conto.righeContate + " righe contate \u00b7 " + conto.fuoriVolume + " fuori volume"));
+    ch1.appendChild(n(doc, "span", "", conto.righeLette + " righe lette \u00b7 " + conto.righeSenzaNome + " senza nome \u00b7 " + conto.fuoriVolume + " fuori volume"));
     cardDistretti.appendChild(ch1);
     if (!conto.distretti.length) {
       cardDistretti.appendChild(n(doc, "p", "pg-vuoto", FRASI_VUOTO_VOLUME.nessunDistretto));

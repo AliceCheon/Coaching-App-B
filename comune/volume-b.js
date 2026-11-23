@@ -162,6 +162,7 @@ export function contaVolume(righe, opzioni) {
   let contate = 0;
   let senzaSecondari = 0;
   let senzaDistretto = 0;
+  let senzaNome = 0;
 
   const cellaDistretto = (d) => {
     if (!distretti[d]) { distretti[d] = cella(); mappa[d] = Object.create(null); }
@@ -187,6 +188,12 @@ export function contaVolume(righe, opzioni) {
       if (!secondari.length && Array.isArray(padre.secondari)) secondari = padre.secondari.slice();
     }
     if (!primari.length) {
+      /* PASSO 12: una riga senza nome non e' «fuori volume» e non e' un
+       * distretto mancante: e' una riga che il documento non sa nominare (il
+       * documento v1 del programma ne porta 33). Si conta a parte, e la pagina
+       * lo dichiara invece di far credere che il conto sia a zero. Una riga
+       * tecnica senza nome resta valida: il distretto lo eredita dal padre. */
+      if (!testo(primoCampo(riga, CAMPI_VOLUME.nome)) && !padre) { senzaNome += 1; return; }
       senzaDistretto += 1;
       return;
     }
@@ -264,8 +271,14 @@ export function contaVolume(righe, opzioni) {
     mediaTotale: settimaneViste.length ? Math.round(((soloDiretto ? sommaDirette : sommaTotale) / settimaneViste.length) * 10) / 10 : null,
     sinergiePct: soloDiretto || !(sommaTotale > 0) ? (soloDiretto ? 0 : null) : Math.round((sommaIndirette / sommaTotale) * 1000) / 10,
     picco: picco ? { numero: picco.numero, valore: soloDiretto ? picco.dirette : picco.totale } : null,
+    righeLette: elenco.length,
+    /* PASSO 12: «utili» = righe che hanno un nome e non sono dichiarate fuori
+     * volume. Una riga senza nome non e' contata, ma non e' nemmeno fuori
+     * volume: e' una riga che il documento non sa nominare. */
+    righeUtili: elenco.length - fuoriVolume - senzaNome,
     righeContate: contate,
     fuoriVolume,
+    righeSenzaNome: senzaNome,
     righeSenzaSecondari: senzaSecondari,
     righeSenzaDistretto: senzaDistretto
   };
@@ -293,6 +306,7 @@ export function righeDalleSchede(schede, opzioni) {
         id: testo(primoCampo(e, CAMPI_VOLUME.id)),
         padreId: testo(primoCampo(e, CAMPI_VOLUME.padre)),
         nome,
+        senzaNome: !nome,
         distretto,
         primari: muscoli ? muscoli.primari.slice() : [],
         secondari: muscoli ? muscoli.secondari.slice() : [],

@@ -237,11 +237,19 @@ export function riepilogoDiagnosi(righe) {
  * e' stato fatto la frase e' quella delle righe assenti, non una frase nuova. */
 export function fraseRiepilogoVolume(conto) {
   const c = conto && typeof conto === "object" ? conto : null;
-  if (!c || !c.righeContate) return FRASI_VUOTO_VOLUME.nessunaRiga;
+  if (!c || !c.righeUtili) {
+    if (c && c.righeSenzaNome) {
+      return "Nessuna riga da contare: " + c.righeSenzaNome
+        + (c.righeSenzaNome === 1 ? " riga letta non porta" : " righe lette non portano")
+        + " il nome dell'esercizio, e senza nome il distretto non si riconosce. Il conto non lo inventa.";
+    }
+    return FRASI_VUOTO_VOLUME.nessunaRiga;
+  }
   if (!Array.isArray(c.distretti) || !c.distretti.length) return FRASI_VUOTO_VOLUME.nessunDistretto;
   return "Serie per distretto: "
     + c.distretti.map((d) => d.distretto + " " + formattaNumero(d.dirette) + " dirette").join(" \u00b7 ")
-    + " (" + c.righeContate + " righe contate, " + c.fuoriVolume + " fuori volume)";
+    + " (" + c.righeLette + " righe lette \u00b7 " + c.righeSenzaNome + " senza nome \u00b7 "
+    + c.fuoriVolume + " fuori volume)";
 }
 
 /* Il testo che finisce negli appunti con «copia tutto»: intestazione, frase del

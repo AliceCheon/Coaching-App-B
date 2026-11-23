@@ -100,6 +100,30 @@ export function schedeDelProgramma(programma) {
     .sort((a, b) => (a.ordine == null ? 0 : a.ordine) - (b.ordine == null ? 0 : b.ordine) || a.codice.localeCompare(b.codice));
 }
 
+/* PASSO 12 — i nomi di un esercizio, come li scrivono il documento v1 e la
+ * ricostruzione v2. L'ordine combacia con il Volume (`n` prima di tutto). */
+export const NOMI_ESERCIZIO = Object.freeze(["n", "nome", "name", "esercizio"]);
+
+/* Quante righe delle schede portate DENTRO il documento del programma non hanno
+ * il nome dell'esercizio. Non e' un conto del volume: e' il motivo per cui,
+ * quando i documenti v2 ci sono, la fonte buona sono i v2. Una riga cancellata
+ * non si conta, perche' non e' una riga della scheda. */
+export function righeSenzaNomeDelleSchede(programma) {
+  const grezze = primoCampo(programma, CAMPI_PROGRAMMA.schede);
+  if (!Array.isArray(grezze)) return 0;
+  let senza = 0;
+  grezze.forEach((s) => {
+    if (!s || typeof s !== "object" || s.deletedAt) return;
+    const esercizi = primoCampo(s, CAMPI_PROGRAMMA.eserciziScheda);
+    if (!Array.isArray(esercizi)) return;
+    esercizi.forEach((e) => {
+      if (!e || typeof e !== "object" || e.deletedAt) return;
+      if (!testo(primoCampo(e, NOMI_ESERCIZIO))) senza += 1;
+    });
+  });
+  return senza;
+}
+
 /* La rotazione PREVISTA: si legge dal campo del programma se c'è, altrimenti
  * dai codici delle schede. Se non c'è né l'uno né l'altro resta `registrata:
  * false` — e la schermata lo dice, invece di dedurla dall'ordine dei logbook
@@ -330,14 +354,39 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
    * `schede` null quando la zona B legava le schede all'id del documento. */
   const cercaV2 = schedePerProgramma(o.schedeV2, profilo);
   const v2 = cercaV2.gruppo;
+  /* PASSO 12 — LA PRECEDENZA E' CAMBIATA. Prima vincevano le schede dentro il
+   * documento del programma (v1), poi i documenti v2. Ma Programma 1 e la
+   * carta RED-S leggono i v2, che portano nomi e distretti veri; il v1 del
+   * programma porta righe senza nome, e il Volume le contava come «righe
+   * contate» senza distretto. Adesso: se i v2 ci sono e hanno schede, vincono
+   * loro; il v1 resta il ripiego, e `fonteSchede` dice quale ha vinto e perche'.
+   */
+  const v2Schede = v2 && Array.isArray(v2.schede) ? v2.schede : null;
+  const v2Piene = Array.isArray(v2Schede) && v2Schede.length > 0;
+  const v1Piene = Array.isArray(dalDocumento) && dalDocumento.length > 0;
+  const v1SenzaNome = profilo.presente ? righeSenzaNomeDelleSchede(programma) : 0;
   let schede = dalDocumento;
   let archiviate = [];
   let fonteSchede = dalDocumento ? "documento del programma (v1)" : null;
-  if ((!schede || !schede.length) && v2) {
-    schede = Array.isArray(v2.schede) ? v2.schede : [];
+  if (v2Piene) {
+    schede = v2Schede;
     archiviate = Array.isArray(v2.archiviate) ? v2.archiviate : [];
     fonteSchede = "documenti v2 · program-v2-sheet- / -exercise-"
-      + (cercaV2.come ? " · legame: " + cercaV2.come : "");
+      + (cercaV2.come ? " · legame: " + cercaV2.come : "")
+      + " · scelta: i v2 portano i nomi degli esercizi"
+      + (v1Piene
+        ? (v1SenzaNome
+          ? " · v1 scartato: " + v1SenzaNome + " righe senza nome"
+          : " · v1 scartato: qui la fonte unica sono i v2")
+        : " · nessun documento v1");
+  } else if (v1Piene) {
+    schede = dalDocumento;
+    fonteSchede = "documento del programma (v1) · scelta: "
+      + (v2 ? "i documenti v2 ci sono ma non ne resta nessuna scheda attiva" : "la zona B non ha documenti v2 per questo programma")
+      + (v1SenzaNome ? " · attenzione: " + v1SenzaNome + " righe senza nome" : "");
+  } else if (dalDocumento) {
+    schede = [];
+    fonteSchede = "documento del programma (v1) · scelta: le schede sono nel documento ma non ne resta nessuna attiva";
   }
   let schedeMotivo = null;
   if (schede === null) {
@@ -370,6 +419,12 @@ export function riepilogoProgramma(programma, sedute, opzioni) {
     archiviate,
     schedeMotivo,
     fonteSchede,
+    sceltaSchede: {
+      vincente: v2Piene ? "v2" : (v1Piene ? "v1" : (dalDocumento ? "v1-vuoto" : null)),
+      v2: v2Piene,
+      v1: v1Piene,
+      righeSenzaNomeV1: v1SenzaNome
+    },
     legameSchede: {
       come: cercaV2.come,
       idCercato: cercaV2.idCercato,
