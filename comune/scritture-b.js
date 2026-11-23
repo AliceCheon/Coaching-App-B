@@ -26,7 +26,8 @@ const AMMESSE = Object.freeze([
   SOTTO_B.sedute,
   SOTTO_B.esclusioni,
   SOTTO_B.registro,
-  SOTTO_B.scheletri
+  SOTTO_B.scheletri,
+  SOTTO_B.dolori
 ]);
 
 /* uid e id ammessi: testo non vuoto, senza barre (niente percorsi dentro). */
@@ -121,6 +122,22 @@ export function scriviVoceRegistro(db, uid, id, dati) {
 /* La fotografia e' il documento radice della zona B (bdB_atleti/{uid}). */
 export function scriviFotografia(db, uid, dati) {
   return radiceB(db, uid).set(dati || {});
+}
+
+/* ---------- «Dove ti fa male» (PASSO 14) ------------------------------
+ * Un documento solo per atleta, con la forma delle altre fotografie singole:
+ * `bdB_atleti/{uid}/dolori/{uid}`. Non e' un elenco di voci: e' la fotografia
+ * di cosa fa male adesso, con la versione che cresce a ogni dichiarazione e
+ * la data dell'ultima. Si scrive da qui, come tutto il resto.
+ */
+export function scriviDolori(db, uid, dati) {
+  return riferimentoB(db, uid, SOTTO_B.dolori, uid).set(senzaUndefined(dati || {}));
+}
+
+export function leggiDolori(db, uid) {
+  return riferimentoB(db, uid, SOTTO_B.dolori, uid)
+    .get()
+    .then((istantanea) => (istantanea && istantanea.exists ? istantanea.data() || {} : null));
 }
 
 /* ---------- Letture della zona B (per il confronto finale) ---------- */

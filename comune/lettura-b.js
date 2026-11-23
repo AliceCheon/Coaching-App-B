@@ -18,7 +18,7 @@
  */
 
 import { SOTTO_B } from "./modello-dati.js";
-import { leggiZonaB, leggiFotografia } from "./scritture-b.js";
+import { leggiZonaB, leggiFotografia, leggiDolori } from "./scritture-b.js";
 import { ricostruisciSchede } from "./schede-v2.js";
 
 function testo(valore) {
@@ -223,13 +223,17 @@ export function statoZonaB(letture) {
  * quelle. */
 export async function leggiZonaBCompleta(db, uid) {
   // Passo 31: letture indipendenti in parallelo, stessi risultati e ripieghi.
-  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni, documentiScheletri] = await Promise.all([
+  const [fotografia, documentiProgrammi, documentiSchede, documentiSedute, esclusioni, documentiScheletri, dolori] = await Promise.all([
     leggiFotografia(db, uid).catch(() => null),
     leggiZonaB(db, uid, SOTTO_B.programmi),
     leggiZonaB(db, uid, SOTTO_B.schede),
     leggiZonaB(db, uid, SOTTO_B.sedute),
     leggiZonaB(db, uid, SOTTO_B.esclusioni).catch(() => []),
-    leggiZonaB(db, uid, SOTTO_B.scheletri).catch(() => [])
+    leggiZonaB(db, uid, SOTTO_B.scheletri).catch(() => []),
+    /* PASSO 14: la dichiarazione dei dolori. Se la lettura fallisce o il
+     * documento non c'e', resta null: la zona dice «non dichiarato», non
+     * finge un elenco vuoto. */
+    leggiDolori(db, uid).catch(() => null)
   ]);
 
   const p = programmiDaDocumenti(documentiProgrammi);
@@ -244,6 +248,8 @@ export async function leggiZonaBCompleta(db, uid) {
     schedeV2,
     scheletri: documentiScheletri,
     esclusioni,
+    dolori: dolori,
+    doloriPresente: Boolean(dolori && typeof dolori === "object"),
     esito: statoZonaB({
       fotografia,
       programmi: p.programmi,

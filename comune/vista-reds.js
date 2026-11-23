@@ -15,6 +15,7 @@ import { stressSettimana, serieInParola } from "./articolazioni-b.js";
 import { schedePerProgramma } from "./programma.js";
 import { programmaAttivo, settimanaCorrente } from "./lettura-dati.js";
 import { nomePulito } from "./nome-pulito.js";
+import { ARTICOLAZIONI, normalizzaDolori } from "./dolori-b.js";
 
 const NON = "\u2014";
 
@@ -339,6 +340,7 @@ export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
   const piuCaricata = riepilogo.piuCaricata;
   const massimoSerie = piuCaricata ? piuCaricata.massimo : 0;
   svuota();
+  const dichiarate = Array.isArray(o.dichiarate) ? o.dichiarate : [];
   riepilogo.classifica.forEach((voce) => {
     const riga = doc.createElement("div");
     riga.className = "ck-st-r" + (voce.sopraCento ? " su" : "");
@@ -352,6 +354,20 @@ export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
     soglia.className = "ck-st-rs";
     soglia.textContent = "soglia di partenza: " + serieInParola(voce.tolleranza);
     nome.appendChild(etichetta);
+    /* PASSO 14 — l'evidenza: chi ha dichiarato di sentire male porta il segno
+     * accanto al nome. Se e' anche sopra soglia resta rosso (classe «su») e il
+     * segno resta: le due cose non si escludono. */
+    if (dichiarate.indexOf(voce.articolazione) !== -1) {
+      const segno = doc.createElement("span");
+      segno.className = "ck-dol-p";
+      segno.textContent = "dichiarata";
+      segno.style.border = "1px solid currentColor";
+      segno.style.borderRadius = "999px";
+      segno.style.padding = "0 6px";
+      segno.style.fontSize = "10px";
+      segno.style.marginLeft = "6px";
+      nome.appendChild(segno);
+    }
     nome.appendChild(soglia);
     const barra = doc.createElement("span");
     barra.className = "ck-st-rb";
@@ -388,6 +404,65 @@ export function riempiStressArticolazioni(doc, riepilogo, opzioni) {
   return riepilogo;
 }
 
+/* PASSO 14 — «Dove ti fa male»: sotto la classifica, le otto articolazioni
+ * come bottoni acceso/spento. Il tocco non calcola niente: chiama `onCambia`,
+ * che scrive subito e fa rileggere la pagina. Se nessuno ha mai dichiarato
+ * niente la riga dice «non dichiarato» e non mostra segni.
+ */
+export function riempiDoloriArticolazioni(doc, dolori, opzioni) {
+  const o = opzioni && typeof opzioni === "object" ? opzioni : {};
+  if (!doc || typeof doc.querySelector !== "function") return null;
+  const carta = doc.querySelector("#pag-dashboard .ck-st");
+  if (!carta) return null;
+  const letto = normalizzaDolori(dolori);
+  let blocco = typeof carta.querySelector === "function" ? carta.querySelector("[data-dolori]") : null;
+  if (!blocco) {
+    blocco = doc.createElement("div");
+    blocco.className = "ck-st-dol";
+    blocco.setAttribute("data-dolori", "riga");
+    carta.appendChild(blocco);
+  }
+  while (blocco.firstChild) blocco.removeChild(blocco.firstChild);
+
+  const titolo = doc.createElement("p");
+  titolo.className = "ck-st-dolt";
+  titolo.textContent = "Dove ti fa male";
+  blocco.appendChild(titolo);
+
+  const fila = doc.createElement("div");
+  fila.className = "ck-st-dolf";
+  ARTICOLAZIONI.forEach((articolazione) => {
+    const acceso = letto.articolazioni.indexOf(articolazione) !== -1;
+    const b = doc.createElement("button");
+    b.className = "ck-dol-b" + (acceso ? " on" : "");
+    b.setAttribute("type", "button");
+    b.setAttribute("data-dolore", articolazione);
+    b.setAttribute("aria-pressed", acceso ? "true" : "false");
+    b.textContent = articolazione;
+    if (acceso) {
+      const segno = doc.createElement("span");
+      segno.className = "ck-dol-p";
+      segno.textContent = "dichiarata";
+      b.appendChild(segno);
+    }
+    b.onclick = () => {
+      if (typeof o.onCambia === "function") o.onCambia(articolazione, acceso);
+    };
+    fila.appendChild(b);
+  });
+  blocco.appendChild(fila);
+
+  const nota = doc.createElement("p");
+  nota.className = "ck-st-doln";
+  nota.textContent = !letto.presente
+    ? "non dichiarato: nessuna articolazione segnata (il tocco la scrive)"
+    : (letto.articolazioni.length
+      ? "Dichiarate: " + letto.articolazioni.join(", ") + (letto.aggiornato ? " · aggiornato il " + letto.aggiornato.slice(0, 10) : "")
+      : "nessuna articolazione: il documento c'e' e dice che adesso non fa male niente");
+  blocco.appendChild(nota);
+  return letto;
+}
+
 export function riempiRischioDaZonaB(doc, letture) {
   const scelta = schedaPerRischio(letture);
   const riepilogo = riempiRischioStrutturale(doc, scelta.schede, {
@@ -397,10 +472,18 @@ export function riempiRischioDaZonaB(doc, letture) {
   });
   /* PASSO 6h — la carta «Stress allenamento» legge LO STESSO riepilogo:
    * un conto solo, quindi gli stessi numeri. */
+  const dolori = letture && typeof letture === "object" ? letture.dolori : null;
+  const dichiarate = normalizzaDolori(dolori).articolazioni;
   riempiStressArticolazioni(doc, riepilogo, {
     motivo: scelta.motivo,
     calcolo: scelta.calcolo,
-    schede: scelta.schede
+    schede: scelta.schede,
+    dichiarate: dichiarate
+  });
+  /* PASSO 14 — la riga «Dove ti fa male», sotto la classifica. Il tocco scrive
+   * subito: la scrittura la fa la pagina (onCambia), qui non si scrive niente. */
+  riempiDoloriArticolazioni(doc, dolori, {
+    onCambia: letture && typeof letture === "object" ? letture.onCambiaDolori : null
   });
   return Object.assign({}, scelta, { riepilogo: riepilogo });
 }

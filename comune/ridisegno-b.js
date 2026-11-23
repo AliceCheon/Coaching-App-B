@@ -35,7 +35,10 @@ export const CAMPI_CHE_RIDISEGNANO = Object.freeze([
   "ripristina-scheda",
   "applica-scarico-tutte",
   "applica-scheletro",
-  "elimina-scheletro"
+  "elimina-scheletro",
+  /* PASSO 14: il tasto «Dove ti fa male» scrive un documento suo: senza
+   * rileggere, la carta resterebbe com'era prima del tocco. */
+  "dolori"
 ]);
 
 /* I campi che la cella mostra da sola: scrivono e NON ridisegnano. */

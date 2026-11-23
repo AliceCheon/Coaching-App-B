@@ -20,7 +20,7 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia, scriviDolori, scriviVoceRegistro } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
@@ -37,6 +37,7 @@ import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
+import { dichiarazioneDolori } from "../comune/dolori-b.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -445,6 +446,9 @@ export async function avvia(doc, win) {
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = { programmi: zona.programmi };
     const schedeV2 = zona.schedeV2;
+    /* PASSO 14 — «Dove ti fa male»: il documento singolo della zona B. Se non
+     * c'e', resta null e la carta dice «non dichiarato». */
+    const doloriB = zona.dolori || null;
     if (!rigaStato) rigaStato = creaRigaStato(doc);
     /* Passo 9 — l'editor delle schede: serie e ripetizioni di una settimana,
      * scritte SOLO nella zona B, una alla volta e con il controllo di versione. */
@@ -531,7 +535,38 @@ export async function avvia(doc, win) {
      * tasto. Se non c'è un programma attivo la carta lo dice, non mostra zeri. */
     /* 6c-fix-3: dentro c'è il try/catch — un difetto della carta non deve
      * poter rompere la Dashboard. */
-    riempiRischioDaZonaBSicuro(doc, { programmi: programmi.programmi || [], sedute: sedutePulite.sedute, schedeV2: schedeV2 });
+    /* PASSO 14 — il tocco su un'articolazione scrive subito: UNA scrittura del
+     * documento, UNA voce di registro con prima e dopo (l'Annulla rimette
+     * l'elenco di prima), poi la rilettura chiesta da chiedeRilettura. */
+    const cambiaDolore = (articolazione) => {
+      const richiesta = { campo: "dolori" };
+      const esito = dichiarazioneDolori(doloriB, articolazione, { quando: new Date().toISOString(), uid: utente.uid });
+      if (!esito.ok) {
+        segnalaModifica(esito.motivo || "non ho scritto niente", "errore");
+        return Promise.resolve({ ok: false, motivo: esito.motivo || "" });
+      }
+      modificheInVolo += 1;
+      return scriviDolori(db, utente.uid, esito.documento)
+        .then(() => scriviVoceRegistro(db, utente.uid, esito.voce.idVoce, esito.voce))
+        .then(() => {
+          modificheInVolo = Math.max(0, modificheInVolo - 1);
+          segnalaModifica(esito.esitoTesto, "ok");
+          return chiedeRilettura(richiesta)
+            ? sincronizza(utente, { forza: true, motivo: "dolori" })
+            : { ok: true };
+        }, (e) => {
+          modificheInVolo = Math.max(0, modificheInVolo - 1);
+          segnalaModifica("scrittura non riuscita: " + (e && e.message ? e.message : "errore"), "errore");
+          return { ok: false };
+        });
+    };
+    riempiRischioDaZonaBSicuro(doc, {
+      programmi: programmi.programmi || [],
+      sedute: sedutePulite.sedute,
+      schedeV2: schedeV2,
+      dolori: doloriB,
+      onCambiaDolori: cambiaDolore
+    });
     const contenitore = doc.querySelector("#programma-attivo");
     const strumenti = doc.querySelector("#programma-strumenti");
     const nomeVoce = doc.querySelector("#nomeProgrammaAttivo");
