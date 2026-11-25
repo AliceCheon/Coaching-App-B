@@ -895,7 +895,7 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .sk-qr select{background:var(--bg);border:1px solid var(--linea);border-radius:7px;color:var(--testo);
   font-family:inherit;font-size:10.8px;padding:4px 6px;max-width:160px}
 .sk-qsub{font-size:9.4px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fioco);padding:8px 12px 6px}
-#sk-qrisp,#sk-qscore,#sk-legenda{padding:0 12px 10px;display:flex;flex-direction:column;gap:5px}
+#sk-legenda{padding:0 12px 10px;display:flex;flex-direction:column;gap:5px}
 .sk-r{display:flex;justify-content:space-between;gap:8px;font-size:11.2px;color:var(--muto);padding:4px 0;border-bottom:1px solid rgba(58,39,73,.5)}
 .sk-r b{color:var(--testo);font-weight:700;text-align:right}
 .sk-sc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -1601,10 +1601,18 @@ window.BDVAI=function(id,el){
     var vs=document.querySelectorAll('.voce[data-vista]');
     for(i=0;i<vs.length;i++){vs[i].classList.toggle('attiva',vs[i].getAttribute('data-vista')===id);}
     window.scrollTo(0,0);
-    var b=document.getElementById('bd-ver');if(b)b.textContent='v25.7 \u00b7 '+id;
+    var b=document.getElementById('bd-ver');if(b)b.textContent=(window.BD_VERSIONE||'')+' \u00b7 '+id;
     return ap>0;
   }catch(e){return false;}
 };
+/* Versione dell'app: un punto solo. Il menu qui sotto, Impostazioni -> Build e
+   la scritta al cambio pagina leggono questa stringa, e nient'altro. */
+window.BD_VERSIONE="v26.12";
+document.addEventListener('DOMContentLoaded',function(){
+  var v=window.BD_VERSIONE||'';
+  var m=document.getElementById('bd-ver');if(m)m.textContent=v;
+  var s=document.getElementById('st-ver');if(s)s.textContent=v;
+});
 </script>
 <div class="guscio">
 
@@ -1612,7 +1620,7 @@ window.BDVAI=function(id,el){
     <div class="marca">
       <h1>Barbell <i>Diva</i></h1>
       <div class="chi">Alice Clemente<em>coach</em></div>
-<div id="bd-ver" style="margin-top:8px;font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.06em;color:#C9A7FF;opacity:.85">v26.5</div>
+<div id="bd-ver" style="margin-top:8px;font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.06em;color:#C9A7FF;opacity:.85"></div>
     </div>
 
     <div class="gruppo apribile" data-gruppo="alimentazione">
@@ -1930,7 +1938,7 @@ window.BDVAI=function(id,el){
     <div class="dc-av">AC</div>
     <div>
       <div class="dc-nome">Alice Clemente</div>
-      <div class="dc-mail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2c5f4f4d42455f4f5e4542456c4b414d4540024f4341">[email&#160;protected]</a></div>
+      <div class="dc-mail">scaniscrini@gmail.com</div>
     </div>
     <button class="dc-guida">? Guida Dati Cliente</button>
   </div>
@@ -2102,7 +2110,7 @@ window.BDVAI=function(id,el){
    <p class="sr-note"><b>Una cosa che i numeri dicono e le parole no.</b> Energia 4 e sonno 5 con RPE medio <span id="sr-nota-rpe">—</span> (calcolato dal diario): non stai esagerando con l'intensità, stai pagando il riposo. Con due compilazioni non posso parlare di trend — dico solo che la direzione del sonno è l'unica da guardare adesso.</p>
   </div>
  </div>
- <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+ <script>
  (function(){
    /* RPE della nota qui sotto: stesso conto della tessera, dal diario del backup */
    function avvia(){
@@ -3270,13 +3278,8 @@ window.BDVAI=function(id,el){
 
         <aside class="sk-lato">
           <div class="sk-q">
-            <div class="sk-qh">Questionario <b>25/05/2026</b></div>
-            <div class="sk-qr"><span>Collega al programma:</span><select><option>Auto (per data)</option><option>Nessuno</option><option>Intensità ottobre-dicembre</option></select></div>
-            <div class="sk-qsub">Risposte testuali</div>
-            <div id="sk-qrisp"></div>
-            <div class="sk-qsub">Score</div>
-            <div id="sk-qscore"></div>
-            <div class="sk-qnota">“Faccio cagare”</div>
+            <div class="sk-qh">Questionario</div>
+            <div class="sk-qnota">Nessun questionario registrato.</div>
           </div>
           <div class="sk-leg">
             <div class="sk-qsub">Legenda colori</div>
@@ -3551,7 +3554,7 @@ window.BDVAI=function(id,el){
       <div class="st-act"><button id="st-tema-scuro" type="button">Scuro</button><button id="st-tema-chiaro" type="button">Chiaro</button></div>
     </div>
     <div class="st-card"><h3>Versione</h3>
-      <div class="st-row"><span>Build</span><b id="st-ver">v26.12</b></div>
+      <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
       <div class="st-row"><span>Schede</span><b>4</b></div>
       <div class="st-row"><span>Esercizi in libreria</span><b>179</b></div>
       <div class="st-row"><span>Note coach</span><b id="st-note-n">0</b></div>
@@ -5558,24 +5561,7 @@ disegnaCiambellaFaseD();
     }).join("");
   }
 
-  function disegnaQuestionario(){
-    var q = document.getElementById("sk-qrisp");
-    if (q) q.innerHTML = [
-      ["1. Muscoli pi&ugrave; affaticati", "—"],
-      ["2. Muscoli recuperati meglio", "—"],
-      ["3. Esercizi con migliori progressioni", "—"],
-      ["4. Esercizi con peggiori progressioni", "—"],
-      ["5. Seduta pi&ugrave; pesante", "—"],
-      ["6. Peso corporeo attuale", "—"],
-      ["7. Esercizi pi&ugrave; faticosi", "—"],
-      ["8. Esercizi in perdita di forza", "—"]
-    ].map(function(r){ return '<div class="sk-r"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join("");
-    var sc = document.getElementById("sk-qscore");
-    if (sc) sc.innerHTML = [
-      ["Energia", "4/5", "#7BE0A8"], ["Sonno", "5/5", "#7BE0A8"], ["DOMS", "3/5", "#FFE066"],
-      ["Stress", "2/5", "#7BE0A8"], ["Fame", "4/5", "#FFE066"]
-    ].map(function(r){ return '<div><i>' + r[0] + '</i><b style="color:' + r[2] + '">' + r[1] + '</b></div>'; }).join("");
-  }
+
 
   /* ---------------- eventi ---------------- */
   document.addEventListener("click", function(ev){
@@ -5735,7 +5721,7 @@ disegnaCiambellaFaseD();
     }, 900);
   }
 
-  disegnaSchede(); disegnaLegenda(); disegnaQuestionario();
+  disegnaSchede(); disegnaLegenda();
 })();
 
 </script>
@@ -9991,11 +9977,15 @@ function clearAll(){
 
 /* ---------- analisi programmazione ---------- */
 function renderAnalisi(){
+  /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+     se non ci sono, non c'e' niente da disegnare e non si tocca niente. */
+  var kpi=document.getElementById('t9-kpi'), distEl=document.getElementById('t9-dist'), ovEl=document.getElementById('t9-ov');
+  if(!kpi||!distEl||!ovEl) return;
   var st=stats(), n=Object.keys(st.perScheda);
   var comp = n.filter(function(k){ return st.perScheda[k]>0; });
   var gg = (document.getElementById('pr-sw')||{}).getAttribute ? (document.getElementById('pr-sw').getAttribute('aria-checked')==='true'?4:1) : 4;
   var sett = parseInt(($('#pr-sk-sett')||{}).value,10)||8;
-  $('#t9-kpi').innerHTML =
+  kpi.innerHTML =
     '<div><span>Schede compilate</span><b>'+st.schede+'</b><em>'+comp.join(' · ')+'</em></div>'+
     '<div><span>Esercizi totali</span><b>'+st.ese+'</b><em>'+comp.map(function(k){return st.perScheda[k];}).join(' + ')+'</em></div>'+
     '<div><span>Gg / settimana</span><b>'+gg+'</b><em>'+(gg===4?'rotazione su ciclo di 5 schede':'rotazione spenta: una scheda a settimana')+'</em></div>'+

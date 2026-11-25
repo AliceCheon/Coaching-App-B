@@ -24,7 +24,7 @@ Solo lettura: nessuna riga di codice cambiata. Le venti `pag-*` di `desktop/inde
 | **Curve di forza** | Quattro letture, grafici, tabella esercizi, scheda palestra | Statico: 124 KB di pagina, SVG già disegnati, nessun modulo la riempie (`cv-real` non compare in nessun `.js`) | **Sì, e sembra vivo**: «Dal logbook — carico massimo per seduta · dati veri del backup · 30/10/2026» con i punti già tracciati — `desktop/index.html:3415` |
 | **Archivio** | Tutti i programmi del backup, attivo compreso, con schede, esercizi, serie, sedute, ultima seduta | Calcolato (`comune/vista-archivio.js` dentro `#archivio-corpo` + logbook) | No |
 | **Study time** | L'Excel reso consultabile: 104 figure, 5 stanze, 19 rotazioni, 38 settimane | Statico: 4,5 MB di HTML con le figure incorporate | No inventato, ma **congelato all'import**: i numeri sono quelli letti dall'Excel — `desktop/index.html:4069` |
-| **Impostazioni** | Dove salva, cosa manca, tema, versione, azzera | Statico nello stato, vero nel contenuto: dice «solo locale · Firebase non collegato» | **Sì, stato fermo**: badge e build `v26.12` scritti a mano — `desktop/index.html:4033`, `:4049` |
+| **Impostazioni** | Dove salva, cosa manca, tema, versione, azzera | Statico nello stato, vero nel contenuto: dice «solo locale · Firebase non collegato»; la versione arriva da un punto solo (`window.BD_VERSIONE`) e la mostra la riga Build | No: la versione non è più scritta a mano in tre posti |
 
 ## Tab piene e affidabili
 
