@@ -243,11 +243,19 @@ export function leggiScheletroB(db, uid, id) {
 
 /* L'elenco intero della raccolta: la pagina Scheletri legge da qui. */
 export function leggiScheletriB(db, uid) {
-  const rif = riferimentoB(db, uid, SOTTO_B.scheletri);
+  /* La raccolta intera: si legge dalla radice, non da un documento. Prima
+   * passava da riferimentoB, che pretende un id e senza id rifiuta il
+   * percorso — quindi l'elenco non si poteva leggere (trovato al passo 34). */
+  const rif = radiceB(db, uid).collection(SOTTO_B.scheletri);
   return rif.get().then((istantanea) => {
     const fuori = [];
-    if (!istantanea || typeof istantanea.forEach !== "function") return fuori;
-    istantanea.forEach((d) => {
+    if (!istantanea) return fuori;
+    /* Firestore vero: uno snapshot con forEach. Il finto degli scatti e delle
+     * prove espone `docs`: si leggono tutti e due, senza cambiare il chiamante. */
+    const righe = typeof istantanea.forEach === "function"
+      ? (() => { const a = []; istantanea.forEach((d) => a.push(d)); return a; })()
+      : (Array.isArray(istantanea.docs) ? istantanea.docs : []);
+    righe.forEach((d) => {
       if (!d) return;
       fuori.push({ id: String(d.id), dati: (d.data && d.data()) || {} });
     });

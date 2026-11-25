@@ -20,13 +20,14 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
 import { renderPianificazione } from "../comune/vista-pianificazione.js";
-import { elencoScheletri } from "../comune/scheletri.js";
+import { elencoScheletri, salvaScheletroCostruito } from "../comune/scheletri.js";
+import { montaPaginaScheletri } from "../comune/vista-scheletri-pagina.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
@@ -1024,6 +1025,15 @@ export async function avvia(doc, win) {
       statoAnagrafica[campo] = valore;
       return true;
     };
+    /* Passo 34 — la pagina Scheletri legge e scrive la sua raccolta: db e uid
+     * vivono qui, la pagina chiede e basta. La scrittura passa dalla stessa
+     * strada della scheda (salvaScheletroDalCostruttore → scritture-b). */
+    globalThis.BD_LEGGI_SCHELETRI = async () => elencoScheletri(await leggiScheletriB(db, utente.uid));
+    globalThis.BD_SALVA_SCHELETRO = (documento) => salvaScheletroCostruito(documento, { db, uid: utente.uid });
+    if (globalThis.BD_SCHELETRI_PAGINA && typeof globalThis.BD_SCHELETRI_PAGINA.ricarica === "function") {
+      globalThis.BD_SCHELETRI_PAGINA.ricarica();
+    }
+
     /* Passo 29 — il quaderno: gli altri campi dell'anamnesi si scrivono, una
      * voce di registro per campo. «Patologie o infortuni» resta al suo modulo,
      * che da lì ricava le articolazioni. */
@@ -1186,4 +1196,25 @@ if (typeof document !== "undefined") {
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaTutto);
   else collegaTutto();
+}
+
+/* Passo 34 — la pagina Scheletri: le linguette e «Miei scheletri» si montano al
+ * caricamento; lettura e scrittura arrivano dopo l'accesso, come l'anagrafica. */
+if (typeof document !== "undefined") {
+  const collegaScheletri = () => {
+    const pagina = montaPaginaScheletri(document, {
+      costruttore: () => (typeof globalThis.BD_COSTRUTTORE_SCHELETRI === "function" ? globalThis.BD_COSTRUTTORE_SCHELETRI() : { schede: [] }),
+      leggi: () => (typeof globalThis.BD_LEGGI_SCHELETRI === "function" ? globalThis.BD_LEGGI_SCHELETRI() : Promise.reject(new Error("entra con Google per vedere la raccolta"))),
+      salva: (documento) => {
+        if (typeof globalThis.BD_SALVA_SCHELETRO !== "function") {
+          return Promise.reject(new Error("entra con Google e riprova"));
+        }
+        return globalThis.BD_SALVA_SCHELETRO(documento);
+      },
+      nonCollegata: "Non sei ancora collegata: entra con Google e la raccolta si legge."
+    });
+    if (pagina) globalThis.BD_SCHELETRI_PAGINA = pagina;
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaScheletri);
+  else collegaScheletri();
 }

@@ -150,6 +150,99 @@ export async function salvaScheletroDaScheda(schedaDati, richiesta, contesto) {
   }
 }
 
+/* ---------- passo 34: lo scheletro costruito nella pagina Scheletri ------ */
+
+/* Il costruttore della pagina tiene le schede (A, B, C) con dentro le righe
+ * scelte per gruppo. Qui si trasforma in documento con la STESSA lista chiusa
+ * dei campi usata per la scheda: nome, distretto, serie, ripetizioni, nota,
+ * tecniche, superserie. I carichi non esistono in questa forma, quindi non
+ * hanno nessuna strada per uscire. La struttura delle schede resta scritta
+ * accanto, per leggerla nella raccolta; il tasto «Applica» usa l'elenco piatto
+ * come ha sempre fatto. */
+export function scheletroDaCostruttore(stato, opzioni) {
+  const o = opzioni || {};
+  const quando = o.quando instanceof Date && !isNaN(o.quando.getTime()) ? o.quando : new Date();
+  const schede = Array.isArray(stato && stato.schede) ? stato.schede : [];
+  const etichetta = typeof o.etichetta === "function" ? o.etichetta : (k) => testoPulito(k);
+  const piatto = [];
+  const struttura = [];
+  schede.forEach((sc, i) => {
+    const righe = Array.isArray(sc && sc.righe) ? sc.righe : [];
+    const dentro = [];
+    righe.forEach((r) => {
+      const nome = testoPulito(r && r.nome);
+      if (!nome) return;
+      const serie = numeroOppure(r && r.serie, null);
+      /* I gruppi del costruttore arrivano come chiavi: «__cardio» e «__full»
+       * sono segni interni, non nomi da leggere. */
+      const gruppo = (r && r.k) ? String(etichetta(r.k)).replace(/^_+/, "") : "";
+      const riga = {
+        nome: nome,
+        distretto: testoPulito(gruppo) ? testoPulito(gruppo).charAt(0).toUpperCase() + testoPulito(gruppo).slice(1) : "",
+        serie: serie,
+        ripetizioni: "",
+        nota: "",
+        tecniche: [],
+        superserie: ""
+      };
+      piatto.push(riga);
+      dentro.push({ nome: riga.nome, distretto: riga.distretto, serie: serie });
+    });
+    if (dentro.length) {
+      struttura.push({
+        lettera: testoPulito(sc && sc.lettera) || String.fromCharCode(65 + i),
+        gruppo: testoPulito(sc && sc.gruppo),
+        esercizi: dentro
+      });
+    }
+  });
+  const nome = testoPulito(o.nome) || ("Scheletro \u00b7 " + dataInChiaro(quando.toISOString()));
+  return {
+    tipo: "scheletro",
+    nome: nome,
+    nomeScheda: "",
+    notaScheda: testoPulito(o.nota),
+    creatoIl: quando.toISOString(),
+    esercizi: piatto,
+    schede: struttura
+  };
+}
+
+/* Come per la scheda: costruisce, scrive, e se la scrittura non passa torna un
+ * motivo da leggere — mai un «salvato» finto. */
+/* La scrittura di un documento già costruito: una strada sola, così versione,
+ * annullamento e rifiuti si comportano come per la scheda. */
+export async function salvaScheletroCostruito(documento, contesto) {
+  const c = contesto || {};
+  const quando = c.quando instanceof Date ? c.quando : new Date();
+  const doc = documento || {};
+  const esercizi = Array.isArray(doc.esercizi) ? doc.esercizi.filter((r) => r && testoPulito(r.nome)) : [];
+  if (!esercizi.length) {
+    const motivo = "lo scheletro non ha esercizi da salvare";
+    return { ok: false, motivo: motivo, messaggio: messaggioNonSalvato(motivo) };
+  }
+  const id = c.id || idScheletro(quando, c.seme);
+  try {
+    const scritto = await salvaScheletroConVersione(c.db, c.uid, id, doc);
+    return { ok: true, id: String(id), nome: testoPulito(doc.nome), versione: scritto.versione, messaggio: messaggioSalvato(doc.nome) };
+  } catch (e) {
+    const motivo = e && e.message ? e.message : "scrittura rifiutata";
+    return { ok: false, motivo: motivo, messaggio: messaggioNonSalvato(motivo) };
+  }
+}
+
+export async function salvaScheletroDalCostruttore(stato, richiesta, contesto) {
+  const r = richiesta || {};
+  const c = contesto || {};
+  const quando = c.quando instanceof Date ? c.quando : new Date();
+  const documento = scheletroDaCostruttore(stato, { nome: r.nome, nota: r.nota, etichetta: c.etichetta, quando: quando });
+  if (!documento.esercizi.length) {
+    const motivo = "il costruttore non ha ancora esercizi da salvare";
+    return { ok: false, motivo: motivo, messaggio: messaggioNonSalvato(motivo) };
+  }
+  return salvaScheletroCostruito(documento, { db: c.db, uid: c.uid, id: r.id, seme: r.seme, quando: quando });
+}
+
 /* ---------- extra-3: la pagina Scheletri (elenco, Applica, Elimina) ------ */
 
 export function dataInChiaro(iso) {
@@ -173,7 +266,11 @@ export function elencoScheletri(documenti) {
         nome: testoPulito(dati.nome) || "(senza nome)",
         creatoIl: testoPulito(dati.creatoIl),
         data: dataInChiaro(dati.creatoIl),
-        esercizi: esercizi.length
+        esercizi: esercizi.length,
+        serie: esercizi.reduce((t, r) => t + (numeroOppure(r && r.serie, 0) || 0), 0),
+        /* Passo 34: uno scheletro costruito nella pagina Scheletri porta con sé
+         * le sue schede (A, B, C...). Quando non ci sono, resta 0. */
+        schede: Array.isArray(dati.schede) ? dati.schede.filter((s) => s && Array.isArray(s.esercizi)).length : 0
       };
     })
     .filter((s) => s.id);

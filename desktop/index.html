@@ -813,6 +813,9 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
   font-weight:700;padding:6px 12px;border-radius:9px;cursor:pointer;transition:.14s}
 .sk-tab:hover{color:var(--testo);border-color:var(--lav)}
 .sk-tab.attiva{background:rgba(255,79,163,.13);border-color:rgba(255,79,163,.5);color:var(--pink)}
+/* Passo 34: una linguetta spenta si vede che è spenta (e il motivo sta nel tooltip). */
+.sk-tab[disabled]{opacity:.45;cursor:not-allowed}
+.sk-tab[disabled]:hover{color:var(--muto);border-color:var(--linea)}
 .sk-cnt{font-family:var(--mono);font-size:9.5px;opacity:.75;margin-left:3px}
 .sk-grid{display:grid;grid-template-columns:minmax(0,1fr) 318px;gap:16px;align-items:start}
 .sk-card{background:var(--surface);border:1px solid var(--linea);border-radius:16px;padding:16px 18px 18px;margin-bottom:14px}
@@ -1569,6 +1572,12 @@ body[data-theme="light"] #pag-programma-1 tr.p8-tec .tec-padre{color:#3A2A4E}
 .skp-titolo{font:800 15px/1.3 'Nunito Sans',sans-serif;color:var(--testo);margin:0 0 4px}
 .skp-sub{font-size:12px;color:var(--fioco);margin:0 0 12px}
 .skp-vuoto{color:var(--fioco);font-size:12.4px;font-style:italic;margin:6px 0}
+/* Passo 34: la raccolta dentro la pagina Scheletri (linguetta «Miei scheletri»). */
+.skp-sottotitolo{font-size:12px;color:var(--fioco);margin:2px 0 10px}
+.skp-serie{font-size:11.4px;color:var(--fioco);margin:0}
+.sk-raccolta-pane{margin-top:14px}
+#sk-raccolta .skp-raccolta{display:flex;flex-direction:column;gap:10px}
+#sk-raccolta .sk-esito{margin:0 0 10px}
 .skp-riga{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--linea);border-radius:10px;background:var(--surface);margin-bottom:8px}
 .skp-testa{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .skp-nome{font-size:13.4px;color:var(--testo)}
@@ -3159,12 +3168,12 @@ document.addEventListener('DOMContentLoaded',function(){
           <div class="v-occhiello">Programmi · Scheletri</div>
           <h2>Lo scheletro <i>del programma</i></h2>
           <p class="v-testo">Qui costruisci la scheda, senza carichi: clicchi un gruppo muscolare, scrivi l'esercizio,
-          scegli le serie. Quando salvi, lo scheletro diventa un programma nuovo e si porta dietro tutto.</p>
+          scegli le serie. Quando salvi, lo scheletro entra nella tua raccolta e da lì lo applichi a una scheda.</p>
         </div>
         <div class="sk-tabbar">
           <button class="sk-tab attiva" type="button">Scheletri</button>
-          <button class="sk-tab" type="button">Template <span class="sk-cnt">5</span></button>
-          <button class="sk-tab" type="button">Libreria Coach <span class="sk-cnt">34</span></button>
+          <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: i template della libreria non sono ancora in B — nessun elenco da leggere">Template</button>
+          <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: la libreria del coach non è ancora in B — nessun elenco da leggere">Libreria Coach</button>
           <button class="sk-tab" type="button">Miei scheletri <span class="sk-cnt" id="sk-miei">0</span></button>
         </div>
       </div>
@@ -5378,7 +5387,6 @@ disegnaCiambellaFaseD();
   CHIPS.forEach(function(c){ byK[c.k] = c; });
 
   var stato = { schede: [nuovaScheda("A")] };
-  var PROGRAMMI = {};
   var contatore = 0;
 
   function nuovaScheda(l){ return { id: "s" + (++contatore), lettera: l, gruppo: "", righe: [] }; }
@@ -5567,12 +5575,6 @@ disegnaCiambellaFaseD();
     stato.schede.forEach(function(s2, i){ s2.lettera = String.fromCharCode(65 + i); });
   }
 
-  function esito(txt, ok){
-    var e = document.getElementById("sk-esito");
-    if (!e) return;
-    e.innerHTML = txt; e.className = "sk-esito on " + (ok ? "ok" : "no");
-  }
-
   document.addEventListener("click", function(ev){
     if (ev.target.id === "sk-addscheda") {
       stato.schede.push(nuovaScheda(""));
@@ -5585,57 +5587,13 @@ disegnaCiambellaFaseD();
       var e = document.getElementById("sk-esito"); if (e) e.className = "sk-esito";
       disegnaSchede();
     }
-    if (ev.target.id === "sk-salva") salva();
   });
 
-  function salva(){
-    var nome = document.getElementById("sk-nome").value.trim();
-    var desc = document.getElementById("sk-desc").value.trim();
-    var righe = 0, serie = 0;
-    stato.schede.forEach(function(s3){
-      s3.righe.forEach(function(r){
-        if (!r.nome) return;
-        righe++; serie += (parseInt(r.serie, 10) || 0);
-      });
-    });
-    if (!righe) { esito("Non c'&egrave; ancora nessun esercizio: clicca un gruppo muscolare e scegli l'esercizio.", false); return; }
-    var slot = null, num = 0;
-    ["programma-1", "programma-2", "programma-3"].forEach(function(p, i){
-      if (!slot && !PROGRAMMI[p] && i > 0) { slot = p; num = i + 1; }
-    });
-    if (!slot) { esito("I tre posti Programma sono occupati. Archiviane uno e riprova.", false); return; }
-    var etichettaNome = nome || ("Programma " + num);
-    PROGRAMMI[slot] = { nome: etichettaNome, desc: desc, schede: JSON.parse(JSON.stringify(stato.schede)) };
-
-    var em = document.querySelector('.voce[data-vista="' + slot + '"] .tx em');
-    if (em) em.textContent = "nuovo · " + etichettaNome;
-    var cnt = document.getElementById("sk-miei");
-    if (cnt) cnt.textContent = String(Object.keys(PROGRAMMI).length);
-
-    var dyn = document.querySelector('.pa-dyn[data-prog="' + slot + '"]');
-    if (dyn) {
-      var righeHtml = stato.schede.map(function(s4){
-        var n = s4.righe.filter(function(r){ return r.nome; }).length;
-        return '<tr><td class="pg-tdnome"><b class="pa-lettera">' + s4.lettera + '</b> ' + esc(s4.gruppo || "senza gruppo") +
-          '</td><td class="pg-m">' + n + '</td><td class="pg-m">' + s4.righe.reduce(function(a, r){ return a + (parseInt(r.serie, 10) || 0); }, 0) + '</td></tr>';
-      }).join("");
-      dyn.innerHTML = '<h3 style="margin:14px 0 6px">' + esc(etichettaNome) + '</h3>' +
-        '<p class="v-testo">' + esc(desc || "Creato dai tuoi scheletri, il " + new Date().toLocaleDateString("it-IT") + '.') + '</p>' +
-        '<table class="pg-tab"><thead><tr><th>Scheda</th><th>Esercizi</th><th>Serie</th></tr></thead><tbody>' + righeHtml + '</tbody></table>';
-      var st = dyn.parentNode.querySelector(".v-stato");
-      if (st) st.remove();
-      var tre = dyn.parentNode.querySelector(".v-tre");
-      if (tre) tre.remove();
-    }
-
-    esito("<b>Creato " + esc(etichettaNome) + "</b> &middot; " + stato.schede.length + " schede &middot; " +
-      righe + " esercizi &middot; " + serie + " serie. Lo trovi in Programmi, alla voce Programma " + num +
-      ". Ti ho portato l&igrave;.", true);
-    setTimeout(function(){
-      var b = document.querySelector('.voce[data-vista="' + slot + '"]');
-      if (b) b.click();
-    }, 900);
-  }
+  /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
+     Non crea più un «Programma 2» in memoria e non porta più nessuno altrove: lo scheletro
+     si salva e si ritrova in «Miei scheletri». Lo stato del costruttore resta qui, e il
+     modulo lo legge da questa porta. */
+  globalThis.BD_COSTRUTTORE_SCHELETRI = function(){ return stato; };
 
   disegnaSchede(); disegnaLegenda();
 })();
