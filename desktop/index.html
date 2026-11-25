@@ -9049,19 +9049,21 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
       : 'Nessuna barra: ' + PV.motivo + '.';
 
     if(pesi.length > 1){
-      var W = 100, Hh = 34;
+      /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+         allungato senza rapporto: la linea usciva come una striscia). */
+      var Hh = 90, spBox = el('ov-spark');
+      var W = Math.round((spBox && (spBox.clientWidth || spBox.offsetWidth)) || 0) || 420;
       var mn = Math.min.apply(null, pesi.map(function(p){ return p.w; }));
       var mxw = Math.max.apply(null, pesi.map(function(p){ return p.w; }));
       var rg = (mxw - mn) || 1;
-      var pts = pesi.map(function(p, i){
-        return (2 + i * ((W-4) / (pesi.length-1))).toFixed(1) + ',' + (Hh - 3 - ((p.w - mn)/rg) * (Hh-8)).toFixed(1);
-      });
-      el('ov-spark').innerHTML = '<svg class="p7-spark" viewBox="0 0 100 34" preserveAspectRatio="none">' +
-        '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--lav)" stroke-width="1.2" stroke-linejoin="round"/>' +
+      var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+      var ydi = function(w){ return (Hh - 10) - ((w - mn) / rg) * (Hh - 20); };
+      var pts = pesi.map(function(p, i){ return xdi(i).toFixed(1) + ',' + ydi(p.w).toFixed(1); });
+      spBox.innerHTML = '<svg class="p7-spark" viewBox="0 0 ' + W + ' ' + Hh + '" width="100%" height="' + Hh + '" preserveAspectRatio="none" style="height:' + Hh + 'px">' +
+        '<polygon points="' + pts.join(' ') + ' ' + xdi(pesi.length - 1).toFixed(1) + ',' + Hh + ' ' + xdi(0).toFixed(1) + ',' + Hh + '" fill="var(--lav)" opacity="0.12"/>' +
+        '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--lav)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
         pesi.map(function(p, i){
-          var x = 2 + i * ((W-4)/(pesi.length-1));
-          var y = Hh - 3 - ((p.w - mn)/rg) * (Hh-8);
-          return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="1" fill="var(--pink)"/>';
+          return '<circle cx="' + xdi(i).toFixed(1) + '" cy="' + ydi(p.w).toFixed(1) + '" r="' + (i === pesi.length-1 ? 3.2 : 2.6) + '" fill="' + (i === pesi.length-1 ? 'var(--pink)' : 'var(--lav)') + '"/>';
         }).join('') + '</svg>';
       el('ov-leg').innerHTML = pesi.map(function(p){ return '<span>' + gg(p.d) + ' · ' + it(p.w,1) + ' kg</span>'; }).join('');
       el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
@@ -10412,21 +10414,56 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   function uno(s){ return document.querySelector(s); }
   function set(s,t){ qa(s).forEach(function(e){ e.textContent = t; }); }
   function esc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-  function svgLinea(a, h){
-    if(!a.length) return '';
-    var W=100, H=h||30, pad=3;
+  /* Passo 32: la linea del peso si disegna nelle misure vere del riquadro.
+     Prima il disegno era in un riquadro 100 di larghezza allungato a 7 volte
+     l'altezza richiesta, senza rapporto: la linea diventava una striscia
+     schiacciata e i punti delle pesate delle macchie. Ora si misura il
+     contenitore (larghezza e altezza in pixel) e ogni punto cade dove deve. */
+  function svgLinea(a, h, box){
+    if(!a || !a.length) return '';
+    var H = Math.max(12, Math.round(h || 30));
+    var W = Math.round((box && (box.clientWidth || box.offsetWidth)) || 0) || 240;
+    var pxl = H < 20 ? 4 : 8, pxr = H < 20 ? 6 : 10;
+    var pxt = H < 20 ? 2 : 10, pxb = H < 20 ? 2 : 10;
     var vmin=Math.min.apply(null,a.map(function(x){return x.kg;}));
     var vmax=Math.max.apply(null,a.map(function(x){return x.kg;}));
     var rg=(vmax-vmin)||1;
-    var pt=a.map(function(x,i){
-      var px=pad+(a.length===1?(W-2*pad)/2:i*((W-2*pad)/(a.length-1)));
-      var py=H-pad-((x.kg-vmin)/rg)*(H-2*pad);
-      return [px.toFixed(1),py.toFixed(1)];
-    });
-    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+((h||30)*7)+'px">';
-    if(a.length>1) s+='<polyline points="'+pt.map(function(x){return x.join(',');}).join(' ')+'" fill="none" stroke="var(--lav)" stroke-width="1" stroke-linejoin="round"/>';
-    s+=pt.map(function(x){ return '<circle cx="'+x[0]+'" cy="'+x[1]+'" r="1.3" fill="var(--pink)"/>'; }).join('');
+    function X(i){ return a.length===1 ? W/2 : pxl + i*((W-pxl-pxr)/(a.length-1)); }
+    function Y(v){ return (H-pxb) - ((v-vmin)/rg)*(H-pxt-pxb); }
+    var pt=a.map(function(x,i){ return [X(i).toFixed(1), Y(x.kg).toFixed(1)]; });
+    var ultimo = pt[pt.length-1];
+    var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block;overflow:visible">';
+    if(a.length>1){
+      s+='<polygon points="'+pt.map(function(x){return x.join(',');}).join(' ')+' '+ultimo[0]+','+H+' '+pt[0][0]+','+H+'" fill="var(--lav)" opacity="0.12"/>';
+      s+='<polyline points="'+pt.map(function(x){return x.join(',');}).join(' ')+'" fill="none" stroke="var(--lav)" stroke-width="'+(H<20?1.5:2)+'" stroke-linejoin="round" stroke-linecap="round"/>';
+    }
+    var rp = H < 20 ? 1.7 : 2.6;
+    s+=pt.map(function(p,i){
+      var ult = i === pt.length-1;
+      return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(ult?rp+0.6:rp)+'" fill="'+(ult?'var(--pink)':'var(--lav)')+'"/>';
+    }).join('');
     return s+'</svg>';
+  }
+
+  /* La linea si ridisegna quando il riquadro cambia larghezza: una pagina
+     nascosta al momento della pittura non resta con un disegno sbagliato. */
+  function disegna(box, h, a){
+    if(!box) return;
+    box.__bdh = Math.max(12, Math.round(h || 30));
+    box.__bddati = (a && a.length > 1) ? a.slice() : [];
+    if(window.ResizeObserver && !box.__bdos){
+      box.__bdos = new ResizeObserver(function(){
+        var w = Math.round(box.clientWidth || 0);
+        if(!w || !box.__bddati.length) return;
+        if(Math.abs((box.__bdw || 0) - w) < 4) return;
+        box.__bdw = w;
+        box.innerHTML = svgLinea(box.__bddati, box.__bdh, box);
+      });
+      box.__bdos.observe(box);
+    }
+    if(!a || !a.length) return;
+    box.__bdw = Math.round(box.clientWidth || 0);
+    box.innerHTML = svgLinea(a, box.__bdh, box);
   }
 
   function pitta(stato, profilo){
@@ -10464,7 +10501,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
       var u2 = letto && a.length ? a[a.length - 1] : null;
       var kv = kpv.querySelector('.kv'), kf = kpv.querySelector('.kf'), ks = kpv.querySelector('.ks');
       if(kv) kv.innerHTML = u2 ? P.kg(u2.kg) + '<small>kg</small>' : '—';
-      if(ks) ks.innerHTML = (letto && a.length > 1) ? svgLinea(a, 14) : '';
+      if(ks){ disegna(ks, 14, (letto && a.length > 1) ? a : []); if(!(letto && a.length > 1)) ks.innerHTML = ''; }
       if(kf) kf.textContent = u2 ? P.dataCorta(u2.data) : testo;
       if(!u2) kpv.classList.add('nd'); else kpv.classList.remove('nd');
     }
@@ -10489,7 +10526,10 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
     }
 
     var chart = uno('#mp-chart');
-    if(chart) chart.innerHTML = letto ? svgLinea(a, 30) : '<div class="p7-note2">'+esc(testo)+': la linea compare quando ci sono pesate.</div>';
+    if(chart){
+      if(letto){ chart.style.minHeight = '0'; disegna(chart, 190, a); }
+      else { chart.__bddati = []; chart.innerHTML = '<div class="p7-note2">'+esc(testo)+': la linea compare quando ci sono pesate.</div>'; }
+    }
 
     var sett = uno('#mp-sett');
     if(sett){
@@ -10546,7 +10586,10 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
     var yr = uno('#ma-year');
     if(yr) yr.innerHTML = ANNO ? '<b>'+ANNO+'</b>' : '<b>Nessun anno</b> ' + esc(st.stato === 'vuoto' ? 'nessuna pesata registrata' : testo);
     var line = uno('#ma-line');
-    if(line) line.innerHTML = letto ? svgLinea(a, 46) : '<div class="p7-note2">'+esc(testo)+'</div>';
+    if(line){
+      if(letto){ disegna(line, 46, a); }
+      else { line.__bddati = []; line.innerHTML = '<div class="p7-note2">'+esc(testo)+'</div>'; }
+    }
     var leg = uno('#ma-leg');
     if(leg) leg.innerHTML = letto ? a.map(function(x){ return '<span>'+P.dataCorta(x.data)+' · '+P.kg(x.kg)+'</span>'; }).join('') : '';
 
@@ -10556,7 +10599,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
     if(sp){
       if(!letto){ sp.innerHTML = '<div class="p7-note2">'+esc(testo)+'</div>'; }
       else if(a.length < 2){ sp.innerHTML = '<div class="p7-note2">Una sola pesata ('+P.kg(a[0].kg)+' kg del '+P.dataBreve(a[0].data)+'): serve un secondo punto per la linea.</div>'; }
-      else { sp.innerHTML = svgLinea(a, 34); }
+      else { disegna(sp, 90, a); }
     }
     var lg = uno('#ov-leg');
     if(lg) lg.innerHTML = letto ? a.map(function(x){ return '<span>'+P.dataCorta(x.data)+' · '+P.kg(x.kg)+' kg</span>'; }).join('') : '';

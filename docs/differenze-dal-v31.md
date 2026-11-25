@@ -146,18 +146,21 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 9033 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
 - righe 9039 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
 - righe 9047-9049 — el('ov-barsn').textContent = PV.letto
-- righe 9067 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9075 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
-- righe 9077-9095 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
-- righe 9098-9110 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
-- righe 9149 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
-- righe 9200 — if(false){
-- righe 9397 — '<div class="ese-chips2">' +
-- righe 9948-9951 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
-- righe 9956 — kpi.innerHTML =
-- righe 10131-10140 — // Passo 30: nei campi si lascia al browser la cronologia de
-- righe 10250 — 
-- righe 10294-10572 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 9052-9055 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34 allungato: la linea usciva come una striscia) — var Hh = 90, spBox = el('ov-spark');
+- righe 9059-9064 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); }; ... spBox.innerHTML = '<svg class="p7-spark" viewBox="0 0 ' + W + ' ' + Hh + '" ...
+- righe 9066 — return '<circle cx="' + xdi(i).toFixed(1) + '" cy="' + ydi(p.w).toFixed(1) + '" r="' + (i === pesi.length-1 ? ... (punti nelle misure vere)
+- righe 9069 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9077 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
+- righe 9079-9097 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
+- righe 9100-9112 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
+- righe 9151 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
+- righe 9202 — if(false){
+- righe 9399 — '<div class="ese-chips2">' +
+- righe 9950-9953 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
+- righe 9958 — kpi.innerHTML =
+- righe 10133-10142 — // Passo 30: nei campi si lascia al browser la cronologia de
+- righe 10252 — 
+- righe 10296-10616 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
