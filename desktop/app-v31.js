@@ -404,8 +404,20 @@ export async function avvia(doc, win) {
    * il logbook della coach è in sola lettura. */
   const btnImportaLb = doc.getElementById("lb-importa");
   const btnDimenticaLb = doc.getElementById("lb-dimentica");
-  if (btnImportaLb) btnImportaLb.disabled = true;
-  if (btnDimenticaLb) btnDimenticaLb.disabled = true;
+  /* Passo 31 — spenti, ma ognuno dice perché: un tasto spento senza motivo
+   * è la stessa cosa di un tasto che non funziona. */
+  if (btnImportaLb) {
+    btnImportaLb.disabled = true;
+    btnImportaLb.title = "Il logbook si legge dal cloud: non c'è un backup da importare a mano";
+  }
+  if (btnDimenticaLb) {
+    btnDimenticaLb.disabled = true;
+    btnDimenticaLb.title = "Il logbook è in sola lettura: non si cancella da qui";
+  }
+  const motivoLb = doc.getElementById("lb-fonte");
+  if (motivoLb && !String(motivoLb.textContent || "").trim()) {
+    motivoLb.textContent = "letto dal cloud · in sola lettura";
+  }
   doc.addEventListener("click", (e) => {
     const v = e.target && e.target.closest ? e.target.closest(".voce[data-vista]") : null;
     if (v) aggiornaStriscia(doc, v.getAttribute("data-vista"));

@@ -81,6 +81,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 2706-2708 — <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il p
 - righe 2730 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
 - righe 2732 — 
+- righe 2745 — <div class="v-stato">Cosa conterr&agrave;: nome, dose, orari
 - righe 2762 — <div class="dperche" id="ov-p1">programma non ancora letto</
 - righe 2769 — <div class="dperche" id="ov-p2">logbook non ancora letto</di
 - righe 2803 — <p class="p7-note2" id="lb-nota-b" hidden></p>
@@ -101,6 +102,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 3151-3153 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
 - righe 3154 — 
 - righe 3156 — <section class="voce-pag" id="pag-scheletri">
+- righe 3183-3184 — <label class="sk-check" title="C'è una sola atleta: non c'è 
 - righe 3197-3198 — <div class="sk-qh">Questionario</div>
 - righe 3208 — <section class="voce-pag" id="pag-programma-1"><div class="p
 - righe 3295 — <button class="pr-btn" id="t8-appprog" type="button">Applica
@@ -169,6 +171,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 
 
 
+
 - **Passo 8** — via i numeri del mockup da Curve di forza, Pianificazione, Misure e Dashboard; le quattro tab cancellate per errore (Scheletri, Programma 1, Impostazioni, Study time) sono state ripristinate identiche al v31.
 - **Passo 15** — Dati cliente: tolte le linguette Wearable e Personalizzati con i loro pannelli.
 - **Passo 16** — via dal codice il questionario personale di Scheletri, il link Cloudflare dell'email, le tre versioni ridotte a una (`window.BD_VERSIONE`), e la funzione che scriveva in riquadri inesistenti (`#t9-kpi`).
@@ -180,3 +183,4 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 26** — anagrafica scrivibile (sesso, lingua, obiettivo, cognome) con le voci nel registro; «Compila / Modifica» apre l'editor dell'anamnesi.
 - **Passo 28** — i due «Apri» della carta «Cosa fare questa settimana» sembrano tasti (bordo, freccia, animazione, tastiera), e la frase della carta invita invece di scoraggiare.
 - **Passo 29** — il quaderno: i quattordici campi dell'anamnesi si scrivono (voci `anamnesi-campo` nel registro); i due tasti si attaccano al caricamento, non più dopo l'accesso; badge della carta riscritti.
+- **Passo 31** — Integratori: via la frase «mandami lo screen»; i due tasti spenti del Logbook dicono perché; la casella «Rendi disponibile» spenta con il motivo.
