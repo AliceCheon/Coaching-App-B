@@ -109,6 +109,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 3328 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
 - righe 3339 — 
 - righe 3372 — 
+- righe 3392-3393 — <div><b>Scarico</b><p>… la settimana e la percentuale sono quelle scritte nei campi «Scarico» e «Vol −%» della scheda … <div><b>Rotazione schede</b><p>… qui si vede quella osservata nel logbook (passo 33: i testi dicono solo cose vere)
 - righe 3452 — </div></div></section><section class="voce-pag" id="pag-impo
 - righe 3473 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
 - righe 4129 — <p class="v-testo">Tutti i programmi del backup, attivo comp
@@ -187,3 +188,5 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 28** — i due «Apri» della carta «Cosa fare questa settimana» sembrano tasti (bordo, freccia, animazione, tastiera), e la frase della carta invita invece di scoraggiare.
 - **Passo 29** — il quaderno: i quattordici campi dell'anamnesi si scrivono (voci `anamnesi-campo` nel registro); i due tasti si attaccano al caricamento, non più dopo l'accesso; badge della carta riscritti.
 - **Passo 31** — Integratori: via la frase «mandami lo screen»; i due tasti spenti del Logbook dicono perché; la casella «Rendi disponibile» spenta con il motivo.
+- **Passo 32** — la linea del peso si disegna nelle misure vere del riquadro (larghezza in pixel del contenitore, altezza uguale al riquadro, punti e spessore coerenti). Prima il disegno era un riquadro 100×N allungato a sette volte l'altezza senza rapporto: dentro la carta Peso, in «Andamento peso» e in Monitor peso usciva una striscia schiacciata con macchie al posto dei punti. Ora si ridisegna anche quando il riquadro cambia larghezza.
+- **Passo 33** — «Spiegazioni (4/4)» è acceso: apre un pannello con le quattro voci (TUT, ondata 10-x, scarico, rotazione schede), si chiude col ×, col clic fuori e con Esc, e il fuoco torna al tasto. I testi di scarico e rotazione dicono solo cose vere: la settimana e la percentuale dello scarico si leggono dai campi «Scarico» e «Vol −%» della scheda (non da un «qui S4» fisso), e la rotazione prevista non essendo nei documenti letti si vede solo quella osservata nel logbook. «Suggerimenti» resta al suo posto: serve alla robottina.

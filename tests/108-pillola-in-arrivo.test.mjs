@@ -95,13 +95,16 @@ test("108.2 il tooltip dice cosa fara' il tasto", () => {
   });
 });
 
-test("108.3 Suggerimenti e Spiegazioni restano senza pillola", () => {
+test("108.3 Suggerimenti resta spento e senza pillola; Spiegazioni ora apre (passo 33)", () => {
   const s = scena();
-  ["Suggerimenti: ON", "Spiegazioni (4/4)"].forEach((parola) => {
-    const b = tasto(s, ".pr-bar", parola);
-    assert.equal(b.disabled, true, "\u00ab" + parola + "\u00bb resta spento");
-    assert.equal(pillola(b), null, "\u00ab" + parola + "\u00bb NON porta la pillola in arrivo");
-  });
+  const sug = tasto(s, ".pr-bar", "Suggerimenti: ON");
+  assert.equal(sug.disabled, true, "\u00abSuggerimenti\u00bb resta spento in attesa della robottina");
+  assert.equal(pillola(sug), null, "\u00abSuggerimenti\u00bb NON porta la pillola in arrivo");
+  /* Passo 33: le quattro spiegazioni sono scritte e si aprono: il tasto non e'
+     piu' spento, ma non porta nessuna pillola perche' non c'e' niente in arrivo. */
+  const sp = tasto(s, ".pr-bar", "Spiegazioni (4/4)");
+  assert.equal(sp.disabled, false, "\u00abSpiegazioni (4/4)\u00bb e' acceso: apre il pannello");
+  assert.equal(pillola(sp), null, "\u00abSpiegazioni (4/4)\u00bb NON porta la pillola in arrivo");
 });
 
 test("108.4 senza elenco le linguette spente portano la pillola: Stress, Scheletri, Periodizzazione", () => {

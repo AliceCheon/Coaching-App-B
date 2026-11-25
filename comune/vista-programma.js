@@ -1513,6 +1513,62 @@ function eseguiScaricoTutte(doc, barra, mod, richiesta) {
   });
 }
 
+/* Le spiegazioni (passo 33). I quattro testi stanno scritti una volta sola
+ * nello stampo #pr-mspiega, che pero' vive dentro un contenitore che non si
+ * vede: aprire quello non mostrava niente. Ogni apertura costruisce una copia
+ * viva sul corpo della pagina, con gli stessi testi e lo stesso stile; a
+ * chiudere sono il ×, il clic sullo sfondo e Esc, e il fuoco torna al tasto. */
+function apriSpiegazioni(doc, tasto) {
+  const stampo = doc.getElementById("pr-mspiega");
+  if (!stampo || !doc.body) return false;
+  const gia = doc.querySelector(".bd-spiega");
+  if (gia) gia.remove();
+
+  const modale = doc.createElement("div");
+  modale.className = "pr-modal bd-spiega";
+  const scatola = doc.createElement("div");
+  scatola.className = "pr-mbox";
+  const testa = doc.createElement("header");
+  const titolo = doc.createElement("b");
+  titolo.textContent = "Spiegazioni";
+  const voci = stampo.querySelectorAll(".pr-spiega > div");
+  const conta = doc.createElement("span");
+  conta.textContent = voci.length + (voci.length === 1 ? " voce" : " voci");
+  const x = doc.createElement("button");
+  x.type = "button";
+  x.className = "pr-mx";
+  x.setAttribute("aria-label", "Chiudi");
+  x.textContent = "\u00d7";
+  testa.appendChild(titolo);
+  testa.appendChild(conta);
+  testa.appendChild(x);
+  scatola.appendChild(testa);
+
+  const elenco = doc.createElement("div");
+  elenco.className = "pr-spiega";
+  voci.forEach((v) => elenco.appendChild(v.cloneNode(true)));
+  scatola.appendChild(elenco);
+  modale.appendChild(scatola);
+
+  let finito = false;
+  const chiudi = () => {
+    if (finito) return;
+    finito = true;
+    modale.remove();
+    doc.removeEventListener("keydown", suTasto, true);
+    if (tasto && tasto.focus) { try { tasto.focus(); } catch (e) { /* il fuoco non c'e': pazienza */ } }
+  };
+  function suTasto(ev) {
+    if (ev.key === "Escape" || ev.key === "Esc") { ev.stopPropagation(); chiudi(); }
+  }
+  x.addEventListener("click", (ev) => { ev.preventDefault(); chiudi(); });
+  modale.addEventListener("click", (ev) => { if (ev.target === modale) chiudi(); });
+  doc.addEventListener("keydown", suTasto, true);
+  doc.body.appendChild(modale);
+  if (x.focus) { try { x.focus(); } catch (e) { /* senza fuoco si legge lo stesso */ } }
+  return true;
+}
+
 function barraStrumenti(doc, scheda, r) {
   const bar = n(doc, "div", "pr-bar");
   bar.appendChild(pulsanteScaricoTutte(doc, bar, scheda, r));
@@ -1538,7 +1594,12 @@ function barraStrumenti(doc, scheda, r) {
     : pulsanteSpento(doc, "pr-btn", "Copia/Sposta esercizi", "aspetta che il programma sia caricato");
   btCopia.setAttribute("data-copia", "1");
   bar.appendChild(btCopia);
-  bar.appendChild(pulsanteSpento(doc, "pr-btn", "Spiegazioni (4/4)", "apre le spiegazioni"));
+  /* Passo 33: le quattro spiegazioni sono in pagina (#pr-mspiega) e si chiudono
+   * col ×, col clic fuori o con Esc. Il tasto della barra viva non le apriva. */
+  const btSpiega = pulsanteVivo(doc, "pr-btn", "Spiegazioni (4/4)",
+    "apre le quattro spiegazioni: TUT, ondata 10-x, scarico, rotazione schede", () => apriSpiegazioni(doc, btSpiega));
+  btSpiega.setAttribute("data-spiegazioni", "1");
+  bar.appendChild(btSpiega);
   bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
   bar.appendChild(pulsanteStampa(doc, "Stampa da Compilare", "stampa una settimana con le caselle vuote da spuntare a mano", "compilare"));
   const sug = pulsanteSpento(doc, "pr-btn on", "Suggerimenti: ON", "accende o spegne i suggerimenti");
@@ -2788,7 +2849,7 @@ function stampeCollegate(doc, r) {
   }
 }
 
-export { accorciaSetup, etichetteSup, serieDaCella, tagliaCorpo, apriFinestraStampa, stampeCollegate };
+export { accorciaSetup, etichetteSup, serieDaCella, tagliaCorpo, apriFinestraStampa, stampeCollegate, apriSpiegazioni };
 
 /* ---------- B.21 · l'igiene della scheda -------------------------------- */
 
