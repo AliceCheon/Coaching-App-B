@@ -18,8 +18,33 @@ export const CAMPI_ANAGRAFICA = Object.freeze({
   sesso: { etichetta: "Sesso", valori: ["Donna", "Uomo"] },
   lingua: { etichetta: "Lingua atleta", valori: ["Italiano", "English", "Español"] },
   obiettivo: { etichetta: "Obiettivo", valori: ["Dimagrimento", "Mantenimento", "Aumento Massa"] },
-  cognome: { etichetta: "Cognome", valori: null }
+  cognome: { etichetta: "Cognome", valori: null },
+  "data-nascita": { etichetta: "Data di nascita", valori: null, tipo: "date" },
+  eta: { etichetta: "Età", valori: null, tipo: "number" },
+  altezza: { etichetta: "Altezza (cm)", valori: null, tipo: "number" },
+  peso: { etichetta: "Peso (kg)", valori: null, tipo: "number" },
+  lbm: { etichetta: "LBM · Massa Magra (kg)", valori: null, tipo: "number" },
+  livello: { etichetta: "Livello", valori: null, tipo: "testo" },
+  "anni-allenamento": { etichetta: "Anni di allenamento", valori: null, tipo: "number" },
+  "sedute-settimana": { etichetta: "Sedute / settimana", valori: null, tipo: "number" },
+  attrezzatura: { etichetta: "Attrezzatura", valori: null, tipo: "testo" },
+  note: { etichetta: "Note Generali", valori: null, tipo: "testo-lungo" }
 });
+
+/* I campi che nella pagina sono i riquadri col trattino (e non i tasti a
+ * scelta): si scrivono toccandoli. Le etichette sono quelle dell'HTML. */
+const VALORI_SCRIVIBILI = [
+  ["Cognome", "cognome", "testo"],
+  ["Data di nascita", "data-nascita", "date"],
+  ["Età", "eta", "number"],
+  ["Altezza (cm)", "altezza", "number"],
+  ["Peso (kg)", "peso", "number"],
+  ["LBM · Massa Magra (kg)", "lbm", "number"],
+  ["Livello", "livello", "testo"],
+  ["Anni di allenamento", "anni-allenamento", "number"],
+  ["Sedute / settimana", "sedute-settimana", "number"],
+  ["Attrezzatura", "attrezzatura", "testo"],
+];
 
 const TIPO = "dati-anagrafica";
 
@@ -157,6 +182,84 @@ export function montaAnagrafica(doc, opzioni) {
       else { mostra(); scriviEsito("Salvato: Cognome · Clemente"); }
     });
     annodati.push("cognome");
+  }
+
+  /* ---- i riquadri col trattino: Età, Altezza, Peso, LBM, Data di nascita,
+   * Cognome e Note Generali. Si tocca il riquadro e compare la casella. ---- */
+  for (const [etichetta, chiave, tipo] of VALORI_SCRIVIBILI) {
+    const riga = [...doc.querySelectorAll('[data-pan="anagrafica"] .dc-f')]
+      .find((f) => { const l = f.querySelector(".dc-lbl"); return l && testo(l.textContent) === etichetta; });
+    if (!riga) continue;
+    const riquadro = riga.querySelector(".dc-val");
+    if (!riquadro || riquadro.dataset.anaVivo === "1") continue;
+    riquadro.dataset.anaVivo = "1";
+    riquadro.style.cursor = "text";
+    riquadro.setAttribute("role", "button");
+    riquadro.setAttribute("tabindex", "0");
+    riquadro.title = "un tocco per scrivere";
+
+    const apri = () => {
+      if (riga.dataset.anaAperto === "1") return;
+      riga.dataset.anaAperto = "1";
+      const valorePrima = testo(riquadro.textContent);
+      const prima = valorePrima === "—" ? "" : valorePrima;
+      const casella = doc.createElement(tipo === "testo-lungo" ? "textarea" : "input");
+      if (tipo !== "testo-lungo") casella.type = tipo;
+      if (tipo === "testo-lungo") casella.rows = 3;
+      casella.value = prima;
+      casella.style.cssText = "width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--purple);border-radius:9px;color:var(--testo);font:800 14px/1.4 'Nunito Sans',sans-serif;padding:8px 10px";
+      const tasti = doc.createElement("div");
+      tasti.style.cssText = "display:flex;gap:6px;margin-top:6px";
+      const salva = doc.createElement("button"); salva.type = "button"; salva.className = "dc-btn"; salva.textContent = "Salva";
+      const annulla = doc.createElement("button"); annulla.type = "button"; annulla.className = "dc-btn ghost"; annulla.textContent = "Annulla";
+      tasti.appendChild(salva); tasti.appendChild(annulla);
+      riquadro.style.display = "none";
+      riga.appendChild(casella); riga.appendChild(tasti);
+      casella.focus();
+      const chiudi = () => { riga.dataset.anaAperto = "0"; riquadro.style.display = ""; casella.remove(); tasti.remove(); };
+      annulla.addEventListener("click", () => { chiudi(); scriviEsito("Modifica annullata: non ho scritto niente."); });
+      const conferma = () => {
+        const dopo = testo(casella.value);
+        if (!dopo) { chiudi(); scriviEsito("Campo vuoto: non ho scritto niente."); return; }
+        if (dopo === prima) { chiudi(); scriviEsito("Il valore è identico: non ho scritto niente."); return; }
+        scriviEsito("Sto salvando " + etichetta.toLowerCase() + "…");
+        let esito = null;
+        try { esito = o.onCambia ? o.onCambia(chiave, dopo, prima) : null; } catch (e) { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); return; }
+        const fatto = () => { stato[chiave] = dopo; riquadro.textContent = dopo; riquadro.classList.remove("vuoto"); chiudi(); scriviEsito("Salvato: " + etichetta + " · " + dopo); };
+        if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok === false) scriviEsito("Non ho salvato: il valore non è passato."); else fatto(); }, (e) => scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")));
+        else fatto();
+      };
+      salva.addEventListener("click", conferma);
+      casella.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && tipo !== "testo-lungo") { ev.preventDefault(); conferma(); } if (ev.key === "Escape") chiudi(); });
+    };
+    riquadro.addEventListener("click", apri);
+    riquadro.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); apri(); } });
+    annodati.push(chiave);
+  }
+
+  /* Note Generali: è già una casella di testo nella pagina. Non si apre: si
+   * salva quando esci dal campo (o con Ctrl+Invio), e la riga dice com'è andata. */
+  const noteRiga = [...doc.querySelectorAll('[data-pan="anagrafica"] .dc-f')]
+    .find((f) => { const l = f.querySelector(".dc-lbl"); return l && testo(l.textContent) === "Note Generali"; });
+  if (noteRiga) {
+    const area = noteRiga.querySelector("textarea");
+    if (area && !area.dataset.anaVivo) {
+      area.dataset.anaVivo = "1";
+      let primaNota = testo(area.value);
+      const salvaNota = () => {
+        const dopo = testo(area.value);
+        if (dopo === primaNota) return;
+        scriviEsito("Sto salvando le note…");
+        let esito = null;
+        try { esito = o.onCambia ? o.onCambia("note", dopo, primaNota) : null; } catch (e) { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); return; }
+        const fatto = () => { primaNota = dopo; stato.note = dopo; scriviEsito("Salvato: Note Generali"); };
+        if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok === false) scriviEsito("Non ho salvato: il testo non è passato."); else fatto(); }, (e) => scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")));
+        else fatto();
+      };
+      area.addEventListener("change", salvaNota);
+      area.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); salvaNota(); } });
+      annodati.push("note");
+    }
   }
 
   return annodati;

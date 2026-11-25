@@ -168,6 +168,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 
 
 
+
 - **Passo 8** — via i numeri del mockup da Curve di forza, Pianificazione, Misure e Dashboard; le quattro tab cancellate per errore (Scheletri, Programma 1, Impostazioni, Study time) sono state ripristinate identiche al v31.
 - **Passo 15** — Dati cliente: tolte le linguette Wearable e Personalizzati con i loro pannelli.
 - **Passo 16** — via dal codice il questionario personale di Scheletri, il link Cloudflare dell'email, le tre versioni ridotte a una (`window.BD_VERSIONE`), e la funzione che scriveva in riquadri inesistenti (`#t9-kpi`).

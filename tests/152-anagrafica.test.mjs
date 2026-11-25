@@ -63,7 +63,9 @@ test("152.4 la pagina vera: i tre gruppi scrivono, e il cognome pure", async () 
     stato: {},
     onCambia: (campo, valore, prima) => { scritte.push([campo, valore, prima]); return Promise.resolve(true); }
   });
-  assert.deepEqual(montati.sort(), ["cognome", "lingua", "obiettivo", "sesso"]);
+  for (const chiave of ["cognome", "lingua", "obiettivo", "sesso", "eta", "altezza", "peso", "lbm", "data-nascita", "note", "livello", "anni-allenamento", "sedute-settimana", "attrezzatura"]) {
+    assert.equal(montati.includes(chiave), true, "manca il campo " + chiave);
+  }
 
   /* sesso */
   const gruppoSesso = [...doc.querySelectorAll(".dc-seg")].find((g) => [...g.querySelectorAll("button")].some((b) => b.textContent.trim() === "Uomo"));
@@ -107,6 +109,26 @@ test("152.5 se la scrittura fallisce la pagina non finge", async () => {
   assert.equal(uomo.classList.contains("on"), false, "la pagina mostra come scelto un valore che non è stato salvato");
 });
 
-test("152.6 i campi dichiarati sono quelli della domanda 3", () => {
-  assert.deepEqual(Object.keys(CAMPI_ANAGRAFICA).sort(), ["cognome", "lingua", "obiettivo", "sesso"]);
+test("152.6 i campi dichiarati sono quelli che la pagina mostra", () => {
+  const attesi = ["altezza", "cognome", "data-nascita", "eta", "lbm", "lingua", "note", "obiettivo", "peso", "sesso", "livello", "anni-allenamento", "sedute-settimana", "attrezzatura"];
+  assert.deepEqual(Object.keys(CAMPI_ANAGRAFICA).sort(), attesi.sort());
+});
+
+test("152.7 i riquadri col trattino si aprono e salvano", async () => {
+  const doc = pagina();
+  const scritte = [];
+  montaAnagrafica(doc, { stato: {}, onCambia: (campo, valore, prima) => { scritte.push([campo, valore, prima]); return Promise.resolve(true); } });
+  const riga = [...doc.querySelectorAll('[data-pan="anagrafica"] .dc-f')].find((f) => {
+    const l = f.querySelector(".dc-lbl"); return l && l.textContent.trim() === "Età";
+  });
+  assert.ok(riga, "manca il riquadro dell'età");
+  riga.querySelector(".dc-val").click();
+  const casella = riga.querySelector("input");
+  assert.ok(casella, "il tocco sull'età non apre la casella");
+  assert.equal(casella.type, "number", "l'età deve essere un numero");
+  casella.value = "31";
+  [...riga.querySelectorAll("button")].find((b) => b.textContent.trim() === "Salva").click();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepEqual(scritte[0], ["eta", "31", ""]);
+  assert.equal(riga.querySelector(".dc-val").textContent, "31", "la riga non mostra il valore salvato");
 });
