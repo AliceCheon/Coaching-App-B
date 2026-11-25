@@ -1670,7 +1670,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="piede-rail">
       <span class="pallino"></span><b>Anteprima sui tuoi dati veri</b><br>
       <span data-lb-ante>…</span><br>
-      <span style="display:inline-block;margin-top:7px;color:#8A6FA8">Anteprima in costruzione: non è ancora la versione in produzione.</span>
+      <span style="display:inline-block;margin-top:7px;color:#8A6FA8">Versione B &middot; in prova sui tuoi dati</span>
     </div>
   </nav>
 
@@ -1836,8 +1836,8 @@ document.addEventListener('DOMContentLoaded',function(){
             <div class="ck-fare-tit">Nessuna decisione automatica <span class="ck-tag">ENGINE_OFF</span></div>
             <p class="ck-fare-d">Il motore che sceglie il deload non esiste ancora, e non lo invento: decidere di
             alleggerire è un atto di coaching, non un'aritmetica.</p>
-            <div class="ck-fare-link spento"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h8M4 8h8M4 11.5h5"/></svg> DA ANALISI <b>rischio strutturale — </b> <em>apri</em></div>
-            <div class="ck-fare-link spento"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13S3 10 3 6.4A2.6 2.6 0 0 1 8 5a2.6 2.6 0 0 1 5 1.4C13 10 8 13 8 13z"/></svg> DA SALUTE <b>readiness non registrato</b> <em>apri</em></div>
+            <div class="ck-fare-link" data-vai="riepilogo-volume"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h8M4 8h8M4 11.5h5"/></svg> DA ANALISI <b>rischio strutturale — </b> <em>apri</em></div>
+            <div class="ck-fare-link" data-vai="salute-recupero"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13S3 10 3 6.4A2.6 2.6 0 0 1 8 5a2.6 2.6 0 0 1 5 1.4C13 10 8 13 8 13z"/></svg> DA SALUTE <b>readiness non registrato</b> <em>apri</em></div>
             <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S4 4 8 4s6.5 4 6.5 4S12 12 8 12 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.8"/></svg> <span>Quando il motore esisterà, qui comparirà la proposta con la sua confidenza.</span></div>
           </article>
           <article class="ck-card">
@@ -2016,11 +2016,13 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="dc-card">
         <h3>Anamnesi iniziale</h3>
         <p class="dc-sub">Scheda conoscitiva compilata a inizio percorso.</p>
+        <!-- Passo 25: «Domande» esce (tornerà quando ci sarà un senso), e
+             «Compila / Modifica» non è più un tasto muto: apre lo stesso editor
+             della riga «Patologie o infortuni», che scrive nella zona B. -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <button class="dc-btn">✏️ Compila / Modifica</button>
-          <button class="dc-btn ghost">⚙ Domande</button>
+          <button class="dc-btn" id="dc-compila">✏️ Compila / Modifica</button>
         </div>
-        <div class="dc-avviso">Anamnesi non ancora compilata — clicca «Compila / Modifica». Tutti i campi qui sotto sono vuoti all'origine.</div>
+        <div class="dc-avviso" id="dc-avviso">L'anamnesi si scrive dal campo «Patologie o infortuni» qui sotto: clicca «Modifica» e racconta a parole com'è andata. Le altre righe restano in sola lettura finché i dati non arrivano dal telefono.</div>
 
         <div class="dc-stile">Stile di vita</div>
         <div class="dc-griglia">

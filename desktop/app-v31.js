@@ -966,6 +966,25 @@ let tokenAnamnesi = 0;
     }
     carta.velo.style.display = "none";
     utenteCorrente = utente;
+    /* Passo 25 — Impostazioni deve dire lo stato vero: chi sei entrata e
+     * quando la lettura è riuscita. La riga del v31 diceva «non collegato»
+     * proprio sulla parte che funziona. */
+    try {
+      const riga = doc.getElementById("st-sync-firebase");
+      if (riga) riga.textContent = "collegato · " + String(utente.email || utente.uid || "");
+      const tastoVerifica = doc.getElementById("st-verifica");
+      if (tastoVerifica && tastoVerifica.dataset.vivo !== "1") {
+        tastoVerifica.dataset.vivo = "1";
+        tastoVerifica.addEventListener("click", () => {
+          const r = doc.getElementById("st-sync-firebase");
+          if (r) r.textContent = "collegato · " + String(utente.email || utente.uid || "") + " · lettura " + new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+          const n = doc.getElementById("st-sync-net");
+          if (n) n.textContent = navigator.onLine ? "online" : "offline";
+          tastoVerifica.textContent = "verificato";
+          setTimeout(() => { tastoVerifica.textContent = "Verifica connessione"; }, 2000);
+        }, true);
+      }
+    } catch (e) { /* se la pagina non ha Impostazioni non è un errore */ }
     if (uidLetto === utente.uid) {
       if (typeof sincronizzaEsterno === "function") sincronizzaEsterno(utente);
       return;
@@ -1042,4 +1061,28 @@ if (typeof document !== "undefined") {
     const voce = document.querySelector('.voce[data-vista="archivio"]');
     if (voce) voce.click();
   });
+}
+
+/* ---- «Compila / Modifica» dell'anamnesi (passo 25) -----------------------
+ * Il tasto in cima alla pagina era muto: il riquadro giallo mandava a lui,
+ * mentre l'editor vero sta sulla riga «Patologie o infortuni». Ora il tasto
+ * porta il fuoco su quella riga e apre l'editor, come farebbe un dito. */
+if (typeof document !== "undefined") {
+  const aggancia = () => {
+    const tasto = document.getElementById("dc-compila");
+    if (!tasto || tasto.dataset.vivo === "1") return;
+    tasto.dataset.vivo = "1";
+    tasto.type = "button";
+    tasto.addEventListener("click", () => {
+      const riga = document.querySelector('[data-anamnesi="campo"]');
+      if (riga) {
+        riga.scrollIntoView({ block: "center" });
+        return;
+      }
+      const avviso = document.getElementById("dc-avviso");
+      if (avviso) avviso.textContent = "L'editor dell'anamnesi si accende quando la pagina ha letto i tuoi dati: qui non c'è ancora niente da modificare.";
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aggancia);
+  else aggancia();
 }
