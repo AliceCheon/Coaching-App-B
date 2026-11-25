@@ -94,67 +94,69 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 3141 — 
 - righe 3144 — <div class="v-occhiello">Programmi &middot; Curve di forza</
 - righe 3146 — <p class="v-testo">La storia del carico per esercizio, sedut
-- righe 3147 — 
 - righe 3149-3151 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
 - righe 3152 — 
-- righe 3154 — <section class="voce-pag" id="pag-scheletri">
-- righe 3195-3196 — <div class="sk-qh">Questionario</div>
-- righe 3206 — <section class="voce-pag" id="pag-programma-1"><div class="p
-- righe 3293 — <button class="pr-btn" id="t8-appprog" type="button">Applica
-- righe 3326 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
-- righe 3337 — 
-- righe 3370 — 
-- righe 3450 — </div></div></section><section class="voce-pag" id="pag-impo
-- righe 3471 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
-- righe 4127 — <p class="v-testo">Tutti i programmi del backup, attivo comp
-- righe 4131 — <tbody id="archivio-corpo"></tbody>
-- righe 5284-5292 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
-- righe 5478 — 
-- righe 5638 — disegnaSchede(); disegnaLegenda();
-- righe 5971 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
-- righe 6229 — if(navigator.userActivation&&navigator.userActivation.hasBee
-- righe 6346-6350 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
-- righe 7029-7030 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
-- righe 7158-7194 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
-- righe 7336 — 
-- righe 7363-7390 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
-- righe 7435 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
-- righe 7481 — 
-- righe 7531-7532 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
-- righe 7605 — html body .p7-donut .dperche{max-width:150px;text-align:cent
-- righe 7884 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
-- righe 8041 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
-- righe 8429-8430 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
-- righe 8883 — var SEED = {config:{}, sessioni:[]};
-- righe 8898-8901 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
-- righe 8925-8928 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
-- righe 8935-8953 — /* ---------- Passo 18: l'Overview conta dal programma letto
-- righe 8955-8962 — if(radiceP){
-- righe 8965-8970 — function logbookVivo(){
-- righe 8971 — 
-- righe 8973-8976 — function pittaOverview(){
-- righe 8977 — 
-- righe 8979-9005 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
-- righe 9018 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9020 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
-- righe 9026-9028 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
-- righe 9031 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
-- righe 9037 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
-- righe 9045-9047 — el('ov-barsn').textContent = PV.letto
-- righe 9065 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9073 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
-- righe 9075-9093 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
-- righe 9096-9108 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
-- righe 9147 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
-- righe 9198 — if(false){
-- righe 9395 — '<div class="ese-chips2">' +
-- righe 9946-9949 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
-- righe 9954 — kpi.innerHTML =
-- righe 10129-10138 — // Passo 30: nei campi si lascia al browser la cronologia de
-- righe 10248 — 
-- righe 10292-10570 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 3153 — 
+- righe 3157 — <div class="v-occhiello">Programmi &middot; Scheletri</div>
+- righe 3159 — <p class="v-testo">Uno scheletro &egrave; una scheda senza c
+- righe 3162-3166 — <div class="sk-card">
+- righe 3170 — <section class="voce-pag" id="pag-programma-1"><div class="p
+- righe 3257 — <button class="pr-btn" id="t8-appprog" type="button">Applica
+- righe 3290 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
+- righe 3301 — 
+- righe 3334 — 
+- righe 3414 — </div></div></section><section class="voce-pag" id="pag-impo
+- righe 3435 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
+- righe 4091 — <p class="v-testo">Tutti i programmi del backup, attivo comp
+- righe 4095 — <tbody id="archivio-corpo"></tbody>
+- righe 5248-5256 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
+- righe 5442 — 
+- righe 5602 — disegnaSchede(); disegnaLegenda();
+- righe 5935 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
+- righe 6193 — if(navigator.userActivation&&navigator.userActivation.hasBee
+- righe 6310-6314 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
+- righe 6993-6994 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 7122-7158 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
+- righe 7300 — 
+- righe 7327-7354 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
+- righe 7399 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
+- righe 7445 — 
+- righe 7495-7496 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
+- righe 7569 — html body .p7-donut .dperche{max-width:150px;text-align:cent
+- righe 7848 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
+- righe 8005 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
+- righe 8393-8394 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
+- righe 8847 — var SEED = {config:{}, sessioni:[]};
+- righe 8862-8865 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
+- righe 8889-8892 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
+- righe 8899-8917 — /* ---------- Passo 18: l'Overview conta dal programma letto
+- righe 8919-8926 — if(radiceP){
+- righe 8929-8934 — function logbookVivo(){
+- righe 8935 — 
+- righe 8937-8940 — function pittaOverview(){
+- righe 8941 — 
+- righe 8943-8969 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
+- righe 8982 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 8984 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
+- righe 8990-8992 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
+- righe 8995 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
+- righe 9001 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
+- righe 9009-9011 — el('ov-barsn').textContent = PV.letto
+- righe 9029 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9037 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
+- righe 9039-9057 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
+- righe 9060-9072 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
+- righe 9111 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
+- righe 9162 — if(false){
+- righe 9359 — '<div class="ese-chips2">' +
+- righe 9910-9913 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
+- righe 9918 — kpi.innerHTML =
+- righe 10093-10102 — // Passo 30: nei campi si lascia al browser la cronologia de
+- righe 10212 — 
+- righe 10256-10534 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
+
 
 
 
@@ -167,3 +169,4 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 18** — nessun numero fisso si presenta come dato di oggi: la carta «Biofeedback settimanale» della Dashboard e il «Check-in di oggi» di Salute & recupero leggono il check-in da una fonte sola (`comune/checkin-b.js`, scala 1-5 dichiarata) e, senza check-in, dicono che non è arrivato; via «21/10/2026 · 6 note», i punteggi «/ 10» e il giudizio «la scala dice metà»; l'Overview conta aderenza e carico dal logbook e dal programma vivi (`comune/overview-vivo-b.js`) invece che dalla tabella nascosta del mockup, e dove il conto non si fa scrive il perché.
 - **Passo 19** — i quattro tasti «? Guida» che non facevano niente ora aprono un riquadro con la spiegazione.
 - **Passo 20** — via il «?» dai tasti Guida; anche Dashboard, Overview e Pianificazione ora spiegano invece di restare spenti.
+- **Passo 22** — la pagina Scheletri perde il costruttore finto (tabs, modulo, «+ Aggiungi scheda»): resta la carta che dice come si salva davvero e cosa non c'è.
