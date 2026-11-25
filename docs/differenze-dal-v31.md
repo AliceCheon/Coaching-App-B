@@ -41,50 +41,56 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1826-1826 — <div class="ck-fare-link spento"><svg class="ck-ic" viewBo
 - righe 1907-1907 — <article class="ck-card">
 - righe 1909-1911 — <p>carico per articolazione · la tacca sarebbe il 100% del
-- righe 2132-2132 — <div class="ms-who"><b>Alice Clemente</b> · 178 cm · 31 an
-- righe 2256-2257 — window.(seme di esempio)={"config": {"altezza": 178, "sesso": "d", 
-- righe 2329-2329 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
-- righe 2337-2337 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
-- righe 2883-2883 — #lb-nota-b
-- righe 2897-2900 — var sed=(window.BD_LB_SEED&&window.BD_LB_SEED.sedute)//[];
-- righe 2914-2914 — var cand=sed.filter(function(x){return x.d===dd;});
-- righe 2927-2927 — aggiornaMappa();
-- righe 2940-2940 — if(cnt&&(fv//fo))cnt.textContent=vis+" di "+sed.length+" s
-- righe 2952-2952 — #pl-nome
-- righe 2994-2994 — <p class="pr-sub">Le regole con cui le settimane salgono. 
-- righe 3004-3004 — #rv-guida
-- righe 3219-3219 — #sp-corpo
-- righe 3219-3220 — </div>
-- righe 3222-3223 — <style>.cvx{display:block}
-- righe 3226-3226 — <div class="v-occhiello">Programmi · Curve di forza</div>
-- righe 3228-3228 — #cv-guida
-- righe 3228-3229 — #cv-lista2
-- righe 3231-3233 — #cv-real
-- righe 3233-3234 — #cvp-mappa
-- righe 3236-3236 — #pag-scheletri
-- righe 3293-3293 — #pag-programma-1
-- righe 3380-3380 — #t8-appprog
-- righe 3413-3413 — #box-A
-- righe 3424-3424 — #t8-skel-n
-- righe 3456-3457 — #t9-an
-- righe 3537-3537 — #pag-programma-2
-- righe 4214-4214 — <p class="v-testo">Tutti i programmi del backup, attivo co
-- righe 4218-4218 — #archivio-corpo
-- righe 5371-5379 — document.getElementById("fr-nastro").textContent =
-- righe 6075-6075 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":
-- righe 6450-6454 — .tb-test{display:none;font:800 9.5px/1 'Nunito Sans',sans-
-- righe 7262-7298 — #pag-programma-1 .pr-shd-f{display:flex;align-items:flex-e
-- righe 7439-7440 — html body #pag-programma-1 .p8-r .tb-test{font-size:8px;pa
-- righe 7467-7494 — /* ---- zebra: riga chiara / riga leggermente più scura --
-- righe 7539-7539 — html body #pag-programma-1 td.c-rec .rec,html body #pag-pr
-- righe 7584-7585 — html body #pag-programma-1 .p8-r .tb-test i{width:6px;heig
-- righe 7635-7636 — /* ---- Test: si vede solo se c'e' davvero ---- */
-- righe 7987-7987 — window.BD_LB_SEED = {"fonte":"backup del 30/10/2026","sedu
-- righe 8144-8144 — ese.push('<div class="lb-ex"><b>' + sc(e.n) + '</b>' + (wi
-- righe 8532-8533 — ['#pr-print1','#pr-print2'].forEach(function(id){
-- righe 8986-8986 — var SEED = window.(seme di esempio) // {config:{}, sessioni:[]};
-- righe 9447-9447 — '<div class="ese-chips2"><span class="chlat">\u21c4 DX/SX<
-- righe 10177-10186 — // Passo 30: nei campi si lascia al browser la cronologia 
-- righe 10295-10296 — /* === Fase B2: Archivio + Curve dal logbook (dati veri, c
-- righe 10341-10345 — <script src="../app-config-b.js"></script>
+- righe 2128-2128 — <div class="ms-who"><b>Alice Clemente</b> · 178 cm · 31 an
+- righe 2252-2253 — window.(seme di esempio)={"config": {"altezza": 178, "sesso": "d", 
+- righe 2325-2325 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
+- righe 2333-2333 — var S=(typeof window!=="undefined")?window.(seme di esempio):null;
+- righe 2879-2879 — #lb-nota-b
+- righe 2893-2896 — var sed=(window.BD_LB_SEED&&window.BD_LB_SEED.sedute)//[];
+- righe 2910-2910 — var cand=sed.filter(function(x){return x.d===dd;});
+- righe 2923-2923 — aggiornaMappa();
+- righe 2936-2936 — if(cnt&&(fv//fo))cnt.textContent=vis+" di "+sed.length+" s
+- righe 2948-2948 — #pl-nome
+- righe 2990-2990 — <p class="pr-sub">Le regole con cui le settimane salgono. 
+- righe 3000-3000 — #rv-guida
+- righe 3215-3215 — #sp-corpo
+- righe 3215-3216 — </div>
+- righe 3218-3219 — <style>.cvx{display:block}
+- righe 3222-3222 — <div class="v-occhiello">Programmi · Curve di forza</div>
+- righe 3224-3224 — #cv-guida
+- righe 3224-3225 — #cv-lista2
+- righe 3227-3229 — #cv-real
+- righe 3229-3230 — #cvp-mappa
+- righe 3232-3232 — #pag-scheletri
+- righe 3289-3289 — #pag-programma-1
+- righe 3376-3376 — #t8-appprog
+- righe 3409-3409 — #box-A
+- righe 3420-3420 — #t8-skel-n
+- righe 3452-3453 — #t9-an
+- righe 3533-3533 — #pag-programma-2
+- righe 4210-4210 — <p class="v-testo">Tutti i programmi del backup, attivo co
+- righe 4214-4214 — #archivio-corpo
+- righe 5367-5375 — document.getElementById("fr-nastro").textContent =
+- righe 6071-6071 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":
+- righe 6446-6450 — .tb-test{display:none;font:800 9.5px/1 'Nunito Sans',sans-
+- righe 7258-7294 — #pag-programma-1 .pr-shd-f{display:flex;align-items:flex-e
+- righe 7435-7436 — html body #pag-programma-1 .p8-r .tb-test{font-size:8px;pa
+- righe 7463-7490 — /* ---- zebra: riga chiara / riga leggermente più scura --
+- righe 7535-7535 — html body #pag-programma-1 td.c-rec .rec,html body #pag-pr
+- righe 7580-7581 — html body #pag-programma-1 .p8-r .tb-test i{width:6px;heig
+- righe 7631-7632 — /* ---- Test: si vede solo se c'e' davvero ---- */
+- righe 7983-7983 — window.BD_LB_SEED = {"fonte":"backup del 30/10/2026","sedu
+- righe 8140-8140 — ese.push('<div class="lb-ex"><b>' + sc(e.n) + '</b>' + (wi
+- righe 8528-8529 — ['#pr-print1','#pr-print2'].forEach(function(id){
+- righe 8982-8982 — var SEED = window.(seme di esempio) // {config:{}, sessioni:[]};
+- righe 9443-9443 — '<div class="ese-chips2"><span class="chlat">\u21c4 DX/SX<
+- righe 10173-10182 — // Passo 30: nei campi si lascia al browser la cronologia 
+- righe 10291-10292 — /* === Fase B2: Archivio + Curve dal logbook (dati veri, c
+- righe 10337-10341 — <script src="../app-config-b.js"></script>
+
+### Passo 15 — Dati Cliente: via le linguette Wearable e Personalizzati
+
+- righe 1940-1940 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
+- righe 1946-1947 — tasti data-dc="wearable" e data-dc="personalizzati" tolti
+- righe 2039-2040 — pannelli Biofeedback e Questionari riscritti (via i due gusci wearable/personalizzati)
 
