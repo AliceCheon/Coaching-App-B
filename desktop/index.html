@@ -1614,6 +1614,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var s=document.getElementById('st-ver');if(s)s.textContent=v;
 });
 </script>
+<script src="../comune/peso-b.js"></script>
 <div class="guscio">
 
   <nav class="rail" aria-label="Voci dell'app">
@@ -1765,8 +1766,8 @@ document.addEventListener('DOMContentLoaded',function(){
             <header class="ck-h"><h4><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l4-4.5 3 2.2L14 4"/><path d="M10.5 4H14v3.5"/></svg> Andamento peso <span class="ck-sub">· 60 giorni</span></h4></header>
             <div class="ck-vuoto-c">
               <span class="ck-ic-vuoto">!</span>
-              <div><b>Nessuna pesata</b>
-              <p>Il campo peso è vuoto in tutte le 120 sedute su 120 (istantanea del 30/10) e nei dati del corpo. La riga c'è, la linea no.</p></div>
+              <div><b data-peso-t>Peso</b>
+              <p data-peso-p>Non ho ancora letto il peso.</p></div>
             </div>
           </article>
           <article class="ck-card">
@@ -2671,7 +2672,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="p7-one" style="margin-top:12px">
     <div class="p7-card"><h2>Peso medio per mese</h2><div id="ma-line"></div><div class="p7-legend" id="ma-leg"></div></div>
   </div>
-  <div class="p7-note3"><b>Da dove vengono i numeri:</b> peso e misure dalle 5 rilevazioni <b>della scheda della coach</b> (13/03 &rarr; 27/10 2026, prese su carta &mdash; non dal telefono);
+  <div class="p7-note3"><b>Da dove vengono i numeri:</b> il peso dalle rilevazioni <b>della scheda della coach</b> (<span data-peso-sommario>non ho ancora letto il peso</span>);
   le sedute dal logbook (<span data-lb-kpi="sedute">…</span>, ultima <span data-lb-kpi="ultima">…</span>). Il dettaglio per singolo mese non &egrave; nel file, quindi la barra
   delle sedute si accende solo nei mesi in cui una data &egrave; davvero registrata.</div>
 </section>
@@ -2682,9 +2683,9 @@ document.addEventListener('DOMContentLoaded',function(){
    <div>
     <div class="v-occhiello">Alimentazione · Tracciamento peso corporeo nel tempo</div>
     <h2>Monitor <i>peso</i></h2>
-    <div class="mp-who"><b>Alice Clemente</b> · 178 cm · 31 anni · 5 pesate reali dalla scheda della coach, non dal telefono</div>
+    <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-profilo>altezza e età non registrate</span> · <span data-peso-sommario>Non ho ancora letto il peso.</span></div>
    </div>
-   <div class="ms-top"><span class="ms-badge carta" id="mp-badge"><i></i>5 pesate · 13/03 → 27/10/2026</span></div>
+   <div class="ms-top"><span class="ms-badge carta" id="mp-badge"><i></i>lettura del peso…</span></div>
   </div>
 
   <div class="mp-kpi" id="mp-kpi"></div>
@@ -2717,105 +2718,9 @@ document.addEventListener('DOMContentLoaded',function(){
    </div>
   </div>
 
-  <div class="mp-note"><b>Perché qui non c'è la media a 7 giorni.</b> Nel tuo foglio ci sono <b>5 pesate in sette mesi</b>: con buchi di settimane una media mobile a 7 giorni non esiste, e non te la disegno. Servono 3-4 pesate a settimana perché quel numero abbia senso; appena l'app le manda, compare da sola.</div>
+  <div class="mp-note"><b>Perché qui non c'è la media a 7 giorni.</b> Le pesate sono poche e distanti fra loro: con buchi di settimane una media mobile a 7 giorni non esiste, e non te la disegno. Servono 3-4 pesate a settimana perché quel numero abbia senso; appena ci sono, compare da sola.</div>
  </div>
- <script>
- (function(){
-  var CAST=[["2026-03-13",68.0],["2026-05-05",67.4],["2026-06-12",66.4],["2026-07-11",66.0],["2026-10-27",67.7]];
-  function q(i){return document.getElementById(i);}
-  function it(d){var p=d.split("-");return p[2]+"/"+p[1];}
-  function full(d){var p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
-  function f(v,n){return v==null?"—":v.toFixed(n==null?1:n);}
-  function rows(){
-   var S=(window.BDM&&window.BDM.all)?window.BDM.all():null;
-   var a=CAST.slice();
-   if(S&&S.sessioni){S.sessioni.forEach(function(s){ if(s.peso!=null&&!a.some(function(x){return x[0]===s.data;})) a.push([s.data,s.peso]); });}
-   a.sort(function(x,y){return x[0]<y[0]?-1:1});
-   return a;
-  }
-  function kpi(a){
-   var first=a[0],last=a[a.length-1];
-   var media=a.reduce(function(s,x){return s+x[1];},0)/a.length;
-   var w=q("mp-kpi");
-   w.innerHTML=
-    '<div class="mp-k"><span>Peso attuale</span><b>'+f(last[1])+' kg</b><i>'+full(last[0])+'</i></div>'+
-    '<div class="mp-k"><span>Peso iniziale</span><b>'+f(first[1])+' kg</b><i>'+full(first[0])+'</i></div>'+
-    '<div class="mp-k"><span>Δ totale</span><b class="giu">'+((last[1]-first[1]>0?"+":"")+(last[1]-first[1]).toFixed(1))+' kg</b><i>'+full(first[0])+' → '+full(last[0])+'</i></div>'+
-    '<div class="mp-k"><span>Media periodo</span><b>'+f(media)+' kg</b><i>'+a.length+' pesate</i></div>'+
-    '<div class="mp-k"><span>Min – Max</span><b>'+f(Math.min.apply(null,a.map(function(x){return x[1];})))+'–'+f(Math.max.apply(null,a.map(function(x){return x[1];})))+'</b><i>escursione '+f(Math.max.apply(null,a.map(function(x){return x[1];}))-Math.min.apply(null,a.map(function(x){return x[1];})))+' kg</i></div>';
-   q("mp-badge").innerHTML='<i></i>'+a.length+' pesate · '+it(first[0])+' → '+full(last[0]);
-  }
-  function chart(a){
-   var W=1080,H=250,pl=52,pr=18,pt=18,pb=30;
-   var vs=a.map(function(x){return x[1];});
-   var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs);
-   mn=Math.floor((mn-0.6)*2)/2; mx=Math.ceil((mx+0.6)*2)/2;
-   var t0=Date.parse(a[0][0]),t1=Date.parse(a[a.length-1][0]);
-   var X=function(d){var t=Date.parse(d);return pl+(W-pl-pr)*((t-t0)/Math.max(1,(t1-t0)));};
-   var Y=function(v){return pt+(H-pt-pb)*(1-(v-mn)/(mx-mn));};
-   var line="",area="";
-   a.forEach(function(x,i){line+=(i?"L":"M")+X(x[0]).toFixed(1)+" "+Y(x[1]).toFixed(1)+" ";});
-   area="M"+X(a[0][0]).toFixed(1)+" "+(H-pb)+" "+line.replace(/^M/,"L")+"L"+X(a[a.length-1][0]).toFixed(1)+" "+(H-pb)+"Z";
-   var grid="",lab="";
-   for(var g=0;g<=4;g++){var v=mn+(mx-mn)*g/4,y=Y(v);
-    grid+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="#3A2749" stroke-width="1" opacity="'+(g===0?1:.55)+'"/>';
-    lab+='<text x="'+(pl-8)+'" y="'+(y+4).toFixed(1)+'" font-size="10" fill="#7D6699" text-anchor="end" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>';}
-   var pts=a.map(function(x){return '<circle cx="'+X(x[0]).toFixed(1)+'" cy="'+Y(x[1]).toFixed(1)+'" r="4" fill="#FF4FA3" stroke="#17101F" stroke-width="1.6"/>';}).join("");
-   var xl=a.map(function(x){return '<text x="'+X(x[0]).toFixed(1)+'" y="'+(H-8)+'" font-size="10" fill="#A98FC4" text-anchor="middle" font-family="JetBrains Mono,monospace">'+it(x[0])+'</text>';}).join("");
-   q("mp-chart").innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:220px">'+grid+lab+
-    '<path d="'+area+'" fill="#FF4FA3" opacity="0.10"/>'+
-    '<path d="'+line+'" fill="none" stroke="#FF4FA3" stroke-width="2.4" stroke-linejoin="round"/>'+pts+xl+'</svg>';
-  }
-  function sett(a){
-   var h="";
-   a.forEach(function(x,i){
-    var prev=i?a[i-1][1]:null,days=i?Math.round((Date.parse(x[0])-Date.parse(a[i-1][0]))/864e5):null;
-    var d=prev==null?null:x[1]-prev;
-    var perc=(prev==null||!prev)?null:(d/prev*100);
-    h+='<div class="mp-tr"><span>'+full(x[0])+'</span><span>'+f(x[1])+'</span>'+
-     '<span class="'+(d==null?"":(d>0?"up":"dn"))+'">'+(d==null?"—":((d>0?"+":"")+d.toFixed(1)))+'</span>'+
-     '<span class="'+(perc==null?"":(perc>0?"up":"dn"))+'">'+(perc==null?"—":((perc>0?"+":"")+perc.toFixed(1)+"%"))+'</span>'+
-     '<span>'+((x[1]-a[0][1]>0?"+":"")+(x[1]-a[0][1]).toFixed(1))+'</span>'+
-     '<span>'+(days==null?"—":days)+'</span></div>';
-   });
-   q("mp-sett").innerHTML=h;
-  }
-  function mesi(a){
-   var M={};a.forEach(function(x){var k=x[0].slice(0,7);(M[k]=M[k]||[]).push(x[1]);});
-   var ks=Object.keys(M).sort(),h="",prev=null;
-   ks.forEach(function(k){
-    var v=M[k],m=v.reduce(function(s,x){return s+x;},0)/v.length;
-    var d=prev==null?null:m-prev;var perc=(prev==null||!prev)?null:(d/prev*100);
-    h+='<div class="mp-tr"><span>'+k.split("-")[1]+"/"+k.slice(2,4)+'</span><span>'+v.length+'</span><span>'+f(m)+'</span>'+
-     '<span>'+f(Math.min.apply(null,v))+' – '+f(Math.max.apply(null,v))+'</span>'+
-     '<span class="'+(d==null?"":(d>0?"up":"dn"))+'">'+(d==null?"—":((d>0?"+":"")+d.toFixed(1)))+'</span>'+
-     '<span class="'+(perc==null?"":(perc>0?"up":"dn"))+'">'+(perc==null?"—":((perc>0?"+":"")+perc.toFixed(1)+"%"))+'</span></div>';
-    prev=m;
-   });
-   q("mp-mesi").innerHTML=h;
-  }
-  function draw(){var a=rows();kpi(a);chart(a);sett(a);mesi(a);}
-  document.addEventListener("click",function(e){
-   var t=e.target.closest?e.target.closest(".mp-tab"):null; if(!t)return;
-   document.querySelectorAll("#pag-monitor-peso .mp-tab").forEach(function(x){x.classList.remove("on");});
-   t.classList.add("on");
-   document.querySelectorAll("#pag-monitor-peso .mp-pane").forEach(function(p){p.classList.remove("on");});
-   document.querySelector('#pag-monitor-peso .mp-pane[data-p="'+t.dataset.t+'"]').classList.add("on");
-  });
-  var btn=document.getElementById("mp-add");
-  if(btn)btn.onclick=function(){
-   var d=q("mp-d").value,p=parseFloat(q("mp-p").value);
-   if(!d||!isFinite(p)){q("mp-msg").textContent="servono data e kg";return;}
-   if(window.BDM&&window.BDM.ingest){
-    var r=window.BDM.ingest([{data:d,fonte:"web",peso:p}]);
-    q("mp-msg").textContent=r.accettate.length?("salvata · "+d):("unita alla sessione del "+d);
-    draw();
-   } else { CAST.push([d,p]); draw(); q("mp-msg").textContent="salvata solo qui"; }
-  };
-  draw();
-  window.__mpReady=1;
- })();
- </script>
+ 
 </section>
 
 <section class="voce-pag" id="pag-integratori">
@@ -8980,8 +8885,10 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   function el(id){ return document.getElementById(id); }
 
   /* ---------- dati peso ---------- */
-  var pesi = (SEED.sessioni || []).map(function(x){
-    var d = iso(x.data); return d && num(x.peso) !== null ? {d:d, w:num(x.peso)} : null;
+  var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il modulo del peso non è caricato' };
+  var P_TESTO = window.BDPesoB ? window.BDPesoB.testoPeso(P_ST) : 'non ho ancora letto il peso';
+  var pesi = (P_ST.pesate || []).map(function(x){
+    var d = iso(x.data); return d ? {d:d, w:x.kg} : null;
   }).filter(Boolean).sort(function(a,b){ return a.d - b.d; });
 
   /* ---------- % grasso Jackson-Pollock 7 pliche ---------- */
@@ -9005,7 +8912,10 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
     return (f > 2 && f < 60) ? f : null;
   }
 
-  var H = num(CFG.altezza) || 178, ETA = num(CFG.eta) || 31, SESSO = CFG.sesso || 'd';
+  var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, eta:null, sesso:null, mancanti:['altezza','età','sesso'] };
+  var H = P_PROF.confermato ? P_PROF.altezza : null;
+  var ETA = P_PROF.confermato ? P_PROF.eta : null;
+  var SESSO = P_PROF.confermato ? P_PROF.sesso : null;
   var ultimo = pesi.length ? pesi[pesi.length-1] : null;
   var primo = pesi.length ? pesi[0] : null;
   var PESO = ultimo ? ultimo.w : null;
@@ -9082,7 +8992,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
              '" fill="none" stroke="' + col + '" stroke-width="1.4" stroke-linejoin="round"/></svg>';
     }
     var KPI = [
-      {l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) + (delta !== null ? ' · ' + (delta > 0 ? '+' : '') + it(delta,1) + ' kg da marzo' : '') : '',
+      {l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) + (delta !== null ? ' · ' + (delta > 0 ? '+' : '') + it(delta,1) + ' kg dalla prima pesata' : '') : '',
        s: pesi.length > 1 ? spark(pesi.map(function(p){ return p.w; }), 'var(--lav)') : '', on: pesi.length > 0},
       {l:'Sonno', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
       {l:'HRV / FC', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
@@ -9124,7 +9034,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
           return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="1" fill="var(--pink)"/>';
         }).join('') + '</svg>';
       el('ov-leg').innerHTML = pesi.map(function(p){ return '<span>' + gg(p.d) + ' · ' + it(p.w,1) + ' kg</span>'; }).join('');
-      el('ov-pesot').textContent = 'Andamento peso · ' + pesi.length + ' pesate reali';
+      el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
     } else {
       el('ov-spark').innerHTML = '<div class="p7-note2">Una sola pesata registrata: serve almeno un secondo punto per disegnare la linea.</div>';
     }
@@ -9139,7 +9049,19 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   }
 
   /* ================= RESET / BULK / CUT ================= */
-  if(el('tb-bmr')){
+  if(el('tb-bmr') && (P_PROF.mancanti.length || PESO === null)){
+    var MANCA = P_PROF.mancanti.slice();
+    if(PESO === null) MANCA.push('peso');
+    el('tb-bmr').textContent = '—';
+    el('tb-tdee').textContent = '—';
+    el('tb-target').textContent = '—';
+    if(el('tb-attsel')) el('tb-attsel').textContent = 'non calcolabile';
+    if(el('tb-tphase')) el('tb-tphase').textContent = '—';
+    el('tb-dati').innerHTML = '<b>Mancano ' + MANCA.join(', ') + '.</b> BMR, TDEE e target non si mostrano: senza quei campi sarebbero numeri inventati. Peso: ' + P_TESTO + '.';
+    if(el('tb-formule')) el('tb-formule').innerHTML = '';
+    if(el('tb-att')) el('tb-att').innerHTML = '';
+    if(el('tb-fasi')) el('tb-fasi').innerHTML = '';
+  } else if(el('tb-bmr')){
     var stato = {formula:'mifflin', att:1.55};
     var ATT = [
       {k:1.2,  n:'Sedentario', d:'poco o nessun esercizio'},
@@ -9178,7 +9100,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
       if(GRASSO !== null){
         var serie = (SEED.sessioni || []).map(function(x){ return grasso(x, ETA, SESSO); }).filter(function(v){ return v !== null; });
         var mnB = Math.min.apply(null, serie), mxB = Math.max.apply(null, serie);
-        bf = ' · grasso stimato ' + it(GRASSO,1) + '%';
+        bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato ' + it(GRASSO,1) + '%';
         if(mxB - mnB > 3) bf += ' (nelle plicometrie varia ' + it(mnB,1) + '–' + it(mxB,1) + '%: Katch-McArdle è la meno stabile delle tre)';
       }
       el('tb-dati').textContent = 'Peso ' + (PESO ? it(PESO,1) : '—') + ' kg · altezza ' + H + ' cm · ' + ETA + ' anni · '
@@ -9229,7 +9151,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   }
 
   /* ================= MONITOR ANNUALE ================= */
-  if(el('ma-year')){
+  if(false){
     var anno = 2026;
     var perMese = {};
     for(var m = 0; m < 12; m++) perMese[m] = {pesi:[], sedi:{}};
@@ -10328,6 +10250,149 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script id="peso-pittore">
+/* Una sola pittura del peso per tutte le pagine. Legge comune/peso-b.js e non
+   tiene nessun numero suo: cambia lo stato, cambia quello che si vede. */
+(function(){
+  var P = window.BDPesoB;
+  if(!P) return;
+  function qa(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function uno(s){ return document.querySelector(s); }
+  function set(s,t){ qa(s).forEach(function(e){ e.textContent = t; }); }
+  function esc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function svgLinea(a, h){
+    if(!a.length) return '';
+    var W=100, H=h||30, pad=3;
+    var vmin=Math.min.apply(null,a.map(function(x){return x.kg;}));
+    var vmax=Math.max.apply(null,a.map(function(x){return x.kg;}));
+    var rg=(vmax-vmin)||1;
+    var pt=a.map(function(x,i){
+      var px=pad+(a.length===1?(W-2*pad)/2:i*((W-2*pad)/(a.length-1)));
+      var py=H-pad-((x.kg-vmin)/rg)*(H-2*pad);
+      return [px.toFixed(1),py.toFixed(1)];
+    });
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+((h||30)*7)+'px">';
+    if(a.length>1) s+='<polyline points="'+pt.map(function(x){return x.join(',');}).join(' ')+'" fill="none" stroke="var(--lav)" stroke-width="1" stroke-linejoin="round"/>';
+    s+=pt.map(function(x){ return '<circle cx="'+x[0]+'" cy="'+x[1]+'" r="1.3" fill="var(--pink)"/>'; }).join('');
+    return s+'</svg>';
+  }
+
+  function pitta(stato, profilo){
+    var st = stato || P.leggiPeso();
+    var pr = profilo || P.leggiProfilo(null);
+    var r = P.riassunto(st);
+    var testo = r.testo;
+    var letto = st.stato === 'letto';
+    var a = st.pesate || [];
+
+    /* --- Dashboard --- */
+    set('[data-peso-t]', r.titolo);
+    set('[data-peso-p]', testo);
+
+    /* --- Monitor peso --- */
+    set('[data-peso-profilo]', P.profiloTesto(pr));
+    set('[data-peso-sommario]', testo);
+    var b = uno('#mp-badge'); if(b) b.innerHTML = '<i></i>' + esc(testo);
+
+    var kpi = uno('#mp-kpi');
+    if(kpi){
+      if(!letto){
+        kpi.innerHTML = '<div class="mp-k"><span>Pesate</span><b>—</b><i>' + esc(testo) + '</i></div>';
+      } else {
+        var primo=a[0], ultimo=a[a.length-1];
+        var media=a.reduce(function(s2,x){return s2+x.kg;},0)/a.length;
+        var mn=Math.min.apply(null,a.map(function(x){return x.kg;}));
+        var mx=Math.max.apply(null,a.map(function(x){return x.kg;}));
+        var delta=ultimo.kg-primo.kg;
+        kpi.innerHTML =
+          '<div class="mp-k"><span>Peso attuale</span><b>'+P.kg(ultimo.kg)+' kg</b><i>'+P.dataBreve(ultimo.data)+'</i></div>'+
+          '<div class="mp-k"><span>Peso iniziale</span><b>'+P.kg(primo.kg)+' kg</b><i>'+P.dataBreve(primo.data)+'</i></div>'+
+          '<div class="mp-k"><span>Δ totale</span><b class="'+(delta>0?'su':'giu')+'">'+(delta>0?'+':'')+P.kg(delta)+' kg</b><i>'+P.dataCorta(primo.data)+' → '+P.dataBreve(ultimo.data)+'</i></div>'+
+          '<div class="mp-k"><span>Media periodo</span><b>'+P.kg(media)+' kg</b><i>'+esc(testo)+'</i></div>'+
+          '<div class="mp-k"><span>Min – Max</span><b>'+P.kg(mn)+'–'+P.kg(mx)+'</b><i>escursione '+P.kg(mx-mn)+' kg</i></div>';
+      }
+    }
+
+    var chart = uno('#mp-chart');
+    if(chart) chart.innerHTML = letto ? svgLinea(a, 30) : '<div class="p7-note2">'+esc(testo)+': la linea compare quando ci sono pesate.</div>';
+
+    var sett = uno('#mp-sett');
+    if(sett){
+      if(!letto){ sett.innerHTML = '<div class="p7-note2">'+esc(testo)+'</div>'; }
+      else {
+        var righe='', prima=a[0];
+        a.forEach(function(x,i){
+          var gg=Math.round((Date.parse(x.data)-Date.parse(prima.data))/86400000);
+          var dp=i?(x.kg-a[i-1].kg):null, pc=i?(100*(x.kg-a[i-1].kg)/a[i-1].kg):null;
+          righe+='<tr><td>'+P.dataBreve(x.data)+'</td><td>'+P.kg(x.kg)+'</td><td>'+(dp===null?'—':(dp>0?'+':'')+P.kg(dp))+'</td><td>'+(pc===null?'—':(pc>0?'+':'')+P.kg(pc)+'%')+'</td><td>'+P.kg(x.kg-prima.kg)+'</td><td>'+gg+'</td></tr>';
+        });
+        sett.innerHTML = '<table class="pg-tab"><thead><tr><th>Data</th><th>Kg</th><th>Δ vs prec.</th><th>Δ %</th><th>Da inizio</th><th>Giorni</th></tr></thead><tbody>'+righe+'</tbody></table>';
+      }
+    }
+    var mesi = uno('#mp-mesi');
+    if(mesi){
+      var mm = P.perMese(st);
+      if(!mm.length){ mesi.innerHTML = '<div class="p7-note2">'+esc(testo)+'</div>'; }
+      else {
+        var MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+        var rr='', prec=null;
+        mm.forEach(function(m){
+          var vs=a.filter(function(x){ return x.data.slice(0,7)===m.chiave; }).map(function(x){return x.kg;});
+          var d=prec===null?null:m.media-prec, pc=prec?100*(m.media-prec)/prec:null;
+          rr+='<tr><td>'+MESI[m.mese-1]+' '+m.anno+'</td><td>'+m.n+'</td><td>'+P.kg(m.media)+'</td><td>'+P.kg(Math.min.apply(null,vs))+' – '+P.kg(Math.max.apply(null,vs))+'</td><td>'+(d===null?'—':(d>0?'+':'')+P.kg(d))+'</td><td>'+(pc===null?'—':(pc>0?'+':'')+P.kg(pc)+'%')+'</td></tr>';
+          prec=m.media;
+        });
+        mesi.innerHTML = '<table class="pg-tab"><thead><tr><th>Mese</th><th>Ril.</th><th>Media</th><th>Min – Max</th><th>Δ vs prec.</th><th>Δ %</th></tr></thead><tbody>'+rr+'</tbody></table>';
+      }
+    }
+
+    var add = uno('#mp-add');
+    if(add) add.onclick = function(){
+      var d=(uno('#mp-d')||{}).value, v=parseFloat((uno('#mp-p')||{}).value);
+      var msg=uno('#mp-msg');
+      if(!d||!isFinite(v)){ if(msg) msg.textContent='servono data e kg'; return; }
+      if(msg) msg.textContent='salvata solo in questa pagina';
+      pitta(P.leggiPeso({ pesate: a.concat([{ data:d, kg:v, fonte:'inserita a mano' }]) }), pr);
+    };
+
+    /* --- Monitor annuale --- */
+    var ANNO = letto ? st.anno : null;
+    var ma = uno('#ma-kpi');
+    if(ma){
+      var mm2 = P.perMese(st);
+      var mediaA = letto ? a.reduce(function(s2,x){return s2+x.kg;},0)/a.length : null;
+      ma.innerHTML = [
+        ['Pesate', letto ? String(a.length) : '—', esc(testo)],
+        ['Peso medio', letto ? P.kg(mediaA)+' kg' : '—', letto ? 'dalle '+a.length+' pesate lette' : esc(testo)],
+        ['Anno', ANNO ? String(ANNO) : '—', ANNO ? 'dalle pesate lette' : 'nessun anno: nessuna pesata registrata'],
+        ['Mesi con pesate', letto ? String(mm2.length) : '—', 'i mesi vuoti restano vuoti']
+      ].map(function(x){ return '<div class="p7-k"><div class="kl">'+x[0]+'</div><div class="kv">'+x[1]+'</div><div class="kf">'+x[2]+'</div></div>'; }).join('');
+    }
+    var yr = uno('#ma-year');
+    if(yr) yr.innerHTML = ANNO ? '<b>'+ANNO+'</b>' : '<b>Nessun anno</b> nessuna pesata registrata';
+    var line = uno('#ma-line');
+    if(line) line.innerHTML = letto ? svgLinea(a, 46) : '<div class="p7-note2">'+esc(testo)+'</div>';
+    var leg = uno('#ma-leg');
+    if(leg) leg.innerHTML = letto ? a.map(function(x){ return '<span>'+P.dataCorta(x.data)+' · '+P.kg(x.kg)+'</span>'; }).join('') : '';
+
+    /* --- Overview atleta --- */
+    var t1 = uno('#ov-pesot'); if(t1) t1.textContent = 'Andamento peso · ' + testo;
+    var sp = uno('#ov-spark');
+    if(sp){
+      if(!letto){ sp.innerHTML = '<div class="p7-note2">'+esc(testo)+'</div>'; }
+      else if(a.length < 2){ sp.innerHTML = '<div class="p7-note2">Una sola pesata ('+P.kg(a[0].kg)+' kg del '+P.dataBreve(a[0].data)+'): serve un secondo punto per la linea.</div>'; }
+      else { sp.innerHTML = svgLinea(a, 34); }
+    }
+    var lg = uno('#ov-leg');
+    if(lg) lg.innerHTML = letto ? a.map(function(x){ return '<span>'+P.dataCorta(x.data)+' · '+P.kg(x.kg)+' kg</span>'; }).join('') : '';
+
+    window.__BDPESO_ULTIMO = { stato: st, profilo: pr, testo: testo };
+  }
+
+  window.BDPESO_PITTA = pitta;
+  pitta();
+})();
+</script>
 <script type="module" src="./app-v31.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff72c2'/%3E%3Crect x='6' y='14' width='20' height='4' rx='2' fill='%23fff'/%3E%3Crect x='3' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3Crect x='25' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 </body>
