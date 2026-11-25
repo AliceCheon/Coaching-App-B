@@ -9,9 +9,9 @@ Solo lettura: nessuna riga di codice cambiata. Le venti `pag-*` di `desktop/inde
 | **Dati Cliente** | Quattro linguette: Anagrafica (con i buchi dichiarati: cognome vuoto, data di nascita non registrata), Anamnesi (letta dal registro), Biofeedback e Questionari (dichiarano cosa manca e da dove arriva) | Anagrafica statica dal mockup v31; Anamnesi calcolata (`comune/vista-anamnesi.js`) | **Sì, fermo**: nome, mail protetta e schede scritte a mano — `desktop/index.html:1931`, `:1963` |
 | **Salute & recupero** | Sonno, stress, segnali; dice apertamente che nel backup non ci sono HRV né FC a riposo e che quindi la prontezza non si calcola | Statico dal mockup | **Sì, conteggi scritti a mano**: «ultimo check-in 21/10/2026 · 6 note di diario», numero di sedute — `desktop/index.html:2054`, `:2097` |
 | **Misure & plicometria** | Plicometria, BMI, WHR, cinque sessioni con la data; il modulo dice che i dati arrivano dall'app telefono, non a mano | Statico, con un seed demo dentro la pagina | **Sì, seed demo**: il seme di dati demo scritto dentro la pagina con altezza 178, sesso, età 31 — `desktop/index.html:2257`; l'intestazione «5 sessioni dalla scheda della coach» è testo fermo — `:2131` |
-| **Reset / Bulk / Cut** | Le tre direzioni con BMR, TDEE, target e le tre fasi | Statico: nessun JS tocca `tb-bmr`, `tb-tdee`, `tb-target`, `tb-fasi` | **Sì, cifre scritte a mano** nella pagina; la nota ammette che nel backup non c'è nessuna fase registrata — `desktop/index.html:2655` |
-| **Monitor annuale** | L'anno in una pagina: peso medio per mese, linea dei dodici mesi | Statico | **Sì**: «5 rilevazioni della scheda della coach» e i valori dei mesi sono nel testo — `desktop/index.html:2667` |
-| **Monitor peso** | Cinque pesate con data, delta, medie per periodo, grafico | Statico: tabella scritta in HTML | **Sì, pesate copiate a mano** — `desktop/index.html:2683`, tabella da `:2688` |
+| **Reset / Bulk / Cut** | Le tre direzioni con BMR, TDEE, target e le tre fasi; senza profilo confermato niente cifre, e la nota nomina i campi che mancano | Calcolato per metà (passo 17): il peso viene da `comune/peso-b.js`, il profilo da `BDPesoB.leggiProfilo`; le formule si applicano solo con altezza, età e sesso **confermati** | No: nessuna cifra scritta a mano. Con i campi vuoti (o non confermati) mostra `—` e dice perché — `desktop/index.html:9052` |
+| **Monitor annuale** | L'anno in una pagina: peso medio per mese, linea dei dodici mesi, pesate lette e anno ricavato dalle date | Calcolato (passo 17, `comune/peso-b.js`): tre stati distinti — letto, vuoto, non letto | No: i numeri arrivano dalle pesate; con la lettura negata dice «non ho potuto leggere», col vuoto «nessuna pesata registrata» |
+| **Monitor peso** | Cinque pesate con data, delta, medie per periodo, grafico; ognuna dichiara la fonte «scheda coach (importata)» | Calcolato (passo 17, `comune/peso-b.js`): badge, KPI, tabella e legenda ridipinti insieme alle altre quattro pagine | No nel senso di «inventate»: sono le cinque pesate vere della scheda della coach, spostate in un modulo solo e dichiarate come importate |
 | **Integratori** | Nient'altro che la struttura: cosa ci va, «nessun dato», «tutto manca» | Vuota per scelta | No — la stato è dichiarato: «struttura pronta · contenuto da riempire» — `desktop/index.html:2829` |
 | **Overview atleta** | Programma attivo, settimana corrente, aderenza, carico, trend gruppi, peso, ultime sedute | Calcolato (`comune/vista-overview.js` + logbook) | No: il segnaposto «calcolo dai dati del file…» viene sostituito — `desktop/index.html:2840` |
 | **Pianificazione** | Il prospetto delle otto settimane con la rotazione A–D | Statico: nessun modulo lo ridisegna (`pl-blocks` non compare in nessun `.js`), anche se `comune/vista-pianificazione.js` esiste e non è collegato | **Sì, calendario del mockup**: 8 settimane × 4 giorni scritti in HTML — `desktop/index.html:2961` |
@@ -39,20 +39,30 @@ Solo lettura: nessuna riga di codice cambiata. Le venti `pag-*` di `desktop/inde
 
 1. **Curve di forza** — la peggiore: grafici già disegnati con la data 30/10/2026 e l'etichetta «dati veri del backup».
 2. **Pianificazione** — il calendario delle otto settimane è quello del mockup, mentre il programma vero esiste già.
-3. **Monitor peso** e **Monitor annuale** — le cinque pesate sono copiate a mano.
-4. **Misure & plicometria** — seed demo (178 cm, 31 anni) dentro la pagina.
-5. **Reset / Bulk / Cut** — BMR, TDEE e target scritti a mano.
-6. **Salute & recupero** — conteggi di check-in e note scritti a mano.
-7. **Dati Cliente** — anagrafica ferma al v31.
-8. **Database esercizi** — contenuto giusto, ma 131 KB di righe statiche invece del catalogo letto a runtime.
-9. **Study time** — congelato all'import dell'Excel.
-10. **Impostazioni** — badge e versione fermi.
+3. **Misure & plicometria** — seed demo (178 cm, 31 anni) dentro la pagina.
+4. **Salute & recupero** — conteggi di check-in e note scritti a mano.
+5. **Dati Cliente** — anagrafica ferma al v31.
+6. **Database esercizi** — contenuto giusto, ma 131 KB di righe statiche invece del catalogo letto a runtime.
+7. **Study time** — congelato all'import dell'Excel.
+8. **Impostazioni** — badge e versione fermi.
+
+Usciti da questo elenco col passo 17: **Monitor peso**, **Monitor annuale** e **Reset / Bulk / Cut**. Il peso ha una fonte sola
+(`comune/peso-b.js`) e le cifre di Reset/Bulk/Cut compaiono solo con un profilo confermato, mai scritte a mano.
 
 ## Tab vuote con il motivo già scritto
 
 1. **Integratori** — «struttura pronta · contenuto da riempire» e fuori perimetro la prescrizione.
 2. **Scheletri** — nessuno scheletro salvato nella zona B.
 3. **Progressioni** — il contenitore c'è, la libreria non è collegata: la griglia di `#pr-libgrid` è vuota e non c'è nessuna nota che lo dica.
+
+## Passo 17 — il peso ha una fonte sola
+
+Le cinque pesate della scheda della coach stanno in `comune/peso-b.js`, dichiarate con la fonte «scheda coach (importata)».
+Cinque pagine (Dashboard, Monitor peso, Monitor annuale, Overview atleta, la riga del profilo) leggono da lì e dicono la stessa
+frase. Tre stati, mai uno zero al posto di un dato che non c'è: **letto** (le pesate con la data), **vuoto** («letta e vuota:
+nessuna pesata registrata»), **non letto** («non ho potuto leggere il peso: …»). Con il vuoto o la lettura negata il KPI del
+peso dice `—` anche in Overview, e la tessera Peso della Dashboard dice `—` con il motivo. **Reset / Bulk / Cut** non mostra
+BMR, TDEE né target finché altezza, età e sesso non sono confermati: la guardia guarda la conferma, non solo i campi pieni.
 
 ## Linguette uscite da Dati Cliente (passo 15)
 

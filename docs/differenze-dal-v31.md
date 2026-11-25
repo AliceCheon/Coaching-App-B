@@ -39,8 +39,11 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1714-1715 — <text x="48" y="52" text-anchor="middle" \1&mdash;\2/text>
 - righe 1721-1722 — <h3>Readiness media <span class="ck-slash">—</span> <b>non r
 - righe 1724 — <p class="ck-frase">Il check-in di oggi non &egrave; stato l
+- righe 1763 — <!-- ============ 4 · PESO + SONNO ============ --> (la card non è più «60 giorni»)
+- righe 1741 — <span>Peso</span></div><div class="ck-met-v" id="ck-peso-v">—</div> (la tessera Peso della Dashboard legge dal pittore)
+- righe 1766 — Andamento peso <span class="ck-sub">· tutte le pesate</span> (non più «60 giorni»)
 - righe 1729 — <div class="ck-chips"><span class="ck-chip"><em>Energia</em>
-- righe 1769-1770 — <div><b data-peso-t>Peso</b>
+- righe 1768-1770 — <span class="ck-ic-vuoto" id="ck-peso-ico">!</span>
 - righe 1790 — <div class="ck-red-num"><b data-reds-num>—</b><span class="c
 - righe 1793 — <div class="ck-red-cla" data-reds-classifica></div>
 - righe 1796 — <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16
@@ -61,6 +64,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 2675 — <div class="p7-note3"><b>Da dove vengono i numeri:</b> il pe
 - righe 2686 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-
 - righe 2688 — <div class="ms-top"><span class="ms-badge carta" id="mp-badg
+- righe 2694 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-legend">linea del peso · le pesate registrate</span> (via il tratteggio che non c'era)
 - righe 2721 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
 - righe 2723 — 
 - righe 2792 — <p class="p7-note2" id="lb-nota-b" hidden></p>
@@ -110,6 +114,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 8888-8891 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
 - righe 8915-8918 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
 - righe 8995 — {l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) +
+- righe 9005 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') (il KPI del peso ha un id, così il pittore lo ridipinge)
 - righe 9037 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
 - righe 9052-9064 — if(el('tb-bmr') && (P_PROF.mancanti.length || PESO === null)
 - righe 9103 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
@@ -119,7 +124,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 9910 — kpi.innerHTML =
 - righe 10085-10094 — // Passo 30: nei campi si lascia al browser la cronologia de
 - righe 10204 — 
-- righe 10248-10397 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 10248-10420 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
 
 ### Come si legge
 

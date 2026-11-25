@@ -1738,7 +1738,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <!-- ============ 2 · STATO DI SINTESI ============ -->
         <div class="ck-sez"><svg class="ck-ic" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5L8 2l6 4.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></svg><span>Stato di sintesi · i numeri che guidano la decisione</span></div>
 
-        <div class="ck-mets">            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8l1.5 8.5a1 1 0 0 1-1 1.2H3.5a1 1 0 0 1-1-1.2z"/><circle cx="8" cy="4" r="1.6"/></svg><span>Peso</span></div><div class="ck-met-v">—</div><div class="ck-met-u">kg<span class="ck-met-n">non c'è nel backup</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 10.5A5.5 5.5 0 0 1 5 3.2a5.5 5.5 0 1 0 7.5 7.3z"/></svg><span>Sonno</span></div><div class="ck-met-v">—</div><div class="ck-met-u">h<span class="ck-met-n">nessuna durata registrata</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13S3 10 3 6.4A2.6 2.6 0 0 1 8 5a2.6 2.6 0 0 1 5 1.4C13 10 8 13 8 13z"/></svg><span>HRV / FC</span></div><div class="ck-met-v">—</div><div class="ck-met-u">ms/bpm<span class="ck-met-n">nessuna misura</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5c1 .8 1.2 2.2.8 3.6-.3 1-1.3 1.4-2 .8-.8-.8-.6-2.4 0-3.4"/><path d="M4 9.5c1.6-.4 2.6.6 2.6 2 0 1-.6 1.6-1.6 1.6-1.2 0-1.6-2-1-3.6z"/><path d="M11 5c.8.6.9 1.8.6 2.9-.2.8-1 1-1.6.6-.6-.6-.5-1.9 0-2.7"/></svg><span>Passi</span></div><div class="ck-met-v">—</div><div class="ck-met-u">passi<span class="ck-met-n">nessuna misura</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v5a2 2 0 0 0 4 0V2"/><path d="M6 7v7"/><path d="M11.5 2c-1 1.5-1 4 0 5.5V14"/></svg><span>Macro</span></div><div class="ck-met-v">—</div><div class="ck-met-u">kcal<span class="ck-met-n">fuori perimetro (nutrizione)</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5v6M14 5v6M4.5 3.5v9M11.5 3.5v9M4.5 8h7"/></svg><span>Carico</span></div><div class="ck-met-v">14321</div><div class="ck-met-u">kg·rip / sett.<span class="ck-met-n">settimana 44</span></div><svg class="ck-spark" viewBox="0 0 170 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0.0,31.0 18.9,16.0 37.8,13.4 56.7,14.9 75.6,5.0 94.4,5.9 113.3,11.7 132.2,11.4 151.1,10.2 170.0,25.6" fill="none" stroke="#FF4FA3" stroke-width="1.6" stroke-linejoin="round"/></svg></article></div>
+        <div class="ck-mets">            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8l1.5 8.5a1 1 0 0 1-1 1.2H3.5a1 1 0 0 1-1-1.2z"/><circle cx="8" cy="4" r="1.6"/></svg><span>Peso</span></div><div class="ck-met-v" id="ck-peso-v">—</div><div class="ck-met-u">kg<span class="ck-met-n" id="ck-peso-n">non ho ancora letto il peso</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 10.5A5.5 5.5 0 0 1 5 3.2a5.5 5.5 0 1 0 7.5 7.3z"/></svg><span>Sonno</span></div><div class="ck-met-v">—</div><div class="ck-met-u">h<span class="ck-met-n">nessuna durata registrata</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13S3 10 3 6.4A2.6 2.6 0 0 1 8 5a2.6 2.6 0 0 1 5 1.4C13 10 8 13 8 13z"/></svg><span>HRV / FC</span></div><div class="ck-met-v">—</div><div class="ck-met-u">ms/bpm<span class="ck-met-n">nessuna misura</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5c1 .8 1.2 2.2.8 3.6-.3 1-1.3 1.4-2 .8-.8-.8-.6-2.4 0-3.4"/><path d="M4 9.5c1.6-.4 2.6.6 2.6 2 0 1-.6 1.6-1.6 1.6-1.2 0-1.6-2-1-3.6z"/><path d="M11 5c.8.6.9 1.8.6 2.9-.2.8-1 1-1.6.6-.6-.6-.5-1.9 0-2.7"/></svg><span>Passi</span></div><div class="ck-met-v">—</div><div class="ck-met-u">passi<span class="ck-met-n">nessuna misura</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v5a2 2 0 0 0 4 0V2"/><path d="M6 7v7"/><path d="M11.5 2c-1 1.5-1 4 0 5.5V14"/></svg><span>Macro</span></div><div class="ck-met-v">—</div><div class="ck-met-u">kcal<span class="ck-met-n">fuori perimetro (nutrizione)</span></div></article>            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5v6M14 5v6M4.5 3.5v9M11.5 3.5v9M4.5 8h7"/></svg><span>Carico</span></div><div class="ck-met-v">14321</div><div class="ck-met-u">kg·rip / sett.<span class="ck-met-n">settimana 44</span></div><svg class="ck-spark" viewBox="0 0 170 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0.0,31.0 18.9,16.0 37.8,13.4 56.7,14.9 75.6,5.0 94.4,5.9 113.3,11.7 132.2,11.4 151.1,10.2 170.0,25.6" fill="none" stroke="#FF4FA3" stroke-width="1.6" stroke-linejoin="round"/></svg></article></div>
 
         <!-- ============ 3 · TREND + CICLO ============ -->
         <div class="ck-due">
@@ -1760,12 +1760,12 @@ document.addEventListener('DOMContentLoaded',function(){
           </article>
         </div>
 
-        <!-- ============ 4 · PESO 60 GIORNI + SONNO ============ -->
+        <!-- ============ 4 · PESO + SONNO ============ -->
         <div class="ck-due">
           <article class="ck-card">
-            <header class="ck-h"><h4><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l4-4.5 3 2.2L14 4"/><path d="M10.5 4H14v3.5"/></svg> Andamento peso <span class="ck-sub">· 60 giorni</span></h4></header>
+            <header class="ck-h"><h4><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l4-4.5 3 2.2L14 4"/><path d="M10.5 4H14v3.5"/></svg> Andamento peso <span class="ck-sub">· tutte le pesate</span></h4></header>
             <div class="ck-vuoto-c">
-              <span class="ck-ic-vuoto">!</span>
+              <span class="ck-ic-vuoto" id="ck-peso-ico">!</span>
               <div><b data-peso-t>Peso</b>
               <p data-peso-p>Non ho ancora letto il peso.</p></div>
             </div>
@@ -2691,7 +2691,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="mp-kpi" id="mp-kpi"></div>
 
   <div class="mp-box">
-   <div class="mp-boxh"><b>Andamento peso</b><span class="mp-legend">linea del peso · tratteggio = tendenza fra le pesate</span></div>
+   <div class="mp-boxh"><b>Andamento peso</b><span class="mp-legend">linea del peso · le pesate registrate</span></div>
    <div id="mp-chart" style="min-height:220px"></div>
   </div>
 
@@ -8992,7 +8992,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
              '" fill="none" stroke="' + col + '" stroke-width="1.4" stroke-linejoin="round"/></svg>';
     }
     var KPI = [
-      {l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) + (delta !== null ? ' · ' + (delta > 0 ? '+' : '') + it(delta,1) + ' kg dalla prima pesata' : '') : '',
+      {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) + (delta !== null ? ' · ' + (delta > 0 ? '+' : '') + it(delta,1) + ' kg dalla prima pesata' : '') : '',
        s: pesi.length > 1 ? spark(pesi.map(function(p){ return p.w; }), 'var(--lav)') : '', on: pesi.length > 0},
       {l:'Sonno', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
       {l:'HRV / FC', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
@@ -9002,7 +9002,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
        s: spark(sett, 'var(--purple)'), on:true}
     ];
     el('ov-kpi').innerHTML = KPI.map(function(k){
-      return '<div class="p7-k' + (k.on ? '' : ' nd') + '"><div class="kl"><i class="kd"></i>' + k.l + '</div>' +
+      return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div class="kl"><i class="kd"></i>' + k.l + '</div>' +
         '<div class="kv">' + k.v + (k.u ? '<small>' + k.u + '</small>' : '') + '</div>' +
         '<div class="ks">' + (k.s || '') + '</div><div class="kf">' + k.f + '</div></div>';
     }).join('');
@@ -9049,15 +9049,15 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   }
 
   /* ================= RESET / BULK / CUT ================= */
-  if(el('tb-bmr') && (P_PROF.mancanti.length || PESO === null)){
-    var MANCA = P_PROF.mancanti.slice();
+  if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.length || PESO === null)){
+    var MANCA = P_PROF.mancanti.length ? P_PROF.mancanti.slice() : ['altezza', 'età', 'sesso'];
     if(PESO === null) MANCA.push('peso');
     el('tb-bmr').textContent = '—';
     el('tb-tdee').textContent = '—';
     el('tb-target').textContent = '—';
     if(el('tb-attsel')) el('tb-attsel').textContent = 'non calcolabile';
     if(el('tb-tphase')) el('tb-tphase').textContent = '—';
-    el('tb-dati').innerHTML = '<b>Mancano ' + MANCA.join(', ') + '.</b> BMR, TDEE e target non si mostrano: senza quei campi sarebbero numeri inventati. Peso: ' + P_TESTO + '.';
+    el('tb-dati').innerHTML = '<b>Mancano ' + MANCA.join(', ') + '.</b> BMR, TDEE e target non si mostrano: senza quei campi sarebbero numeri inventati. Peso: ' + P_TESTO + '.' + (P_PROF.confermato ? '' : ' Il profilo non è confermato: i campi non valgono finché non lo confermi.');
     if(el('tb-formule')) el('tb-formule').innerHTML = '';
     if(el('tb-att')) el('tb-att').innerHTML = '';
     if(el('tb-fasi')) el('tb-fasi').innerHTML = '';
@@ -10294,6 +10294,29 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
     set('[data-peso-sommario]', testo);
     var b = uno('#mp-badge'); if(b) b.innerHTML = '<i></i>' + esc(testo);
 
+    /* --- Dashboard, «Stato di sintesi»: la tessera Peso dice lo stesso numero della card --- */
+    var tpv = uno('#ck-peso-v');
+    if(tpv){
+      var u1 = letto && a.length ? a[a.length - 1] : null;
+      tpv.textContent = u1 ? P.kg(u1.kg) : '—';
+      var tpn = uno('#ck-peso-n');
+      if(tpn) tpn.textContent = u1 ? a.length + (a.length === 1 ? ' pesata' : ' pesate') + ' · ' + P.dataCorta(u1.data)
+        : (st.stato === 'vuoto' ? 'letta e vuota: nessuna pesata registrata' : testo);
+      var tpi = uno('#ck-peso-ico');
+      if(tpi) tpi.textContent = u1 ? '✓' : '!';
+    }
+
+    /* --- Overview: il KPI del peso si ridipinge insieme al resto (prima restava fermo al caricamento) --- */
+    var kpv = uno('#ov-k-peso');
+    if(kpv){
+      var u2 = letto && a.length ? a[a.length - 1] : null;
+      var kv = kpv.querySelector('.kv'), kf = kpv.querySelector('.kf'), ks = kpv.querySelector('.ks');
+      if(kv) kv.innerHTML = u2 ? P.kg(u2.kg) + '<small>kg</small>' : '—';
+      if(ks) ks.innerHTML = (letto && a.length > 1) ? svgLinea(a, 14) : '';
+      if(kf) kf.textContent = u2 ? P.dataCorta(u2.data) : testo;
+      if(!u2) kpv.classList.add('nd'); else kpv.classList.remove('nd');
+    }
+
     var kpi = uno('#mp-kpi');
     if(kpi){
       if(!letto){
@@ -10363,13 +10386,13 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
       var mediaA = letto ? a.reduce(function(s2,x){return s2+x.kg;},0)/a.length : null;
       ma.innerHTML = [
         ['Pesate', letto ? String(a.length) : '—', esc(testo)],
-        ['Peso medio', letto ? P.kg(mediaA)+' kg' : '—', letto ? 'dalle '+a.length+' pesate lette' : esc(testo)],
-        ['Anno', ANNO ? String(ANNO) : '—', ANNO ? 'dalle pesate lette' : 'nessun anno: nessuna pesata registrata'],
+        ['Peso medio', letto ? P.kg(mediaA)+' kg' : '—', letto ? 'dalle '+a.length+(a.length===1?' pesata letta':' pesate lette') : esc(testo)],
+        ['Anno', ANNO ? String(ANNO) : '—', ANNO ? 'dalle pesate lette' : esc(st.stato === 'vuoto' ? 'nessun anno: nessuna pesata registrata' : testo)],
         ['Mesi con pesate', letto ? String(mm2.length) : '—', 'i mesi vuoti restano vuoti']
       ].map(function(x){ return '<div class="p7-k"><div class="kl">'+x[0]+'</div><div class="kv">'+x[1]+'</div><div class="kf">'+x[2]+'</div></div>'; }).join('');
     }
     var yr = uno('#ma-year');
-    if(yr) yr.innerHTML = ANNO ? '<b>'+ANNO+'</b>' : '<b>Nessun anno</b> nessuna pesata registrata';
+    if(yr) yr.innerHTML = ANNO ? '<b>'+ANNO+'</b>' : '<b>Nessun anno</b> ' + esc(st.stato === 'vuoto' ? 'nessuna pesata registrata' : testo);
     var line = uno('#ma-line');
     if(line) line.innerHTML = letto ? svgLinea(a, 46) : '<div class="p7-note2">'+esc(testo)+'</div>';
     var leg = uno('#ma-leg');
