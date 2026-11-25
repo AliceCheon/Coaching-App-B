@@ -1615,6 +1615,8 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 <script src="../comune/peso-b.js"></script>
+<script src="../comune/checkin-b.js"></script>
+<script src="../comune/overview-vivo-b.js"></script>
 <div class="guscio">
 
   <nav class="rail" aria-label="Voci dell'app">
@@ -1816,9 +1818,9 @@ document.addEventListener('DOMContentLoaded',function(){
           </article>
           <article class="ck-card">
             <header class="ck-h"><div><h4>Biofeedback settimanale</h4>
-              <p>i cinque segnali di oggi, scala 1-5</p></div></header>
-            <div class="ck rg-fatica"><div class="ck-cat">Fatica (↓ meglio)</div>            <div class="ck-r"><span class="ck-rn">DOMS</span><span class="ck-rb"><i style="width:60%;background:#FF4FA3"></i></span><span class="ck-rv">3/5</span></div>            <div class="ck-r"><span class="ck-rn">Stress</span><span class="ck-rb"><i style="width:40%;background:#FF4FA3"></i></span><span class="ck-rv">2/5</span></div></div>
-            <div class="ck rg-bene"><div class="ck-cat">Stato (↑ meglio)</div>            <div class="ck-r"><span class="ck-rn">Energia</span><span class="ck-rb"><i style="width:80%;background:#7BE0A8"></i></span><span class="ck-rv">4/5</span></div>            <div class="ck-r"><span class="ck-rn">Sonno</span><span class="ck-rb"><i style="width:100%;background:#7BE0A8"></i></span><span class="ck-rv">5/5</span></div>            <div class="ck-r"><span class="ck-rn">Fame</span><span class="ck-rb"><i style="width:80%;background:#7BE0A8"></i></span><span class="ck-rv">4/5</span></div></div>
+              <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto</p></div></header>
+            <div class="ck-vuoto-c" data-ck-bio-vuoto><span class="ck-ic-vuoto">!</span><div><b>Check-in di oggi non arrivato</b><p data-ck-bio-perche>Il check-in non &egrave; ancora stato letto: arriva dal telefono.</p></div></div>
+            <div data-ck-bio-barre hidden></div>
           </article>
         </div>
 
@@ -2057,7 +2059,7 @@ document.addEventListener('DOMContentLoaded',function(){
    <div>
     <div class="v-occhiello">Alimentazione · Sonno, stress, segnali</div>
     <h2>Salute <i>&amp; recupero</i></h2>
-    <div class="sr-who"><b>Alice Clemente</b> · ultimo check-in 21/10/2026 · 6 note di diario</div>
+    <div class="sr-who"><b>Alice Clemente</b> · <span data-sr-ck>check-in non ancora letto</span> · <span data-sr-note>diario non ancora letto</span></div>
    </div>
    <div class="ms-top"><span class="ms-badge carta"><i></i>Dati dal questionario e dal diario</span></div>
   </div>
@@ -2066,23 +2068,23 @@ document.addEventListener('DOMContentLoaded',function(){
    <div class="sr-gauge"><b>—</b><span>prontezza</span>
     <i>Nel backup non ci sono HRV né FC a riposo: senza quei due segnali il punteggio di prontezza non si calcola, e non lo invento.</i></div>
    <div class="sr-idx">
-    <div class="sr-i"><span>Sonno percepito</span><b>5 / 10</b><i>dichiarato «bene», ma la scala dice metà</i></div>
-    <div class="sr-i"><span>Energia</span><b>4 / 10</b><i>il valore più basso del check-in</i></div>
-    <div class="sr-i"><span>DOMS</span><b>3 / 10</b><i>indolenzimento dichiarato</i></div>
-    <div class="sr-i"><span>Stress</span><b>2 / 10</b><i>basso: non è lui il freno</i></div>
+    <div class="sr-i" data-sr-i="sleep"><span>Sonno percepito</span><b>—</b><i>non registrato</i></div>
+    <div class="sr-i" data-sr-i="energy"><span>Energia</span><b>—</b><i>non registrato</i></div>
+    <div class="sr-i" data-sr-i="doms"><span>DOMS</span><b>—</b><i>non registrato</i></div>
+    <div class="sr-i" data-sr-i="stress"><span>Stress</span><b>—</b><i>non registrato</i></div>
    </div>
   </div>
 
   <div class="sr-box">
-   <div class="sr-boxh"><b>Check-in di oggi</b><span class="sr-legend">così rispondi tu, senza filtri</span></div>
-   <div class="sr-mark">
-    <div class="sr-m"><span>Energia</span><b>4</b><div class="sr-bar"><i style="width:40%"></i></div></div>
-    <div class="sr-m"><span>Sonno</span><b>5</b><div class="sr-bar"><i style="width:50%"></i></div></div>
-    <div class="sr-m"><span>DOMS</span><b>3</b><div class="sr-bar"><i style="width:30%"></i></div></div>
-    <div class="sr-m"><span>Stress</span><b>2</b><div class="sr-bar"><i style="width:20%"></i></div></div>
-    <div class="sr-m"><span>Fame</span><b>4</b><div class="sr-bar"><i style="width:40%"></i></div></div>
+   <div class="sr-boxh"><b data-sr-ck-tit>Check-in di oggi</b><span class="sr-legend">scala 1-5 · 5 = il massimo della voce · così rispondi tu, senza filtri</span></div>
+   <div class="sr-mark" data-sr-mark>
+    <div class="sr-m" data-sr-m="energy"><span>Energia</span><b>—</b><div class="sr-bar"><i style="width:0%"></i></div></div>
+    <div class="sr-m" data-sr-m="sleep"><span>Sonno</span><b>—</b><div class="sr-bar"><i style="width:0%"></i></div></div>
+    <div class="sr-m" data-sr-m="doms"><span>DOMS</span><b>—</b><div class="sr-bar"><i style="width:0%"></i></div></div>
+    <div class="sr-m" data-sr-m="stress"><span>Stress</span><b>—</b><div class="sr-bar"><i style="width:0%"></i></div></div>
+    <div class="sr-m" data-sr-m="hunger"><span>Fame</span><b>—</b><div class="sr-bar"><i style="width:0%"></i></div></div>
    </div>
-   <p class="sr-legend" style="margin:10px 0 0">Umore «alto» · fatica «medio» · dolore «no» · digestione «regolare» · allenamento «bene» · motivazione «alta» · recupero «indolenzita»</p>
+   <p class="sr-legend" style="margin:10px 0 0" data-sr-ck-frase>Il check-in di oggi non &egrave; arrivato: arriva dal telefono.</p>
   </div>
 
   <div class="sr-box">
@@ -2100,7 +2102,7 @@ document.addEventListener('DOMContentLoaded',function(){
    <div class="sr-boxh"><b>Diario delle sedute</b><span class="sr-legend">RPE e energia come li hai scritti tu</span></div>
    <div class="sr-jr sr-th"><span>Seduta</span><span>RPE</span><span>Energia</span><span>Nota</span></div>
    <div id="sr-diario"></div>
-   <p class="sr-legend" style="margin:10px 0 0">RPE medio <b style="color:var(--core)" id="sr-mrpe">-</b> su <span id="sr-nsed">-</span> sedute · energia media <b style="color:var(--core)" id="sr-men">-</b>. RPE 10 su una seduta, con «queste nuove schede sono tostissime»: il carico lo senti, eccome.</p>
+   <p class="sr-legend" style="margin:10px 0 0">RPE medio <b style="color:var(--core)" id="sr-mrpe">-</b> su <span id="sr-nsed">-</span> sedute · energia media <b style="color:var(--core)" id="sr-men">-</b>.</p>
   </div>
 
   <div class="sr-box">
@@ -2108,7 +2110,7 @@ document.addEventListener('DOMContentLoaded',function(){
    <div class="sr-jr sr-th"><span>Data</span><span>Fame</span><span>Stress</span><span>Note</span></div>
    <div class="sr-jr"><span>07/09/2026</span><span>bassa</span><span>basso</span><em>prima compilazione registrata</em></div>
    <div class="sr-jr"><span>21/10/2026</span><span>alta</span><span>basso</span><em>fame salita, stress fermo in basso</em></div>
-   <p class="sr-note"><b>Una cosa che i numeri dicono e le parole no.</b> Energia 4 e sonno 5 con RPE medio <span id="sr-nota-rpe">—</span> (calcolato dal diario): non stai esagerando con l'intensità, stai pagando il riposo. Con due compilazioni non posso parlare di trend — dico solo che la direzione del sonno è l'unica da guardare adesso.</p>
+   <p class="sr-note"><b>Nessun giudizio senza il dato.</b> RPE medio <span id="sr-nota-rpe">—</span> (calcolato dal diario). Per dire se il freno &egrave; il recupero serve anche il check-in di oggi, sulla stessa scala 1-5: finch&eacute; non arriva, qui non si commenta. Con due compilazioni settimanali non si parla di trend.</p>
   </div>
  </div>
  <script>
@@ -2750,12 +2752,14 @@ document.addEventListener('DOMContentLoaded',function(){
       <circle class="dp" id="ov-c1" cx="32" cy="32" r="27" stroke-dasharray="0 170"/></svg>
       <div class="dnum" id="ov-n1">&mdash;</div></div>
       <div class="dlab">Carico<br>settimana</div>
+      <div class="dperche" id="ov-p1">programma non ancora letto</div>
     </div>
     <div class="p7-donut alt" id="ov-d2">
       <div class="dv"><svg viewBox="0 0 64 64"><circle class="dc" cx="32" cy="32" r="27"/>
       <circle class="dp" id="ov-c2" cx="32" cy="32" r="27" stroke-dasharray="0 170"/></svg>
       <div class="dnum" id="ov-n2">&mdash;</div></div>
       <div class="dlab">Aderenza<br>7 giorni</div>
+      <div class="dperche" id="ov-p2">logbook non ancora letto</div>
     </div>
   </div>
   <div class="p7-kpi" id="ov-kpi"></div>
@@ -7593,6 +7597,7 @@ html body .p7-donut .dp{fill:none;stroke:var(--purple);stroke-width:7;stroke-lin
 html body .p7-donut.alt .dp{stroke:var(--pink)}
 html body .p7-donut .dnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font:800 16px/1 'Inter',system-ui,sans-serif;color:var(--text)}
+html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sans-serif;color:var(--muted)}
 html body .p7-donut .dlab{font:700 8.5px/1.2 'Inter',system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;
   color:var(--muted);text-align:center}
 
@@ -8922,63 +8927,77 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
   var GRASSO = null;
   for(var i = (SEED.sessioni||[]).length - 1; i >= 0 && GRASSO === null; i--) GRASSO = grasso(SEED.sessioni[i], ETA, SESSO);
 
-  /* ---------- programma: righe, serie, distretti ---------- */
-  function righe(){
-    var out = [];
-    ['A','B','C','D'].forEach(function(b){
-      var box = el('box-' + b); if(!box) return;
-      Array.prototype.forEach.call(box.querySelectorAll('tr.p8-r:not(.tr-tech)'), function(tr){
-        var d = tr.querySelector('.c-dist .dist');
-        var s1 = tr.querySelector('[data-k$="-s1"]');
-        out.push({sheet:b, js:tr.getAttribute('data-js') || '', dist:(d ? d.textContent : '').trim().toUpperCase(),
-                  s1:num(s1 ? s1.textContent : 0) || 0});
-      });
+  /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+     Prima contava dalla tabella nascosta del mockup (#box-A..D, date «Ultima» fisse):
+     «Aderenza 0%» e «Carico 86%» non venivano dai dati. Ora legge le righe vive di
+     #programma-attivo e le sedute di BD_LB; i conti stanno in comune/overview-vivo-b.js.
+     Se un conto non si può fare, al posto del numero c'è il perché. */
+  var DULT = [];
+  function programmaVivo(){
+    var radiceP = el('programma-attivo');
+    var righeV = radiceP ? Array.prototype.slice.call(radiceP.querySelectorAll('.p8-tab tr.p8-r:not(.p8-tec)')) : [];
+    var schedeV = radiceP ? radiceP.querySelectorAll('.p8-tab').length : 0;
+    var out = { letto: righeV.length > 0, righe: [], schede: schedeV, giorni: null, inizio: '', motivo: null };
+    if(!out.letto){
+      var t = radiceP ? String(radiceP.textContent || '').trim() : '';
+      out.motivo = t ? 'nessuna scheda del programma attivo è stata letta' : 'il programma non è ancora stato letto';
+    }
+    righeV.forEach(function(tr){
+      var d = tr.querySelector('.c-dist .dist');
+      var serie = Array.prototype.map.call(tr.querySelectorAll('td.c-ser'), function(td){ return num(td.textContent); });
+      out.righe.push({ dist:(d ? d.textContent : '').trim().toUpperCase(), serie: serie });
     });
+    if(radiceP){
+      Array.prototype.forEach.call(radiceP.querySelectorAll('.pr-f'), function(f){
+        var lab = f.querySelector('.pr-lab'), sel = f.querySelector('select');
+        if(lab && sel && /gg\/sett/i.test(lab.textContent)){ var g = parseInt(sel.value, 10); out.giorni = isFinite(g) ? g : null; }
+      });
+      var ini = radiceP.querySelector('[data-pr-c="programma-inizio"]');
+      out.inizio = ini ? String(ini.value || '').trim() : '';
+    }
     return out;
   }
-  var R = righe();
-
-  function serieSettimana(w){
-    var t = 0;
-    ['A','B','C','D'].forEach(function(b){
-      var box = el('box-' + b); if(!box) return;
-      Array.prototype.forEach.call(box.querySelectorAll('tr.p8-r:not(.tr-tech)'), function(tr){
-        var v = tr.querySelector('[data-k$="-s' + w + '"]');
-        t += num(v ? v.textContent : 0) || 0;
-      });
-    });
-    return t;
+  function logbookVivo(){
+    var LBx = window.BD_LB;
+    var letto = !!(LBx && (window.BD_LB_SEED || LBx.fonte));
+    var fonte = window.BD_LB_SEED && window.BD_LB_SEED.fonte;
+    return { letto: letto, sedute: letto ? (LBx.sedute || []) : null,
+             motivo: letto ? (fonte === 'zona B non ancora copiata' ? 'la zona B non è ancora copiata: nessuna seduta letta' : null) : 'il logbook non è ancora stato letto' };
   }
-  var sett = []; for(var w = 1; w <= 8; w++) sett.push(serieSettimana(w));
-  var maxSett = Math.max.apply(null, sett.concat([1]));
 
-  /* date di ultima esecuzione */
-  var dateUlt = {};
-  ['A','B','C','D'].forEach(function(b){
-    var box = el('box-' + b); if(!box) return;
-    Array.prototype.forEach.call(box.querySelectorAll('tr.p8-r:not(.tr-tech) .c-ult'), function(td){
-      var d = dmy(td.textContent); if(d) dateUlt[d.toISOString().slice(0,10)] = d;
-    });
-  });
-  var DULT = Object.keys(dateUlt).map(function(k){ return dateUlt[k]; }).sort(function(a,b){ return a-b; });
-
-  /* ================= OVERVIEW ================= */
-  if(el('ov-kpi')){
-    var carico = Math.round(100 * sett[0] / maxSett);
+  function pittaOverview(){
+    if(!el('ov-kpi')) return;
+    var OV = window.BDOverviewB;
+    var PV = programmaVivo(), LV = logbookVivo();
     var oggi = new Date();
-    var sett7 = DULT.filter(function(d){ return (oggi - d) / 86400000 <= 8; });
-    var previste = 4;
-    var ader = Math.min(100, Math.round(100 * sett7.length / previste));
     var C = 2 * Math.PI * 27;
-    el('ov-c1').setAttribute('stroke-dasharray', (C * carico/100).toFixed(1) + ' ' + C.toFixed(1));
-    el('ov-n1').textContent = carico + '%';
-    el('ov-c2').setAttribute('stroke-dasharray', (C * ader/100).toFixed(1) + ' ' + C.toFixed(1));
-    el('ov-n2').textContent = ader + '%';
+    var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni: PV.letto ? PV.giorni : null, oggi: oggi })
+                   : { stato:'non-calcolabile', percento:null, motivo:'il modulo dei conti non è caricato' };
+    if(OV && aderE.stato !== 'non-calcolabile' && !PV.letto) aderE.motivo = 'conto le sedute, non la percentuale: ' + PV.motivo;
+    var carE = OV ? OV.carico({ letto: PV.letto, motivoProgramma: PV.motivo, serie: PV.righe.map(function(r){ return r.serie; }), inizio: PV.inizio, oggi: oggi })
+                  : { stato:'non-calcolabile', percento:null, motivo:'il modulo dei conti non è caricato' };
+    window.__BDOV_ULTIMO = { aderenza: aderE, carico: carE, programma: PV, logbook: { letto: LV.letto, n: LV.sedute ? LV.sedute.length : null } };
 
-    var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-    el('ov-sint').textContent = 'Settimana 1 del blocco · ' + R.length + ' esercizi su 4 schede · '
-      + (DULT.length ? 'ultima seduta ' + gg(DULT[DULT.length-1]) : 'nessuna seduta datata')
-      + ' · ' + it(sett[0]) + ' serie previste in S1';
+    var cOk = carE.stato === 'calcolata';
+    el('ov-c1').style.opacity = cOk ? '' : '0'; /* senza conto nemmeno il puntino dell'arco */
+    el('ov-c1').setAttribute('stroke-dasharray', cOk ? (C * carE.percento/100).toFixed(1) + ' ' + C.toFixed(1) : '0 ' + C.toFixed(1));
+    el('ov-n1').textContent = cOk ? carE.percento + '%' : '—';
+    if(el('ov-p1')) el('ov-p1').textContent = cOk
+      ? 'settimana ' + carE.settimana + ': ' + it(carE.serie) + ' serie su ' + it(carE.max) + ' della settimana più piena'
+      : 'non calcolabile: ' + carE.motivo;
+
+    var aOk = aderE.stato === 'calcolata';
+    el('ov-c2').style.opacity = aOk ? '' : '0'; /* senza conto nemmeno il puntino dell'arco */
+    el('ov-c2').setAttribute('stroke-dasharray', aOk ? (C * aderE.percento/100).toFixed(1) + ' ' + C.toFixed(1) : '0 ' + C.toFixed(1));
+    el('ov-n2').textContent = aOk ? aderE.percento + '%' : (aderE.stato === 'parziale' ? String(aderE.fatte) : '—');
+    if(el('ov-p2')) el('ov-p2').textContent = aOk
+      ? aderE.fatte + ' sedute su ' + aderE.previste + ' previste · ' + aderE.finestra
+      : (aderE.stato === 'parziale' ? aderE.fatte + (aderE.fatte === 1 ? ' seduta' : ' sedute') + ' in 7 giorni · ' + aderE.motivo : 'non calcolabile: ' + aderE.motivo);
+
+    var ultimaS = aderE.ultima ? OV.breve(aderE.ultima) : null;
+    el('ov-sint').textContent = (cOk ? 'Settimana ' + carE.settimana + ' del blocco' : 'Settimana del blocco non calcolabile')
+      + ' · ' + (PV.letto ? PV.righe.length + ' esercizi su ' + PV.schede + (PV.schede === 1 ? ' scheda' : ' schede') : PV.motivo)
+      + ' · ' + (ultimaS ? 'ultima seduta ' + ultimaS : (LV.letto ? 'nessuna seduta datata nel logbook' : LV.motivo));
 
     function spark(vals, col){
       if(!vals.length) return '';
@@ -8991,6 +9010,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
       return '<svg viewBox="0 0 100 14" preserveAspectRatio="none"><polyline points="' + pts +
              '" fill="none" stroke="' + col + '" stroke-width="1.4" stroke-linejoin="round"/></svg>';
     }
+    var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
     var KPI = [
       {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo ? gg(ultimo.d) + (delta !== null ? ' · ' + (delta > 0 ? '+' : '') + it(delta,1) + ' kg dalla prima pesata' : '') : '',
        s: pesi.length > 1 ? spark(pesi.map(function(p){ return p.w; }), 'var(--lav)') : '', on: pesi.length > 0},
@@ -8998,8 +9018,9 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
       {l:'HRV / FC', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
       {l:'Passi', v:'—', u:'', f:'serve HealthKit', s:'', on:false},
       {l:'Macro', v:'—', u:'', f:'serve il diario', s:'', on:false},
-      {l:'Carico', v:it(sett[0]), u:'serie S1', f:'max ' + it(maxSett) + ' in settimana',
-       s: spark(sett, 'var(--purple)'), on:true}
+      {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie S' + carE.settimana : '',
+       f: cOk ? 'max ' + it(carE.max) + ' in una settimana' : carE.motivo,
+       s: carE.perSett && carE.perSett.length > 1 ? spark(carE.perSett, 'var(--purple)') : '', on: cOk}
     ];
     el('ov-kpi').innerHTML = KPI.map(function(k){
       return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div class="kl"><i class="kd"></i>' + k.l + '</div>' +
@@ -9008,7 +9029,7 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
     }).join('');
 
     var per = {};
-    R.forEach(function(r){ if(!r.dist) return; per[r.dist] = (per[r.dist] || 0) + r.s1; });
+    PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist || r.dist === '—' || v === null) return; per[r.dist] = (per[r.dist] || 0) + v; });
     var arr = Object.keys(per).map(function(k){ return {k:k, n:per[k]}; }).sort(function(a,b){ return b.n - a.n; });
     var mx = Math.max.apply(null, arr.map(function(x){ return x.n; }).concat([1]));
     el('ov-bars').innerHTML = arr.map(function(x){
@@ -9016,7 +9037,9 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
         '<span class="btrack"><span class="bfill" style="width:' + Math.round(100*x.n/mx) + '%"></span></span>' +
         '<span class="bval">' + x.n + '</span></div>';
     }).join('');
-    el('ov-barsn').textContent = arr.length + ' gruppi · ' + it(R.reduce(function(a,r){ return a + r.s1; }, 0)) + ' serie totali in S1';
+    el('ov-barsn').textContent = PV.letto
+      ? arr.length + ' gruppi · ' + it(arr.reduce(function(a,x){ return a + x.n; }, 0)) + ' serie totali in S1, dal programma letto'
+      : 'Nessuna barra: ' + PV.motivo + '.';
 
     if(pesi.length > 1){
       var W = 100, Hh = 34;
@@ -9042,11 +9065,27 @@ window.BD_LB_EXCAT = {"Ab_Roll":"Addominali","Abductor":"Glutei","Addominali_liv
     if(window.BD_LB && window.BD_LB.sedute.length){
       el('ov-sed').innerHTML = window.BD_LB.chips();
     } else {
-      el('ov-sed').innerHTML = DULT.length
-        ? DULT.slice(-6).reverse().map(function(d){ return '<span class="p7-chip"><b>' + gg(d) + '</b> seduta</span>'; }).join('')
-        : '<span class="p7-chip">nessuna data registrata</span>';
+      el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.motivo) + '</span>';
     }
+    /* il peso lo ridipinge la sua fonte unica (peso-pittore), come prima */
+    if(typeof window.BDPESO_PITTA === 'function' && window.__BDPESO_ULTIMO) window.BDPESO_PITTA(window.__BDPESO_ULTIMO.stato, window.__BDPESO_ULTIMO.profilo);
   }
+  window.BDOV_PITTA = pittaOverview;
+  pittaOverview();
+  /* si ridipinge quando arrivano i dati: dopo ogni giro del logbook e quando il
+     programma vivo cambia (lettura, scrittura di una cella, Gg/sett, data d'inizio) */
+  (function(){
+    var attesa = null;
+    function presto(){ if(attesa) return; attesa = setTimeout(function(){ attesa = null; try { pittaOverview(); } catch(e){} }, 60); }
+    if(window.BD_LB && typeof window.BD_LB.tutto === 'function' && !window.BD_LB.__ovAgganciato){
+      var tuttoPrima = window.BD_LB.tutto;
+      window.BD_LB.tutto = function(){ var r = tuttoPrima.apply(this, arguments); presto(); return r; };
+      window.BD_LB.__ovAgganciato = true;
+    }
+    var pa = el('programma-attivo');
+    if(pa && window.MutationObserver) new MutationObserver(presto).observe(pa, { childList:true, subtree:true, characterData:true });
+    document.addEventListener('change', function(e){ if(e.target && e.target.closest && e.target.closest('#programma-attivo')) presto(); }, true);
+  })();
 
   /* ================= RESET / BULK / CUT ================= */
   if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.length || PESO === null)){
@@ -10250,6 +10289,112 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script id="checkin-pittore">
+/* Passo 18 — una sola pittura del check-in per Dashboard e Salute & recupero.
+   Legge comune/checkin-b.js e non tiene nessun numero suo: senza check-in le
+   barre non ci sono e la carta lo dice; un check-in vecchio porta la sua data. */
+(function(){
+  var K = window.BDCheckinB;
+  if(!K) return;
+  function qa(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function uno(s){ return document.querySelector(s); }
+  function set(s,t){ qa(s).forEach(function(e){ e.textContent = t; }); }
+  function esc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+  function pitta(stato){
+    var st = stato || K.leggiCheckin();
+    var letto = st.stato === 'letto';
+    var testo = K.testoCheckin(st);
+    var nome = K.etichetta(st);
+
+    /* --- Dashboard, carta «Biofeedback settimanale» --- */
+    set('[data-ck-bio-sotto]', (letto ? nome : 'check-in di oggi non arrivato') + ' · ' + K.SCALA.testo);
+    var vuoto = uno('[data-ck-bio-vuoto]'), barre = uno('[data-ck-bio-barre]');
+    /* .ck-vuoto-c ha display:flex nel CSS, che batte l'attributo hidden: si spegne con lo stile */
+    if(vuoto){ vuoto.hidden = letto; vuoto.style.display = letto ? 'none' : ''; }
+    set('[data-ck-bio-perche]', testo);
+    if(barre){
+      barre.hidden = !letto; barre.style.display = letto ? '' : 'none';
+      if(!letto){ barre.innerHTML = ''; }
+      else {
+        function riga(v){
+          var col = v.meglio === 'basso' ? '#FF4FA3' : '#7BE0A8';
+          return '<div class="ck-r"><span class="ck-rn">' + esc(v.nome) + '</span><span class="ck-rb"><i style="width:' + K.percento(v.valore) + '%;background:' + col + '"></i></span><span class="ck-rv">' + (v.registrato ? v.valore + '/' + K.SCALA.max : '—') + '</span></div>';
+        }
+        var fat = st.voci.filter(function(v){ return v.meglio === 'basso'; });
+        var ben = st.voci.filter(function(v){ return v.meglio !== 'basso'; });
+        barre.innerHTML = '<div class="ck rg-fatica"><div class="ck-cat">Fatica (↓ meglio)</div>' + fat.map(riga).join('') + '</div>'
+          + '<div class="ck rg-bene"><div class="ck-cat">Stato (↑ meglio)</div>' + ben.map(riga).join('') + '</div>'
+          + (st.diOggi ? '' : '<p class="ck-piede-card">' + esc(testo) + '</p>');
+      }
+    }
+
+    /* --- Dashboard, Readiness: stessa fonte, media solo con le cinque voci di oggi --- */
+    var med = st.diOggi ? K.media(st) : null;
+    var gnum = uno('.ck-gauge-num'); if(gnum) gnum.textContent = med ? String(med.punteggio) : '—';
+    /* l'anello del mockup era disegnato al 72%: senza media resta vuoto */
+    var anello = uno('.ck-anello-valore');
+    if(anello){
+      var giro = 2 * Math.PI * 34;
+      anello.setAttribute('stroke-dasharray', (med ? giro * med.punteggio / 100 : 0).toFixed(1) + ' ' + giro.toFixed(1));
+      anello.classList.toggle('ok', !!med && med.punteggio >= 65);
+    }
+    var rb = uno('.ck-ready-testa h3 b'); if(rb) rb.textContent = med ? med.punteggio + '/100' : 'non registrato';
+    /* la pillola accanto al titolo segue la stessa media: niente «segnali non letti» accanto a un 72 */
+    var pill = uno('.ck-ready .ck-ok');
+    if(pill) pill.innerHTML = med ? '<i></i>CHECK-IN DI OGGI · <em>media di 5 voci su 5</em>'
+      : '<i></i>' + (letto ? (st.diOggi ? 'SEGNALI INCOMPLETI' : 'CHECK-IN NON DI OGGI') : 'SEGNALI NON LETTI') + ' · <em>nessuna media calcolata</em>';
+    var rf = uno('.ck-ready .ck-frase');
+    if(rf) rf.textContent = med ? 'Media delle cinque risposte del check-in di oggi, ' + K.SCALA.testo + '.'
+      : (letto && !st.diOggi ? 'Il check-in di oggi non è arrivato: l\'ultimo è del ' + K.dataBreve(st.data) + ' e non lo uso come se fosse di oggi.'
+      : (letto ? 'Il check-in di oggi ha ' + st.registrate + ' voci su 5: senza i cinque segnali non calcolo una media.' : 'Il check-in di oggi non è stato letto: senza i cinque segnali non calcolo una media.'));
+    qa('.ck-ready .ck-chip').forEach(function(ch){
+      var em = ch.querySelector('em'), b = ch.querySelector('b'); if(!em || !b) return;
+      var v = st.voci.filter(function(x){ return x.nome === em.textContent.trim(); })[0];
+      b.textContent = st.diOggi && v && v.registrato ? v.valore + '/' + K.SCALA.max : '—';
+    });
+
+    /* --- Salute & recupero --- */
+    set('[data-sr-ck]', letto ? nome : 'check-in di oggi non arrivato');
+    set('[data-sr-ck-tit]', letto ? nome.charAt(0).toUpperCase() + nome.slice(1) : 'Check-in di oggi');
+    set('[data-sr-ck-frase]', testo);
+    var voci = st.voci.length ? st.voci : K.VOCI.map(function(v){ return { chiave:v.chiave, nome:v.nome, valore:null, registrato:false }; });
+    voci.forEach(function(v){
+      var m = uno('[data-sr-m="' + v.chiave + '"]');
+      if(m){
+        var b = m.querySelector('b'), i = m.querySelector('.sr-bar i');
+        if(b) b.textContent = v.registrato ? String(v.valore) : '—';
+        if(i) i.style.width = (v.registrato ? K.percento(v.valore) : 0) + '%';
+      }
+      var x = uno('[data-sr-i="' + v.chiave + '"]');
+      if(x){
+        var xb = x.querySelector('b'), xi = x.querySelector('i');
+        if(xb) xb.textContent = v.registrato ? K.votoTesto(v.valore) : '—';
+        if(xi) xi.textContent = v.registrato ? (st.diOggi ? 'check-in di oggi, ' + K.SCALA.testo : 'dal check-in del ' + K.dataBreve(st.data)) : 'non registrato';
+      }
+    });
+    window.__BDCK_ULTIMO = { stato: st, testo: testo };
+  }
+
+  /* le note del diario: dal logbook letto, non da un numero scritto */
+  function pittaNote(){
+    var LB = window.BD_LB;
+    var letto = !!(LB && (window.BD_LB_SEED || LB.fonte));
+    var n = letto ? (LB.journal || []).length : null;
+    set('[data-sr-note]', n === null ? 'diario non ancora letto' : (n === 1 ? '1 nota di diario' : n + ' note di diario'));
+  }
+  if(window.BD_LB && typeof window.BD_LB.tutto === 'function' && !window.BD_LB.__noteAgganciato){
+    var prima = window.BD_LB.tutto;
+    window.BD_LB.tutto = function(){ var r = prima.apply(this, arguments); try { pittaNote(); } catch(e){} return r; };
+    window.BD_LB.__noteAgganciato = true;
+  }
+
+  window.BDCK_PITTA = pitta;
+  window.BDCK_NOTE = pittaNote;
+  pitta();
+  pittaNote();
+})();
+</script>
 <script id="peso-pittore">
 /* Una sola pittura del peso per tutte le pagine. Legge comune/peso-b.js e non
    tiene nessun numero suo: cambia lo stato, cambia quello che si vede. */
