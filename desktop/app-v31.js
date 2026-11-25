@@ -40,6 +40,7 @@ import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
 import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anamnesi-b.js";
 import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
+import { annodaGuideVive } from "../comune/guide-vive.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -1013,4 +1014,13 @@ function doveVoce(voce) {
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";
   return v.esercizio ? nome + " di " + nomePulito(v.esercizio) : nome;
+}
+
+/* Le guide che nel v31 non facevano niente (passo 19): il tasto apre un
+ * riquadro con la spiegazione. Il modulo sta in comune/guide-vive.js, cosi'
+ * le prove lo possono far girare senza caricare tutta la pagina. */
+if (typeof document !== "undefined") {
+  const attacca = () => annodaGuideVive(document);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attacca);
+  else attacca();
 }
