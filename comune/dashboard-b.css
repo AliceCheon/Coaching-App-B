@@ -188,6 +188,16 @@
   text-transform:uppercase;color:var(--muted);font-weight:700}
 .ck-fare-link b {font-family:var(--mono);letter-spacing:0;text-transform:none;color:var(--muto);font-size:9.6px;margin-left:auto}
 .ck-fare-link em {font-style:normal;color:var(--linea)}
+/* Passo 28 — le due righe della carta «Cosa fare questa settimana» sono tasti
+ * veri: devono sembrarlo. Prima erano grigie come il testo spento, e Alice non
+ * aveva capito che si potevano premere. */
+.ck-fare-link[data-vai] {cursor:pointer;transition:transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease}
+.ck-fare-link[data-vai]:hover {border-color:var(--purple);background:rgba(168,85,247,.10);transform:translateX(3px);box-shadow:0 6px 18px rgba(168,85,247,.18)}
+.ck-fare-link[data-vai]:hover em {color:#fff}
+.ck-fare-link[data-vai]:hover b {color:var(--testo)}
+.ck-fare-link[data-vai]:active {transform:translateX(3px) scale(.995)}
+.ck-fare-link[data-vai] em {color:#FF4FA3;font-weight:800;letter-spacing:.06em}
+.ck-fare-link[data-vai]:focus-visible {outline:2px solid var(--purple);outline-offset:2px}
 .ck-giorn {list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px}
 .ck-giorn li {display:flex;align-items:baseline;gap:10px;font-size:10px;padding:5px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
 .ck-jd {font-family:var(--mono);font-size:9.4px;color:var(--muted);width:40px;flex:none}

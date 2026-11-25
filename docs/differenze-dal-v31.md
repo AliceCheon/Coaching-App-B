@@ -50,114 +50,115 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1801 — <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16
 - righe 1805-1806 — <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16
 - righe 1824-1826 — <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto
-- righe 1839-1840 — <div class="ck-fare-link" data-vai="riepilogo-volume"><svg c
-- righe 1919 — <button class="ck-link" type="button" data-vai="riepilogo-vo
-- righe 1921 — <article class="ck-card ck-st">
-- righe 1923-1925 — <p>serie equivalenti a settimana per articolazione · la tacc
-- righe 1947 — <div class="dc-mail">scaniscrini@gmail.com</div>
-- righe 1949 — <button class="dc-guida">Guida Dati Cliente</button>
-- righe 1954 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
+- righe 1837-1839 — <p class="ck-fare-d">Il motore che sceglie il deload non esi
+- righe 1918 — <button class="ck-link" type="button" data-vai="riepilogo-vo
+- righe 1920 — <article class="ck-card ck-st">
+- righe 1922-1924 — <p>serie equivalenti a settimana per articolazione · la tacc
+- righe 1946 — <div class="dc-mail">scaniscrini@gmail.com</div>
+- righe 1948 — <button class="dc-guida">Guida Dati Cliente</button>
+- righe 1953 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
+- righe 1959 — 
 - righe 1960 — 
-- righe 1961 — 
-- righe 2019-2021 — <!-- Passo 25: «Domande» esce (tornerà quando ci sarà un sen
-- righe 2023 — <button class="dc-btn" id="dc-compila">✏️ Compila / Modifica
-- righe 2025 — <div class="dc-avviso" id="dc-avviso">L'anamnesi si scrive d
-- righe 2055-2056 — <div class="dc-pan" data-pan="biofeedback"><div class="dc-ca
-- righe 2067 — <div class="sr-who"><b>Alice Clemente</b> · <span data-sr-ck
-- righe 2076-2079 — <div class="sr-i" data-sr-i="sleep"><span>Sonno percepito</s
-- righe 2084-2090 — <div class="sr-boxh"><b data-sr-ck-tit>Check-in di oggi</b><
-- righe 2092 — <p class="sr-legend" style="margin:10px 0 0" data-sr-ck-fras
-- righe 2110 — <p class="sr-legend" style="margin:10px 0 0">RPE medio <b st
-- righe 2118 — <p class="sr-note"><b>Nessun giudizio senza il dato.</b> RPE
-- righe 2121 — <script>
-- righe 2144 — <div class="ms-who"><b>Alice Clemente</b> &middot; altezza, 
-- righe 2269 — 
-- righe 2341 — var S=null;
-- righe 2349 — var S=null;
-- righe 2682 — <div class="p7-note3"><b>Da dove vengono i numeri:</b> il pe
-- righe 2693 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-
-- righe 2695 — <div class="ms-top"><span class="ms-badge carta" id="mp-badg
-- righe 2701 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-le
-- righe 2707-2709 — <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il p
-- righe 2731 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
-- righe 2733 — 
-- righe 2763 — <div class="dperche" id="ov-p1">programma non ancora letto</
-- righe 2770 — <div class="dperche" id="ov-p2">logbook non ancora letto</di
-- righe 2804 — <p class="p7-note2" id="lb-nota-b" hidden></p>
-- righe 2818-2821 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_S
-- righe 2835 — var cand=sed().filter(function(x){return x.d===dd;});
-- righe 2848 — aggiornaMappa();
-- righe 2861 — if(cnt&&(fv||fo))cnt.textContent=vis+" di "+sed().length+" s
-- righe 2873 — <div id="pianificazione-viva"></div>
-- righe 2883 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi
-- righe 2915 — <p class="pr-sub">Le regole con cui le settimane salgono. Pe
-- righe 2925 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{displ
-- righe 3139-3140 — </div><button class="sp-btn" id="sp-guida">Guida Specializza
-- righe 3141 — 
-- righe 3144 — 
-- righe 3147 — <div class="v-occhiello">Programmi &middot; Curve di forza</
-- righe 3149 — <p class="v-testo">La storia del carico per esercizio, sedut
-- righe 3150 — 
-- righe 3152-3154 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
-- righe 3155 — 
-- righe 3157 — <section class="voce-pag" id="pag-scheletri">
-- righe 3198-3199 — <div class="sk-qh">Questionario</div>
-- righe 3209 — <section class="voce-pag" id="pag-programma-1"><div class="p
-- righe 3296 — <button class="pr-btn" id="t8-appprog" type="button">Applica
-- righe 3329 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
-- righe 3340 — 
-- righe 3373 — 
-- righe 3453 — </div></div></section><section class="voce-pag" id="pag-impo
-- righe 3474 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
-- righe 4130 — <p class="v-testo">Tutti i programmi del backup, attivo comp
-- righe 4134 — <tbody id="archivio-corpo"></tbody>
-- righe 5287-5295 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
-- righe 5481 — 
-- righe 5641 — disegnaSchede(); disegnaLegenda();
-- righe 5974 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
-- righe 6232 — if(navigator.userActivation&&navigator.userActivation.hasBee
-- righe 6349-6353 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
-- righe 7032-7033 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
-- righe 7161-7197 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
-- righe 7339 — 
-- righe 7366-7393 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
-- righe 7438 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
-- righe 7484 — 
-- righe 7534-7535 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
-- righe 7608 — html body .p7-donut .dperche{max-width:150px;text-align:cent
-- righe 7887 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
-- righe 8044 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
-- righe 8432-8433 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
-- righe 8886 — var SEED = {config:{}, sessioni:[]};
-- righe 8901-8904 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
-- righe 8928-8931 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
-- righe 8938-8956 — /* ---------- Passo 18: l'Overview conta dal programma letto
-- righe 8958-8965 — if(radiceP){
-- righe 8968-8973 — function logbookVivo(){
-- righe 8974 — 
-- righe 8976-8979 — function pittaOverview(){
-- righe 8980 — 
-- righe 8982-9008 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
-- righe 9021 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9023 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
-- righe 9029-9031 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
-- righe 9034 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
-- righe 9040 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
-- righe 9048-9050 — el('ov-barsn').textContent = PV.letto
-- righe 9068 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9076 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
-- righe 9078-9096 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
-- righe 9099-9111 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
-- righe 9150 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
-- righe 9201 — if(false){
-- righe 9398 — '<div class="ese-chips2">' +
-- righe 9949-9952 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
-- righe 9957 — kpi.innerHTML =
-- righe 10132-10141 — // Passo 30: nei campi si lascia al browser la cronologia de
-- righe 10251 — 
-- righe 10295-10573 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 2018-2020 — <!-- Passo 25: «Domande» esce (tornerà quando ci sarà un sen
+- righe 2022 — <button class="dc-btn" id="dc-compila">✏️ Compila / Modifica
+- righe 2024 — <div class="dc-avviso" id="dc-avviso">L'anamnesi si scrive d
+- righe 2054-2055 — <div class="dc-pan" data-pan="biofeedback"><div class="dc-ca
+- righe 2066 — <div class="sr-who"><b>Alice Clemente</b> · <span data-sr-ck
+- righe 2075-2078 — <div class="sr-i" data-sr-i="sleep"><span>Sonno percepito</s
+- righe 2083-2089 — <div class="sr-boxh"><b data-sr-ck-tit>Check-in di oggi</b><
+- righe 2091 — <p class="sr-legend" style="margin:10px 0 0" data-sr-ck-fras
+- righe 2109 — <p class="sr-legend" style="margin:10px 0 0">RPE medio <b st
+- righe 2117 — <p class="sr-note"><b>Nessun giudizio senza il dato.</b> RPE
+- righe 2120 — <script>
+- righe 2143 — <div class="ms-who"><b>Alice Clemente</b> &middot; altezza, 
+- righe 2268 — 
+- righe 2340 — var S=null;
+- righe 2348 — var S=null;
+- righe 2681 — <div class="p7-note3"><b>Da dove vengono i numeri:</b> il pe
+- righe 2692 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-
+- righe 2694 — <div class="ms-top"><span class="ms-badge carta" id="mp-badg
+- righe 2700 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-le
+- righe 2706-2708 — <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il p
+- righe 2730 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
+- righe 2732 — 
+- righe 2762 — <div class="dperche" id="ov-p1">programma non ancora letto</
+- righe 2769 — <div class="dperche" id="ov-p2">logbook non ancora letto</di
+- righe 2803 — <p class="p7-note2" id="lb-nota-b" hidden></p>
+- righe 2817-2820 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_S
+- righe 2834 — var cand=sed().filter(function(x){return x.d===dd;});
+- righe 2847 — aggiornaMappa();
+- righe 2860 — if(cnt&&(fv||fo))cnt.textContent=vis+" di "+sed().length+" s
+- righe 2872 — <div id="pianificazione-viva"></div>
+- righe 2882 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi
+- righe 2914 — <p class="pr-sub">Le regole con cui le settimane salgono. Pe
+- righe 2924 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{displ
+- righe 3138-3139 — </div><button class="sp-btn" id="sp-guida">Guida Specializza
+- righe 3140 — 
+- righe 3143 — 
+- righe 3146 — <div class="v-occhiello">Programmi &middot; Curve di forza</
+- righe 3148 — <p class="v-testo">La storia del carico per esercizio, sedut
+- righe 3149 — 
+- righe 3151-3153 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
+- righe 3154 — 
+- righe 3156 — <section class="voce-pag" id="pag-scheletri">
+- righe 3197-3198 — <div class="sk-qh">Questionario</div>
+- righe 3208 — <section class="voce-pag" id="pag-programma-1"><div class="p
+- righe 3295 — <button class="pr-btn" id="t8-appprog" type="button">Applica
+- righe 3328 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
+- righe 3339 — 
+- righe 3372 — 
+- righe 3452 — </div></div></section><section class="voce-pag" id="pag-impo
+- righe 3473 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
+- righe 4129 — <p class="v-testo">Tutti i programmi del backup, attivo comp
+- righe 4133 — <tbody id="archivio-corpo"></tbody>
+- righe 5286-5294 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
+- righe 5480 — 
+- righe 5640 — disegnaSchede(); disegnaLegenda();
+- righe 5973 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
+- righe 6231 — if(navigator.userActivation&&navigator.userActivation.hasBee
+- righe 6348-6352 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
+- righe 7031-7032 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 7160-7196 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
+- righe 7338 — 
+- righe 7365-7392 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
+- righe 7437 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
+- righe 7483 — 
+- righe 7533-7534 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
+- righe 7607 — html body .p7-donut .dperche{max-width:150px;text-align:cent
+- righe 7886 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
+- righe 8043 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
+- righe 8431-8432 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
+- righe 8885 — var SEED = {config:{}, sessioni:[]};
+- righe 8900-8903 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
+- righe 8927-8930 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
+- righe 8937-8955 — /* ---------- Passo 18: l'Overview conta dal programma letto
+- righe 8957-8964 — if(radiceP){
+- righe 8967-8972 — function logbookVivo(){
+- righe 8973 — 
+- righe 8975-8978 — function pittaOverview(){
+- righe 8979 — 
+- righe 8981-9007 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
+- righe 9020 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9022 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
+- righe 9028-9030 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
+- righe 9033 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
+- righe 9039 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
+- righe 9047-9049 — el('ov-barsn').textContent = PV.letto
+- righe 9067 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9075 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
+- righe 9077-9095 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
+- righe 9098-9110 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
+- righe 9149 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
+- righe 9200 — if(false){
+- righe 9397 — '<div class="ese-chips2">' +
+- righe 9948-9951 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
+- righe 9956 — kpi.innerHTML =
+- righe 10131-10140 — // Passo 30: nei campi si lascia al browser la cronologia de
+- righe 10250 — 
+- righe 10294-10572 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
+
 
 
 
@@ -175,3 +176,4 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 19** — i quattro tasti «? Guida» che non facevano niente ora aprono un riquadro con la spiegazione.
 - **Passo 20** — via il «?» dai tasti Guida; anche Dashboard, Overview e Pianificazione ora spiegano invece di restare spenti.
 - **Passo 26** — anagrafica scrivibile (sesso, lingua, obiettivo, cognome) con le voci nel registro; «Compila / Modifica» apre l'editor dell'anamnesi.
+- **Passo 28** — i due «Apri» della carta «Cosa fare questa settimana» sembrano tasti (bordo, freccia, animazione, tastiera), e la frase della carta invita invece di scoraggiare.

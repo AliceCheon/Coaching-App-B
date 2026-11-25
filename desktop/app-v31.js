@@ -1122,3 +1122,17 @@ if (typeof document !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aggancia);
   else aggancia();
 }
+
+/* ---- I due «Apri» della Dashboard anche da tastiera (passo 28) -----------
+ * Il gestore del v31 risponde solo al clic. Con role="button" e tabindex, chi
+ * naviga da tastiera deve poterli premere con Invio o spazio: stessa strada. */
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter" && ev.key !== " ") return;
+    const t = ev.target && ev.target.closest ? ev.target.closest("[data-vai][role='button']") : null;
+    if (!t) return;
+    ev.preventDefault();
+    const voce = document.querySelector('.voce[data-vista="' + t.dataset.vai + '"]');
+    if (voce) voce.click();
+  });
+}
