@@ -1,4 +1,5 @@
 import { nomePulito } from "./nome-pulito.js";
+import { attaccaGuida } from "./guide-vive.js";
 /* Barbell Diva B — la schermata Overview atleta (fase 2.3).
  *
  * Le classi sono quelle del v31 (ck-testa, ck-sez, ck-card, ck-met): l'aspetto
@@ -58,8 +59,7 @@ function testa(doc, modello) {
   c.appendChild(d);
   const g = n(doc, "button", "ck-guida", "Guida Overview");
   g.type = "button";
-  g.disabled = true;
-  g.title = "arriva con la schermata Impostazioni (2.15)";
+  attaccaGuida(doc, g, "overview");
   c.appendChild(g);
   return c;
 }
@@ -221,6 +221,7 @@ function cosaManca(doc) {
 }
 
 /* La vista riceve il riepilogo già calcolato da comune/overview.js. */
+
 export function renderOverviewAtleta(doc, contenitore, modello, calcoli) {
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const r = calcoli || { totale: 0, conData: 0, senzaData: 0, ultimi28: 0, giorniUltima: null, blocchi: [], settimaneAttive: 0, settimaneTotali: 0, ritmo: null, schede: [], ultime: [] };

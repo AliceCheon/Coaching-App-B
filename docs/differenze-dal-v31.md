@@ -54,6 +54,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1921 — <article class="ck-card ck-st">
 - righe 1923-1925 — <p>serie equivalenti a settimana per articolazione · la tacc
 - righe 1947 — <div class="dc-mail">scaniscrini@gmail.com</div>
+- righe 1949 — <button class="dc-guida">Guida Dati Cliente</button>
 - righe 1954 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
 - righe 1960 — 
 - righe 1961 — 
@@ -83,9 +84,10 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 2843 — aggiornaMappa();
 - righe 2856 — if(cnt&&(fv||fo))cnt.textContent=vis+" di "+sed().length+" s
 - righe 2868 — <div id="pianificazione-viva"></div>
+- righe 2878 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi
 - righe 2910 — <p class="pr-sub">Le regole con cui le settimane salgono. Pe
 - righe 2920 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{displ
-- righe 3135 — <div class="sp-corpo" id="sp-corpo"></div>
+- righe 3134-3135 — </div><button class="sp-btn" id="sp-guida">Guida Specializza
 - righe 3136 — 
 - righe 3139 — 
 - righe 3142 — <div class="v-occhiello">Programmi &middot; Curve di forza</
@@ -153,6 +155,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
 
+
 - **Passo 8** — via i numeri del mockup da Curve di forza, Pianificazione, Misure e Dashboard; le quattro tab cancellate per errore (Scheletri, Programma 1, Impostazioni, Study time) sono state ripristinate identiche al v31.
 - **Passo 15** — Dati cliente: tolte le linguette Wearable e Personalizzati con i loro pannelli.
 - **Passo 16** — via dal codice il questionario personale di Scheletri, il link Cloudflare dell'email, le tre versioni ridotte a una (`window.BD_VERSIONE`), e la funzione che scriveva in riquadri inesistenti (`#t9-kpi`).
@@ -160,3 +163,4 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 17** — il peso ha una fonte sola (`comune/peso-b.js`): via le cinque pesate scritte nella pagina, via «178 cm · 31 anni», via il ripiego del profilo nei calcoli.
 - **Passo 18** — nessun numero fisso si presenta come dato di oggi: la carta «Biofeedback settimanale» della Dashboard e il «Check-in di oggi» di Salute & recupero leggono il check-in da una fonte sola (`comune/checkin-b.js`, scala 1-5 dichiarata) e, senza check-in, dicono che non è arrivato; via «21/10/2026 · 6 note», i punteggi «/ 10» e il giudizio «la scala dice metà»; l'Overview conta aderenza e carico dal logbook e dal programma vivi (`comune/overview-vivo-b.js`) invece che dalla tabella nascosta del mockup, e dove il conto non si fa scrive il perché.
 - **Passo 19** — i quattro tasti «? Guida» che non facevano niente ora aprono un riquadro con la spiegazione.
+- **Passo 20** — via il «?» dai tasti Guida; anche Dashboard, Overview e Pianificazione ora spiegano invece di restare spenti.

@@ -11,6 +11,7 @@
  */
 
 import { coseNonRegistrate, PIANIFICAZIONE_NON_REGISTRATO as NON } from "./pianificazione.js";
+import { attaccaGuida } from "./guide-vive.js";
 import { nomePulito } from "./nome-pulito.js";
 
 function n(doc, tag, classe, testo) {
@@ -57,8 +58,7 @@ function testa(doc) {
   c.appendChild(d);
   const g = n(doc, "button", "ck-guida", "Guida Pianificazione");
   g.type = "button";
-  g.disabled = true;
-  g.title = "arriva con la schermata Impostazioni (2.15)";
+  attaccaGuida(doc, g, "pianificazione");
   c.appendChild(g);
   return c;
 }
@@ -202,6 +202,7 @@ function cosaManca(doc) {
 
 /* La vista riceve il modello della pagina (programma attivo) e i conti già
  * calcolati da comune/pianificazione.js. */
+
 export function renderPianificazione(doc, contenitore, modello, calcoli) {
   while (contenitore.firstChild) contenitore.firstChild.remove();
   const r = calcoli || {

@@ -71,3 +71,26 @@ test("150.4 nessun tasto Guida resta senza ascoltatore", () => {
   const senza = guidi.filter((b) => b.dataset.guidaViva !== "1" && !b.disabled);
   assert.deepEqual(senza.map((b) => (b.textContent || "").trim()), [], "questi tasti Guida non fanno niente");
 });
+
+test("150.5 il «?» davanti al nome e' uscito, e le guide dei moduli funzionano", async () => {
+  const doc = pagina();
+  modulo.annodaGuideVive(doc);
+  for (const tasto of doc.querySelectorAll("button")) {
+    if (!/guida/i.test(tasto.textContent || "")) continue;
+    assert.equal(/^\s*\?/.test(tasto.textContent || ""), false, "resta il «?» in «" + tasto.textContent.trim() + "»");
+  }
+  /* le tre guide che nascono dai moduli: stesso modulo, tasto creato a mano */
+  for (const [chiave, parola] of [["dashboard", /Readiness/i], ["overview", /logbook/i], ["pianificazione", /settimane/i]]) {
+    const tasto = doc.createElement("button");
+    tasto.textContent = "Guida " + chiave;
+    assert.equal(modulo.attaccaGuida(doc, tasto, chiave), true, "la guida " + chiave + " non si e' attaccata");
+    assert.equal(tasto.disabled, false, "il tasto " + chiave + " resta spento");
+    doc.body.appendChild(tasto);
+    tasto.click();
+    const box = doc.getElementById("guida-" + chiave + "-box");
+    assert.ok(box, "il tocco non ha aperto la guida " + chiave);
+    assert.match(box.textContent, parola, "il testo di " + chiave + " non parla di quello che deve");
+    tasto.click();
+    assert.equal(doc.getElementById("guida-" + chiave + "-box"), null, "il secondo tocco non chiude " + chiave);
+  }
+});

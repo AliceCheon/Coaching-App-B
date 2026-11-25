@@ -1,4 +1,5 @@
 import { nomePulito } from "./nome-pulito.js";
+import { attaccaGuida } from "./guide-vive.js";
 /* Barbell Diva B — la Dashboard (fase 2.1, passo 2).
  *
  * Costruisce la schermata con le classi del mockup v31 (ck-testa, ck-ready,
@@ -61,6 +62,7 @@ function vuoto(doc, titolo, spiegazione) {
 
 /* I cinque segnali del check-in, 1-5. Restituisce null se ne manca anche uno:
  * una media su tre segnali non è «readiness», e non la spaccio per tale. */
+
 export function readiness(wellness) {
   if (!wellness) return null;
   const chiavi = ["energy", "sleep", "doms", "stress", "hunger"];
@@ -146,8 +148,7 @@ function testa(doc, modello) {
   c.appendChild(d);
   const g = n(doc, "button", "ck-guida", "Guida Dashboard");
   g.type = "button";
-  g.disabled = true;
-  g.title = "arriva con la schermata Impostazioni (2.15)";
+  attaccaGuida(doc, g, "dashboard");
   c.appendChild(g);
   return c;
 }

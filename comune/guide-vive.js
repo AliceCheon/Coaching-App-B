@@ -41,6 +41,45 @@ export const GUIDE_VIVE = [
   }
 ];
 
+
+/* Le guide che nascono dai moduli (Dashboard, Overview, Pianificazione): il tasto
+ * lo crea la vista, il testo sta qui. La chiave sta in `data-guida`. */
+export const TESTI_GUIDA = {
+  dashboard: "<b>Come si legge la Dashboard.</b> <i>Readiness</i>: i cinque segnali del check-in di oggi; se il check-in non è arrivato restano cinque trattini, e la pagina lo dice. "
+    + "<i>RED-S</i> e <i>Stress</i> leggono le tue schede e l'anamnesi: le articolazioni dichiarate portano il segno «dichiarata». "
+    + "Quello che arriva dal telefono è dichiarato come tale: se manca, non si inventa.",
+  overview: "<b>Come si legge l'Overview.</b> Aderenza e carico vengono dal logbook: le sedute che hai registrato davvero, non quelle previste. "
+    + "Se in una finestra non c'è nessuna seduta, la pagina dice «non registrato» invece di scrivere 0%: uno zero vorrebbe dire «non ti sei allenata», ed è un'altra cosa.",
+  pianificazione: "<b>Come si legge la Pianificazione.</b> Otto settimane, lunedì in testa, e in ogni casella la scheda che risulta dalle sedute registrate. "
+    + "Il piano futuro, lo scarico e il test non sono nei documenti che l'app legge: qui vedi il calendario che i logbook dimostrano, non quello che era previsto."
+};
+
+/* Attacca UNA guida a un tasto che il modulo ha appena creato. Si chiama
+ * quando il tasto non e' ancora nel documento (la vista lo restituisce e la
+ * pagina lo inserisce dopo): per questo non si cerca con querySelector. */
+export function attaccaGuida(doc, tasto, chiave) {
+  if (!tasto || !TESTI_GUIDA[chiave] || tasto.dataset.guidaViva === "1") return false;
+  tasto.dataset.guidaViva = "1";
+  tasto.dataset.guida = chiave;
+  tasto.disabled = false;
+  tasto.removeAttribute("title");
+  tasto.type = "button";
+  tasto.setAttribute("aria-expanded", "false");
+  tasto.addEventListener("click", () => {
+    const idBox = "guida-" + chiave + "-box";
+    const aperto = doc.getElementById(idBox);
+    if (aperto) { aperto.remove(); tasto.setAttribute("aria-expanded", "false"); return; }
+    const box = doc.createElement("div");
+    box.className = "v-guida-box";
+    box.id = idBox;
+    box.innerHTML = TESTI_GUIDA[chiave];
+    const dove = tasto.closest(".v-testa") || tasto.closest(".ck-testa") || tasto.closest(".pz-testa");
+    if (dove) dove.after(box); else tasto.after(box);
+    tasto.setAttribute("aria-expanded", "true");
+  });
+  return true;
+}
+
 /* Attacca i tasti. Se un tasto non c'e' (pagina diversa, vista ridisegnata) si
  * salta: non e' un errore. Il tasto ricorda di essere gia' annodato, cosi'
  * chiamare due volte non fa aprire due riquadri. */
@@ -51,6 +90,8 @@ export function annodaGuideVive(doc) {
     if (!tasto || tasto.dataset.guidaViva === "1") continue;
     tasto.dataset.guidaViva = "1";
     tasto.type = "button";
+    /* Il «?» davanti al nome non serve: il tasto resta «Guida …», senza simbolo. */
+    tasto.textContent = String(tasto.textContent || "").replace(/^\s*\?\s*/, "");
     tasto.setAttribute("aria-expanded", "false");
     tasto.addEventListener("click", () => {
       const aperto = doc.getElementById(guida.id);
