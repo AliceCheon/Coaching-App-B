@@ -1024,3 +1024,22 @@ if (typeof document !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attacca);
   else attacca();
 }
+
+/* ---- I tasti che sembrano cliccabili e non lo sono (passo 21) -------------
+ * Due casi trovati cliccando la pagina vera nel browser:
+ *  - «Apri analisi completa →» in Dashboard: aveva `data-vai="volume"`, ma
+ *    nessuna voce del menu si chiama `volume` (la pagina è `riepilogo-volume`),
+ *    quindi il gestore esistente non trovava niente e il tocco cadeva nel vuoto.
+ *    Ora la pagina è quella giusta e il gestore del v31 la apre.
+ *  - la data di una seduta nel Logbook dell'Overview: un tasto che non portava
+ *    da nessuna parte. Ora porta all'Archivio, dove le sedute stanno davvero.
+ * La coppia «Pesate / Mesi» di Monitor peso invece non è stata collegata: la
+ * vista per mese non esiste, quindi è stata tolta dalla pagina. */
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (ev) => {
+    const data = ev.target && ev.target.closest ? ev.target.closest(".lb-link[data-lb]") : null;
+    if (!data) return;
+    const voce = document.querySelector('.voce[data-vista="archivio"]');
+    if (voce) voce.click();
+  });
+}

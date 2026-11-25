@@ -1916,7 +1916,7 @@ document.addEventListener('DOMContentLoaded',function(){
             <article class="ck-card">
               <header><h4>Specializzazione</h4><p>i tre distretti che prendono più volume</p></header>
               <div class="ck-spec">              <div class="ck-riga"><span class="ck-badge">S</span><span class="ck-nome">Spalle</span><span class="ck-bar"><i style="width:100%;background:#FF4FA3"></i></span><span class="ck-num">18 ser</span></div>              <div class="ck-riga"><span class="ck-badge">Q</span><span class="ck-nome">Quadricipiti</span><span class="ck-bar"><i style="width:61%;background:#A855F7"></i></span><span class="ck-num">11 ser</span></div>              <div class="ck-riga"><span class="ck-badge">F</span><span class="ck-nome">Femorali</span><span class="ck-bar"><i style="width:56%;background:#C9A7FF"></i></span><span class="ck-num">10 ser</span></div></div>
-              <button class="ck-link" type="button" data-vai="volume">Apri analisi completa →</button>
+              <button class="ck-link" type="button" data-vai="riepilogo-volume">Apri analisi completa →</button>
             </article>
             <article class="ck-card ck-st">
               <header><h4>Stress allenamento</h4>
@@ -2702,7 +2702,9 @@ document.addEventListener('DOMContentLoaded',function(){
 
   <div class="mp-box">
    <div class="mp-boxh"><b>Medie per periodo</b>
-    <div class="mp-tabs"><button class="mp-tab on" data-t="sett">Pesate</button><button class="mp-tab" data-t="mesi">Mesi</button></div>
+    <!-- Passo 21: via la coppia «Pesate / Mesi». Nessuno dei due tasti aveva un comando,
+         e la vista per mese non esiste: un tasto che promette una schermata che non c'e'
+         e' peggio di nessun tasto. La pagina mostra le pesate datate, e basta. -->
    </div>
    <div class="mp-pane on" data-p="sett">
     <div class="mp-th"><span>Data</span><span>Kg</span><span>Δ vs prec.</span><span>Δ %</span><span>Da inizio</span><span>Giorni</span></div>

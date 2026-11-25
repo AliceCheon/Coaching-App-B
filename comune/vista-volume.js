@@ -126,7 +126,10 @@ export function renderVolume(doc, contenitore, schede, opzioni) {
   if (!doc || !contenitore) return null;
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   const quante = Number.isFinite(Number(o.quante)) && Number(o.quante) > 0 ? Math.floor(Number(o.quante)) : 8;
-  const soloDiretto = o.soloDiretto === true;
+  /* `let`, non `const`: i due tasti dello switch qui sotto cambiano questo
+   * valore. Con `const` il tocco sollevava «Assignment to constant variable» e
+   * la pagina non si ridisegnava: il difetto c'era dal passo 12. */
+  let soloDiretto = o.soloDiretto === true;
 
   const disegna = () => {
     const righe = righeDalleSchede(schede, { esercizi: o.esercizi });

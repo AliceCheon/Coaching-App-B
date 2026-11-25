@@ -51,6 +51,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1805-1806 — <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16
 - righe 1824-1826 — <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto
 - righe 1840 — <div class="ck-fare-link spento"><svg class="ck-ic" viewBox=
+- righe 1919 — <button class="ck-link" type="button" data-vai="riepilogo-vo
 - righe 1921 — <article class="ck-card ck-st">
 - righe 1923-1925 — <p>serie equivalenti a settimana per articolazione · la tacc
 - righe 1947 — <div class="dc-mail">scaniscrini@gmail.com</div>
@@ -74,85 +75,87 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 2691 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-
 - righe 2693 — <div class="ms-top"><span class="ms-badge carta" id="mp-badg
 - righe 2699 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-le
-- righe 2726 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
-- righe 2728 — 
-- righe 2758 — <div class="dperche" id="ov-p1">programma non ancora letto</
-- righe 2765 — <div class="dperche" id="ov-p2">logbook non ancora letto</di
-- righe 2799 — <p class="p7-note2" id="lb-nota-b" hidden></p>
-- righe 2813-2816 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_S
-- righe 2830 — var cand=sed().filter(function(x){return x.d===dd;});
-- righe 2843 — aggiornaMappa();
-- righe 2856 — if(cnt&&(fv||fo))cnt.textContent=vis+" di "+sed().length+" s
-- righe 2868 — <div id="pianificazione-viva"></div>
-- righe 2878 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi
-- righe 2910 — <p class="pr-sub">Le regole con cui le settimane salgono. Pe
-- righe 2920 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{displ
-- righe 3134-3135 — </div><button class="sp-btn" id="sp-guida">Guida Specializza
-- righe 3136 — 
-- righe 3139 — 
-- righe 3142 — <div class="v-occhiello">Programmi &middot; Curve di forza</
-- righe 3144 — <p class="v-testo">La storia del carico per esercizio, sedut
-- righe 3145 — 
-- righe 3147-3149 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
-- righe 3150 — 
-- righe 3152 — <section class="voce-pag" id="pag-scheletri">
-- righe 3193-3194 — <div class="sk-qh">Questionario</div>
-- righe 3204 — <section class="voce-pag" id="pag-programma-1"><div class="p
-- righe 3291 — <button class="pr-btn" id="t8-appprog" type="button">Applica
-- righe 3324 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
-- righe 3335 — 
-- righe 3368 — 
-- righe 3448 — </div></div></section><section class="voce-pag" id="pag-impo
-- righe 3469 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
-- righe 4125 — <p class="v-testo">Tutti i programmi del backup, attivo comp
-- righe 4129 — <tbody id="archivio-corpo"></tbody>
-- righe 5282-5290 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
-- righe 5476 — 
-- righe 5636 — disegnaSchede(); disegnaLegenda();
-- righe 5969 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
-- righe 6227 — if(navigator.userActivation&&navigator.userActivation.hasBee
-- righe 6344-6348 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
-- righe 7027-7028 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
-- righe 7156-7192 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
-- righe 7334 — 
-- righe 7361-7388 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
-- righe 7433 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
-- righe 7479 — 
-- righe 7529-7530 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
-- righe 7603 — html body .p7-donut .dperche{max-width:150px;text-align:cent
-- righe 7882 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
-- righe 8039 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
-- righe 8427-8428 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
-- righe 8881 — var SEED = {config:{}, sessioni:[]};
-- righe 8896-8899 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
-- righe 8923-8926 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
-- righe 8933-8951 — /* ---------- Passo 18: l'Overview conta dal programma letto
-- righe 8953-8960 — if(radiceP){
-- righe 8963-8968 — function logbookVivo(){
-- righe 8969 — 
-- righe 8971-8974 — function pittaOverview(){
-- righe 8975 — 
-- righe 8977-9003 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
-- righe 9016 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9018 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
-- righe 9024-9026 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
-- righe 9029 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
-- righe 9035 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
-- righe 9043-9045 — el('ov-barsn').textContent = PV.letto
-- righe 9063 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9071 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
-- righe 9073-9091 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
-- righe 9094-9106 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
-- righe 9145 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
-- righe 9196 — if(false){
-- righe 9393 — '<div class="ese-chips2">' +
-- righe 9944-9947 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
-- righe 9952 — kpi.innerHTML =
-- righe 10127-10136 — // Passo 30: nei campi si lascia al browser la cronologia de
-- righe 10246 — 
-- righe 10290-10568 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 2705-2707 — <!-- Passo 21: via la coppia «Pesate / Mesi». Nessuno dei du
+- righe 2728 — <div class="mp-note"><b>Perché qui non c'è la media a 7 gior
+- righe 2730 — 
+- righe 2760 — <div class="dperche" id="ov-p1">programma non ancora letto</
+- righe 2767 — <div class="dperche" id="ov-p2">logbook non ancora letto</di
+- righe 2801 — <p class="p7-note2" id="lb-nota-b" hidden></p>
+- righe 2815-2818 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_S
+- righe 2832 — var cand=sed().filter(function(x){return x.d===dd;});
+- righe 2845 — aggiornaMappa();
+- righe 2858 — if(cnt&&(fv||fo))cnt.textContent=vis+" di "+sed().length+" s
+- righe 2870 — <div id="pianificazione-viva"></div>
+- righe 2880 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi
+- righe 2912 — <p class="pr-sub">Le regole con cui le settimane salgono. Pe
+- righe 2922 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{displ
+- righe 3136-3137 — </div><button class="sp-btn" id="sp-guida">Guida Specializza
+- righe 3138 — 
+- righe 3141 — 
+- righe 3144 — <div class="v-occhiello">Programmi &middot; Curve di forza</
+- righe 3146 — <p class="v-testo">La storia del carico per esercizio, sedut
+- righe 3147 — 
+- righe 3149-3151 — <div class="cv-card" id="cv-real" data-curva="non-calcolata"
+- righe 3152 — 
+- righe 3154 — <section class="voce-pag" id="pag-scheletri">
+- righe 3195-3196 — <div class="sk-qh">Questionario</div>
+- righe 3206 — <section class="voce-pag" id="pag-programma-1"><div class="p
+- righe 3293 — <button class="pr-btn" id="t8-appprog" type="button">Applica
+- righe 3326 — <div class="p8-box" id="box-A"><div class="p8-head"><div><di
+- righe 3337 — 
+- righe 3370 — 
+- righe 3450 — </div></div></section><section class="voce-pag" id="pag-impo
+- righe 3471 — <div class="st-row"><span>Build</span><b id="st-ver"></b></d
+- righe 4127 — <p class="v-testo">Tutti i programmi del backup, attivo comp
+- righe 4131 — <tbody id="archivio-corpo"></tbody>
+- righe 5284-5292 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: 
+- righe 5478 — 
+- righe 5638 — disegnaSchede(); disegnaLegenda();
+- righe 5971 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"D
+- righe 6229 — if(navigator.userActivation&&navigator.userActivation.hasBee
+- righe 6346-6350 — /* la spia «Test» (B.16a-2): un insieme solo — nascosta senz
+- righe 7029-7030 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
+- righe 7158-7194 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align
+- righe 7336 — 
+- righe 7363-7390 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b
+- righe 7435 — html body #pag-programma-1 td.c-rec .rec,html body #pag-prog
+- righe 7481 — 
+- righe 7531-7532 — /* ---- settimane: due celle, SER e REPS affiancate (niente 
+- righe 7605 — html body .p7-donut .dperche{max-width:150px;text-align:cent
+- righe 7884 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esem
+- righe 8041 — ese.push('<div class="lb-ex"><b>' + sc(e.np || e.n) + '</b>'
+- righe 8429-8430 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/
+- righe 8883 — var SEED = {config:{}, sessioni:[]};
+- righe 8898-8901 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { s
+- righe 8925-8928 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(nu
+- righe 8935-8953 — /* ---------- Passo 18: l'Overview conta dal programma letto
+- righe 8955-8962 — if(radiceP){
+- righe 8965-8970 — function logbookVivo(){
+- righe 8971 — 
+- righe 8973-8976 — function pittaOverview(){
+- righe 8977 — 
+- righe 8979-9005 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.
+- righe 9018 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9020 — {id:'ov-k-peso', l:'Peso', v:it(PESO, 1), u:'kg', f: ultimo 
+- righe 9026-9028 — {l:'Carico', v: cOk ? it(carE.serie) : '—', u: cOk ? 'serie 
+- righe 9031 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.i
+- righe 9037 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist
+- righe 9045-9047 — el('ov-barsn').textContent = PV.letto
+- righe 9065 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9073 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.lett
+- righe 9075-9093 — /* il peso lo ridipinge la sua fonte unica (peso-pittore), c
+- righe 9096-9108 — if(el('tb-bmr') && (!P_PROF.confermato || P_PROF.mancanti.le
+- righe 9147 — bf = GRASSO === null ? ' · massa magra non registrata: Katch
+- righe 9198 — if(false){
+- righe 9395 — '<div class="ese-chips2">' +
+- righe 9946-9949 — /* I riquadri dell'analisi non sono in pagina (la linguetta 
+- righe 9954 — kpi.innerHTML =
+- righe 10129-10138 — // Passo 30: nei campi si lascia al browser la cronologia de
+- righe 10248 — 
+- righe 10292-10570 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages ch
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
+
 
 
 
