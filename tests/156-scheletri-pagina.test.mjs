@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { JSDOM } from "jsdom";
 import { scheletroDaCostruttore, salvaScheletroCostruito, elencoScheletri } from "../comune/scheletri.js";
 import { leggiScheletriB } from "../comune/scritture-b.js";
-import { montaPaginaScheletri } from "../comune/vista-scheletri-pagina.js";
+import { montaPaginaScheletri, testoRifiuto } from "../comune/vista-scheletri-pagina.js";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pagina = readFileSync(join(radice, "desktop", "index.html"), "utf8");
@@ -176,4 +176,19 @@ test("156.6 la raccolta si legge intera, con i due tipi di elenco", async () => 
     assert.equal(elenco[0].esercizi, 1);
     assert.equal(elenco[0].serie, 4);
   }
+});
+
+/* Il rifiuto del database si legge in italiano: non è un tasto rotto, è un
+ * permesso che manca (successo in produzione il 26/11 con la raccolta nuova). */
+test("156.7 il permesso mancante si spiega, e la linguetta lo dice", async () => {
+  assert.match(testoRifiuto("Missing or insufficient permissions"), /regole del database/);
+  assert.match(testoRifiuto("PERMISSION_DENIED"), /permesso in più/);
+
+  const { doc } = paginaFinta({ leggi: () => Promise.reject(new Error("Missing or insufficient permissions")) });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.getElementById("sk-esito-raccolta");
+  assert.match(riga.textContent, /Le regole del database non permettono/);
+  assert.equal(/Missing or insufficient/.test(riga.textContent), false, "niente messaggio grezzo del database");
 });

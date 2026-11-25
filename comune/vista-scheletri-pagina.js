@@ -43,6 +43,18 @@ export const LINGUETTE_SPENTE = {
   "Libreria Coach": "spento: la libreria del coach non è ancora in B — nessun elenco da leggere"
 };
 
+/* Il rifiuto del database non deve sembrare un tasto rotto: si dice in chiaro
+ * che è un permesso che manca, così si sa cosa chiedere. */
+export function testoRifiuto(motivo) {
+  const m = String(motivo == null ? "" : motivo).toLowerCase();
+  const permesso = m.indexOf("permission") !== -1 || m.indexOf("insufficient") !== -1 || m.indexOf("unauthorized") !== -1;
+  if (permesso) {
+    return "Le regole del database non permettono ancora la raccolta degli scheletri: serve un permesso in più su \u00abscheletri\u00bb. "
+      + "Fino ad allora questa linguetta non può né leggere né salvare (il resto della pagina funziona).";
+  }
+  return "La raccolta non si legge: " + (String(motivo || "").trim() || "motivo non dichiarato");
+}
+
 /* Il pannello della raccolta: una riga per scheletro, letta dalla zona B. */
 export function pannelloRaccolta(doc, elenco, opzioni) {
   const o = opzioni || {};
@@ -158,7 +170,7 @@ export function montaPaginaScheletri(doc, servizi) {
       }, (e) => {
         if (mia !== versioneLettura) return -1;
         esitoRaccolta.className = "sk-esito on no";
-        esitoRaccolta.textContent = "La raccolta non si legge: " + ((e && e.message) || "motivo non dichiarato");
+        esitoRaccolta.textContent = testoRifiuto(e && e.message);
         return 0;
       });
   }
