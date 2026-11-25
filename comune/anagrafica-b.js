@@ -73,6 +73,23 @@ export function montaAnagrafica(doc, opzioni) {
   if (!doc) return [];
   const annodati = [];
 
+  /* La riga d'esito: senza, un salvataggio che non riesce è invisibile e
+   * sembra che i tasti non facciano niente. Sta in cima al riquadro. */
+  let esitoEl = doc.getElementById("dc-ana-esito");
+  if (!esitoEl) {
+    const carta = doc.querySelector('[data-pan="anagrafica"] .dc-card') || doc.querySelector('[data-pan="anagrafica"]');
+    if (carta) {
+      esitoEl = doc.createElement("div");
+      esitoEl.className = "dc-nota";
+      esitoEl.id = "dc-ana-esito";
+      esitoEl.setAttribute("role", "status");
+      const titolo = carta.querySelector("h3");
+      if (titolo && titolo.nextSibling) carta.insertBefore(esitoEl, titolo.nextSibling);
+      else carta.insertBefore(esitoEl, carta.firstChild);
+    }
+  }
+  const scriviEsito = (testo) => { if (esitoEl) esitoEl.textContent = testo; };
+
   const stato = o.stato || {};
   const accesi = (gruppo, valore) => {
     [...gruppo.querySelectorAll("button")].forEach((b) => {
@@ -106,9 +123,11 @@ export function montaAnagrafica(doc, opzioni) {
       tasto.addEventListener("click", () => {
         const valore = testo(tasto.textContent);
         const prima = stato[campo] || "";
-        const esito = o.onCambia ? o.onCambia(campo, valore, prima) : null;
-        const mostra = () => { stato[campo] = valore; accesi(gruppo, valore); };
-        if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) mostra(); }, () => {});
+        scriviEsito("Sto salvando " + CAMPI_ANAGRAFICA[campo].etichetta.toLowerCase() + "…");
+        const mostra = () => { stato[campo] = valore; accesi(gruppo, valore); scriviEsito("Salvato: " + CAMPI_ANAGRAFICA[campo].etichetta + " · " + valore); };
+        let esito = null;
+        try { esito = o.onCambia ? o.onCambia(campo, valore, prima) : null; } catch (e) { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); return; }
+        if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) mostra(); else scriviEsito("Non ho salvato: il valore non è passato"); }, (e) => { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); });
         else mostra();
       });
     }
@@ -123,7 +142,9 @@ export function montaAnagrafica(doc, opzioni) {
     banner.addEventListener("click", () => {
       const valore = "Clemente";
       const prima = stato.cognome || "";
-      const esito = o.onCambia ? o.onCambia("cognome", valore, prima) : null;
+      scriviEsito("Sto salvando il cognome…");
+      let esito = null;
+      try { esito = o.onCambia ? o.onCambia("cognome", valore, prima) : null; } catch (e) { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); return; }
       const mostra = () => {
         stato.cognome = valore;
         const riga = [...doc.querySelectorAll(".dc-f")].find((f) => /Cognome/.test(String(f.textContent || "")));
@@ -132,8 +153,8 @@ export function montaAnagrafica(doc, opzioni) {
         banner.textContent = "Cognome riportato";
         banner.disabled = true;
       };
-      if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) mostra(); }, () => {});
-      else mostra();
+      if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) { mostra(); scriviEsito("Salvato: Cognome · Clemente"); } else scriviEsito("Non ho salvato: il valore non è passato"); }, (e) => scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")));
+      else { mostra(); scriviEsito("Salvato: Cognome · Clemente"); }
     });
     annodati.push("cognome");
   }

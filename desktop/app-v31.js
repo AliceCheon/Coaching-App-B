@@ -425,6 +425,10 @@ export async function avvia(doc, win) {
  * «Salvato alle 15:04» sparirebbe al primo giro di pagina. */
 let esitoAnamnesi = null;
 let tokenAnamnesi = 0;
+/* PASSO 27 — l'anagrafica ricorda cosa è già stato scritto in questa sessione:
+ * le versioni avanzano senza dover rileggere il registro a ogni clic. */
+const statoAnagrafica = Object.create(null);
+const contatoriAnagrafica = Object.create(null);
   /* B.21 — la fotografia di APERTURA delle schede: si prende una volta sola,
    * alla prima lettura riuscita della sessione, e non si rinfresca più.
    * Dopo ogni scrittura la pagina rilegge (sincronizza -> leggi): se la
@@ -990,14 +994,19 @@ let tokenAnamnesi = 0;
      * finiscono nel registro della zona B, una voce per cambio. */
     try {
       const montata = montaAnagrafica(doc, {
+        stato: statoAnagrafica,
         stato: {},
         onCambia: async (campo, valore, prima) => {
-          const voci = await leggiZonaB(db, utente.uid, "registro").catch(() => []);
-          const versionePrima = versioneDi(voci, campo);
-          const esito = voceAnagrafica({ campo, prima, dopo: valore, versionePrima });
-          if (!esito.ok) return false;
-          const id = "mod-" + String(esito.voce.quando).replace(/[^0-9]/g, "").slice(0, 17) + "-v" + esito.voce.versioneDopo;
+          /* Niente lettura preventiva: se la lettura del registro fallisse, il
+             salvataggio non deve fermarsi. La versione si conta sulla voce.
+             Se la scrittura non riesce, l'errore risale e la pagina lo scrive
+             accanto ai tasti: mai silenzio. */
+          const esito = voceAnagrafica({ campo, prima, dopo: valore, versionePrima: contatoriAnagrafica[campo] || 0 });
+          if (!esito.ok) throw new Error(esito.motivo || "valore non valido");
+          const quando = String(esito.voce.quando).replace(/[^0-9]/g, "").slice(0, 17);
+          const id = "mod-" + quando + "-" + campo + "-v" + esito.voce.versioneDopo;
           await scriviVoceRegistro(db, utente.uid, id, senzaUndefined(esito.voce));
+          contatoriAnagrafica[campo] = esito.voce.versioneDopo;
           return true;
         }
       });
