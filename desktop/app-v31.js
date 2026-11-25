@@ -42,6 +42,22 @@ import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 import { annodaGuideVive } from "../comune/guide-vive.js";
 import { montaAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica } from "../comune/anagrafica-b.js";
+import { montaQuaderno, quadernoDalRegistro, voceQuaderno, CAMPI_QUADERNO } from "../comune/quaderno-b.js";
+
+/* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
+ * «Salvato alle 15:04» sparirebbe al primo giro di pagina. */
+let esitoAnamnesi = null;
+let tokenAnamnesi = 0;
+/* PASSO 27 — l'anagrafica ricorda cosa è già stato scritto in questa sessione:
+ * le versioni avanzano senza dover rileggere il registro a ogni clic. */
+const statoAnagrafica = Object.create(null);
+const contatoriAnagrafica = Object.create(null);
+/* PASSO 29 — il quaderno ricorda i valori scritti in questa sessione. */
+const statoQuaderno = Object.create(null);
+const contatoriQuaderno = Object.create(null);
+/* PASSO 29 — l'ultimo registro letto: il quaderno lo usa per mostrare i testi
+ * già scritti senza rileggere il cloud a ogni disegno. */
+let registroLetto = [];
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -421,14 +437,6 @@ export async function avvia(doc, win) {
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
   let editorCorrente = null;
-/* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
- * «Salvato alle 15:04» sparirebbe al primo giro di pagina. */
-let esitoAnamnesi = null;
-let tokenAnamnesi = 0;
-/* PASSO 27 — l'anagrafica ricorda cosa è già stato scritto in questa sessione:
- * le versioni avanzano senza dover rileggere il registro a ogni clic. */
-const statoAnagrafica = Object.create(null);
-const contatoriAnagrafica = Object.create(null);
   /* B.21 — la fotografia di APERTURA delle schede: si prende una volta sola,
    * alla prima lettura riuscita della sessione, e non si rinfresca più.
    * Dopo ogni scrittura la pagina rilegge (sincronizza -> leggi): se la
@@ -469,6 +477,7 @@ const contatoriAnagrafica = Object.create(null);
      * scritte SOLO nella zona B, una alla volta e con il controllo di versione. */
     const schedeGrezze = await leggiZonaB(db, utente.uid, "schede");
     const registroB = await leggiZonaB(db, utente.uid, "registro");
+    registroLetto = Array.isArray(registroB) ? registroB : [];
     const fotografiaB = await leggiFotografia(db, utente.uid);
     /* B.21 — la fotografia di apertura, presa adesso se manca. Chi c'e' non
      * si tocca: la prima vince, per tutta la sessione. */
@@ -990,28 +999,38 @@ const contatoriAnagrafica = Object.create(null);
         }, true);
       }
     } catch (e) { /* se la pagina non ha Impostazioni non è un errore */ }
-    /* Passo 26 — l'anagrafica si scrive: sesso, lingua, obiettivo e cognome
-     * finiscono nel registro della zona B, una voce per cambio. */
+    /* Passo 26/30 — l'anagrafica si scrive: la scrittura vive qui (db + uid),
+     * il montaggio dei tasti sta fuori, a caricamento pagina, così i tasti
+     * rispondono anche se questa callback non è ancora passata. */
+    globalThis.BD_SALVA_ANAGRAFICA = async (campo, valore, prima) => {
+      const esito = voceAnagrafica({ campo, prima, dopo: valore, versionePrima: contatoriAnagrafica[campo] || 0 });
+      if (!esito.ok) throw new Error(esito.motivo || "valore non valido");
+      const quando = String(esito.voce.quando).replace(/[^0-9]/g, "").slice(0, 17);
+      const id = "mod-" + quando + "-" + campo + "-v" + esito.voce.versioneDopo;
+      await scriviVoceRegistro(db, utente.uid, id, senzaUndefined(esito.voce));
+      contatoriAnagrafica[campo] = esito.voce.versioneDopo;
+      statoAnagrafica[campo] = valore;
+      return true;
+    };
+    /* Passo 29 — il quaderno: gli altri campi dell'anamnesi si scrivono, una
+     * voce di registro per campo. «Patologie o infortuni» resta al suo modulo,
+     * che da lì ricava le articolazioni. */
     try {
-      const montata = montaAnagrafica(doc, {
-        stato: statoAnagrafica,
-        stato: {},
-        onCambia: async (campo, valore, prima) => {
-          /* Niente lettura preventiva: se la lettura del registro fallisse, il
-             salvataggio non deve fermarsi. La versione si conta sulla voce.
-             Se la scrittura non riesce, l'errore risale e la pagina lo scrive
-             accanto ai tasti: mai silenzio. */
-          const esito = voceAnagrafica({ campo, prima, dopo: valore, versionePrima: contatoriAnagrafica[campo] || 0 });
-          if (!esito.ok) throw new Error(esito.motivo || "valore non valido");
+      const montati = montaQuaderno(doc, {
+        stato: Object.assign(quadernoDalRegistro(registroLetto), statoQuaderno),
+        onSalva: async (campo, dopo, prima) => {
+          const esito = voceQuaderno({ campo, prima, dopo, versionePrima: contatoriQuaderno[campo] || 0 });
+          if (!esito.ok) throw new Error(esito.motivo || "testo non valido");
           const quando = String(esito.voce.quando).replace(/[^0-9]/g, "").slice(0, 17);
           const id = "mod-" + quando + "-" + campo + "-v" + esito.voce.versioneDopo;
           await scriviVoceRegistro(db, utente.uid, id, senzaUndefined(esito.voce));
-          contatoriAnagrafica[campo] = esito.voce.versioneDopo;
+          contatoriQuaderno[campo] = esito.voce.versioneDopo;
+          statoQuaderno[campo] = { valore: dopo, quando: esito.voce.quando };
           return true;
         }
       });
-      if (montata.length) stato.anagrafica = montata.length;
-    } catch (e) { /* l'anagrafica resta com'è: nessun errore a pagina */ }
+      if (montati.length) stato.quaderno = montati.length;
+    } catch (e) { /* il quaderno resta com'è */ }
     if (uidLetto === utente.uid) {
       if (typeof sincronizzaEsterno === "function") sincronizzaEsterno(utente);
       return;
@@ -1135,4 +1154,24 @@ if (typeof document !== "undefined") {
     const voce = document.querySelector('.voce[data-vista="' + t.dataset.vai + '"]');
     if (voce) voce.click();
   });
+}
+
+/* ---- Anagrafica e quaderno: i tasti rispondono appena la pagina è pronta ----
+ * Prima il montaggio stava dentro la callback dell'accesso: se quella non
+ * arrivava (o arrivava dopo), i tasti restavano muti e nessuno lo diceva.
+ * Ora si attaccano al caricamento; la scrittura arriva dopo, quando c'è. */
+if (typeof document !== "undefined") {
+  const collegaTutto = () => {
+    montaAnagrafica(document, {
+      stato: statoAnagrafica,
+      onCambia: (campo, valore, prima) => {
+        if (typeof globalThis.BD_SALVA_ANAGRAFICA !== "function") {
+          return Promise.reject(new Error("non sei ancora collegata: entra con Google e riprova"));
+        }
+        return globalThis.BD_SALVA_ANAGRAFICA(campo, valore, prima);
+      }
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaTutto);
+  else collegaTutto();
 }

@@ -50,7 +50,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 1801 — <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16
 - righe 1805-1806 — <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16
 - righe 1824-1826 — <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto
-- righe 1837-1839 — <p class="ck-fare-d">Il motore che sceglie il deload non esi
+- righe 1836-1839 — <div class="ck-fare-tit">Nessuna decisione automatica <span 
 - righe 1918 — <button class="ck-link" type="button" data-vai="riepilogo-vo
 - righe 1920 — <article class="ck-card ck-st">
 - righe 1922-1924 — <p>serie equivalenti a settimana per articolazione · la tacc
@@ -167,6 +167,7 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 
 
 
+
 - **Passo 8** — via i numeri del mockup da Curve di forza, Pianificazione, Misure e Dashboard; le quattro tab cancellate per errore (Scheletri, Programma 1, Impostazioni, Study time) sono state ripristinate identiche al v31.
 - **Passo 15** — Dati cliente: tolte le linguette Wearable e Personalizzati con i loro pannelli.
 - **Passo 16** — via dal codice il questionario personale di Scheletri, il link Cloudflare dell'email, le tre versioni ridotte a una (`window.BD_VERSIONE`), e la funzione che scriveva in riquadri inesistenti (`#t9-kpi`).
@@ -177,3 +178,4 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - **Passo 20** — via il «?» dai tasti Guida; anche Dashboard, Overview e Pianificazione ora spiegano invece di restare spenti.
 - **Passo 26** — anagrafica scrivibile (sesso, lingua, obiettivo, cognome) con le voci nel registro; «Compila / Modifica» apre l'editor dell'anamnesi.
 - **Passo 28** — i due «Apri» della carta «Cosa fare questa settimana» sembrano tasti (bordo, freccia, animazione, tastiera), e la frase della carta invita invece di scoraggiare.
+- **Passo 29** — il quaderno: i quattordici campi dell'anamnesi si scrivono (voci `anamnesi-campo` nel registro); i due tasti si attaccano al caricamento, non più dopo l'accesso; badge della carta riscritti.
