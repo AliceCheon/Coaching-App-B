@@ -2702,9 +2702,10 @@ document.addEventListener('DOMContentLoaded',function(){
 
   <div class="mp-box">
    <div class="mp-boxh"><b>Medie per periodo</b>
-    <!-- Passo 21: via la coppia «Pesate / Mesi». Nessuno dei due tasti aveva un comando,
-         e la vista per mese non esiste: un tasto che promette una schermata che non c'e'
-         e' peggio di nessun tasto. La pagina mostra le pesate datate, e basta. -->
+    <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il passo 21 l'aveva tolta
+         perche' senza comando: sbagliato. Un tasto che dorme non si toglie, si chiede
+         a cosa deve servire e si costruisce. -->
+    <div class="mp-tabs"><button class="mp-tab on" data-t="sett">Pesate</button><button class="mp-tab" data-t="mesi">Mesi</button></div>
    </div>
    <div class="mp-pane on" data-p="sett">
     <div class="mp-th"><span>Data</span><span>Kg</span><span>Δ vs prec.</span><span>Δ %</span><span>Da inizio</span><span>Giorni</span></div>

@@ -30,11 +30,13 @@ test("151.1 «Apri analisi completa» punta a una pagina che c'è", () => {
   assert.equal(bersaglio, "riepilogo-volume");
 });
 
-test("151.2 la coppia «Pesate / Mesi» non promette più una vista che non esiste", () => {
+test("151.2 la coppia «Pesate / Mesi» è tornata (passo 24: i tasti non si tolgono)", () => {
   const dom = new JSDOM(sorgente, { runScripts: "outside-only" });
   const doc = dom.window.document;
   const tab = doc.querySelector('#pag-monitor-peso .mp-tab');
-  assert.equal(tab, null, "in Monitor peso c'è ancora un tasto «mp-tab» senza comando");
+  assert.ok(tab, "in Monitor peso manca di nuovo la coppia «Pesate / Mesi»");
+  const coppia = [...doc.querySelectorAll('#pag-monitor-peso .mp-tab')].map((b) => b.textContent.trim());
+  assert.deepEqual(coppia, ["Pesate", "Mesi"], "la coppia non è quella di prima: " + coppia.join(" / "));
 });
 
 test("151.3 la data di una seduta porta all'Archivio", () => {
