@@ -20,7 +20,7 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
@@ -41,6 +41,7 @@ import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anam
 import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 import { annodaGuideVive } from "../comune/guide-vive.js";
+import { montaAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica } from "../comune/anagrafica-b.js";
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -985,6 +986,23 @@ let tokenAnamnesi = 0;
         }, true);
       }
     } catch (e) { /* se la pagina non ha Impostazioni non è un errore */ }
+    /* Passo 26 — l'anagrafica si scrive: sesso, lingua, obiettivo e cognome
+     * finiscono nel registro della zona B, una voce per cambio. */
+    try {
+      const montata = montaAnagrafica(doc, {
+        stato: {},
+        onCambia: async (campo, valore, prima) => {
+          const voci = await leggiZonaB(db, utente.uid, "registro").catch(() => []);
+          const versionePrima = versioneDi(voci, campo);
+          const esito = voceAnagrafica({ campo, prima, dopo: valore, versionePrima });
+          if (!esito.ok) return false;
+          const id = "mod-" + String(esito.voce.quando).replace(/[^0-9]/g, "").slice(0, 17) + "-v" + esito.voce.versioneDopo;
+          await scriviVoceRegistro(db, utente.uid, id, senzaUndefined(esito.voce));
+          return true;
+        }
+      });
+      if (montata.length) stato.anagrafica = montata.length;
+    } catch (e) { /* l'anagrafica resta com'è: nessun errore a pagina */ }
     if (uidLetto === utente.uid) {
       if (typeof sincronizzaEsterno === "function") sincronizzaEsterno(utente);
       return;
@@ -1075,8 +1093,17 @@ if (typeof document !== "undefined") {
     tasto.type = "button";
     tasto.addEventListener("click", () => {
       const riga = document.querySelector('[data-anamnesi="campo"]');
+      const modifica = document.querySelector('[data-anamnesi="modifica"]');
+      if (modifica) {
+        /* il tasto vero è quello della riga Patologie: lo premo io per te */
+        if (riga) riga.scrollIntoView({ block: "center" });
+        modifica.click();
+        return;
+      }
       if (riga) {
         riga.scrollIntoView({ block: "center" });
+        const avviso = document.getElementById("dc-avviso");
+        if (avviso) avviso.textContent = "L'editor dell'anamnesi si accende quando la pagina ha letto i tuoi dati: qui non c'è ancora niente da modificare.";
         return;
       }
       const avviso = document.getElementById("dc-avviso");
