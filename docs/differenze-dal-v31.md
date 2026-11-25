@@ -89,8 +89,12 @@ Scheletri, Programma 1 (`#programma-attivo`), Impostazioni e Study time erano st
 - righe 9429-9988 — '<div class="ese-chips2"><span class="chlat">\u21c4 DX/SX<
 - righe 10163-10172 — // Passo 30: nei campi si lascia al browser la cronologia 
 - righe 10281-10282 — /* === Fase B2: Archivio + Curve dal logbook (dati veri, c
-- righe 10327-10331 — <script src="../app-config-b.js"></script>
+- righe 10326-10332 — <!-- beacon Cloudflare tolto --> + <link rel="icon"> inline (passo 16b)
 
 ### Passo 15 — Dati Cliente: via le linguette Wearable e Personalizzati
 
+### Passo 16b — i residui del passo 16: la quarta versione, il beacon Cloudflare, l'icona, l'audio
 
+- righe 1667 — <span ...>Anteprima in costruzione: non è ancora la versione in produzione.</span> (via «In produzione resta la v148.36»)
+- righe 6315 — if(navigator.userActivation…hasBeenActive===false)return; prima di creare l'AudioContext (la Diva cinguetta dopo un gesto, non al caricamento)
+- righe 7115-7116 — <!-- beacon Cloudflare tolto (passo 16b) --> al posto dei due <script> static.cloudflareinsights.com

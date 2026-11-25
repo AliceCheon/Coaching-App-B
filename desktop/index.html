@@ -1664,7 +1664,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="piede-rail">
       <span class="pallino"></span><b>Anteprima sui tuoi dati veri</b><br>
       <span data-lb-ante>…</span><br>
-      <span style="display:inline-block;margin-top:7px;color:#8A6FA8">In produzione resta la v148.36:<br>questa è la versione che sto costruendo.</span>
+      <span style="display:inline-block;margin-top:7px;color:#8A6FA8">Anteprima in costruzione: non è ancora la versione in produzione.</span>
     </div>
   </nav>
 
@@ -6312,7 +6312,7 @@ window.BD_DIVA_MIA=true;
  function ctx(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } } 
    if(AC&&AC.state==='suspended'){ try{AC.resume();}catch(e){} } return AC; }
  function nota(f,t0,dur,vol,tipo){
-   var c=ctx(); if(!c||muto)return;
+   if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio prima di un gesto: Chrome avvisa e non lo fa partire */ var c=ctx(); if(!c||muto)return;
    var o=c.createOscillator(), g=c.createGain();
    o.type=tipo||'sine'; o.frequency.setValueAtTime(f,c.currentTime+t0);
    o.frequency.exponentialRampToValueAtTime(f*0.985,c.currentTime+t0+dur);
@@ -7112,8 +7112,8 @@ tr.tr-tech td.c-reps span{color:var(--muted)}
   apriLista(b.getAttribute('data-row'),kind);
  },true);
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
+<!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
 <style id="programmi">
 /* T7 — programmi 2 e 3 nascosti finche non hanno contenuto */
 nav.rail .voce[data-vista="programma-2"],nav.rail .voce[data-vista="programma-3"]{display:none}
@@ -10323,11 +10323,12 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   setTimeout(function(){sp.classList.add('is-hidden');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},700);},1400);
 })();
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
 <script src="../app-config-b.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script type="module" src="./app-v31.js"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff72c2'/%3E%3Crect x='6' y='14' width='20' height='4' rx='2' fill='%23fff'/%3E%3Crect x='3' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3Crect x='25' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 </body>
 </html>
