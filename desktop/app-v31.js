@@ -1243,12 +1243,9 @@ if (typeof document !== "undefined") {
         }
         return globalThis.BD_CREA_PROGRAMMA(documento, richiesta);
       },
-      apriProgramma: (id) => {
-        if (typeof globalThis.BD_ATTIVA_PROGRAMMA !== "function") {
-          return Promise.reject(new Error("la pagina non ha ancora il programma sotto mano"));
-        }
-        return globalThis.BD_ATTIVA_PROGRAMMA(id);
-      },
+      /* L'apertura NON è collegata in questo passo: senza l'elenco dei
+       * programmi (punto 12) chi apre il nuovo non avrebbe modo di tornare al
+       * suo. Il modulo sa già farlo: si accende quando c'è «Cambia». */
       nomeAttivo: () => {
         const n = document.getElementById("nomeProgrammaAttivo");
         return n ? String(n.textContent || "").trim() : "";
