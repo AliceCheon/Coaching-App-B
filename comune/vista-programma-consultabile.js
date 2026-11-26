@@ -157,11 +157,20 @@ function bloccoSchedaIntera(doc, scheda, numero) {
   return box;
 }
 
-/* La riga compatta del volume: una pastiglia per distretto con la somma delle
- * serie di quella settimana. Una settimana senza serie scritte non è una
- * settimana a zero: lo dice. */
-function pastiglieVolume(doc, settimana) {
+/* La riga compatta del volume di UNA scheda: una pastiglia per distretto con la
+ * somma delle serie di quella settimana. `opzioni.etichetta` dice quale scheda e
+ * quale settimana si stanno contando («Scheda D · settimana 3»): prima qui
+ * c'erano i numeri del programma intero e non si capiva perché non cambiassero
+ * cambiando scheda. Una settimana senza serie scritte non è una settimana a
+ * zero: lo dice. */
+function pastiglieVolume(doc, settimana, opzioni) {
+  const o = opzioni || {};
   const box = el(doc, "div", "pc-volumi");
+  if (o.etichetta) {
+    const eti = el(doc, "p", "pc-vol-eti", o.etichetta);
+    eti.setAttribute("data-vol-scheda", o.codice == null ? "" : String(o.codice));
+    box.appendChild(eti);
+  }
   const voci = settimana && Array.isArray(settimana.volume) ? settimana.volume : [];
   if (!voci.length) {
     const perche = settimana && settimana.serieSenzaNumero
@@ -180,10 +189,11 @@ function pastiglieVolume(doc, settimana) {
   return box;
 }
 
-/* I totali del programma per la settimana scelta: serie, esercizi, densità. La
- * densità è un numero solo quando i recuperi ci sono tutti; altrimenti dice che
- * non si calcola e il motivo sta sotto, scheda per scheda. */
-function totaliProgramma(doc, modello, settimana) {
+/* I totali della scheda scelta per la settimana scelta: serie, esercizi,
+ * densità. Passo 44: sono della SCHEDA (prima erano del programma intero, ed è
+ * per questo che non cambiavano). La densità è un numero solo quando i recuperi
+ * ci sono tutti; altrimenti dice che non si calcola e il motivo sta sotto. */
+function totaliProgramma(doc, scheda, settimana) {
   const box = el(doc, "div", "pc-totali");
   const voce = (etichetta, valore, piccolo, classe) => {
     const c = el(doc, "div", "pc-tot");
@@ -200,8 +210,8 @@ function totaliProgramma(doc, modello, settimana) {
     const scritte = Number(settimana.serieSettimana) || 0;
     serie = scritte || !settimana.serieSenzaNumero ? numeroInChiaro(scritte) : TRATTINO;
   }
-  voce("Serie a settimana", serie);
-  voce("Esercizi", numeroInChiaro(modello.numeroEsercizi));
+  voce("Serie della scheda", serie);
+  voce("Esercizi", numeroInChiaro(scheda ? scheda.esercizi.length : 0));
   if (settimana && settimana.densita != null) voce("Densità", numeroInChiaro(settimana.densita, 2), "serie/min");
   else voce("Densità", "non calcolabile", null, "pc-tot-no");
   return box;
@@ -231,30 +241,60 @@ function schedaConCodice(modello, codice) {
   return (modello.schede || []).filter((s) => testo(s.codice) === codice)[0] || null;
 }
 
-/* L'ordine unico delle righe: prima gli esercizi del programma di sinistra nel
- * loro ordine, poi quelli che stanno solo a destra. Così le due colonne hanno le
- * stesse righe, e riga per riga si legge il confronto. Il legame fra i due è il
- * nome dell'esercizio (gli id sono diversi da un programma all'altro). */
+/* L'ordine unico delle righe del confronto esercizio per esercizio.
+ *
+ * Passo 44 — Alice: «gli esercizi delle due schede devono stare vicini, non
+ * prima tutti quelli di una e poi tutti quelli dell'altra». Quindi:
+ *  1. prima gli esercizi che stanno in TUTTE E DUE le schede, accoppiati per
+ *     nome (il nome pulito e in minuscolo: «hip_thrust» è «Hip thrust»), e
+ *     restano nell'ordine della scheda di sinistra;
+ *  2. poi gli altri, accoppiati per POSIZIONE nella scheda (il primo che resta
+ *     a sinistra col primo che resta a destra): due schede con esercizi
+ *     diversi si leggono lo stesso riga per riga, ed è dichiarato che è un
+ *     confronto per posizione (`posizione: true`);
+ *  3. in fondo i pochi che avanzano da una parte sola: lì, e solo lì, la riga
+ *     ha il trattino.
+ */
 function righeUnite(schedaUno, schedaDue) {
   const sinistra = (schedaUno && schedaUno.esercizi) || [];
   const destra = (schedaDue && schedaDue.esercizi) || [];
-  /* Il nome pulito da tutte e due le parti: «hip_thrust» e «Hip thrust» sono lo
-   * stesso esercizio, e il confronto non si rompe per un trattino basso. */
   const chiave = (e) => nomePulito(testo(e && e.nome)).toLowerCase();
-  const presi = [];
-  const righe = [];
-  sinistra.forEach((e) => {
-    let trovato = -1;
-    for (let i = 0; i < destra.length; i += 1) {
-      if (presi.indexOf(i) !== -1) continue;
-      if (chiave(destra[i]) === chiave(e)) { trovato = i; break; }
+  const presi = sinistra.map(() => -1);
+  const usati = destra.map(() => false);
+
+  /* 1. a parità di nome, accoppia. */
+  sinistra.forEach((e, i) => {
+    for (let j = 0; j < destra.length; j += 1) {
+      if (usati[j]) continue;
+      if (chiave(destra[j]) === chiave(e)) { presi[i] = j; usati[j] = true; break; }
     }
-    if (trovato >= 0) presi.push(trovato);
-    righe.push({ uno: e, due: trovato >= 0 ? destra[trovato] : null });
   });
-  destra.forEach((e, i) => {
-    if (presi.indexOf(i) === -1) righe.push({ uno: null, due: e });
+  /* 2. i rimasti, a pari posto nella scheda. */
+  const restanti = [];
+  destra.forEach((e, j) => { if (!usati[j]) restanti.push(j); });
+  const accoppiatePerPosizione = [];
+  sinistra.forEach((e, i) => {
+    if (presi[i] !== -1) return;
+    if (!restanti.length) return;
+    const j = restanti.shift();
+    presi[i] = j;
+    usati[j] = true;
+    accoppiatePerPosizione.push(i);
   });
+
+  const righe = [];
+  /* 3a. prima le coppie per nome, nell'ordine di sinistra. */
+  sinistra.forEach((e, i) => {
+    if (presi[i] === -1 || accoppiatePerPosizione.indexOf(i) !== -1) return;
+    righe.push({ uno: e, due: destra[presi[i]], posizione: false });
+  });
+  /* 3b. poi quelle per posizione. */
+  accoppiatePerPosizione.forEach((i) => {
+    righe.push({ uno: sinistra[i], due: destra[presi[i]], posizione: true });
+  });
+  /* 3c. quello che avanza sta in fondo, da solo, col trattino dall'altra parte. */
+  sinistra.forEach((e, i) => { if (presi[i] === -1) righe.push({ uno: e, due: null, posizione: false }); });
+  destra.forEach((e, j) => { if (!usati[j]) righe.push({ uno: null, due: e, posizione: false }); });
   return righe;
 }
 
@@ -265,7 +305,9 @@ function righeUnite(schedaUno, schedaDue) {
 function tabellaColonna(doc, righe, lato, numero) {
   const tab = el(doc, "table", "pc-tab pc-col-tab");
   const cg = doc.createElement("colgroup");
-  ["auto", "52px", "58px", "62px"].forEach((larghezza) => {
+  /* Passo 44: la finestra è più larga, quindi le tre caselle dei numeri si
+   * allargano e il testo non finisce più nei puntini appena è un filo lungo. */
+  ["auto", "64px", "70px", "74px"].forEach((larghezza) => {
     const c = doc.createElement("col");
     c.setAttribute("style", "width:" + larghezza);
     cg.appendChild(c);
@@ -285,6 +327,12 @@ function tabellaColonna(doc, righe, lato, numero) {
       tr.appendChild(el(doc, "td", "pc-nome pc-manca", TRATTINO));
       ["pc-n", "pc-n", "pc-n"].forEach((c) => tr.appendChild(el(doc, "td", c, "")));
     } else {
+      /* Accoppiata per posizione e non per nome: si dice, così non sembra che i
+       * due esercizi siano lo stesso. */
+      if (r.posizione) {
+        tr.className = "pc-riga-posizione";
+        tr.setAttribute("title", "esercizio diverso dall'altra scheda: accoppiato per posizione");
+      }
       const v = valoriSettimana(e, numero);
       const cella = el(doc, "td", "pc-nome");
       const nome = el(doc, "b", null, nomePulito(e.nome) || "(senza nome)");
@@ -310,8 +358,8 @@ function tabellaColonna(doc, righe, lato, numero) {
 }
 
 /* Una colonna del confronto: nome del programma col pallino, il conto, le
- * pastiglie del volume della settimana, la scheda scelta (o la frase che dice
- * che quel programma non ce l'ha) e i totali in fondo. */
+ * pastiglie del volume DELLA SCHEDA (con scritto quale), la scheda scelta (o la
+ * frase che dice che quel programma non ce l'ha) e i totali in fondo. */
 function colonnaProgramma(doc, voci) {
   const o = voci;
   const col = el(doc, "div", "pc-col " + (o.lato === "uno" ? "pc-col-a" : "pc-col-b"));
@@ -327,33 +375,51 @@ function colonnaProgramma(doc, voci) {
     col.appendChild(el(doc, "p", "pc-vuoto", o.modello.motivoSchede || "nessuna scheda letta"));
     return col;
   }
-  col.appendChild(pastiglieVolume(doc, o.settimana));
 
   if (!o.scheda) {
+    /* Nessuna pastiglia quando la scheda non c'è: i numeri di un'altra scheda
+     * non si mostrano al posto suo. */
     col.appendChild(el(doc, "p", "pc-vuoto pc-scheda-manca",
       "Scheda " + (o.codice === NON ? "senza lettera" : o.codice) + " non presente in questo programma"));
-  } else {
-    const titolo = "Scheda " + (o.codice === NON ? "senza lettera" : o.codice)
-      + (testo(o.scheda.nome) ? " \u2014 " + nomePulito(o.scheda.nome) : "");
-    col.appendChild(el(doc, "p", "pc-col-scheda", titolo));
-    if (!o.scheda.esercizi.length) {
-      col.appendChild(el(doc, "p", "pc-vuoto", "Questa scheda non ha esercizi leggibili."));
-    } else {
-      col.appendChild(tabellaColonna(doc, o.righe, o.lato, o.numero));
-    }
+    return col;
   }
-  col.appendChild(totaliProgramma(doc, o.modello, o.settimana));
+
+  const codice = o.codice === NON ? "senza lettera" : o.codice;
+  col.appendChild(pastiglieVolume(doc, o.settimana, {
+    etichetta: "Scheda " + codice + " \u00b7 settimana " + o.numero,
+    codice: o.codice
+  }));
+  const titolo = "Scheda " + codice
+    + (testo(o.scheda.nome) ? " \u2014 " + nomePulito(o.scheda.nome) : "");
+  col.appendChild(el(doc, "p", "pc-col-scheda", titolo));
+  if (!o.scheda.esercizi.length) {
+    col.appendChild(el(doc, "p", "pc-vuoto", "Questa scheda non ha esercizi leggibili."));
+  } else {
+    col.appendChild(tabellaColonna(doc, o.righe, o.lato, o.numero));
+  }
+  col.appendChild(totaliProgramma(doc, o.scheda, o.settimana));
   return col;
 }
 
-/* Le differenze per distretto della settimana scelta. Δ è «questo meno quello in
- * uso»: verde quando il consultato ne ha di più, rosso quando ne ha di meno. Se
- * un distretto c'è da una parte sola, la riga dice «non registrato» e non
- * calcola nessuna differenza: zero non si inventa. */
-function sezioneDifferenze(doc, confronto, nomeUno, nomeDue) {
+/* Le differenze per distretto DELLA SCHEDA E DELLA SETTIMANA scelte (passo 44:
+ * prima erano del programma intero, e non cambiando scheda sembravano sbagliate
+ * — lo erano). Δ è «questo meno quello in uso»: verde quando il consultato ne
+ * ha di più, rosso quando ne ha di meno. Se un distretto c'è da una parte sola,
+ * la riga dice «non registrato» e non calcola nessuna differenza: zero non si
+ * inventa. Se una delle due schede non esiste, non si confronta niente e si
+ * dice perché, invece di mostrare i numeri di un'altra scheda. */
+function sezioneDifferenze(doc, confronto, nomeUno, nomeDue, etichetta, opzioni) {
+  const o = opzioni || {};
   const box = el(doc, "section", "pc-differenze");
   box.setAttribute("aria-label", "Differenze della settimana");
-  box.appendChild(el(doc, "h5", "pc-diff-t", "Differenze \u00b7 settimana " + confronto.settimana));
+  box.appendChild(el(doc, "h5", "pc-diff-t",
+    "Differenze \u00b7 " + (etichetta || "settimana " + confronto.settimana)));
+  if (o.schedaMancante) {
+    box.appendChild(el(doc, "p", "pc-diff-vuoto",
+      "\u00ab" + o.schedaMancante + "\u00bb non ha questa scheda: qui non c'è niente da confrontare, "
+      + "e i numeri di un'altra scheda non si mostrano al posto suo."));
+    return box;
+  }
   if (!confronto.righe.length) {
     box.appendChild(el(doc, "p", "pc-diff-vuoto",
       "Nessun distretto con serie scritte in questa settimana, in nessuno dei due programmi."));
@@ -391,6 +457,131 @@ function sezioneDifferenze(doc, confronto, nomeUno, nomeDue) {
   });
   tab.appendChild(corpo);
   box.appendChild(tab);
+  return box;
+}
+
+/* I numeri di UNA scheda (o null se quella scheda non è nel programma): è la
+ * lettura che alimenta pastiglie, totali e differenze del passo 44. */
+function numeriSchedaDi(grandezze, codice, numero) {
+  if (!grandezze || !Array.isArray(grandezze.perScheda)) return null;
+  const voce = grandezze.perScheda.filter((s) => s.codice === codice)[0];
+  if (!voce) return null;
+  return voce.perSettimana[numero - 1] || null;
+}
+
+/* Perché una scheda non porta serie in questa settimana (o null se le porta). */
+function motivoSettimanaVuota(numeri) {
+  if (!numeri || !numeri.esercizi) return null;
+  if (Number(numeri.serieSettimana) > 0) return null;
+  if (numeri.serieSenzaNumero) return "la settimana non è scritta: nessuna serie";
+  return "nessuna serie scritta";
+}
+
+/* «Volume della settimana» (passo 44): una riga per distretto e una colonna per
+ * OGNI scheda accesa, più il totale delle schede accese. È la vista che risponde
+ * alla richiesta di Alice («vedere il volume settimanale di tutte insieme»):
+ * una lettura per programma, con lo stesso linguaggio del resto (le stesse
+ * righe e pastiglie, non un'altra tabella di un'altra famiglia).
+ * Una scheda che non scrive la settimana ha la colonna vuota e lo dichiara; il
+ * totale somma solo quello che c'è. */
+function volumeDellaSettimana(doc, o) {
+  const box = el(doc, "section", "pc-volume-sett");
+  box.setAttribute("aria-label", "Volume della settimana");
+  box.setAttribute("data-settimana", String(o.numero));
+  box.appendChild(el(doc, "h5", "pc-vol-t", "Volume della settimana \u00b7 settimana " + o.numero));
+  box.appendChild(el(doc, "p", "pc-vol-guida", o.guida));
+
+  o.programmi.forEach((p) => {
+    const blocco = el(doc, "div", "pc-vol-blocco");
+    const testa = el(doc, "p", "pc-vol-nome");
+    testa.appendChild(rigaNome(doc, p.quale === "uno" ? "a" : "b",
+      nomePulito(p.nome) || "(senza nome)", p.etichetta));
+    blocco.appendChild(testa);
+
+    const presenti = o.schede.filter((c) => schedaConCodice(p.modello, c));
+    if (!p.modello.schedeLette) {
+      blocco.appendChild(el(doc, "p", "pc-vuoto", p.modello.motivoSchede || "nessuna scheda letta"));
+      box.appendChild(blocco);
+      return;
+    }
+    if (!presenti.length) {
+      blocco.appendChild(el(doc, "p", "pc-vuoto",
+        "Nessuna delle schede accese è in questo programma: non c'è un volume da contare."));
+      box.appendChild(blocco);
+      return;
+    }
+
+    const colonne = presenti.map((codice) => ({
+      codice: codice,
+      numeri: numeriSchedaDi(p.grandezze, codice, o.numero)
+    }));
+    const distretti = [];
+    colonne.forEach((c) => {
+      (c.numeri && Array.isArray(c.numeri.volume) ? c.numeri.volume : []).forEach((v) => {
+        if (distretti.indexOf(v.distretto) === -1) distretti.push(v.distretto);
+      });
+    });
+    if (!distretti.length) {
+      blocco.appendChild(el(doc, "p", "pc-vuoto",
+        "Nessuna serie scritta nella settimana " + o.numero + " nelle schede accese di questo programma."));
+      blocco.appendChild(el(doc, "p", "pc-vol-vuoto",
+        "Non è una settimana a zero: è una settimana che i dati non scrivono."));
+      box.appendChild(blocco);
+      return;
+    }
+
+    const serieDi = (numeri, d) => {
+      const voce = (numeri && Array.isArray(numeri.volume) ? numeri.volume : [])
+        .filter((v) => v.distretto === d)[0];
+      return voce ? voce.serie : null;
+    };
+    const righe = distretti.map((d) => {
+      const celle = colonne.map((c) => serieDi(c.numeri, d));
+      const totale = celle.reduce((a, v) => a + (v == null ? 0 : v), 0);
+      return { distretto: d, celle: celle, totale: Math.round(totale * 100) / 100 };
+    });
+    righe.sort((a, b) => b.totale - a.totale || a.distretto.localeCompare(b.distretto, "it"));
+
+    const tab = el(doc, "table", "pc-tab pc-vol-tab");
+    const thead = el(doc, "thead");
+    const trh = el(doc, "tr");
+    const thDn = el(doc, "th", "pc-vol-dn", "Distretto");
+    trh.appendChild(thDn);
+    colonne.forEach((c) => {
+      const th = el(doc, "th", "pc-vol-col", "Scheda " + (c.codice === NON ? "senza lettera" : c.codice));
+      th.setAttribute("data-scheda", c.codice);
+      trh.appendChild(th);
+    });
+    const thTot = el(doc, "th", "pc-vol-col pc-vol-tot", "Totale");
+    trh.appendChild(thTot);
+    thead.appendChild(trh);
+    tab.appendChild(thead);
+    const corpo = el(doc, "tbody");
+    righe.forEach((r) => {
+      const tr = el(doc, "tr", "pc-vol-riga");
+      tr.setAttribute("data-distretto", r.distretto);
+      tr.appendChild(el(doc, "td", "pc-vol-dn", nomePulito(r.distretto)));
+      r.celle.forEach((valore, i) => {
+        const td = el(doc, "td", "pc-vol-col", valore == null ? TRATTINO : numeroInChiaro(valore));
+        td.setAttribute("data-scheda", colonne[i].codice);
+        tr.appendChild(td);
+      });
+      tr.appendChild(el(doc, "td", "pc-vol-col pc-vol-tot", numeroInChiaro(r.totale)));
+      corpo.appendChild(tr);
+    });
+    tab.appendChild(corpo);
+    blocco.appendChild(tab);
+
+    colonne.forEach((c) => {
+      const perche = motivoSettimanaVuota(c.numeri);
+      if (perche) {
+        blocco.appendChild(el(doc, "p", "pc-vol-vuoto",
+          "Scheda " + (c.codice === NON ? "senza lettera" : c.codice) + ": " + perche
+          + " nella settimana " + o.numero + ", la colonna resta vuota."));
+      }
+    });
+    box.appendChild(blocco);
+  });
   return box;
 }
 
@@ -522,8 +713,15 @@ export function apriConfronto(doc, opzioni) {
 
   const vociScheda = schedeDelConfronto([modelloUno, modelloDue]);
   let settimanaScelta = 1;
+  /* Passo 44 — le schede si accendono e si spengono (multi-selezione): con una
+   * sola accesa il comportamento è quello di sempre; con più di una, il
+   * confronto esercizio per esercizio resta su UNA (l'ultima accesa) e la vista
+   * «Volume della settimana» le conta tutte. */
+  let schedeAccese = vociScheda.length ? [vociScheda[0].codice] : [];
   let schedaScelta = vociScheda.length ? vociScheda[0].codice : null;
   let sottoTitolo = null;
+
+  const nomeDiScheda = (codice) => (codice === NON || codice == null ? "senza lettera" : codice);
 
   const { modale, scatola, chiudi } = impalcatura(doc, "Confronto programmi", o.bottone, {
     classeModale: "pc-modale-confronto",
@@ -574,26 +772,41 @@ export function apriConfronto(doc, opzioni) {
   });
 
   /* La seconda fila: le schede. Una tab per ogni lettera presente in almeno uno
-   * dei due programmi; la scelta vale per tutte e due le colonne. */
+   * dei due programmi. Passo 44: si accendono a più di una — clic = accendo o
+   * spengo; l'ultima accesa è quella che il confronto esercizio per esercizio
+   * mostra, e almeno una resta sempre accesa. */
   const barraSchede = el(doc, "div", "pc-schede-tab");
-  barraSchede.setAttribute("role", "tablist");
+  barraSchede.setAttribute("role", "group");
   barraSchede.setAttribute("aria-label", "Scheda");
   barraSchede.appendChild(el(doc, "span", "pc-sett-davanti", "Scheda"));
   const tastiScheda = vociScheda.map((v) => {
     const b = el(doc, "button", "pc-st");
     b.type = "button";
-    b.setAttribute("role", "tab");
     b.setAttribute("data-scheda", v.codice);
     b.appendChild(doc.createTextNode(v.etichetta));
-    b.addEventListener("click", () => { schedaScelta = v.codice; disegna(); });
+    b.addEventListener("click", () => {
+      if (schedeAccese.indexOf(v.codice) !== -1) {
+        /* l'ultima accesa non si spegne: almeno una scheda resta */
+        if (schedeAccese.length === 1) return;
+        schedeAccese = schedeAccese.filter((c) => c !== v.codice);
+        if (schedaScelta === v.codice) schedaScelta = schedeAccese[schedeAccese.length - 1];
+      } else {
+        schedeAccese = vociScheda.map((x) => x.codice).filter((c) => c === v.codice || schedeAccese.indexOf(c) !== -1);
+        schedaScelta = v.codice;
+      }
+      disegna();
+    });
     barraSchede.appendChild(b);
     return b;
   });
+  /* La frase che dice quante schede sono accese e quale si confronta: sta fuori
+   * dal corpo che scorre, così si legge prima di scendere. */
+  const notaScelta = el(doc, "p", "pc-scelta-nota", "");
 
   const corpo = el(doc, "div", "pc-corpo pc-corpo-confronto pc-confronto");
   const piazzaSalva = el(doc, "div", "pc-piazza-salva");
 
-  /* Disegna tutto quello che dipende da settimana e scheda scelte. */
+  /* Disegna tutto quello che dipende da settimana e schede accese. */
   function disegna() {
     const n = settimanaScelta;
     tasti.forEach((b) => {
@@ -602,22 +815,40 @@ export function apriConfronto(doc, opzioni) {
       b.setAttribute("aria-selected", suo ? "true" : "false");
     });
     tastiScheda.forEach((b) => {
-      const suo = b.getAttribute("data-scheda") === schedaScelta;
-      b.classList.toggle("on", suo);
-      b.setAttribute("aria-selected", suo ? "true" : "false");
+      const acceso = schedeAccese.indexOf(b.getAttribute("data-scheda")) !== -1;
+      b.classList.toggle("on", acceso);
+      /* Multi-selezione: `aria-pressed` dice acceso/spento (l'ultima accesa è
+       * quella in confronto, e la frase sotto le colonne lo dice a parole). */
+      b.setAttribute("aria-pressed", acceso ? "true" : "false");
+      b.setAttribute("title", acceso
+        ? "accesa: clic per spegnerla (almeno una resta accesa)"
+        : "spenta: clic per accenderla");
     });
 
     const schedaUno = schedaConCodice(modelloUno, schedaScelta);
     const schedaDue = schedaConCodice(modelloDue, schedaScelta);
     const righe = righeUnite(schedaUno, schedaDue);
-    const settUno = grandezzeUno.perSettimana[n - 1];
-    const settDue = grandezzeDue.perSettimana[n - 1];
+    /* I numeri della SCHEDA in confronto, non del programma intero. */
+    const settUno = numeriSchedaDi(grandezzeUno, schedaScelta, n);
+    const settDue = numeriSchedaDi(grandezzeDue, schedaScelta, n);
+    const accese = schedeAccese.map(nomeDiScheda);
     if (sottoTitolo) {
       sottoTitolo.textContent = "Settimana " + n
-        + (schedaScelta == null ? "" : " \u00b7 Scheda " + (schedaScelta === NON ? "senza lettera" : schedaScelta));
+        + (schedaScelta == null ? "" : " \u00b7 Scheda " + nomeDiScheda(schedaScelta))
+        + (schedeAccese.length > 1 ? " \u00b7 accese: " + accese.join(", ") : "");
     }
 
     corpo.textContent = "";
+    /* Con più schede accese il confronto riga per riga è su una sola: si dice
+     * in chiaro, e si dice dove stanno le altre. */
+    if (schedeAccese.length > 1) {
+      notaScelta.textContent = "Sono accese " + schedeAccese.length + " schede (" + accese.join(", ") + "): "
+        + "il confronto esercizio per esercizio qui sotto è sulla scheda " + nomeDiScheda(schedaScelta)
+        + ". Il volume di tutte le schede accese è nella vista \u00abVolume della settimana\u00bb, pi\u00f9 sotto.";
+      notaScelta.setAttribute("data-schede-accese", schedeAccese.join(","));
+      corpo.appendChild(notaScelta);
+    }
+
     const duetto = el(doc, "div", "pc-duetto");
     duetto.setAttribute("data-settimana", String(n));
     duetto.setAttribute("data-scheda", schedaScelta == null ? "" : schedaScelta);
@@ -630,19 +861,56 @@ export function apriConfronto(doc, opzioni) {
       numero: n, codice: schedaScelta, scheda: schedaDue, etichetta: "in uso"
     }));
     corpo.appendChild(duetto);
-    corpo.appendChild(sezioneDifferenze(doc,
-      confrontoSettimana(grandezzeUno, grandezzeDue, n, { nomeUno: nomeUno, nomeDue: nomeDue }),
-      nomeUno, nomeDue));
+    /* Se qualche riga è accoppiata per posizione, lo si dice una volta sola:
+     * due esercizi con nomi diversi non sono lo stesso esercizio. */
+    if (righe.some((r) => r.posizione)) {
+      corpo.appendChild(el(doc, "p", "pc-nota pc-nota-posizione",
+        "Righe con nomi diversi: sono accoppiate per posizione nella scheda, non è lo stesso esercizio."));
+    }
+
+    /* Le differenze per distretto: gli stessi numeri della scheda in confronto,
+     * e il titolo dice quale scheda e quale settimana. */
+    const etichettaDiff = "Scheda " + nomeDiScheda(schedaScelta) + " \u00b7 settimana " + n;
+    if (!schedaUno || !schedaDue) {
+      const mancante = !schedaUno ? nomeUno : nomeDue;
+      corpo.appendChild(sezioneDifferenze(doc, { settimana: n, righe: [] }, nomeUno, nomeDue,
+        etichettaDiff, { schedaMancante: mancante }));
+    } else {
+      const conf = confrontoSettimana(
+        { perSettimana: [settUno] }, { perSettimana: [settDue] }, 1,
+        { nomeUno: nomeUno, nomeDue: nomeDue });
+      conf.settimana = n;
+      corpo.appendChild(sezioneDifferenze(doc, conf, nomeUno, nomeDue, etichettaDiff));
+    }
+
+    /* Il volume di tutte le schede accese: una riga per distretto, una colonna
+     * per scheda più il totale. */
+    corpo.appendChild(volumeDellaSettimana(doc, {
+      numero: n,
+      schede: schedeAccese,
+      guida: schedeAccese.length > 1
+        ? "Una riga per distretto, una colonna per ogni scheda accesa, pi\u00f9 il totale delle schede accese. "
+          + "Una casella vuota vuol dire che quella scheda non ha serie di quel distretto in questa settimana."
+        : "Una riga per distretto, con la scheda accesa e il totale. "
+          + "Accendi altre schede dai tasti sopra per vederle tutte insieme: il totale somma le colonne accese.",
+      programmi: [
+        { quale: "uno", nome: nomeUno, etichetta: etichettaUno, modello: modelloUno, grandezze: grandezzeUno },
+        { quale: "due", nome: nomeDue, etichetta: "in uso", modello: modelloDue, grandezze: grandezzeDue }
+      ]
+    }));
+
     corpo.appendChild(noteDichiarate(doc, [
       { nome: nomeUno, settimana: settUno },
       { nome: nomeDue, settimana: settDue }
     ]));
     corpo.appendChild(piazzaSalva);
     corpo.setAttribute("data-settimana", String(n));
+    corpo.setAttribute("data-schede-accese", schedeAccese.join(","));
   }
 
   const piede = el(doc, "footer", "pc-piede");
-  piede.appendChild(el(doc, "span", "pc-suggerimento", "Clicca un'altra settimana: la scheda cambia con lei."));
+  piede.appendChild(el(doc, "span", "pc-suggerimento",
+    "Clicca un'altra settimana: la scheda cambia con lei. I tasti Scheda si accendono a più di una."));
   const tastiPiede = el(doc, "div", "pc-piede-tasti");
   const chiudiBtn = el(doc, "button", "pr-btn", "Chiudi");
   chiudiBtn.type = "button";

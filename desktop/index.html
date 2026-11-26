@@ -7443,8 +7443,12 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
    in uso a destra, con le stesse righe allineate. Sotto i ~900 px le colonne si
    mettono una sopra l'altra. Larga fino a 1080 px, la pagina sotto non si allunga. */
 .pc-modale{background:color-mix(in srgb, var(--bg) 78%, transparent)}
-.pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1080px,100%);height:88vh;
-  max-height:calc(100vh - 48px);padding:0;overflow:hidden}
+/* Passo 44 — la finestra si legge. Alice: «la pagina del confronta la voglio un
+   po' più grande, non si vede molto bene». Quasi tutta la larghezza e 92vh di
+   altezza, con lo scorrimento DENTRO (overflow:hidden sulla scatola, auto sul
+   corpo): la pagina sotto resta ferma e non si allunga. */
+.pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1560px,100%);height:92vh;
+  max-height:calc(100vh - 40px);padding:0;overflow:hidden}
 .pc-finestra-testa{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
   padding:16px 20px 10px;border-bottom:1px solid var(--line);flex:0 0 auto;margin:0}
 .pc-finestra-sinistra{display:block;min-width:0}
@@ -7492,20 +7496,23 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-vol span{font-size:10.4px;color:var(--fioco)}
 .pc-vol b{font:600 11.6px/1 'JetBrains Mono',monospace;color:var(--text)}
 .pc-vol-vuoto{font-size:10.8px;color:var(--fioco);font-style:italic}
-.pc-col-tab{table-layout:fixed;width:100%;font-size:11.4px}
-.pc-col-tab th{padding:4px 4px;font-size:9px}
-.pc-col-tab td{padding:5px 4px;vertical-align:middle;height:34px}
+.pc-col-tab{table-layout:fixed;width:100%;font-size:12.2px}
+.pc-col-tab th{padding:5px 5px;font-size:9.4px}
+.pc-col-tab td{padding:6px 5px;vertical-align:middle;height:38px}
 /* Il testo lungo non esce più nella colonna accanto: si taglia con i puntini e
    il testo intero resta nel suggerimento (e nella vista «Guarda»). */
-.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;
+.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.8px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;max-width:0}
 .pc-col-tab td.pc-nome{overflow:hidden;max-width:0}
-.pc-col-tab td.pc-nome b{display:block;font-size:11.6px;font-weight:600;color:var(--text);
+.pc-col-tab td.pc-nome b{display:block;font-size:12.4px;font-weight:600;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-col-tab td.pc-nome small{display:block;font-size:9.6px;color:var(--fioco);
+.pc-col-tab td.pc-nome small{display:block;font-size:10.4px;color:var(--fioco);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-col-tab td.pc-manca{color:var(--muted);font-style:italic}
 .pc-col-tab tr.pc-riga-manca td{background:rgba(255,255,255,.015)}
+/* Passo 44 — dove i nomi sono diversi l'accoppiamento è per posizione: la riga
+   lo dice con un filo di colore, senza gridare. */
+.pc-col-tab tr.pc-riga-posizione td{border-bottom-style:dashed}
 @media (max-width: 900px){
   .pc-duetto{grid-template-columns:minmax(0,1fr)}
   .pc-col-a{border-right:0;border-bottom:1px solid var(--line)}
@@ -7520,7 +7527,7 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-differenze{margin-top:14px;border:1px solid rgba(255,79,163,.28);border-radius:12px;
   padding:12px 14px;background:rgba(255,79,163,.05)}
 .pc-diff-t{margin:0 0 8px;font-size:9.8px;letter-spacing:.09em;text-transform:uppercase;color:var(--pink);font-weight:800}
-.pc-diff-tab{width:auto;min-width:520px;font-size:11.8px}
+.pc-diff-tab{width:auto;min-width:640px;font-size:12.2px}
 .pc-diff-tab th{padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 .pc-diff-tab th.pc-dn{text-align:left}
 .pc-diff-tab th.pc-d1,.pc-diff-tab th.pc-d2,.pc-diff-tab th.pc-delta{text-align:right}
@@ -7540,6 +7547,38 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-piede-tasti{display:flex;gap:8px}
 .pc-piede .pr-btn{width:auto}
 .pc-confronto .pc-piazza-salva{margin-bottom:4px}
+/* Passo 44 — multi-selezione delle schede e «Volume della settimana».
+   Il volume di prima era il totale del PROGRAMMA per ogni scheda; ora le
+   pastiglie dicono la scheda («Scheda D · settimana 3») e la tavola del volume
+   ha una colonna per scheda accesa più il totale, con lo stesso vestito delle
+   altre righe (stesso bordo, stesse pastiglie, niente tabelle nuove inventate). */
+.pc-scelta-nota{margin:0 0 8px;font-size:11.4px;color:var(--lav);
+  border:1px solid rgba(201,167,255,.32);border-radius:9px;padding:6px 9px;
+  background:rgba(201,167,255,.07)}
+.pc-vol-eti{margin:0 0 5px;font:700 9.6px/1 'JetBrains Mono',monospace;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--fioco)}
+.pc-volume-sett{margin-top:14px;border:1px solid rgba(201,167,255,.28);border-radius:12px;
+  padding:12px 14px;background:rgba(201,167,255,.05)}
+.pc-volume-sett .pc-vol-t{margin:0 0 6px;font-size:9.8px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--lav);font-weight:800}
+.pc-vol-guida{margin:0 0 10px;font-size:11.2px;color:var(--muted)}
+.pc-vol-blocco{margin-top:10px}
+.pc-vol-blocco + .pc-vol-blocco{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.pc-vol-nome{margin:0 0 6px}
+.pc-vol-tab{width:auto;min-width:520px;font-size:12px}
+.pc-vol-tab th.pc-vol-col,.pc-vol-tab td.pc-vol-col{width:120px}
+.pc-vol-tab td.pc-vol-dn{min-width:190px}
+.pc-vol-tab th{padding:5px 8px;white-space:nowrap}
+.pc-vol-tab th.pc-vol-dn{text-align:left}
+.pc-vol-tab th.pc-vol-col{text-align:right;font-size:9.6px}
+.pc-vol-tab th.pc-vol-tot{color:var(--lav)}
+.pc-vol-tab td{padding:5px 8px;height:30px}
+.pc-vol-tab td.pc-vol-dn{color:var(--text)}
+.pc-vol-tab td.pc-vol-col{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.8px;
+  color:var(--muted)}
+.pc-vol-tab td.pc-vol-tot{color:var(--text);font-weight:700}
+.pc-vol-tab tr:last-child td{border-bottom:0}
+.pc-vol-vuoto{display:block;margin-top:4px;font-size:10.6px;color:var(--fioco);font-style:italic}
 /* ============================================================
    T1 — RIGHE COMPATTE + SCORRIMENTO ORIZZONTALE DELLE SETTIMANE
    (prefisso html body per vincere sulle regole legacy senza !important)

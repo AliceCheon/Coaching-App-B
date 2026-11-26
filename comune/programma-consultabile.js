@@ -24,8 +24,20 @@
  */
 
 import { rotazionePrevista, profiloProgramma } from "./programma.js";
+import { distrettoDaParola } from "./riconoscimento-esercizio.js";
 
 export const NON = "non registrato";
+
+/* PASSO 44 — i glutei sono glutei. Il muscolo scritto sull'esercizio passa dal
+ * normalizzatore che c'è già (`distrettoDaParola`, la tabella di
+ * riconoscimento-esercizio.js): «gluteo medio», «gluteo piccolo», «glutei»
+ * finiscono tutti in «Glutei», e così il volume della settimana ha una riga
+ * sola invece di tre. Un muscolo che il normalizzatore non conosce NON si
+ * inventa: resta dichiarato per quello che è («Custom» resta «Custom»). */
+export function distrettoDiEsercizio(esercizio) {
+  const scritto = testo(esercizio && esercizio.muscolo);
+  return distrettoDaParola(scritto) || scritto;
+}
 
 /* La formula della densità, in un punto solo: la mostra la pagina.
  * E' un «serie al minuto di recupero», non un minuto di seduta intero: il
@@ -175,7 +187,11 @@ export function modelloConsultabile(programma, gruppo, opzioni) {
       const settimanaUno = valoriSettimana(e, 1);
       return {
         nome: testo(e && e.nome) || NON,
-        distretto: testo(e && e.muscolo),
+        /* L'etichetta sotto il nome (qui e nel confronto) è il distretto
+         * normalizzato: «Gluteo medio» diventa «Glutei»; il muscolo com'è
+         * scritto resta in `muscolo`, così non si perde niente. */
+        distretto: distrettoDiEsercizio(e),
+        muscolo: testo(e && e.muscolo),
         serie: settimanaUno.serie || NON,
         ripetizioni: settimanaUno.ripetizioni || NON,
         recupero: settimanaUno.recupero || NON,
@@ -214,14 +230,16 @@ export function modelloConsultabile(programma, gruppo, opzioni) {
   };
 }
 
-/* I numeri di UNA settimana di un programma.
+/* I numeri di UNA settimana di un programma (o anche di UNA scheda sola: si
+ * passa un elenco con dentro quella).
  * `volume`: serie della settimana per distretto (il distretto è quello scritto
- * sull'esercizio; un esercizio senza distretto non entra in nessuna riga e
- * viene contato a parte, dichiarato).
+ * sull'esercizio, normalizzato: «Gluteo medio» conta nei Glutei; un esercizio
+ * senza distretto non entra in nessuna riga e viene contato a parte,
+ * dichiarato).
  * `densita`: serie ÷ minuti di recupero (vedi FORMULA_DENSITA). Se in una
  * scheda un esercizio non dichiara il recupero, la densità NON si calcola:
  * torna null con il motivo e la scheda, mai uno zero. */
-function numeriDiSettimana(schede, indice) {
+export function numeriDiSettimana(schede, indice) {
   const perDistretto = Object.create(null);
   let esercizi = 0;
   let senzaDistretto = 0;
@@ -243,7 +261,9 @@ function numeriDiSettimana(schede, indice) {
       const p = (e && e.prescrizione) || {};
       const settimana = Array.isArray(p.elencoSettimane) ? p.elencoSettimane[indice] : null;
       if (settimana && settimana.tipo === "deload") scarico += 1;
-      const distretto = testo(e && e.muscolo);
+      /* Passo 44: il distretto si normalizza qui, una volta per tutti i conti
+       * (prima «Gluteo medio» apriva una riga sua accanto ai Glutei). */
+      const distretto = distrettoDiEsercizio(e);
       if (serie == null) {
         serieSenzaNumero += 1;
       } else {
@@ -312,7 +332,10 @@ function numeriDiSettimana(schede, indice) {
 /* I numeri veri di un programma, per il confronto: la settimana 1 nei campi di
  * sempre (le altre parti dell'app leggono quelli) e TUTTE le settimane in
  * `perSettimana`, così il confronto può cambiare settimana senza rileggere i
- * documenti. `opzioni.quanteSettimane` dice fino a dove contare (il confronto
+ * documenti. `perScheda` fa lo stesso scheda per scheda: è il volume DELLA
+ * scheda scelta, che prima non esisteva e si finiva per mostrare sempre il
+ * totale del programma (il guasto del passo 44).
+ * `opzioni.quanteSettimane` dice fino a dove contare (il confronto
  * fra due programmi usa il massimo dei due); senza, la convenzione di casa:
  * mai meno di 8. */
 export function grandezzeProgramma(gruppo, opzioni) {
@@ -324,6 +347,16 @@ export function grandezzeProgramma(gruppo, opzioni) {
     settimaneScritte(gruppo));
   const perSettimana = [];
   for (let i = 0; i < quante; i += 1) perSettimana.push(numeriDiSettimana(schede, i));
+  const perScheda = schede.map((s) => {
+    const settimane = [];
+    for (let i = 0; i < quante; i += 1) settimane.push(numeriDiSettimana([s], i));
+    return {
+      codice: testo(s.codice) || NON,
+      nome: testo(s.nome),
+      esercizi: (Array.isArray(s.esercizi) ? s.esercizi : []).length,
+      perSettimana: settimane
+    };
+  });
   const prima = perSettimana[0];
   return {
     schede: schede.length,
@@ -340,7 +373,8 @@ export function grandezzeProgramma(gruppo, opzioni) {
     schedeIncomplete: prima.schedeIncomplete,
     settimana: 1,
     settimane: quante,
-    perSettimana: perSettimana
+    perSettimana: perSettimana,
+    perScheda: perScheda
   };
 }
 

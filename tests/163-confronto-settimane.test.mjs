@@ -119,6 +119,10 @@ const nomi = (doc, quale) => righeDi(doc, quale).map((r) => r[0]);
 const tot = (doc, quale) => Array.from(colonna(doc, quale).querySelectorAll(".pc-tot .pc-tot-v"))
   .map((v) => v.textContent.replace(/\s+/g, " ").trim());
 const rigaDiff = (doc, distretto) => doc.querySelector('.pc-diff-riga[data-distretto="' + distretto + '"]');
+const schedeAcceseDi = (doc) => {
+  const corpo = doc.querySelector(".pc-confronto");
+  return corpo ? corpo.getAttribute("data-schede-accese") : "";
+};
 
 test("163.1 la finestra: due file di tab ferme, due colonne, scroll dentro", () => {
   /* Qui serve la pagina vera: il CSS che posiziona la finestra sta lì. */
@@ -136,12 +140,12 @@ test("163.1 la finestra: due file di tab ferme, due colonne, scroll dentro", () 
 
   const regolaBox = /\.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola .pc-box-confronto c'è");
-  assert.match(regolaBox[1], /height:\s*88vh/, "alta quanto lo schermo (88vh)");
-  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*48px\)/, "e non esce dallo schermo");
+  assert.match(regolaBox[1], /height:\s*92vh/, "alta quasi quanto lo schermo (92vh, passo 44)");
+  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*40px\)/, "e non esce dallo schermo");
   assert.match(regolaBox[1], /overflow:\s*hidden/, "la scatola non scorre: scorre il corpo");
   const larghezza = /width:\s*min\((\d+)px,\s*100%\)/.exec(regolaBox[1]);
   assert.ok(larghezza, "ha una larghezza massima dichiarata");
-  assert.ok(Number(larghezza[1]) >= 1000 && Number(larghezza[1]) <= 1100, "larga fino a ~1080 px: " + larghezza[1]);
+  assert.equal(Number(larghezza[1]), 1560, "larga fino a 1560 px: quasi tutto lo schermo (passo 44)");
 
   const regolaCorpo = /\.pc-corpo-confronto\{([^}]*)\}/.exec(css);
   assert.match(regolaCorpo[1], /overflow:\s*auto/, "il corpo scorre dentro");
@@ -246,29 +250,33 @@ test("163.2 i tasti delle settimane: il massimo fra i due programmi, col range o
 
 test("163.3 cambiare settimana cambia serie, ripetizioni e volumi delle due colonne", () => {
   const { doc } = scena();
-  const prima = righeDi(doc, "uno")[0];
+  /* Passo 44: prima la riga dell'esercizio in comune (leg curl), poi quella
+   * accoppiata per posizione: l'hip thrust è la seconda. */
+  const prima = righeDi(doc, "uno")[1];
   assert.deepEqual(prima, ["Hip thrust Glutei", "4", "12-15", "2'"], "settimana 1, colonna del consultato");
-  assert.deepEqual(tot(doc, "uno"), ["11", "3", "0,59 serie/min"], "serie della settimana 1");
+  assert.deepEqual(tot(doc, "uno"), ["7", "2", "0,56 serie/min"],
+    "serie, esercizi e densità della SCHEDA A (passo 44: non del programma intero)");
 
   tasto(doc, 6).click();
   assert.ok(tasto(doc, 6).classList.contains("on"), "il tasto scelto si sposta");
   assert.equal(tasto(doc, 1).classList.contains("on"), false);
-  assert.deepEqual(righeDi(doc, "uno")[0], ["Hip thrust Glutei", "4", "10-12", "2'"],
+  assert.deepEqual(righeDi(doc, "uno")[1], ["Hip thrust Glutei", "4", "10-12", "2'"],
     "settimana 6: le ripetizioni cambiano");
-  assert.deepEqual(tot(doc, "uno"), ["12", "3", "0,60 serie/min"], "e le serie pure");
+  assert.deepEqual(tot(doc, "uno"), ["8", "2", "0,57 serie/min"], "e le serie pure, sempre della scheda A");
   const glutei = Array.from(colonna(doc, "uno").querySelectorAll(".pc-vol"))
-    .filter((v) => v.getAttribute("data-vol-distretto") === "glutei")[0];
+    .filter((v) => v.getAttribute("data-vol-distretto") === "Glutei")[0];
   assert.equal(glutei.textContent, "Glutei4", "la pastiglia del distretto segue la settimana");
 
   /* La settimana di scarico: due serie invece di quattro, e il totale scende. */
   tasto(doc, 4).click();
-  assert.deepEqual(righeDi(doc, "uno")[0], ["Hip thrust Glutei", "2", "10", "2'"], "settimana 4: scarico, due serie");
-  assert.deepEqual(tot(doc, "uno"), ["9", "3", "0,62 serie/min"], "9 serie, non 11");
+  assert.deepEqual(righeDi(doc, "uno")[1], ["Hip thrust Glutei", "2", "10", "2'"], "settimana 4: scarico, due serie");
+  assert.deepEqual(tot(doc, "uno"), ["5", "2", "0,59 serie/min"], "5 serie, non 7");
 
   /* Ogni colonna legge la SUA settimana, e la data-settimana dice quale. */
-  assert.deepEqual(righeDi(doc, "due")[2], ["Panca piana Petto", "4", "8", "1'"],
-    "la panca sta nella terza riga: prima ci sono gli esercizi che solo il consultato ha");
-  assert.deepEqual(tot(doc, "due"), ["13", "4", "0,81 serie/min"]);
+  assert.deepEqual(righeDi(doc, "due")[2], ["Lat machine Dorsali", "3", "10-12", "90\""],
+    "la lat machine avanza dall'altra scheda: sta in fondo, col trattino a sinistra");
+  assert.deepEqual(tot(doc, "due"), ["10", "3", "0,77 serie/min"],
+    "serie, esercizi e densità della scheda A dell'altro programma");
   assert.equal(doc.querySelector(".pc-duetto").getAttribute("data-settimana"), "4");
   assert.match(doc.querySelector(".pc-diff-t").textContent, /settimana 4/, "il titolo delle differenze segue la settimana");
   assert.match(doc.querySelector(".pc-finestra-sotto").textContent, /Settimana 4/, "e la finestra dice cosa sta mostrando");
@@ -279,22 +287,29 @@ test("163.4 le tab delle schede: tutte le lettere dei due programmi, in ordine",
   const schede = Array.from(doc.querySelectorAll(".pc-st"));
   assert.deepEqual(schede.map((b) => b.textContent.trim()), ["A", "B", "C"],
     "le lettere presenti in almeno uno dei due programmi, in ordine alfabetico");
-  assert.ok(tastoScheda(doc, "A").classList.contains("on"), "la prima è scelta");
-  assert.equal(tastoScheda(doc, "A").getAttribute("aria-selected"), "true");
-  assert.equal(tastoScheda(doc, "B").getAttribute("aria-selected"), "false");
+  assert.ok(tastoScheda(doc, "A").classList.contains("on"), "la prima è accesa");
+  assert.equal(tastoScheda(doc, "A").getAttribute("aria-pressed"), "true");
+  assert.equal(tastoScheda(doc, "B").getAttribute("aria-pressed"), "false");
 
-  /* La scelta della scheda vale per tutte e due le colonne. */
+  /* Passo 44: i tasti si accendono a più di una. Accendendo B, A resta accesa;
+   * il confronto riga per riga passa a B (l'ultima accesa). */
   tastoScheda(doc, "B").click();
   assert.ok(tastoScheda(doc, "B").classList.contains("on"));
-  assert.equal(tastoScheda(doc, "A").classList.contains("on"), false);
+  assert.ok(tastoScheda(doc, "A").classList.contains("on"), "la prima resta accesa: la selezione è multipla");
+  assert.equal(tastoScheda(doc, "A").getAttribute("aria-pressed"), "true");
+  assert.equal(doc.querySelector(".pc-duetto").getAttribute("data-scheda"), "B", "quella in confronto è l'ultima accesa");
   assert.equal(doc.querySelector(".pc-duetto").getAttribute("data-scheda"), "B");
   assert.match(colonna(doc, "uno").querySelector(".pc-col-scheda").textContent, /^Scheda B — Spinta$/);
   assert.match(doc.querySelector(".pc-finestra-sotto").textContent, /Scheda B/);
 
+  /* Spegnendo A resta B accesa (e una sola accesa = comportamento di sempre). */
+  tastoScheda(doc, "A").click();
+  assert.equal(tastoScheda(doc, "A").classList.contains("on"), false);
+  assert.equal(schedeAcceseDi(doc), "B");
+
   /* La scheda scelta resta scegliendo un'altra settimana. */
   tasto(doc, 3).click();
   assert.ok(tastoScheda(doc, "B").classList.contains("on"), "cambiando settimana la scheda non si perde");
-  assert.equal(tastoScheda(doc, "A").getAttribute("aria-selected"), "false");
 
   /* L'elenco delle lettere si può calcolare anche dai soli modelli. */
   const voci = schedeDelConfronto([
@@ -325,41 +340,46 @@ test("163.6 le righe delle due colonne sono allineate, col trattino dove manca",
   const sinistra = righeDi(doc, "uno");
   const destra = righeDi(doc, "due");
   assert.equal(sinistra.length, destra.length, "stesse righe nelle due colonne");
-  assert.equal(sinistra.length, 4, "hip thrust + leg curl (suo), poi panca e lat machine (solo dell'altro)");
-  assert.deepEqual(nomi(doc, "uno"), ["Hip thrust Glutei", "Leg curl Femorali", "—", "—"],
-    "prima gli esercizi della colonna di sinistra, nel loro ordine, poi i trattini");
-  assert.deepEqual(nomi(doc, "due"), ["—", "Leg curl Femorali", "Panca piana Petto", "Lat machine Dorsali"],
-    "e dall'altra parte i trattini su quelli che non ci sono");
+  assert.equal(sinistra.length, 3, "leg curl in comune, hip thrust accoppiato per posizione, poi la lat machine");
+  /* Passo 44: prima le coppie per nome, poi quelle per posizione (le due schede
+   * hanno esercizi diversi), e il trattino solo in coda a chi avanza. */
+  assert.deepEqual(nomi(doc, "uno"), ["Leg curl Femorali", "Hip thrust Glutei", "—"],
+    "prima le righe presenti in entrambe le schede, poi quella che avanza dall'altra parte");
+  assert.deepEqual(nomi(doc, "due"), ["Leg curl Femorali", "Panca piana Pettorali", "Lat machine Dorsali"]);
 
   /* L'esercizio in comune sta sulla stessa riga, con i valori di ognuno. */
-  assert.deepEqual(sinistra[1], ["Leg curl Femorali", "3", "10-12", "90\""]);
-  assert.deepEqual(destra[1], ["Leg curl Femorali", "3", "12", "90\""]);
-  assert.equal(sinistra[0][1], "4");
-  assert.equal(destra[0][1], "", "dove l'esercizio non c'è, la casella resta vuota");
+  assert.deepEqual(sinistra[0], ["Leg curl Femorali", "3", "10-12", "90\""]);
+  assert.deepEqual(destra[0], ["Leg curl Femorali", "3", "12", "90\""]);
+  assert.equal(sinistra[1][1], "4");
+  assert.equal(destra[1][1], "5", "accoppiata per posizione: ognuno ha i suoi numeri");
+  assert.equal(sinistra[2][0], "\u2014", "in coda, dove l'esercizio manca davvero, il trattino");
+  assert.equal(sinistra[2][1], "", "e la casella resta vuota");
 
   /* Le colonne della tabella: esercizio (col distretto sotto), serie, rip, rec. */
   const intestazioni = Array.from(colonna(doc, "uno").querySelectorAll("thead th")).map((th) => th.textContent);
   assert.deepEqual(intestazioni, ["Esercizio", "Serie", "Rip.", "Rec."]);
   const cella = colonna(doc, "uno").querySelector("tbody td.pc-nome");
-  assert.equal(cella.querySelector("b").textContent, "Hip thrust", "il nome in chiaro");
-  assert.equal(cella.querySelector("small").textContent, "Glutei", "il distretto su una riga piccola sotto");
+  assert.equal(cella.querySelector("b").textContent, "Leg curl", "il nome in chiaro");
+  assert.equal(cella.querySelector("small").textContent, "Femorali", "il distretto su una riga piccola sotto");
 
   /* Le due tabelle restano allineate: le righe hanno la stessa altezza fissa. */
   const regola = /\.pc-col-tab td\{([^}]*)\}/.exec(css);
   assert.ok(regola, "la regola delle celle c'è");
-  assert.match(regola[1], /height:\s*34px/, "righe di altezza fissa: le due colonne non scivolano");
+  assert.match(regola[1], /height:\s*38px/, "righe di altezza fissa: le due colonne non scivolano");
 });
 
 test("163.7 i distretti di un programma solo: «non registrato», mai zero", () => {
   const { doc } = scena();
-  const petto = rigaDiff(doc, "petto");
-  assert.equal(petto.getAttribute("data-genere"), "confronto");
-  assert.equal(petto.querySelector(".pc-d1").textContent, "4");
+  /* Passo 44: le differenze sono quelle della SCHEDA A scelta. Il petto sta
+   * nella scheda B del consultato, quindi qui non c'è: la riga dei pettorali
+   * arriva dall'altro programma e la differenza non si calcola. */
+  const petto = rigaDiff(doc, "Pettorali");
+  assert.equal(petto.getAttribute("data-genere"), "non-registrato");
+  assert.equal(petto.querySelector(".pc-d1").textContent, "\u2014");
   assert.equal(petto.querySelector(".pc-d2").textContent, "5");
-  assert.equal(petto.querySelector(".pc-delta").textContent, "\u22121", "4 − 5: qui se ne fanno una in meno");
-  assert.match(petto.querySelector(".pc-delta").className, /giu/, "e in rosso");
+  assert.equal(petto.querySelector(".pc-delta").textContent, "non registrato");
 
-  [["glutei", "4"]].forEach(([d, valore]) => {
+  [["Glutei", "4"]].forEach(([d, valore]) => {
     const riga = rigaDiff(doc, d);
     assert.ok(riga, "la riga di " + d + " c'è");
     assert.equal(riga.getAttribute("data-genere"), "non-registrato");
@@ -368,7 +388,7 @@ test("163.7 i distretti di un programma solo: «non registrato», mai zero", () 
     assert.equal(riga.querySelector(".pc-delta").textContent, "non registrato", "e la differenza lo dice a parole");
     assert.ok(!/\b0\b/.test(riga.textContent), "nessuno zero inventato");
   });
-  [["dorsali", "3"], ["bicipiti", "3"]].forEach(([d, valore]) => {
+  [["Dorsali", "3"]].forEach(([d, valore]) => {
     const riga = rigaDiff(doc, d);
     assert.equal(riga.querySelector(".pc-d1").textContent, "\u2014");
     assert.equal(riga.querySelector(".pc-d2").textContent, valore);
@@ -376,16 +396,16 @@ test("163.7 i distretti di un programma solo: «non registrato», mai zero", () 
   });
 
   /* I femorali ci sono da tutte e due le parti: stessa cifra, Δ «=». */
-  const femorali = rigaDiff(doc, "femorali");
+  const femorali = rigaDiff(doc, "Femorali");
   assert.equal(femorali.getAttribute("data-genere"), "confronto");
   assert.equal(femorali.querySelector(".pc-delta").textContent, "=");
   assert.match(femorali.querySelector(".pc-delta").className, /pari/);
 
-  /* Il verde quando il consultato ne ha di più: settimana 8, petto 4 contro 3. */
+  /* Il verde quando il consultato ne ha di più: settimana 8, femorali 4 contro 3. */
   tasto(doc, 8).click();
-  const pettoOtto = rigaDiff(doc, "petto");
-  assert.equal(pettoOtto.querySelector(".pc-delta").textContent, "+1");
-  assert.match(pettoOtto.querySelector(".pc-delta").className, /su/, "in verde");
+  const femoraliOtto = rigaDiff(doc, "Femorali");
+  assert.equal(femoraliOtto.querySelector(".pc-delta").textContent, "+1");
+  assert.match(femoraliOtto.querySelector(".pc-delta").className, /su/, "in verde");
 });
 
 test("163.8 densità dichiarata, carico dichiarato, e i recuperi che mancano detti per scheda", () => {
@@ -411,7 +431,7 @@ test("163.8 densità dichiarata, carico dichiarato, e i recuperi che mancano det
   const noteBuco = scenaBuco.doc.querySelector(".pc-note").textContent;
   assert.match(noteBuco, /recupero non scritto in 1 esercizio/, "il motivo dice quanti esercizi");
   assert.match(noteBuco, /scheda A: 1/, "e in quale scheda");
-  assert.equal(tot(scenaBuco.doc, "due")[2], "0,82 serie/min", "l'altro programma la densità ce l'ha");
+  assert.equal(tot(scenaBuco.doc, "due")[2], "0,79 serie/min", "l'altro programma, nella scheda A, la densità ce l'ha");
 });
 
 test("163.9 la settimana di scarico e la settimana senza progressione", () => {

@@ -64,7 +64,10 @@ test("161.1 il modello di sola lettura legge i dati veri", () => {
   assert.equal(scheda.codice, "A");
   assert.equal(scheda.nome, "Spinta");
   const panca = scheda.esercizi.filter((e) => e.nome === "panca_piana")[0];
-  assert.equal(panca.distretto, "petto");
+  /* Passo 44: l'etichetta del distretto è normalizzata («petto» → «Pettorali»);
+   * il muscolo com'è scritto resta in `muscolo`, così non si perde niente. */
+  assert.equal(panca.distretto, "Pettorali");
+  assert.equal(panca.muscolo, "petto");
   assert.equal(panca.serie, "4");
   assert.equal(panca.ripetizioni, "10");
   assert.equal(panca.recupero, "90\"");
@@ -75,8 +78,8 @@ test("161.2 le grandezze: volume, esercizi, schede, densità con la formula", ()
   assert.equal(g.schede, 1);
   assert.equal(g.esercizi, 2);
   assert.equal(g.serieSettimana, 7, "4 + 3 serie della settimana 1");
-  const petto = g.volume.filter((v) => v.distretto === "petto")[0];
-  const dorsali = g.volume.filter((v) => v.distretto === "dorsali")[0];
+  const petto = g.volume.filter((v) => v.distretto === "Pettorali")[0];
+  const dorsali = g.volume.filter((v) => v.distretto === "Dorsali")[0];
   assert.equal(petto.serie, 4);
   assert.equal(dorsali.serie, 3);
   /* minuti di recupero: 4×90" + 3×120" = 720" = 12 min; densità 7/12 */
@@ -109,11 +112,11 @@ test("161.4 il confronto: solo grandezze vere, variazione dove c'è, carico dich
   assert.equal(riga("esercizi").variazione, -50, "2 → 1 è −50%");
   assert.equal(riga("serie").uno, 7);
   assert.equal(riga("serie").due, 5);
-  assert.equal(riga("distretto:petto").uno, 4);
-  assert.equal(riga("distretto:petto").due, 5);
-  assert.equal(riga("distretto:petto").variazione, 25, "4 → 5 è +25%");
+  assert.equal(riga("distretto:Pettorali").uno, 4);
+  assert.equal(riga("distretto:Pettorali").due, 5);
+  assert.equal(riga("distretto:Pettorali").variazione, 25, "4 → 5 è +25%");
   /* i dorsali ci sono solo nel primo: la riga resta, senza percentuale */
-  const dorsali = riga("distretto:dorsali");
+  const dorsali = riga("distretto:Dorsali");
   assert.equal(dorsali.genere, "solo-uno");
   assert.equal(dorsali.uno, 3);
   assert.equal(dorsali.due, null);
@@ -182,18 +185,22 @@ test("161.5 dal pannello «Cambia» e dall'Archivio si guarda senza attivare nie
   const corpo = finestra.querySelector(".pc-confronto");
   assert.ok(corpo, "dentro c'è il corpo del confronto");
   const testo = corpo.textContent;
-  assert.match(testo, /Serie a settimana/);
+  assert.match(testo, /Serie della scheda/);
   assert.match(testo, /Densità/);
   assert.match(testo, /Intensità di carico/);
   assert.match(testo, /non disponibile/);
   assert.match(testo, /logbook/);
   /* petto: 4 serie nel consultato, 5 in uso → Δ «−1»; i dorsali stanno solo nel
    * primo, quindi «non registrato», mai zero. */
-  const petto = corpo.querySelector('[data-distretto="petto"]');
-  assert.ok(petto, "la riga del petto c'è");
+  /* Passo 44: la scheda accesa è la A del consultato (panca 4) contro la A
+   * dell'altro (panca 5) → Δ «−1» in rosso; i dorsali stanno solo nel secondo. */
+  const petto = corpo.querySelector('[data-distretto="Pettorali"]');
+  assert.ok(petto, "la riga dei pettorali c'è");
+  assert.equal(petto.querySelector(".pc-d1").textContent, "4");
+  assert.equal(petto.querySelector(".pc-d2").textContent, "5");
   assert.equal(petto.querySelector(".pc-delta").textContent, "\u22121", "4 − 5 = −1");
   assert.match(petto.querySelector(".pc-delta").className, /giu/, "e in rosso: qui se ne fanno meno");
-  const dorsali = corpo.querySelector('[data-distretto="dorsali"]');
+  const dorsali = corpo.querySelector('[data-distretto="Dorsali"]');
   assert.equal(dorsali.querySelector(".pc-delta").textContent, "non registrato");
   assert.equal(dorsali.querySelector(".pc-d1").textContent, "3", "il valore di chi ce l'ha resta");
   assert.equal(dorsali.querySelector(".pc-d2").textContent, "\u2014", "dall'altra parte un trattino, non uno zero");
