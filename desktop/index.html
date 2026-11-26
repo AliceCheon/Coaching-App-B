@@ -7431,9 +7431,11 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   color:var(--muted);font:inherit;font-size:10.6px;padding:1px 7px;cursor:pointer}
 .pg-guarda:hover{border-color:var(--rosa);color:var(--rosa)}
 .pg-guarda[disabled]{opacity:.5;cursor:not-allowed}
-/* Passo 43: il confronto è una finestra alta quanto lo schermo che scorre dentro
-   di sé: la barra delle settimane resta ferma in cima, i due programmi stanno
-   impilati e la pagina sotto non si allunga. Larga fino a 1080 px. */
+/* Passo 43/43c: il confronto è una finestra alta quanto lo schermo che scorre
+   dentro di sé: due file di tab (settimane, schede) ferme in cima e sotto la
+   finestra divisa in due colonne — il programma consultato a sinistra, quello
+   in uso a destra, con le stesse righe allineate. Sotto i ~900 px le colonne si
+   mettono una sopra l'altra. Larga fino a 1080 px, la pagina sotto non si allunga. */
 .pc-modale{background:color-mix(in srgb, var(--bg) 78%, transparent)}
 .pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1080px,100%);height:88vh;
   max-height:calc(100vh - 48px);padding:0;overflow:hidden}
@@ -7441,7 +7443,8 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   padding:16px 20px 10px;border-bottom:1px solid var(--line);flex:0 0 auto;margin:0}
 .pc-finestra-sinistra{display:block;min-width:0}
 .pc-finestra-t{display:block;font-size:16px;color:var(--text)}
-.pc-nomi{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.pc-nomi{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.pc-finestra-sotto{display:block;margin-top:5px;font:400 10.8px/1.3 'JetBrains Mono',monospace;color:var(--fioco)}
 .pc-nome-riga{display:flex;align-items:center;gap:8px;font-size:12.3px;color:var(--text)}
 .pc-nome-riga b{font-weight:800}
 .pc-pallino{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block}
@@ -7457,21 +7460,43 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-sett:hover{color:var(--text);border-color:var(--lav)}
 .pc-sett.on{background:rgba(255,79,163,.14);border-color:rgba(255,79,163,.55);color:var(--pink)}
 .pc-sett-sc{display:block;font:400 9.2px/1 'JetBrains Mono',monospace;opacity:.75;margin-top:3px}
+.pc-schede-tab{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 20px;
+  border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--card)}
+.pc-st{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  font:800 11.8px/1 "Nunito Sans",sans-serif;padding:6px 11px;min-width:38px;cursor:pointer}
+.pc-st:hover{color:var(--text);border-color:var(--lav)}
+.pc-st.on{background:rgba(201,167,255,.16);border-color:rgba(201,167,255,.6);color:var(--lav)}
 .pc-corpo-confronto{flex:1 1 auto;overflow:auto;min-height:0;margin-top:0;border-top:0;padding:4px 20px 16px}
-.pc-programma{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;margin-top:12px;background:var(--card-2)}
-.pc-programma-a{border-color:rgba(201,167,255,.4)}
-.pc-programma-b{border-color:rgba(255,79,163,.35)}
-.pc-p-testa{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
-.pc-p-titolo{display:flex;align-items:center;gap:8px;font-size:13.2px;font-weight:900;color:var(--text)}
-.pc-p-conto{font:400 10.6px/1 'JetBrains Mono',monospace;color:var(--fioco)}
+.pc-duetto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:10px;
+  border:1px solid var(--line);border-radius:12px;background:var(--card-2);overflow:hidden}
+.pc-col{padding:12px 14px 10px;min-width:0}
+.pc-col-a{border-right:1px solid var(--line)}
+.pc-col-testa{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.pc-col-testa .pc-nome-riga{font-size:13px}
+.pc-col-conto{margin:0 0 8px;font:400 10.2px/1 'JetBrains Mono',monospace;color:var(--fioco)}
+.pc-col-scheda{margin:2px 0 4px;font-size:11.8px;font-weight:900;color:var(--text)}
+.pc-scheda-manca{margin:8px 0;font-style:italic}
 .pc-volumi{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .pc-vol{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;
   padding:3px 8px;background:rgba(140,110,180,.08)}
 .pc-vol span{font-size:10.4px;color:var(--fioco)}
 .pc-vol b{font:600 11.6px/1 'JetBrains Mono',monospace;color:var(--text)}
 .pc-vol-vuoto{font-size:10.8px;color:var(--fioco);font-style:italic}
-.pc-programma .pc-schede{gap:8px;margin:0}
-.pc-programma .pc-scheda-t{margin:8px 0 4px}
+.pc-col-tab{table-layout:fixed;width:100%;font-size:11.4px}
+.pc-col-tab th{padding:4px 4px;font-size:9px}
+.pc-col-tab td{padding:5px 4px;vertical-align:middle;height:34px}
+.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap}
+.pc-col-tab td.pc-nome{overflow:hidden}
+.pc-col-tab td.pc-nome b{display:block;font-size:11.6px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-col-tab td.pc-nome small{display:block;font-size:9.6px;color:var(--fioco);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-col-tab td.pc-manca{color:var(--muted);font-style:italic}
+.pc-col-tab tr.pc-riga-manca td{background:rgba(255,255,255,.015)}
+@media (max-width: 900px){
+  .pc-duetto{grid-template-columns:minmax(0,1fr)}
+  .pc-col-a{border-right:0;border-bottom:1px solid var(--line)}
+}
 .pc-totali{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px;
   padding-top:10px;border-top:1px dashed var(--line)}
 .pc-tot{display:flex;flex-direction:column;gap:2px;min-width:0}

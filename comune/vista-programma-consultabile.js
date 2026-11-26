@@ -207,29 +207,139 @@ function totaliProgramma(doc, modello, settimana) {
   return box;
 }
 
-/* Un programma dentro il confronto: titolo con il conto, pastiglie del volume,
- * le schede vere una sotto l'altra, i totali. */
-function bloccoProgramma(doc, modello, settimana, classe, numero) {
-  const art = el(doc, "article", "pc-programma " + classe);
-  const testa = el(doc, "div", "pc-p-testa");
-  const tit = el(doc, "span", "pc-p-titolo");
-  tit.appendChild(el(doc, "i", "pc-pallino " + (classe === "pc-programma-a" ? "a" : "b")));
-  tit.appendChild(el(doc, "b", null, nomePulito(modello.nome) || "(senza nome)"));
-  testa.appendChild(tit);
-  testa.appendChild(el(doc, "span", "pc-p-conto",
-    plurale(modello.numeroSchede, "scheda", "schede") + " \u00b7 " + plurale(modello.numeroEsercizi, "esercizio", "esercizi")));
-  art.appendChild(testa);
+/* Le schede del confronto: tutte le lettere che compaiono in almeno uno dei due
+ * programmi, in ordine alfabetico (una scheda senza lettera non si nasconde:
+ * finisce in fondo come «Senza lettera»). Sono i tasti della seconda fila. */
+export function schedeDelConfronto(modelli) {
+  const voci = [];
+  const aggiungi = (codice) => {
+    if (!voci.some((v) => v.codice === codice)) voci.push({ codice: codice });
+  };
+  (modelli || []).forEach((m) => {
+    ((m && m.schede) || []).forEach((s) => aggiungi(testo(s && s.codice) || NON));
+  });
+  voci.sort((a, b) => {
+    if (a.codice === NON) return 1;
+    if (b.codice === NON) return -1;
+    return a.codice.localeCompare(b.codice, "it", { numeric: true });
+  });
+  return voci.map((v) => ({ codice: v.codice, etichetta: v.codice === NON ? "Senza lettera" : v.codice }));
+}
 
-  if (!modello.schedeLette) {
-    art.appendChild(el(doc, "p", "pc-vuoto", modello.motivoSchede || "nessuna scheda letta"));
-    return art;
+function schedaConCodice(modello, codice) {
+  if (codice == null || !modello) return null;
+  return (modello.schede || []).filter((s) => testo(s.codice) === codice)[0] || null;
+}
+
+/* L'ordine unico delle righe: prima gli esercizi del programma di sinistra nel
+ * loro ordine, poi quelli che stanno solo a destra. Così le due colonne hanno le
+ * stesse righe, e riga per riga si legge il confronto. Il legame fra i due è il
+ * nome dell'esercizio (gli id sono diversi da un programma all'altro). */
+function righeUnite(schedaUno, schedaDue) {
+  const sinistra = (schedaUno && schedaUno.esercizi) || [];
+  const destra = (schedaDue && schedaDue.esercizi) || [];
+  /* Il nome pulito da tutte e due le parti: «hip_thrust» e «Hip thrust» sono lo
+   * stesso esercizio, e il confronto non si rompe per un trattino basso. */
+  const chiave = (e) => nomePulito(testo(e && e.nome)).toLowerCase();
+  const presi = [];
+  const righe = [];
+  sinistra.forEach((e) => {
+    let trovato = -1;
+    for (let i = 0; i < destra.length; i += 1) {
+      if (presi.indexOf(i) !== -1) continue;
+      if (chiave(destra[i]) === chiave(e)) { trovato = i; break; }
+    }
+    if (trovato >= 0) presi.push(trovato);
+    righe.push({ uno: e, due: trovato >= 0 ? destra[trovato] : null });
+  });
+  destra.forEach((e, i) => {
+    if (presi.indexOf(i) === -1) righe.push({ uno: null, due: e });
+  });
+  return righe;
+}
+
+/* La tabella di una colonna per la scheda e la settimana scelte. Il distretto
+ * sta su una riga piccola sotto il nome (a metà larghezza non c'è posto per una
+ * colonna sua). Le righe sono quelle comuni: dove l'esercizio non c'è, il nome è
+ * un trattino e le caselle restano vuote. */
+function tabellaColonna(doc, righe, lato, numero) {
+  const tab = el(doc, "table", "pc-tab pc-col-tab");
+  const cg = doc.createElement("colgroup");
+  ["auto", "52px", "58px", "62px"].forEach((larghezza) => {
+    const c = doc.createElement("col");
+    c.setAttribute("style", "width:" + larghezza);
+    cg.appendChild(c);
+  });
+  tab.appendChild(cg);
+  const thead = el(doc, "thead");
+  const trh = el(doc, "tr");
+  ["Esercizio", "Serie", "Rip.", "Rec."].forEach((t, i) => trh.appendChild(el(doc, "th", i === 0 ? null : "pc-n", t)));
+  thead.appendChild(trh);
+  tab.appendChild(thead);
+  const corpo = el(doc, "tbody");
+  righe.forEach((r) => {
+    const e = r[lato];
+    const tr = el(doc, "tr");
+    if (!e) {
+      tr.className = "pc-riga-manca";
+      tr.appendChild(el(doc, "td", "pc-nome pc-manca", TRATTINO));
+      ["pc-n", "pc-n", "pc-n"].forEach((c) => tr.appendChild(el(doc, "td", c, "")));
+    } else {
+      const v = valoriSettimana(e, numero);
+      const cella = el(doc, "td", "pc-nome");
+      const nome = el(doc, "b", null, nomePulito(e.nome) || "(senza nome)");
+      if (testo(e.nome)) cella.setAttribute("title", nomePulito(e.nome));
+      cella.appendChild(nome);
+      /* Lo spazio serve al testo letto e copiato («Hip thrust Glutei»): la riga
+       * sotto è un blocco, quindi a schermo non lascia un buco. */
+      cella.appendChild(doc.createTextNode(" "));
+      cella.appendChild(el(doc, "small", "pc-dist", e.distretto ? nomePulito(e.distretto) : TRATTINO));
+      tr.appendChild(cella);
+      tr.appendChild(el(doc, "td", "pc-n", v.serie || TRATTINO));
+      tr.appendChild(el(doc, "td", "pc-n", v.ripetizioni || TRATTINO));
+      tr.appendChild(el(doc, "td", "pc-n", v.recupero || TRATTINO));
+    }
+    corpo.appendChild(tr);
+  });
+  tab.appendChild(corpo);
+  return tab;
+}
+
+/* Una colonna del confronto: nome del programma col pallino, il conto, le
+ * pastiglie del volume della settimana, la scheda scelta (o la frase che dice
+ * che quel programma non ce l'ha) e i totali in fondo. */
+function colonnaProgramma(doc, voci) {
+  const o = voci;
+  const col = el(doc, "div", "pc-col " + (o.lato === "uno" ? "pc-col-a" : "pc-col-b"));
+  const testa = el(doc, "div", "pc-col-testa");
+  testa.appendChild(rigaNome(doc, o.lato === "uno" ? "a" : "b",
+    nomePulito(o.modello.nome) || "(senza nome)", o.etichetta));
+  col.appendChild(testa);
+  col.appendChild(el(doc, "p", "pc-col-conto",
+    plurale(o.modello.numeroSchede, "scheda", "schede") + " \u00b7 "
+    + plurale(o.modello.numeroEsercizi, "esercizio", "esercizi")));
+
+  if (!o.modello.schedeLette) {
+    col.appendChild(el(doc, "p", "pc-vuoto", o.modello.motivoSchede || "nessuna scheda letta"));
+    return col;
   }
-  art.appendChild(pastiglieVolume(doc, settimana));
-  const schede = el(doc, "div", "pc-schede");
-  modello.schede.forEach((s) => schede.appendChild(bloccoSchedaIntera(doc, s, numero)));
-  art.appendChild(schede);
-  art.appendChild(totaliProgramma(doc, modello, settimana));
-  return art;
+  col.appendChild(pastiglieVolume(doc, o.settimana));
+
+  if (!o.scheda) {
+    col.appendChild(el(doc, "p", "pc-vuoto pc-scheda-manca",
+      "Scheda " + (o.codice === NON ? "senza lettera" : o.codice) + " non presente in questo programma"));
+  } else {
+    const titolo = "Scheda " + (o.codice === NON ? "senza lettera" : o.codice)
+      + (testo(o.scheda.nome) ? " \u2014 " + nomePulito(o.scheda.nome) : "");
+    col.appendChild(el(doc, "p", "pc-col-scheda", titolo));
+    if (!o.scheda.esercizi.length) {
+      col.appendChild(el(doc, "p", "pc-vuoto", "Questa scheda non ha esercizi leggibili."));
+    } else {
+      col.appendChild(tabellaColonna(doc, o.righe, o.lato, o.numero));
+    }
+  }
+  col.appendChild(totaliProgramma(doc, o.modello, o.settimana));
+  return col;
 }
 
 /* Le differenze per distretto della settimana scelta. Δ è «questo meno quello in
@@ -406,15 +516,24 @@ export function apriConfronto(doc, opzioni) {
   const nomeDue = nomePulito(modelloDue.nome) || "(senza nome)";
   const etichettaUno = modelloUno.archiviato ? "archiviato" : "consultato";
 
+  const vociScheda = schedeDelConfronto([modelloUno, modelloDue]);
+  let settimanaScelta = 1;
+  let schedaScelta = vociScheda.length ? vociScheda[0].codice : null;
+  let sottoTitolo = null;
+
   const { modale, scatola, chiudi } = impalcatura(doc, "Confronto programmi", o.bottone, {
     classeModale: "pc-modale-confronto",
     classeBox: "pc-box-confronto",
     testa: (sinistra) => {
       sinistra.appendChild(el(doc, "b", "pc-finestra-t", "Confronto programmi"));
+      /* I due nomi stanno nell'intestazione ferma: chi è a sinistra e chi a
+       * destra si sa prima di scorrere (e le colonne lo ripetono in cima). */
       const nomi = el(doc, "div", "pc-nomi");
       nomi.appendChild(rigaNome(doc, "a", nomeUno, etichettaUno));
       nomi.appendChild(rigaNome(doc, "b", nomeDue, "in uso"));
       sinistra.appendChild(nomi);
+      sottoTitolo = el(doc, "span", "pc-finestra-sotto", "");
+      sinistra.appendChild(sottoTitolo);
     }
   });
 
@@ -445,35 +564,78 @@ export function apriConfronto(doc, opzioni) {
     } else if (s.ripetizioni) {
       b.setAttribute("title", "ripetizioni scritte: " + s.ripetizioni);
     }
+    b.addEventListener("click", () => { settimanaScelta = s.numero; disegna(); });
     barra.appendChild(b);
+    return b;
+  });
+
+  /* La seconda fila: le schede. Una tab per ogni lettera presente in almeno uno
+   * dei due programmi; la scelta vale per tutte e due le colonne. */
+  const barraSchede = el(doc, "div", "pc-schede-tab");
+  barraSchede.setAttribute("role", "tablist");
+  barraSchede.setAttribute("aria-label", "Scheda");
+  barraSchede.appendChild(el(doc, "span", "pc-sett-davanti", "Scheda"));
+  const tastiScheda = vociScheda.map((v) => {
+    const b = el(doc, "button", "pc-st");
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("data-scheda", v.codice);
+    b.appendChild(doc.createTextNode(v.etichetta));
+    b.addEventListener("click", () => { schedaScelta = v.codice; disegna(); });
+    barraSchede.appendChild(b);
     return b;
   });
 
   const corpo = el(doc, "div", "pc-corpo pc-corpo-confronto pc-confronto");
   const piazzaSalva = el(doc, "div", "pc-piazza-salva");
-  let scelta = 1;
 
-  const mostra = (numero) => {
-    const n = Math.min(quante, Math.max(1, Number(numero) || 1));
-    scelta = n;
+  /* Disegna tutto quello che dipende da settimana e scheda scelte. */
+  function disegna() {
+    const n = settimanaScelta;
     tasti.forEach((b) => {
       const suo = Number(b.getAttribute("data-s")) === n;
       b.classList.toggle("on", suo);
       b.setAttribute("aria-selected", suo ? "true" : "false");
     });
+    tastiScheda.forEach((b) => {
+      const suo = b.getAttribute("data-scheda") === schedaScelta;
+      b.classList.toggle("on", suo);
+      b.setAttribute("aria-selected", suo ? "true" : "false");
+    });
+
+    const schedaUno = schedaConCodice(modelloUno, schedaScelta);
+    const schedaDue = schedaConCodice(modelloDue, schedaScelta);
+    const righe = righeUnite(schedaUno, schedaDue);
+    const settUno = grandezzeUno.perSettimana[n - 1];
+    const settDue = grandezzeDue.perSettimana[n - 1];
+    if (sottoTitolo) {
+      sottoTitolo.textContent = "Settimana " + n
+        + (schedaScelta == null ? "" : " \u00b7 Scheda " + (schedaScelta === NON ? "senza lettera" : schedaScelta));
+    }
+
     corpo.textContent = "";
-    const confronto = confrontoSettimana(grandezzeUno, grandezzeDue, n, { nomeUno: nomeUno, nomeDue: nomeDue });
-    corpo.appendChild(bloccoProgramma(doc, modelloUno, grandezzeUno.perSettimana[n - 1], "pc-programma-a", n));
-    corpo.appendChild(bloccoProgramma(doc, modelloDue, grandezzeDue.perSettimana[n - 1], "pc-programma-b", n));
-    corpo.appendChild(sezioneDifferenze(doc, confronto, nomeUno, nomeDue));
+    const duetto = el(doc, "div", "pc-duetto");
+    duetto.setAttribute("data-settimana", String(n));
+    duetto.setAttribute("data-scheda", schedaScelta == null ? "" : schedaScelta);
+    duetto.appendChild(colonnaProgramma(doc, {
+      modello: modelloUno, settimana: settUno, righe: righe, lato: "uno",
+      numero: n, codice: schedaScelta, scheda: schedaUno, etichetta: etichettaUno
+    }));
+    duetto.appendChild(colonnaProgramma(doc, {
+      modello: modelloDue, settimana: settDue, righe: righe, lato: "due",
+      numero: n, codice: schedaScelta, scheda: schedaDue, etichetta: "in uso"
+    }));
+    corpo.appendChild(duetto);
+    corpo.appendChild(sezioneDifferenze(doc,
+      confrontoSettimana(grandezzeUno, grandezzeDue, n, { nomeUno: nomeUno, nomeDue: nomeDue }),
+      nomeUno, nomeDue));
     corpo.appendChild(noteDichiarate(doc, [
-      { nome: nomeUno, settimana: grandezzeUno.perSettimana[n - 1] },
-      { nome: nomeDue, settimana: grandezzeDue.perSettimana[n - 1] }
+      { nome: nomeUno, settimana: settUno },
+      { nome: nomeDue, settimana: settDue }
     ]));
     corpo.appendChild(piazzaSalva);
     corpo.setAttribute("data-settimana", String(n));
-  };
-  tasti.forEach((b) => b.addEventListener("click", () => mostra(Number(b.getAttribute("data-s")))));
+  }
 
   const piede = el(doc, "footer", "pc-piede");
   piede.appendChild(el(doc, "span", "pc-suggerimento", "Clicca un'altra settimana: la scheda cambia con lei."));
@@ -499,10 +661,11 @@ export function apriConfronto(doc, opzioni) {
   piede.appendChild(tastiPiede);
 
   scatola.appendChild(barra);
+  if (vociScheda.length) scatola.appendChild(barraSchede);
   scatola.appendChild(corpo);
   scatola.appendChild(piede);
   doc.body.appendChild(modale);
-  mostra(1);
+  disegna();
   if (chiudiBtn.focus) { try { chiudiBtn.focus(); } catch (e) { /* senza fuoco si legge lo stesso */ } }
   return modale;
 }

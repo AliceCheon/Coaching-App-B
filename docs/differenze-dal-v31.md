@@ -123,41 +123,41 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 6417-6421 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
 - righe 7100-7101 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 - righe 7229-7265 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
-- righe 7377-7504 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
-- righe 7535 — (riga vuota)
-- righe 7562-7589 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
-- righe 7634 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
-- righe 7680 — (riga vuota)
-- righe 7730-7731 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
-- righe 7804 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
-- righe 8083 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
-- righe 8240 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
-- righe 8628-8629 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
-- righe 9082 — var SEED = {config:{}, sessioni:[]};
-- righe 9097-9100 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
-- righe 9124-9127 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
-- righe 9134-9161 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
-- righe 9164-9169 — function logbookVivo(){
-- righe 9172-9175 — function pittaOverview(){
-- righe 9178-9204 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
-- righe 9217-9219 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9225-9227 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
-- righe 9230 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
-- righe 9236 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
-- righe 9244-9246 — el('ov-barsn').textContent = PV.letto
-- righe 9249-9252 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
-- righe 9256-9263 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
-- righe 9266 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9274-9294 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
-- righe 9297-9309 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
-- righe 9348 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
-- righe 9399 — if(false){
-- righe 9596 — '<div class="ese-chips2">' +
-- righe 10147-10150 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
-- righe 10155 — kpi.innerHTML =
-- righe 10330-10339 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
-- righe 10449 — (riga vuota)
-- righe 10493-10828 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 7377-7529 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
+- righe 7560 — (riga vuota)
+- righe 7587-7614 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+- righe 7659 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
+- righe 7705 — (riga vuota)
+- righe 7755-7756 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
+- righe 7829 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
+- righe 8108 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
+- righe 8265 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
+- righe 8653-8654 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+- righe 9107 — var SEED = {config:{}, sessioni:[]};
+- righe 9122-9125 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
+- righe 9149-9152 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
+- righe 9159-9186 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+- righe 9189-9194 — function logbookVivo(){
+- righe 9197-9200 — function pittaOverview(){
+- righe 9203-9229 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
+- righe 9242-9244 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9250-9252 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
+- righe 9255 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
+- righe 9261 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
+- righe 9269-9271 — el('ov-barsn').textContent = PV.letto
+- righe 9274-9277 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+- righe 9281-9288 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+- righe 9291 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9299-9319 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
+- righe 9322-9334 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
+- righe 9373 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
+- righe 9424 — if(false){
+- righe 9621 — '<div class="ese-chips2">' +
+- righe 10172-10175 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+- righe 10180 — kpi.innerHTML =
+- righe 10355-10364 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
+- righe 10474 — (riga vuota)
+- righe 10518-10853 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
@@ -197,3 +197,4 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - **Passo 41** — «Cambia» in Programmi non è più «in arrivo»: apre l'elenco dei programmi che stanno in B, con nome, stato (in uso, in bozza, disponibile, archiviato), quante schede e il tasto «Apri». Il programma in uso è segnato e non si riapre; un archiviato resta spento col motivo; l'apertura passa dalla conferma di sempre («quello di adesso resta salvato com'è») e dalla scrittura in zona B con la voce di registro. Con un programma solo il pannello lo dice. Collegata anche l'apertura del programma creato dallo scheletro: adesso c'è sempre una strada per tornare indietro.
 - **Passo 42** — il pannello di «Cambia» sta **sopra** la pagina invece di allungarla: è una finestrella ancorata al tasto (posizione fissa, z-index alto), non entra più nella carta, si apre verso l'alto quando sotto non c'è spazio e si chiude col clic fuori, con Esc e con «Chiudi»; a 1280 px le voci restano leggibili. I programmi **archiviati si guardano**: «Guarda» (nel pannello e nella tabella dell'Archivio) apre una vista di sola lettura con nome, periodo, fase, rotazione e le schede con esercizi, serie, ripetizioni e recuperi presi dai documenti veri — non attiva niente e non scrive niente. Dalla stessa vista «Confronta con quello in uso» affianca i due programmi solo su grandezze che stanno nei dati: schede, esercizi, serie a settimana (totale e per distretto, contate sul distretto scritto nell'esercizio) e densità = serie ÷ minuti di recupero scritti (Σ serie × recupero ÷ 60, formula dichiarata), con la variazione in % dove il valore c'è da entrambe le parti; l'**intensità di carico** è dichiarata non disponibile col motivo (i carichi vivono nel logbook, non nelle schede) e dove i recuperi mancano la densità non si calcola invece di valere zero. «Salva come nuovo programma» crea un programma **nuovo in bozza** copiando schede ed esercizi di quello scelto (nome proposto «<nome> · copia», id nuovi, legami delle tecniche rimessi): scrive solo documenti nuovi, schede prima e programma dopo, con le funzioni di `comune/scritture-b.js`. «Confronta con…» nella carta del programma non è più «in arrivo»: apre lo stesso elenco in modo confronto.
 - **Passo 43** — il confronto fra due programmi diventa quello del mockup approvato: si apre in una **finestra alta quanto lo schermo** (88vh, fino a 1080 px) che **scorre dentro di sé**, con la barra delle settimane ferma in cima, e non allunga la pagina. I tasti delle settimane sono tanti quante sono quelle dei due programmi (il massimo fra i due, mai meno di 8; dieci se i dati ne hanno dieci), ognuno col **range di ripetizioni** scritto in quella settimana oppure «**scarico**» quando la settimana è segnata così nei dati, e quello scelto resta evidenziato. Dentro, i due programmi sono **impilati** (il consultato sopra, quello in uso sotto): una riga compatta di pastiglie col distretto e la somma delle serie di quella settimana; poi le **schede vere**, una sotto l'altra, col titolo «Scheda A — <nome>» e la tabella Esercizio · Distretto · Serie · Rip. · Rec. coi valori **della settimana scelta** presi da `progression.weeks` (i recuperi come sono scritti, senza normalizzarli; «—» dove la progressione non scrive quella settimana, mai uno zero); poi i **totali** (serie a settimana, esercizi, densità = serie × recupero ÷ 60, formula dichiarata). Sotto, le **differenze per distretto** della settimana scelta con Δ verde/rosso, e «**non registrato**» dove il distretto sta in un programma solo. Restano le dichiarazioni: intensità di carico **non disponibile** (i carichi vivono nel logbook) e, se in una scheda i recuperi mancano, la densità non si calcola e si dice in quale scheda. Restano i tasti «Confronta con quello in uso» e «Salva come nuovo programma»; la vista di sola lettura lascia il posto alla finestra del confronto invece di impilarcisi sopra.
+- **Passo 43c** — il confronto cambia disposizione, come ha chiesto Alice: **due colonne**, il programma consultato a sinistra e quello in uso a destra (nome, pallino e stato in cima a ogni colonna, e i due nomi anche nell'intestazione ferma), e **due file di tab in cima**, tutte e due ferme mentre il corpo scorre: prima le **settimane** (col range di ripetizioni o «scarico»), subito sotto le **schede** — tutte le lettere presenti in almeno uno dei due programmi, in ordine alfabetico (una scheda senza lettera finisce in fondo come «Senza lettera»). Settimana e scheda scelte valgono per tutte e due le colonne, così si guarda «settimana 1, scheda C» nei due programmi affiancati. Ogni colonna mostra le pastiglie del volume di quella settimana, il titolo della scheda («Scheda A — …») e la tabella Esercizio · Serie · Rip. · Rec. (il distretto su una riga piccola sotto il nome), coi valori di quella settimana e «—» dove la progressione non li scrive. Le righe delle due colonne sono **allineate**: si costruisce un ordine unico (prima gli esercizi della colonna di sinistra nel loro ordine, poi quelli che stanno solo a destra) e ogni colonna riempie la sua cella col trattino dove l'esercizio non c'è. Se un programma non ha quella scheda, la sua colonna lo dice in chiaro («Scheda C non presente in questo programma») invece di mostrare una tabella vuota. Restano i totali per colonna (serie, esercizi, densità in serie/min), il blocco delle differenze per distretto con Δ e «non registrato», le dichiarazioni (carico non disponibile, formula della densità), la finestra a 88vh con lo scorrimento dentro e la chiusura con ×, Esc e clic fuori. Sotto i ~900 px le due colonne si mettono una sopra l'altra.
