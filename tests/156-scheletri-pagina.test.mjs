@@ -192,3 +192,18 @@ test("156.7 il permesso mancante si spiega, e la linguetta lo dice", async () =>
   assert.match(riga.textContent, /Le regole del database non permettono/);
   assert.equal(/Missing or insufficient/.test(riga.textContent), false, "niente messaggio grezzo del database");
 });
+
+/* L'elenco degli esercizi che esce sotto la riga veniva tagliato dalla scheda
+ * (overflow:hidden): sulle ultime righe non si poteva scegliere niente.
+ * Qui si guarda la regola di stile e la funzione che apre la lista. */
+test("156.8 l'elenco degli esercizi non resta tagliato dalla scheda", () => {
+  const css = pagina;
+  const scheda = (css.match(/\.sk-scheda\{[^}]*\}/) || [""])[0];
+  assert.ok(scheda, "la regola .sk-scheda c'è");
+  assert.equal(/overflow\s*:\s*hidden/.test(scheda), false, "la scheda non taglia più quello che esce: " + scheda);
+  const sug = (css.match(/\.sk-sug\{[^}]*\}/) || [""])[0];
+  assert.match(sug, /z-index\s*:\s*(\d+)/, "l'elenco sta sopra il resto della pagina");
+  assert.match(css, /\.sk-sug\.su\{[^}]*bottom/, "esiste la variante che si apre verso l'alto");
+  assert.match(css, /function apriSug\(/, "esiste la funzione che sceglie sopra o sotto");
+  assert.match(css, /sotto < 200/, "e decide guardando lo spazio che resta sotto la riga");
+});

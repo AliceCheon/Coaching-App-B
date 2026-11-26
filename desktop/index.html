@@ -827,7 +827,9 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
   color:var(--testo);font-family:inherit;font-size:13px;padding:8px 11px;outline:none;transition:.14s}
 .sk-due input:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,79,163,.12)}
 .sk-sub{font-size:10.8px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--fioco);margin:4px 0 10px}
-.sk-scheda{border:1px solid var(--linea);border-radius:13px;margin-bottom:12px;overflow:hidden;background:var(--bg)}
+/* Passo 36: qui c'era overflow:hidden — l'elenco degli esercizi, che esce sotto la
+   riga, restava tagliato sulle ultime righe della scheda e non si poteva scegliere. */
+.sk-scheda{border:1px solid var(--linea);border-radius:13px;margin-bottom:12px;overflow:visible;background:var(--bg)}
 .sk-sh{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);flex-wrap:wrap}
 .sk-slet{display:grid;place-items:center;min-width:26px;height:24px;border-radius:7px;background:rgba(255,79,163,.16);
   color:var(--pink);font-size:12px;font-weight:800;font-family:var(--font)}
@@ -861,7 +863,10 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .sk-ex::placeholder{color:var(--fioco)}
 .sk-sug{position:absolute;left:0;right:0;top:calc(100% + 3px);background:#221231;border:1px solid var(--lav);
   border-radius:9px;max-height:190px;overflow:auto;z-index:40;box-shadow:0 14px 30px rgba(0,0,0,.55);display:none}
-.sk-sug.on{display:block}
+.sk-sug.on{display:block;z-index:90}
+/* Quando la riga è in fondo allo schermo l'elenco si apre verso l'alto:
+   altrimenti uscirebbe dalla finestra e non si vedrebbe lo stesso. */
+.sk-sug.su{top:auto;bottom:calc(100% + 3px)}
 .sk-opt{padding:6px 10px;font-size:12.2px;color:var(--testo);cursor:pointer;display:flex;justify-content:space-between;gap:8px}
 .sk-opt:hover{background:rgba(255,79,163,.16)}
 .sk-opt span{color:var(--fioco);font-size:10.4px}
@@ -5559,7 +5564,7 @@ disegnaCiambellaFaseD();
         sug.innerHTML = list.length ? list.map(function(e){
           return '<div class="sk-opt" data-i="' + i + '" data-j="' + j + '" data-n="' + esc(e.n) + '">' + esc(e.n) + '<span>' + esc(e.g) + '</span></div>';
         }).join("") : '<div class="sk-opt" style="color:#7D6699">Nessun esercizio per questo gruppo</div>';
-        sug.classList.add("on");
+        apriSug(sug, t);
       }
       return;
     }
@@ -5576,9 +5581,22 @@ disegnaCiambellaFaseD();
       sug.innerHTML = list.map(function(e){
         return '<div class="sk-opt" data-i="' + i + '" data-j="' + j + '" data-n="' + esc(e.n) + '">' + esc(e.n) + '<span>' + esc(e.g) + '</span></div>';
       }).join("");
-      sug.classList.add("on");
+      apriSug(sug, t);
     }
   });
+
+  /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
+   * sopra: altrimenti resta fuori schermo e sembra che non ci sia. */
+  function apriSug(sug, campo){
+    if (!sug) return;
+    sug.classList.add("on");
+    sug.classList.remove("su");
+    if (!campo || !campo.getBoundingClientRect) return;
+    var r = campo.getBoundingClientRect();
+    var sotto = window.innerHeight - r.bottom;
+    var sopra = r.top;
+    if (sotto < 200 && sopra > sotto) sug.classList.add("su");
+  }
 
   function rinumera(){
     stato.schede.forEach(function(s2, i){ s2.lettera = String.fromCharCode(65 + i); });
