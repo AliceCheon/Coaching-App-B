@@ -893,7 +893,9 @@ export async function avvia(doc, win) {
       editor: editor,
       piani: pianiSchede,
       programma: {
-        id: attivo && attivo.programma ? String(attivo.programma.id || "") : "",
+        /* Passo 15b — l'id del DOCUMENTO, non quello del meta: la scrittura
+         * della testata cerca il documento in B e con «prg-…» non lo trovava. */
+        id: attivo && attivo.programma ? String(attivo.programma.docId || attivo.programma.id || "") : "",
         inizio: rp.profilo.inizio,
         fase: nomePulito(rp.profilo.fase),
         /* Punto 15 — anche giorni, settimane e rotazione si scrivono dalla

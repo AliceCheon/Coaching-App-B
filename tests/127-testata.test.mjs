@@ -71,9 +71,11 @@ const righe = (k) => {
 const schedaA = () => zona.datiDi("schede", ID_A) || {};
 const schedaB = () => zona.datiDi("schede", ID_B) || {};
 const meta = () => zona.datiDi("programmi", "program-v2-meta-prg-viva").programMeta || {};
-/* testataProgramma scrive sul DOCUMENTO del programma (leggiProgrammaB):
- * guardare il META sarebbe guardare il documento sbagliato. */
-const docProgramma = () => zona.datiDi("programmi", "prg-viva") || {};
+/* Passo 15b — la testata vive DENTRO `programMeta` dei programmi v2: la lettura
+ * restituisce il meta come programma, e scriverla in cima al documento la
+ * rendeva invisibile (la scrittura «riusciva» e il valore non cambiava mai).
+ * Qui si guarda il documento che il programma usa davvero: quello del meta. */
+const docProgramma = () => (zona.datiDi("programmi", "program-v2-meta-prg-viva") || {}).programMeta || {};
 const scaricoA = () => ((schedaA().sheet || {}).pianoScarico) || null;
 const campi = (chiave) => Array.from(doc.querySelectorAll('[data-pr-c="' + chiave + '"]'));
 const stato = () => String((doc.querySelector("[data-tono]") || {}).textContent || "");

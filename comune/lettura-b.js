@@ -70,6 +70,10 @@ function programmaPiuRecente(a, b) {
 export function programmiDaDocumenti(documenti) {
   const elenco = (Array.isArray(documenti) ? documenti : []).filter((d) => d && typeof d === "object");
   const metaPerId = Object.create(null);
+  /* Passo 15b — il documento che porta il programma: senza il suo id, la
+   * scrittura della testata (data, fase, giorni, settimane, rotazione) cerca
+   * `prg-…` fra i documenti e non lo trova, quindi rifiuta. */
+  const docPerId = Object.create(null);
   const v1PerId = Object.create(null);
   const ordineMeta = [];
   const ordineV1 = [];
@@ -85,10 +89,13 @@ export function programmiDaDocumenti(documenti) {
       if (!pid) { scartati += 1; return; }
       if (Object.prototype.hasOwnProperty.call(metaPerId, pid)) {
         v2Doppioni += 1;
-        metaPerId[pid] = programmaPiuRecente(metaPerId[pid], dati.programMeta);
+        const tenuto = programmaPiuRecente(metaPerId[pid], dati.programMeta);
+        if (tenuto === dati.programMeta) docPerId[pid] = testo(d.id);
+        metaPerId[pid] = tenuto;
         return;
       }
       metaPerId[pid] = dati.programMeta;
+      docPerId[pid] = testo(d.id);
       ordineMeta.push(pid);
       return;
     }
@@ -112,7 +119,7 @@ export function programmiDaDocumenti(documenti) {
   const giaPresenti = Object.create(null);
   ordineMeta.forEach((chiave) => {
     giaPresenti[chiave] = true;
-    finali.push({ chiave, programma: metaPerId[chiave] });
+    finali.push({ chiave, programma: Object.assign({}, metaPerId[chiave], { docId: docPerId[chiave] }) });
   });
   ordineV1.forEach((chiave) => {
     if (giaPresenti[chiave]) { v1Doppioni += 1; return; }

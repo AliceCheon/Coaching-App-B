@@ -71,7 +71,9 @@ const righe = (k) => {
 };
 const schedaA = () => zona.datiDi("schede", ID_A) || {};
 const schedaB = () => zona.datiDi("schede", ID_B) || {};
-const prog = () => zona.datiDi("programmi", "prg-viva") || {};
+/* Passo 15b — la testata dei programmi v2 vive dentro `programMeta`: è quello
+ * che la pagina legge e che l'app scrive (il documento piatto è la copia v1). */
+const prog = () => ((zona.datiDi("programmi", "program-v2-meta-prg-viva") || {}).programMeta) || {};
 const meta = () => ((zona.datiDi("programmi", "program-v2-meta-prg-viva") || {}).programMeta) || {};
 const campi = (chiave) => Array.from(contenitore.querySelectorAll('[data-pr-c="' + chiave + '"]'));
 const bottone = (testo) => Array.from(contenitore.querySelectorAll("button"))
@@ -116,14 +118,18 @@ test("127b.2 fase: la tendina scrive la fase nel programma e il campo riletto la
   const fase = campi("programma-fase")[0];
   assert.ok(fase, "manca il campo Fase");
   assert.equal(String(prog().phase), "Bulk", "si parte da Bulk: " + JSON.stringify(prog().phase));
-  const primaMeta = JSON.stringify(meta());
+  /* Passo 15b — il documento piatto (la vecchia copia v1) non si tocca più:
+   * la testata si scrive dentro il meta, che è quello che la pagina legge. */
+  const primaPiatto = JSON.stringify(zona.datiDi("programmi", "prg-viva") || {});
   scriviChange(fase, "Cut");
   await attendiFinche(() => String(prog().phase) === "Cut", 12000,
     "la fase non e' arrivata nel programma: " + JSON.stringify(prog().phase));
   const riletto = campi("programma-fase")[0];
   assert.ok(riletto, "dopo il cambio la pagina non ha piu' il campo Fase");
   assert.equal(String(riletto.value), "Cut", "il campo riletto non mostra Cut: " + JSON.stringify(riletto.value));
-  assert.equal(JSON.stringify(meta()), primaMeta, "cambiare la fase ha toccato il documento meta");
+  assert.equal(String(meta().phase), "Cut", "la fase non è finita nel meta: " + JSON.stringify(meta().phase));
+  assert.equal(JSON.stringify(zona.datiDi("programmi", "prg-viva") || {}), primaPiatto,
+    "la copia piatta del programma è stata toccata: la testata vive nel meta");
   scriviChange(riletto, "Bulk");
   await attendiFinche(() => String(prog().phase) === "Bulk", 12000,
     "non sono riuscito a rimettere Bulk: " + JSON.stringify(prog().phase));

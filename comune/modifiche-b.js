@@ -1716,6 +1716,17 @@ export function lettereRotazione(valore) {
   return { ok: true, lettere: lettere };
 }
 
+/* I programmi v2 tengono i campi della testata DENTRO `programMeta` (la lettura
+ * restituisce proprio il meta come programma). Scriverli in cima al documento li
+ * rendeva invisibili alla pagina e al telefono: la scrittura «riusciva» e il
+ * valore non cambiava mai. Passo 15b. */
+function contenitoreTestata(dati) {
+  const d = dati || {};
+  if (d.programMeta && typeof d.programMeta === "object") return d.programMeta;
+  if (d.program && typeof d.program === "object") return d.program;
+  return d;
+}
+
 export function cambiaTestataProgramma(dati, richiesta, opzioni) {
   const r = richiesta || {};
   const o = opzioni || {};
@@ -1769,7 +1780,7 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
 
   /* Il valore di prima, nella stessa forma: per la rotazione un elenco, per i
    * numeri un numero. Serve all'Annulla per rimettere esattamente com'era. */
-  const primaGrezza = dati[chiave];
+  const primaGrezza = contenitoreTestata(dati)[chiave];
   let primaPiano;
   let prima;
   if (campo === "rotazione") {
@@ -1791,11 +1802,20 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
   if (uguale) return { ok: false, motivo: "il valore non e' cambiato" };
 
   const nuovo = Object.assign({}, dati);
-  if (valore == null || valore === "") delete nuovo[chiave];
-  else nuovo[chiave] = valore;
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const dentro = contenitoreTestata(nuovo);
+  if (dentro === nuovo) {
+    if (valore == null || valore === "") delete nuovo[chiave];
+    else nuovo[chiave] = valore;
+  } else {
+    const meta = Object.assign({}, dentro);
+    if (valore == null || valore === "") delete meta[chiave];
+    else meta[chiave] = valore;
+    meta.updatedAt = quando;
+    nuovo[dati.programMeta ? "programMeta" : "program"] = meta;
+  }
   const versionePrima = Number(dati.versione) || 0;
   nuovo.versione = versionePrima + 1;
-  const quando = o.quando ? String(o.quando) : new Date().toISOString();
   nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: campo };
 
   const voce = {
