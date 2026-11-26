@@ -518,7 +518,10 @@ export async function avvia(doc, win) {
     const improntaPrima = stato.impronta;
     stato.letture += 1;
 
-    if (o.forza !== true && impronta === improntaPrima) return Object.assign({ ridisegnato: false }, esito);
+    /* Niente da ridisegnare: si esce con l'esito della lettura, senza toccare
+     * la pagina. (`esito` qui non esiste: prima questa riga lanciava
+     * «esito is not defined» a ogni giro in cui i dati erano già a schermo.) */
+    if (o.forza !== true && impronta === improntaPrima) return { ridisegnato: false };
     /* l'impronta si aggiorna quando il disegno parte davvero: un secondo giro
      * che arriva mentre il primo disegna non puo' ridisegnare lo stesso stato. */
     stato.impronta = impronta;
@@ -554,6 +557,14 @@ export async function avvia(doc, win) {
      * pulsantino +: li' dentro c'e' una modifica che non e' ancora partita. */
     const cellaInModifica = () => {
       const attivoQui = doc.activeElement;
+      /* Passo 16b — mentre si scrive in un campo della testata (descrizione,
+       * messaggio, settimane, rotazione…) la pagina non si ridisegna: il
+       * ridisegno staccava il campo dal documento, il testo restava a metà e la
+       * pagina saltava in basso. La scrittura parte al cambio, il disegno dopo. */
+      if (attivoQui && attivoQui.closest && attivoQui.closest("#programma-attivo")) {
+        const dentro = attivoQui.closest("[data-pr-c]");
+        if (dentro && /^(INPUT|TEXTAREA|SELECT)$/.test(String(attivoQui.tagName || ""))) return true;
+      }
       if (attivoQui && attivoQui.getAttribute && attivoQui.getAttribute("contenteditable") === "true") return true;
       const aperte = doc.querySelectorAll("#programma-attivo [contenteditable='true']");
       for (let i = 0; i < aperte.length; i += 1) {
@@ -960,7 +971,12 @@ export async function avvia(doc, win) {
    * con lo stesso utente: quel giro non e' un motivo per rileggere e
    * ridisegnare. Il primo (o un cambio di account) legge; i successivi passano
    * dal controllo d'impronta, che con i dati uguali non tocca la pagina. */
-  doc.addEventListener("focusout", () => {
+  doc.addEventListener("focusout", (evento) => {
+    /* Spostarsi da un campo all'altro della stessa carta non è «ho finito»:
+     * senza questa riga ogni passaggio faceva rileggere e ridisegnare tutto, e
+     * il testo appena scritto spariva. */
+    const verso = evento && evento.relatedTarget;
+    if (verso && verso.closest && verso.closest("#programma-attivo")) return;
     if (!rinvioAutomatico || modificheInVolo > 0 || sincronizzazione !== null) return;
     rinvioAutomatico = false;
     setTimeout(() => {
