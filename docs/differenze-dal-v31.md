@@ -103,7 +103,10 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 3412 — (riga vuota)
 - righe 3432-3433 — <div><b>Scarico</b><p>La settimana che la scheda segna come scarico tiene la tecnica e toglie volume
 - righe 3492 — </div></div></section><section class="voce-pag" id="pag-impostazioni">
+- righe 3497-3499 — <p><span class="st-badge on" id="st-sync-badge">● cloud · zona B</span></p>
+- righe 3502 — <p>I dati stanno nel tuo account (zona B di Firestore): si leggono e si salvano da qui, e li ritrovi
 - righe 3513 — <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
+- righe 3520-3524 — <p>Quello che questa pagina non fa ancora, e il motivo vero.</p>
 - righe 4169 — <p class="v-testo">Tutti i programmi del backup, attivo compreso: si leggono, non si modificano. Ser
 - righe 4173 — <tbody id="archivio-corpo"></tbody>
 - righe 5326-5334 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si

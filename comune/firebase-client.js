@@ -33,7 +33,18 @@ export function firestoreDi(app) {
 }
 
 /* La persistenza deve essere la stessa di A (che chiama setPersistence(LOCAL)
- * su src/app-main.js:5128): sessione sul dispositivo. */
+ * su src/app-main.js:5128): sessione sul dispositivo.
+ *
+ * Passo 18 — due cinture in più, perché un rifiuto non deve sparire:
+ * - il tipo si legge dall'SDK ma con un ripiego sulla costante "local";
+ * - un SDK che non sa fare setPersistence non deve far cadere l'avvio intero:
+ *   l'errore torna come promessa rifiutata, e chi chiama lo dice sulla carta. */
 export function persistenzaLocale(auth, sdk) {
-  return auth.setPersistence(sdk.auth.Auth.Persistence.LOCAL);
+  const tipo = (sdk && sdk.auth && sdk.auth.Auth && sdk.auth.Auth.Persistence && sdk.auth.Auth.Persistence.LOCAL) || "local";
+  return Promise.resolve().then(() => {
+    if (!auth || typeof auth.setPersistence !== "function") {
+      throw new Error("questo SDK non sa mantenere la sessione");
+    }
+    return auth.setPersistence(tipo);
+  });
 }

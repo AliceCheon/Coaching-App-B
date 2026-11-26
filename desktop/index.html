@@ -3494,12 +3494,12 @@ document.addEventListener('DOMContentLoaded',function(){
     <p class="pg-sub">Quello che questa app sa di sé: dove salva, cosa manca, e come si vede. Niente promesse: solo lo stato reale.</p></div></div>
   <div class="st-grid">
     <div class="st-card"><h3>Sincronizzazione</h3>
-      <p><span class="st-badge off" id="st-sync-badge">● solo locale</span></p>
+      <p><span class="st-badge on" id="st-sync-badge">● cloud · zona B</span></p>
       <div class="st-row"><span>Firebase</span><b id="st-sync-firebase">non collegato</b></div>
-      <div class="st-row"><span>Ultimo salvataggio</span><b id="st-sync-last">—</b></div>
+      <div class="st-row"><span>Accesso</span><b>ricordato qui finché non esci</b></div>
       <div class="st-row"><span>Rete</span><b id="st-sync-net">—</b></div>
       <div class="st-row"><span>Modifiche in coda</span><b id="st-sync-queue">0</b></div>
-      <p>Questa è una pagina HTML statica: le modifiche restano nel browser che stai usando. Non c'è un server che le riceve, quindi non viaggiano né sul telefono né su un altro PC.</p>
+      <p>I dati stanno nel tuo account (zona B di Firestore): si leggono e si salvano da qui, e li ritrovi sullo stesso account anche da un altro PC. La sessione resta su questo dispositivo finché non esci.</p>
       <div class="st-act"><button class="prim" id="st-verifica" type="button">Verifica connessione</button>
         <button id="st-esporta" type="button">Esporta modifiche</button></div>
     </div>
@@ -3517,11 +3517,11 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="st-act"><button id="st-azzera" type="button">Azzera modifiche locali</button></div>
     </div>
     <div class="st-card"><h3>Cosa non funziona, e perché</h3>
-      <p>Non è un guasto: è che questa pagina non ha un backend.</p>
-      <div class="st-row"><span>Salvataggio su cloud</span><b>manca Firebase</b></div>
+      <p>Quello che questa pagina non fa ancora, e il motivo vero.</p>
+      <div class="st-row"><span>Salvataggio su cloud</span><b>presente · zona B</b></div>
       <div class="st-row"><span>Invio al cliente</span><b>manca il server</b></div>
-      <div class="st-row"><span>Login / account</span><b>assenti</b></div>
-      <p>I pulsanti che ne hanno bisogno rispondono, ma non hanno dove scrivere. Nel repo su GitHub l'app vera ha Firebase: qui no.</p>
+      <div class="st-row"><span>Login / account</span><b>Google · la sessione resta</b></div>
+      <p>L'invio al cliente resta fuori: non c'è un server che spedisce niente, e non è una cosa che questa pagina possa fare da sola.</p>
     </div>
   </div>
 </section>

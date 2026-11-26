@@ -17,7 +17,8 @@
 
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { nomePulito } from "../comune/nome-pulito.js";
-import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
+import { entraConGoogle, ascoltaStato, esci } from "../comune/accesso.js";
+import { promemoriaAccesso, ricordaAccesso, dimenticaAccesso, testoEntra, testoNota, testoSpiegazione } from "../comune/promemoria-accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB, leggiScheletroB, salvaScheletroConVersione, eliminaScheletroB } from "../comune/scritture-b.js";
@@ -79,12 +80,62 @@ function caricaFoglioB(doc, base) {
 }
 if (typeof document !== "undefined") caricaFoglioB(document);
 
-/* La card di accesso: nasce solo quando manca la sessione, scompare quando c'è.
+/* Passo 18 — la memoria del dispositivo, provata davvero: se il browser la
+ * nega (finestra privata, storage bloccato) resta null e la carta lo dice,
+ * invece di promettere un ricordo che non c'è. */
+function memoriaDispositivo(win) {
+  try {
+    const m = win && win.localStorage;
+    if (!m) return null;
+    const prova = "bd-b.v1.prova-di-scrittura";
+    m.setItem(prova, "1");
+    m.removeItem(prova);
+    return m;
+  } catch (e) {
+    return null;
+  }
+}
+
+/* L'uscita esplicita: la sessione se ne va, e con lei l'email ricordata.
+ * Il tasto vive in Impostazioni, accanto alla riga che dice chi sei entrata. */
+function montaEsci(doc, auth, memoria, prefisso) {
+  const riga = doc.getElementById("st-sync-firebase");
+  const card = riga && riga.closest ? riga.closest(".st-card") : null;
+  const act = card ? card.querySelector(".st-act") : null;
+  if (!act || doc.getElementById("st-esci")) return;
+  const tasto = doc.createElement("button");
+  tasto.id = "st-esci";
+  tasto.type = "button";
+  tasto.textContent = "Esci da questo dispositivo";
+  tasto.title = "Chiude la sessione e toglie l'email ricordata: il prossimo accesso lo chiederà";
+  tasto.addEventListener("click", async () => {
+    tasto.disabled = true;
+    tasto.textContent = "esco…";
+    try {
+      await esci(auth);
+      dimenticaAccesso(memoria, prefisso);
+      /* La carta la mostra onAuthStateChanged (utente null): qui si aggiorna
+       * solo il tasto, che resta a dire cosa è successo. */
+      tasto.textContent = "uscito · l'accesso lo chiederò";
+    } catch (e) {
+      tasto.disabled = false;
+      tasto.textContent = "non sono riuscita a uscire · riprova";
+    }
+  });
+  act.appendChild(tasto);
+}
+
+/* La card di accesso: compare SOLO quando l'SDK dice che la sessione non c'è.
+ *
+ * Passo 18 — prima nasceva visibile e a ogni apertura si vedeva il tasto
+ * «Entra con Google» finché Firebase non rispondeva: la pagina sembrava
+ * chiedere il login anche a chi era già dentro. Ora nasce spenta; la mostra
+ * chi sa che la sessione manca (`mostra`), o chi aspetta da troppo (`lento`).
  * L'aspetto usa i gettoni del v31 (le stesse variabili CSS). */
 function montaCartaAccesso(doc) {
   const velo = doc.createElement("div");
   velo.id = "veloAccesso31";
-  velo.setAttribute("style", "position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;background:var(--bg,#101018)");
+  velo.setAttribute("style", "position:fixed;inset:0;z-index:99990;display:none;align-items:center;justify-content:center;background:var(--bg,#101018)");
   const carta = doc.createElement("div");
   carta.setAttribute("style", "background:var(--card,#181822);border:1px solid var(--line,#2a2a38);border-radius:22px;padding:30px 32px;max-width:340px;text-align:center;color:var(--text,#eee);box-shadow:0 18px 50px rgba(0,0,0,.45)");
   const titolo = doc.createElement("div");
@@ -92,25 +143,64 @@ function montaCartaAccesso(doc) {
   titolo.textContent = "Barbell Diva B";
   const sottotitolo = doc.createElement("div");
   sottotitolo.setAttribute("style", "font-size:12px;opacity:.7;margin-bottom:22px");
-  sottotitolo.textContent = "il quadro della coach, in sola lettura";
+  sottotitolo.textContent = "i tuoi dati, sul tuo account";
   const bottone = doc.createElement("button");
   bottone.type = "button";
   bottone.textContent = "Entra con Google";
   bottone.setAttribute("style", "font:700 14px/1 inherit;font-family:inherit;color:var(--text,#eee);background:var(--card-2,#20202c);border:1px solid var(--lav,#8b8bf5);border-radius:12px;padding:12px 22px;cursor:pointer");
   const nota = doc.createElement("div");
-  nota.setAttribute("style", "font-size:11px;opacity:.6;margin-top:14px");
-  nota.textContent = "sola lettura · niente viene salvato";
+  nota.setAttribute("style", "font-size:11px;opacity:.6;margin-top:14px;line-height:1.5");
+  nota.textContent = "l'accesso resta su questo dispositivo";
+  /* «Non sei tu?»: c'è solo quando sappiamo chi è l'ultima entrata. Toglie il
+   * promemoria (l'email), non la sessione: qui non c'è sessione aperta. */
+  const cambia = doc.createElement("button");
+  cambia.type = "button";
+  cambia.textContent = "Non sei tu? Usa un altro account";
+  cambia.setAttribute("style", "font:600 11px/1 inherit;font-family:inherit;color:var(--lav,#8b8bf5);background:none;border:0;padding:10px 0 0;cursor:pointer;text-decoration:underline;display:none");
+  const lento = doc.createElement("div");
+  lento.setAttribute("style", "font-size:11px;opacity:.55;margin-top:10px;display:none");
+  lento.textContent = "sto controllando l'accesso: se non compare, controlla la rete";
   const errore = doc.createElement("div");
-  errore.setAttribute("style", "font-size:12px;color:var(--pink,#f06292);margin-top:12px;display:none");
+  errore.setAttribute("style", "font-size:12px;color:var(--pink,#f06292);margin-top:12px;display:none;line-height:1.5");
   carta.appendChild(titolo);
   carta.appendChild(sottotitolo);
   carta.appendChild(bottone);
+  carta.appendChild(cambia);
   carta.appendChild(nota);
+  carta.appendChild(lento);
   carta.appendChild(errore);
   velo.appendChild(carta);
   doc.body.appendChild(velo);
   return {
     velo,
+    bottone,
+    cambia,
+    /* La carta d'accesso vera: chi è l'ultima entrata, e cosa fa la pagina. */
+    mostra(fatti) {
+      const f = fatti || {};
+      const p = f.promemoria || null;
+      bottone.style.display = "";
+      bottone.textContent = testoEntra(p);
+      cambia.style.display = p ? "inline" : "none";
+      nota.textContent = testoNota({ memoria: f.memoria !== false, persistenza: f.persistenza, promemoria: p });
+      lento.style.display = f.lento ? "block" : "none";
+      errore.style.display = "none";
+      errore.textContent = "";
+      velo.style.display = "flex";
+    },
+    /* Errore di lettura: la sessione c'è, quindi il tasto d'accesso qui
+     * sarebbe una bugia. Resta il messaggio e come uscirne. */
+    mostraErrore(messaggio) {
+      bottone.style.display = "none";
+      cambia.style.display = "none";
+      lento.style.display = "none";
+      nota.textContent = "ricarica la pagina; se resta così, la lettura dal cloud non è passata";
+      this.segnala(messaggio);
+      velo.style.display = "flex";
+    },
+    nascondi() {
+      velo.style.display = "none";
+    },
     segnala(messaggio) {
       errore.textContent = messaggio;
       errore.style.display = "block";
@@ -427,21 +517,49 @@ export async function avvia(doc, win) {
     if (v) aggiornaStriscia(doc, v.getAttribute("data-vista"));
   }, true);
   if (!config || !sdk) {
-    carta.segnala("configurazione o SDK mancanti: ricarica la pagina");
+    carta.mostraErrore("configurazione o SDK mancanti: ricarica la pagina");
     return;
   }
   const app = inizializzaAppB(sdk, config);
   const auth = authDi(app);
-  persistenzaLocale(auth, sdk).catch(() => {});
+  /* Passo 18 — il promemoria dell'ultimo accesso vive qui: la memoria del
+   * dispositivo può mancare (finestra privata) e in quel caso lo DICIAMO
+   * invece di far finta di ricordare. */
+  const memoria = memoriaDispositivo(win);
+  const prefisso = config.prefissoChiavi || undefined;
+  const persistenza = { esito: null };
+  persistenzaLocale(auth, sdk)
+    .then(() => { persistenza.esito = "ok"; })
+    .catch(() => { persistenza.esito = "rifiutata"; });
   const db = firestoreDi(app);
 
-  carta.velo.querySelector("button").addEventListener("click", async () => {
+  const fattiAccesso = (extra) => Object.assign({
+    memoria: !!memoria,
+    persistenza: persistenza.esito,
+    promemoria: promemoriaAccesso(memoria, prefisso)
+  }, extra || {});
+
+  carta.bottone.addEventListener("click", async () => {
     try {
       await entraConGoogle(sdk, auth, { mobile: false });
     } catch (e) {
-      carta.segnala("accesso non riuscito: " + (e && e.code ? e.code : "errore sconosciuto"));
+      const perche = testoSpiegazione(fattiAccesso());
+      carta.segnala("accesso non riuscito: " + (e && e.code ? e.code : "errore sconosciuto") + (perche ? " · " + perche : ""));
     }
   });
+  /* «Non sei tu?»: si toglie solo l'email ricordata, non la sessione (qui non
+   * ce n'è una: la carta compare proprio quando manca). */
+  carta.cambia.addEventListener("click", () => {
+    dimenticaAccesso(memoria, prefisso);
+    carta.mostra(fattiAccesso());
+  });
+  /* Passo 18 — un'uscita esplicita, che prima in questa pagina non c'era:
+   * senza, l'unico modo di togliere l'accesso era svuotare il browser. */
+  globalThis.BD_ESCI = () => esci(auth).then(() => {
+    dimenticaAccesso(memoria, prefisso);
+    return true;
+  });
+  montaEsci(doc, auth, memoria, prefisso);
 
   /* Passo 16 — lo stato che sopravvive a un ridisegno. Prima viveva dentro
    * leggi: ogni ridisegno lo azzerava, e una scrittura partita prima del
@@ -1112,15 +1230,29 @@ export async function avvia(doc, win) {
   }
 
   let uidLetto = null;
+  /* Passo 18 — se l'SDK non risponde entro tre secondi la pagina non resta
+   * muta: mostra la carta dicendo che sta ancora controllando. Se poi la
+   * sessione arriva, la carta sparisce come sempre. */
+  let primoStato = false;
+  const svegliaAccesso = setTimeout(() => {
+    if (primoStato) return;
+    carta.mostra(fattiAccesso({ lento: true }));
+  }, 3000);
+
   ascoltaStato(auth, (utente) => {
+    primoStato = true;
+    clearTimeout(svegliaAccesso);
     if (!utente) {
       uidLetto = null;
       utenteCorrente = null;
       stato.impronta = null;
-      carta.velo.style.display = "flex";
+      carta.mostra(fattiAccesso());
       return;
     }
-    carta.velo.style.display = "none";
+    carta.nascondi();
+    /* La sessione c'è: si ricorda l'email (solo quella) per la prossima volta
+     * in cui cadrà. Sessione e promemoria vivono su due piani diversi. */
+    ricordaAccesso(memoria, utente, null, prefisso);
     utenteCorrente = utente;
     /* Passo 25 — Impostazioni deve dire lo stato vero: chi sei entrata e
      * quando la lettura è riuscita. La riga del v31 diceva «non collegato»
@@ -1232,8 +1364,7 @@ export async function avvia(doc, win) {
     }
     uidLetto = utente.uid;
     leggi(utente).catch((e) => {
-      carta.velo.style.display = "flex";
-      carta.segnala("lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")));
+      carta.mostraErrore("lettura non riuscita: " + (e && e.code ? e.code : (e && e.message ? e.message : "errore sconosciuto")));
     }).then(() => {
       /* Passo 23 — ?ripristina=<id voce> (o senza id, per l'elenco). */
       if (ripristina === null || ripristinoGiaperto) return;
