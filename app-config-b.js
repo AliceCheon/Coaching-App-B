@@ -7,7 +7,7 @@
  * - Nessun dato personale in questo file: solo identificativi di progetto.
  */
 window.BD_B = {
-  build: "b0.54-passo43c-due-colonne-tab-schede",
+  build: "b0.55-passo43d-testi-tagliati-colonne-pari",
   nomeAppAuth: "B",
   prefissoChiavi: "bd-b.v1.",
   // Nome IndexedDB riservato a B: NON viene aperto in fase 0 (nessuna scrittura).

@@ -7469,7 +7469,11 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-corpo-confronto{flex:1 1 auto;overflow:auto;min-height:0;margin-top:0;border-top:0;padding:4px 20px 16px}
 .pc-duetto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:10px;
   border:1px solid var(--line);border-radius:12px;background:var(--card-2);overflow:hidden}
-.pc-col{padding:12px 14px 10px;min-width:0}
+/* Passo 43d — la colonna è una colonna anche nel layout: i totali si appoggiano
+   al fondo, così le due colonne finiscono alla stessa altezza anche quando una
+   ha più pastiglie di volume (era il «dislivello» in fondo). */
+.pc-col{padding:12px 14px 10px;min-width:0;display:flex;flex-direction:column}
+.pc-col > .pc-totali{margin-top:auto}
 .pc-col-a{border-right:1px solid var(--line)}
 .pc-col-testa{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px}
 .pc-col-testa .pc-nome-riga{font-size:13px}
@@ -7485,8 +7489,11 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-col-tab{table-layout:fixed;width:100%;font-size:11.4px}
 .pc-col-tab th{padding:4px 4px;font-size:9px}
 .pc-col-tab td{padding:5px 4px;vertical-align:middle;height:34px}
-.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap}
-.pc-col-tab td.pc-nome{overflow:hidden}
+/* Il testo lungo non esce più nella colonna accanto: si taglia con i puntini e
+   il testo intero resta nel suggerimento (e nella vista «Guarda»). */
+.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:0}
+.pc-col-tab td.pc-nome{overflow:hidden;max-width:0}
 .pc-col-tab td.pc-nome b{display:block;font-size:11.6px;font-weight:600;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-col-tab td.pc-nome small{display:block;font-size:9.6px;color:var(--fioco);

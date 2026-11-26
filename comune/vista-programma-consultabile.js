@@ -295,9 +295,13 @@ function tabellaColonna(doc, righe, lato, numero) {
       cella.appendChild(doc.createTextNode(" "));
       cella.appendChild(el(doc, "small", "pc-dist", e.distretto ? nomePulito(e.distretto) : TRATTINO));
       tr.appendChild(cella);
-      tr.appendChild(el(doc, "td", "pc-n", v.serie || TRATTINO));
-      tr.appendChild(el(doc, "td", "pc-n", v.ripetizioni || TRATTINO));
-      tr.appendChild(el(doc, "td", "pc-n", v.recupero || TRATTINO));
+      /* Le tre caselle strette: quando il testo è lungo si taglia con i puntini,
+       * quindi il valore intero va nel suggerimento — altrimenti si perderebbe. */
+      [v.serie || TRATTINO, v.ripetizioni || TRATTINO, v.recupero || TRATTINO].forEach((valore) => {
+        const cella = el(doc, "td", "pc-n", valore);
+        if (String(valore).length > 8) cella.setAttribute("title", String(valore));
+        tr.appendChild(cella);
+      });
     }
     corpo.appendChild(tr);
   });

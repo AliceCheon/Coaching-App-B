@@ -460,3 +460,38 @@ test("163.10 si chiude con ×, con Esc e col clic fuori", () => {
   assert.deepEqual(tastiPiede, ["Chiudi", "Salva come nuovo programma"]);
   assert.match(cinque.doc.querySelector(".pc-piede .pc-suggerimento").textContent, /settimana|scheda/i);
 });
+
+/* Passo 43d — quello che Alice ha visto il 26/11: un recupero lungo usciva
+ * dalla colonna e finiva nella scheda accanto, e le due colonne finivano ad
+ * altezze diverse. Le due cose si chiudono con lo stile e col suggerimento. */
+test("163.11 il testo lungo non esce dalla colonna e le due colonne finiscono pari", () => {
+  const cella = (css.match(/\.pc-col-tab \.pc-n\{[^}]*\}/) || [""])[0];
+  assert.match(cella, /overflow\s*:\s*hidden/, "la casella taglia il testo che non ci sta: " + cella);
+  assert.match(cella, /text-overflow\s*:\s*ellipsis/, "e lo taglia con i puntini");
+  assert.match(cella, /white-space\s*:\s*nowrap/, "resta su una riga sola, così le righe delle due colonne restano allineate");
+  const nome = (css.match(/\.pc-col-tab td\.pc-nome\{[^}]*\}/) || [""])[0];
+  assert.match(nome, /overflow\s*:\s*hidden/, "anche la casella del nome taglia: " + nome);
+
+  const colonna = (css.match(/\.pc-col\{[^}]*\}/) || [""])[0];
+  assert.match(colonna, /display\s*:\s*flex/, "la colonna è una colonna anche nel layout: " + colonna);
+  assert.match(css, /\.pc-col > \.pc-totali\{margin-top:auto\}/, "i totali si appoggiano al fondo, così le due colonne finiscono pari");
+
+  /* e il valore intero resta leggibile nel suggerimento: un recupero scritto a
+   * parole, come nei dati veri, finisce nella casella stretta */
+  const conRecuperoLungo = ricostruisciSchede([
+    foglio("prg-lungo", "A", "Gambe", [
+      Object.assign(ESE("hip_thrust", "glutei", settimane([4], ["12-15"], null)), {
+        prescription: { sets: 4, reps: { label: "12-15" }, rest: "recupero lungo in super set con 2 minuti" }
+      })
+    ])
+  ]);
+  const dom = new JSDOM(pagina, { url: "https://alicecheon.github.io/Coaching-App-B/desktop/" });
+  const doc = dom.window.document;
+  const finestra = apriConfronto(doc, {
+    consultato: { modello: modelloConsultabile(QUESTO, conRecuperoLungo.perProgramma["prg-lungo"]), gruppo: conRecuperoLungo.perProgramma["prg-lungo"] },
+    inUso: { modello: modelloConsultabile(IN_USO, GRUPPO_B), gruppo: GRUPPO_B },
+    onSalvaCome: null
+  });
+  const conTitolo = Array.from(finestra.querySelectorAll(".pc-col-tab td.pc-n")).filter((td) => td.getAttribute("title"));
+  assert.ok(conTitolo.length > 0, "le caselle con testo lungo portano il testo intero nel suggerimento");
+});
