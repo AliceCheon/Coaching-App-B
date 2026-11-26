@@ -657,6 +657,21 @@ export async function avvia(doc, win) {
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
     /* extra-3 — la linguetta Scheletri legge la raccolta arrivata con la zona B. */
     rp.scheletri = elencoScheletri(zona.scheletri);
+    /* Passo 41 — «Cambia»: l'elenco dei programmi di B, con lo stato di ognuno. */
+    rp.altriProgrammi = (programmi.programmi || []).map((p) => {
+      /* lettura dei campi del documento (non testo da disegnare) */
+      const stato = String((p && (p.status || p["stato"])) || "").toLowerCase();
+      const attivo = Boolean(p && p.active) || stato === "active";
+      const quante = schedeV2 && schedeV2.perProgramma && schedeV2.perProgramma[String(p && p.id)] ? schedeV2.perProgramma[String(p && p.id)].schede.length : 0;
+      return {
+        id: String((p && p.id) || ""),
+        nome: (p && (p.name || p["nome"])) || "",
+        attivo: attivo,
+        bozza: stato === "draft",
+        archiviato: Boolean(p && p.archivedAt) || stato === "archived",
+        dettaglio: quante ? (quante + (quante === 1 ? " scheda" : " schede")) : ""
+      };
+    });
     const scorrimentoPrima = prendiScorrimento(doc, win);
     if (contenitore) {
       stato.ridisegni += 1;
@@ -1298,9 +1313,14 @@ if (typeof document !== "undefined") {
         }
         return globalThis.BD_CREA_PROGRAMMA(documento, richiesta);
       },
-      /* L'apertura NON è collegata in questo passo: senza l'elenco dei
-       * programmi (punto 12) chi apre il nuovo non avrebbe modo di tornare al
-       * suo. Il modulo sa già farlo: si accende quando c'è «Cambia». */
+      /* Passo 41 — l'apertura del programma nuovo è collegata: da adesso c'è
+       * «Cambia» in Programmi, quindi si può sempre tornare a quello di prima. */
+      apriProgramma: (id) => {
+        if (typeof globalThis.BD_ATTIVA_PROGRAMMA !== "function") {
+          return Promise.reject(new Error("la pagina non ha ancora il programma sotto mano"));
+        }
+        return globalThis.BD_ATTIVA_PROGRAMMA(id);
+      },
       nomeAttivo: () => {
         const n = document.getElementById("nomeProgrammaAttivo");
         return n ? String(n.textContent || "").trim() : "";

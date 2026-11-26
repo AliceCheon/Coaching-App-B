@@ -63,7 +63,6 @@ const pillola = (b) => b.querySelector("i.pr-arrivo");
 test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
   const s = scena();
   [
-    [".pr-acts", "Cambia"],
     [".pr-acts", "Confronta con\u2026"],
     [".pr-acts", "Copia da Prog\u2026"],
     [".pr-acts", "Salva in Libreria"],
@@ -81,7 +80,6 @@ test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
 test("108.2 il tooltip dice cosa fara' il tasto", () => {
   const s = scena();
   const attesi = [
-    [".pr-acts", "Cambia", "programmi presenti in B"],
     [".pr-acts", "Confronta con\u2026", "affiancati"],
     [".pr-acts", "Copia da Prog\u2026", "copia gli esercizi"],
     [".pr-acts", "Salva in Libreria", "libreria"],

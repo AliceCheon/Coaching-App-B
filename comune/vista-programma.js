@@ -934,13 +934,97 @@ function cartaStato(doc, r) {
 
   const atti = n(doc, "div", "pr-acts");
   atti.appendChild(tastoAttiva(doc, r));
-  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B e ti fa scegliere quale guardare"));
+  atti.appendChild(tastoCambia(doc, r));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Confronta con…", "mette due programmi affiancati e segna le differenze"));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Copia da Prog…", "copia gli esercizi di un altro programma dentro questo"));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "⭐ Salva in Libreria", "salva questo programma nella libreria, per riusarlo come base"));
   c.appendChild(atti);
 
   return c;
+}
+
+/* Passo 41 — «Cambia»: l'elenco dei programmi che stanno in B, con «Apri».
+ * Il programma in uso resta segnato e non si riapre; gli altri si aprono dal
+ * loro tasto, con la stessa conferma di «Attiva». Se la zona B ne ha uno solo,
+ * il pannello lo dice invece di far finta di avere una scelta. */
+function tastoCambia(doc, r) {
+  const mod = modificaCorrente;
+  const elenco = Array.isArray(r && r.altriProgrammi) ? r.altriProgrammi : [];
+  if (!mod || typeof mod.onAttiva !== "function") {
+    return pulsanteSpento(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B: si accende quando la pagina sa leggere la zona B");
+  }
+  const b = pulsanteVivo(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B e ti fa scegliere quale guardare", () => {
+    apriElencoProgrammi(doc, b, elenco);
+  });
+  return b;
+}
+
+function apriElencoProgrammi(doc, bottone, elenco) {
+  const gia = bottone.parentNode.querySelector(".pr-elenco-programmi");
+  if (gia) { gia.remove(); return; }
+  const scatola = n(doc, "div", "pr-elenco-programmi");
+  scatola.setAttribute("role", "dialog");
+  const titolo = n(doc, "p", "pr-elenco-t", "Programmi in B");
+  scatola.appendChild(titolo);
+  if (!elenco.length) {
+    scatola.appendChild(n(doc, "p", "pr-guide", "La zona B non ha nessun programma da aprire."));
+  } else if (elenco.length === 1) {
+    scatola.appendChild(n(doc, "p", "pr-guide", "C'è un programma solo: «" + (nomePulito(elenco[0].nome) || "(senza nome)") + "». Quando ne avrai altri compariranno qui."));
+  }
+  elenco.forEach((p) => {
+    const riga = n(doc, "div", "pr-elenco-riga");
+    const testi = n(doc, "div", "pr-elenco-testi");
+    testi.appendChild(n(doc, "b", "", nomePulito(p.nome) || "(senza nome)"));
+    const stato = p.attivo ? "in uso" : (p.archiviato ? "archiviato" : (p.bozza ? "in bozza" : "disponibile"));
+    testi.appendChild(n(doc, "span", "pr-elenco-stato", stato));
+    if (p.dettaglio) testi.appendChild(n(doc, "span", "pr-elenco-dettaglio", p.dettaglio));
+    riga.appendChild(testi);
+    if (p.attivo) {
+      riga.appendChild(n(doc, "span", "pr-elenco-ora", "lo stai guardando"));
+    } else if (p.archiviato) {
+      const spento = pulsanteSpento(doc, "pr-btn", "Apri", "questo programma è archiviato: prima lo riapri dall'Archivio");
+      riga.appendChild(spento);
+    } else {
+      const apri = pulsanteVivo(doc, "pr-btn pri", "Apri", "rende attivo questo programma in B e lo mostra qui", () => {
+        apriConfermaAttivaDalCambia(doc, apri, p);
+      });
+      riga.appendChild(apri);
+    }
+    scatola.appendChild(riga);
+  });
+  const chiudi = n(doc, "button", "pr-btn", "Chiudi");
+  chiudi.type = "button";
+  chiudi.addEventListener("click", () => scatola.remove());
+  scatola.appendChild(chiudi);
+  bottone.parentNode.appendChild(scatola);
+  if (chiudi.focus) chiudi.focus();
+}
+
+/* L'apertura da «Cambia»: stessa strada e stessa conferma di «Attiva», che
+ * scrive solo in bdB_atleti e lascia la voce di registro con l'Annulla. */
+function apriConfermaAttivaDalCambia(doc, bottone, programma) {
+  const mod = modificaCorrente;
+  const nome = nomePulito(programma && programma.nome) || "questo programma";
+  chiediConferma(doc, {
+    bottone: bottone,
+    titolo: "Aprire un altro programma",
+    righe: [
+      "Aprire «" + nome + "» al posto di quello che stai guardando?",
+      "Quello di adesso resta salvato com'è: si riapre da qui quando vuoi."
+    ],
+    avviso: "Scrive solo in bdB_atleti. In A non cambia niente.",
+    conferma: "Sì, apri «" + nome + "»",
+    segno: "attiva",
+    onConferma: () => {
+      const prima = bottone.textContent;
+      bottone.disabled = true;
+      bottone.textContent = "Apro…";
+      const esito = mod.onAttiva(String(programma.id || ""));
+      const fine = () => { bottone.disabled = false; bottone.textContent = prima; };
+      if (esito && typeof esito.then === "function") esito.then(fine, fine);
+      else fine();
+    }
+  });
 }
 
 /* B.21 PASSO 2a/2c — il tasto dice l'AZIONE, mai lo stato: «Attiva» se il
@@ -2182,7 +2266,9 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
     modifica: r.modifica || null,
     /* extra-3 — la raccolta degli scheletri: senza questa riga la linguetta
      * Scheletri resta spenta anche quando la raccolta c'e'. */
-    scheletri: Array.isArray(r.scheletri) ? r.scheletri : null
+    scheletri: Array.isArray(r.scheletri) ? r.scheletri : null,
+    /* Passo 41 — i programmi di B per il tasto «Cambia». */
+    altriProgrammi: Array.isArray(r.altriProgrammi) ? r.altriProgrammi : []
   };
   contenitore.appendChild(testata(doc, pieno.modifica));
   const tre = n(doc, "div", "pr-grid");
