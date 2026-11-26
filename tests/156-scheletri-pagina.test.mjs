@@ -297,7 +297,7 @@ test("157.3 «Elimina» chiede conferma e poi toglie la riga", async () => {
   assert.equal(doc.querySelectorAll("#sk-raccolta .skp-riga").length, 0, "la riga sparisce");
 });
 
-test("157.4 «Modifica nel costruttore» riporta lo scheletro dentro il costruttore", async () => {
+test("157.4 «Modifica nel costruttore» riporta lo scheletro e MOSTRA il costruttore", async () => {
   let ricevuto = null;
   const { doc } = conRaccolta({ modifica: (s) => { ricevuto = s.dati || null; return true; } });
   await attesa();
@@ -309,4 +309,20 @@ test("157.4 «Modifica nel costruttore» riporta lo scheletro dentro il costrutt
   assert.equal(ricevuto.nome, "Push Pull");
   assert.equal(ricevuto.schede.length, 2, "con le sue due schede");
   assert.equal(ricevuto.schede[0].esercizi.length, 2);
+  /* il tasto sembrava non fare niente perché il costruttore restava nascosto */
+  const griglia = doc.querySelector("#pag-scheletri .sk-grid");
+  const raccolta = doc.getElementById("sk-raccolta");
+  assert.equal(griglia.style.display, "", "il costruttore torna visibile: " + griglia.style.display);
+  assert.equal(raccolta.style.display, "none", "e la raccolta si mette da parte");
+  assert.match(doc.getElementById("sk-esito").textContent, /caricato nel costruttore/, "con una riga che lo dice");
+});
+
+test("157.5 se il costruttore non prende lo scheletro, il motivo si legge", async () => {
+  const { doc } = conRaccolta({ modifica: () => false });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Modifica nel costruttore")[0].click();
+  assert.match(doc.getElementById("sk-esito").textContent, /Non ho caricato lo scheletro/);
 });

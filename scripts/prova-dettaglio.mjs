@@ -59,4 +59,10 @@ console.log("porte:", await page.evaluate(() => ({ rinomina: typeof window.BD_RI
 await page.locator("#sk-raccolta .skp-riga .skp-btn").nth(2).click();
 await page.waitForTimeout(700);
 console.log("costruttore nome:", await page.inputValue("#sk-nome"), "| righe:", await page.locator("#sk-schede .sk-riga").count());
+console.log("costruttore visibile:", await page.evaluate(() => {
+  const g = document.querySelector("#pag-scheletri .sk-grid");
+  const r = document.getElementById("sk-raccolta");
+  return { griglia: g.style.display === "" ? "visibile" : g.style.display, raccolta: r.style.display };
+}));
+console.log("esito:", (await page.locator("#sk-esito").textContent() || "").trim());
 await browser.close(); server.close(); process.exit(0);

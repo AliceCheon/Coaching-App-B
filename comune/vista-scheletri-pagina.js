@@ -189,7 +189,22 @@ export function pannelloRaccolta(doc, elenco, opzioni) {
     if (typeof o.modifica === "function") {
       const btMod = el(doc, "button", "skp-btn", "Modifica nel costruttore");
       btMod.type = "button";
-      btMod.addEventListener("click", () => o.modifica(s));
+      btMod.addEventListener("click", () => {
+        try {
+          const esito = o.modifica(s);
+          if (esito === false) throw new Error("il costruttore non ha preso lo scheletro");
+          /* Passo 38: il costruttore è nell'altra linguetta — va mostrato,
+           * altrimenti il tasto sembra non fare niente (era proprio questo). */
+          if (typeof o.mostraCostruttore === "function") o.mostraCostruttore();
+          if (typeof o.diEsito === "function") {
+            o.diEsito("Scheletro «" + (nomePulito(s.nome) || s.nome) + "» caricato nel costruttore: sistemalo e premi «Salva Scheletro» per tenerlo.", true);
+          }
+        } catch (e) {
+          if (typeof o.diEsito === "function") {
+            o.diEsito("Non ho caricato lo scheletro: " + ((e && e.message) || "motivo non dichiarato"), false);
+          }
+        }
+      });
       atti.appendChild(btMod);
     }
     if (typeof o.elimina === "function") {
@@ -314,6 +329,15 @@ export function montaPaginaScheletri(doc, servizi) {
       rinomina: typeof s.rinomina === "function" ? s.rinomina : null,
       elimina: typeof s.elimina === "function" ? s.elimina : null,
       modifica: typeof s.modifica === "function" ? s.modifica : null,
+      mostraCostruttore: () => {
+        const prima = linguette[0];
+        if (prima) accendi(prima);
+        const dove = doc.querySelector("#pag-scheletri .sk-schede");
+        if (dove && dove.scrollIntoView) {
+          try { dove.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) { dove.scrollIntoView(); }
+        }
+      },
+      diEsito: (txt, ok) => scriviEsito(txt, ok),
       dopo: () => carica()
     }));
     return lista.length;
