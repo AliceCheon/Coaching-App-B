@@ -1678,31 +1678,121 @@ export function cambiaPianoScheda(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
 }
 
-/* Data di inizio e fase: campi del documento-programma, non della scheda. */
+/* La testata del programma: data di inizio, fase, giorni a settimana,
+ * settimane di durata e rotazione delle schede. Sono tutti campi del
+ * documento-programma, non della scheda. */
+const CAMPI_TESTATA = Object.freeze({
+  inizio: "startDate",
+  fase: "phase",
+  giorni: "daysPerWeek",
+  settimane: "durationWeeks",
+  rotazione: "rotation"
+});
+
+/* "A B C D" / "A,B,C,D" / "ABCD" -> ["A","B","C","D"].
+ * Si normalizza in maiuscolo e si tolgono spazi, virgole, punto e virgola e
+ * punto mediano. Qualunque altro carattere (numeri, simboli, lettere
+ * accentate) e' un RIFIUTO: se si ripulisse di nascosto, "A1B" diventerebbe
+ * "AB" e sembrerebbe giusto invece di essere un errore da correggere. */
+export function lettereRotazione(valore) {
+  const grezzo = testo(valore).toUpperCase();
+  if (!grezzo) return { ok: true, lettere: [] };
+  if (!/^[A-Z\s,;·]+$/.test(grezzo)) {
+    return {
+      ok: false,
+      lettere: [],
+      motivo: "la rotazione si scrive con le lettere delle schede (A-Z) separate da spazi o virgole, per esempio A B C D"
+    };
+  }
+  const lettere = grezzo.replace(/[^A-Z]/g, "").split("");
+  if (lettere.length > 7) {
+    return { ok: false, lettere: [], motivo: "la rotazione ha " + lettere.length + " schede: il massimo e' 7" };
+  }
+  const doppie = lettere.filter((c, i) => lettere.indexOf(c) !== i)
+    .filter((c, i, elenco) => elenco.indexOf(c) === i);
+  if (doppie.length) {
+    return { ok: false, lettere: [], motivo: "la rotazione ripete " + doppie.join(", ") + ": ogni lettera va scritta una volta sola" };
+  }
+  return { ok: true, lettere: lettere };
+}
+
 export function cambiaTestataProgramma(dati, richiesta, opzioni) {
   const r = richiesta || {};
   const o = opzioni || {};
   if (!dati || typeof dati !== "object") return { ok: false, motivo: "questo documento non e' un programma" };
-  const campo = r.campo === "inizio" ? "inizio" : (r.campo === "fase" ? "fase" : "");
-  if (!campo) return { ok: false, motivo: "in questo passo si registrano solo data di inizio e fase" };
+  const nomeCampo = testo(r.campo);
+  const campo = Object.prototype.hasOwnProperty.call(CAMPI_TESTATA, nomeCampo) ? nomeCampo : "";
+  if (!campo) return { ok: false, motivo: "i campi della testata sono data di inizio, fase, giorni a settimana, settimane e rotazione" };
   const FASI = ["Bulk", "Cut", "Recomp", "Mantenimento"];
-  const valore = testo(r.valore);
+  const grezzo = testo(r.valore);
+  const chiave = CAMPI_TESTATA[campo];
+  let valore;   /* quello che finisce nel documento */
+  let dopo;     /* quello che si legge nella voce del registro */
   if (campo === "fase") {
-    if (valore && FASI.indexOf(valore) === -1) return { ok: false, motivo: "la fase va scelta fra Bulk, Cut, Recomp e Mantenimento" };
-  } else if (valore) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valore);
-    if (!m) return { ok: false, motivo: "la data va scritta come aaaa-mm-gg" };
-    const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-    if (d.getUTCFullYear() !== Number(m[1]) || d.getUTCMonth() !== Number(m[2]) - 1 || d.getUTCDate() !== Number(m[3])) {
-      return { ok: false, motivo: "quella data non esiste nel calendario" };
+    if (grezzo && FASI.indexOf(grezzo) === -1) return { ok: false, motivo: "la fase va scelta fra Bulk, Cut, Recomp e Mantenimento" };
+    valore = grezzo || null;
+    dopo = grezzo;
+  } else if (campo === "inizio") {
+    if (grezzo) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(grezzo);
+      if (!m) return { ok: false, motivo: "la data va scritta come aaaa-mm-gg" };
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+      if (d.getUTCFullYear() !== Number(m[1]) || d.getUTCMonth() !== Number(m[2]) - 1 || d.getUTCDate() !== Number(m[3])) {
+        return { ok: false, motivo: "quella data non esiste nel calendario" };
+      }
     }
+    valore = grezzo || null;
+    dopo = grezzo;
+  } else if (campo === "giorni" || campo === "settimane") {
+    const massimo = campo === "giorni" ? 7 : 52;
+    if (!grezzo) {
+      valore = null;
+      dopo = "";
+    } else {
+      if (!/^\d{1,2}$/.test(grezzo) || Number(grezzo) < 1 || Number(grezzo) > massimo) {
+        return {
+          ok: false,
+          motivo: campo === "giorni"
+            ? "i giorni a settimana vanno da 1 a 7: scrivi un numero intero"
+            : "le settimane vanno da 1 a 52: scrivi un numero intero"
+        };
+      }
+      valore = Number(grezzo);
+      dopo = String(valore);
+    }
+  } else {
+    const letto = lettereRotazione(grezzo);
+    if (!letto.ok) return { ok: false, motivo: letto.motivo };
+    valore = letto.lettere.length ? letto.lettere : null;
+    dopo = valore ? valore.join(" \u00b7 ") : "";
   }
-  const chiave = campo === "inizio" ? "startDate" : "phase";
-  const prima = testo(dati[chiave]);
-  if (prima === valore) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  /* Il valore di prima, nella stessa forma: per la rotazione un elenco, per i
+   * numeri un numero. Serve all'Annulla per rimettere esattamente com'era. */
+  const primaGrezza = dati[chiave];
+  let primaPiano;
+  let prima;
+  if (campo === "rotazione") {
+    const lettoPrima = lettereRotazione(primaGrezza);
+    primaPiano = lettoPrima.ok ? lettoPrima.lettere : [];
+    prima = primaPiano.join(" \u00b7 ");
+  } else if (campo === "giorni" || campo === "settimane") {
+    const n = primaGrezza == null || primaGrezza === "" ? null : Number(primaGrezza);
+    primaPiano = n == null || !Number.isFinite(n) ? null : n;
+    prima = primaPiano == null ? "" : String(primaPiano);
+  } else {
+    prima = testo(primaGrezza);
+    primaPiano = prima === "" ? null : prima;
+  }
+
+  const uguale = campo === "rotazione"
+    ? (primaPiano.join("|") === (valore == null ? "" : valore.join("|")))
+    : (prima === dopo);
+  if (uguale) return { ok: false, motivo: "il valore non e' cambiato" };
 
   const nuovo = Object.assign({}, dati);
-  if (valore) nuovo[chiave] = valore; else delete nuovo[chiave];
+  if (valore == null || valore === "") delete nuovo[chiave];
+  else nuovo[chiave] = valore;
   const versionePrima = Number(dati.versione) || 0;
   nuovo.versione = versionePrima + 1;
   const quando = o.quando ? String(o.quando) : new Date().toISOString();
@@ -1721,23 +1811,36 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
     settimana: null,
     campo: campo,
     prima: prima,
-    dopo: valore,
-    primaPiano: prima === "" ? null : prima,
+    dopo: dopo,
+    primaPiano: primaPiano,
     versionePrima: versionePrima,
     versioneDopo: nuovo.versione
   };
-  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: valore };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
 }
 
-/* L'annullamento delle due modifiche qui sopra. */
+/* L'annullamento delle modifiche qui sopra. */
 function annullaPianoETestata(dati, v, quando, uid) {
   const campo = testo(v.campo);
   const nuovo = Object.assign({}, dati);
   if (testo(v.tipo) === "testata-programma") {
-    const chiave = campo === "inizio" ? "startDate" : (campo === "fase" ? "phase" : "");
+    const chiave = CAMPI_TESTATA[campo] || "";
     if (!chiave) return { ok: false, motivo: "la voce del registro non dice quale campo rimettere" };
-    if (v.primaPiano == null || testo(v.primaPiano) === "") delete nuovo[chiave];
-    else nuovo[chiave] = testo(v.primaPiano);
+    if (campo === "rotazione") {
+      const lettere = Array.isArray(v.primaPiano)
+        ? v.primaPiano.map(testo).filter(Boolean)
+        : lettereRotazione(v.primaPiano).lettere;
+      if (!lettere.length) delete nuovo[chiave];
+      else nuovo[chiave] = lettere;
+    } else if (campo === "giorni" || campo === "settimane") {
+      const n = v.primaPiano == null || v.primaPiano === "" ? null : Number(v.primaPiano);
+      if (n == null || !Number.isFinite(n)) delete nuovo[chiave];
+      else nuovo[chiave] = n;
+    } else if (v.primaPiano == null || testo(v.primaPiano) === "") {
+      delete nuovo[chiave];
+    } else {
+      nuovo[chiave] = testo(v.primaPiano);
+    }
   } else {
     const f = foglioDi(dati);
     if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };

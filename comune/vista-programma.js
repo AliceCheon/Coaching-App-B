@@ -813,8 +813,11 @@ function cartaProgramma(doc, r) {
   campi.appendChild(campo(doc, "Programma", nomePulito(r.profilo.nome), "text", null, null, "pr-f-full"));
   campi.appendChild(campoPiano(doc, "Data inizio", "", "programma-inizio", "text", null, "pr-f-sm", { titolo: "il giorno in cui comincia il programma: gg/mm/aaaa", segnaposto: "gg/mm/aaaa" }));
   campi.appendChild(campoPiano(doc, "Fase", "", "programma-fase", "select", ["Bulk", "Cut", "Recomp", "Mantenimento"], "pr-f-sm", { titolo: "la fase del blocco" }));
-  campi.appendChild(campo(doc, "Gg/sett", r.profilo.giorni == null ? "" : r.profilo.giorni + " gg/sett", "select", null, ["3 gg/sett", "4 gg/sett", "5 gg/sett", "6 gg/sett"]));
-  campi.appendChild(campo(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "text"));
+  /* Punto 15 — giorni, settimane e rotazione si scrivono come Data e Fase:
+   * stesso segnaposto `data-pr-c`, stesso legame in comune/piano-vivo.js. */
+  const scelteGiorni = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ valore: String(n), testo: n + " gg/sett" }));
+  campi.appendChild(campoPiano(doc, "Gg/sett", r.profilo.giorni == null ? "" : String(r.profilo.giorni), "programma-giorni", "select", scelteGiorni, "pr-f-sm", { titolo: "quanti giorni a settimana si allena" }));
+  campi.appendChild(campoPiano(doc, "Settimane", r.profilo.durata == null ? "" : String(r.profilo.durata), "programma-settimane", "text", null, "pr-f-sm", { titolo: "quante settimane dura il programma", segnaposto: "es. 8" }));
   c.appendChild(campi);
 
   const due = n(doc, "div", "pr-two");
@@ -835,12 +838,13 @@ function cartaRotazione(doc, r) {
   const c = n(doc, "section", "pr-card pr-c2");
   const h = n(doc, "header", "pr-ch");
   h.appendChild(n(doc, "h3", "", "Rotazione schede"));
+  /* Punto 15 — la rotazione ora si scrive: l'interruttore dice che è accesa,
+   * non «OFF» come quando la carta era solo da leggere. */
   const interruttore = n(doc, "span", "pr-sw");
   interruttore.setAttribute("role", "switch");
-  interruttore.setAttribute("aria-checked", "false");
-  interruttore.setAttribute("aria-disabled", "true");
-  interruttore.setAttribute("title", "la rotazione si accende quando B potrà scrivere");
-  interruttore.appendChild(n(doc, "b", "", "OFF"));
+  interruttore.setAttribute("aria-checked", "true");
+  interruttore.setAttribute("title", "la rotazione si scrive nel campo qui sotto");
+  interruttore.appendChild(n(doc, "b", "", "ON"));
   h.appendChild(interruttore);
   c.appendChild(h);
 
@@ -853,7 +857,7 @@ function cartaRotazione(doc, r) {
   const codici = presenti.length ? presenti : dichiarate;
   const mancanti = presenti.length ? dichiarate.filter((c) => presenti.indexOf(c) === -1) : [];
   const registrata = !!(r.rotazione && r.rotazione.registrata) || presenti.length > 0;
-  const slot = Math.max(1, Math.min(6, r.profilo.giorni || codici.length || 4));
+  const slot = Math.max(1, Math.min(7, r.profilo.giorni || codici.length || 4));
   const parti = [];
   parti.push(codici.length ? codici.length + " in rotazione" : "rotazione " + NON);
   parti.push(slot + "/sett");
@@ -873,10 +877,17 @@ function cartaRotazione(doc, r) {
     c.appendChild(n(doc, "p", "pr-warn", "La rotazione prevista non è nel documento del programma: qui non si inventa. Il calendario delle sedute fatte sta nella Pianificazione."));
   }
 
+  /* Il campo scrivibile: mostra solo quello che sta DAVVERO nel documento.
+   * Se la rotazione non c'è, il campo resta vuoto anche quando le schede
+   * lette bastano a disegnare l'anteprima: qui non si inventa un ordine. */
+  const scritta = r.rotazione && r.rotazione.fonte === "campo del programma" ? codici.join(" ") : "";
+  c.appendChild(campoPiano(doc, "Rotazione schede", scritta, "programma-rotazione", "text", null, "pr-f-sm pr-f-rot", { titolo: "le lettere delle schede, nell'ordine in cui ruotano (es. A B C D)", segnaposto: "es. A B C D" }));
+
   const chips = n(doc, "div", "pr-chips");
   codici.forEach((cod) => {
     const chip = n(doc, "span", "pr-rotchip", cod);
-    chip.title = "sola lettura";
+    chip.setAttribute("data-pr-rotchip", cod);
+    chip.title = "anteprima di quello che è scritto nel campo";
     chips.appendChild(chip);
   });
   /* La lettera E del v31 è la scheda jolly: tratteggiata, non ruota da sola. */
@@ -885,6 +896,14 @@ function cartaRotazione(doc, r) {
     jolly.title = "scheda jolly: non ruota da sola";
     chips.appendChild(jolly);
   }
+  /* Il «+» non è un tasto morto: aggiunge al campo la lettera successiva
+   * (A, poi B, poi C…) e la salva con la stessa strada degli altri campi. */
+  const piu = n(doc, "button", "pr-rotchip pr-rot-piu", "+");
+  piu.type = "button";
+  piu.setAttribute("data-pr-rot-piu", "1");
+  piu.setAttribute("aria-label", "aggiungi la lettera successiva alla rotazione");
+  piu.title = "aggiunge al campo la lettera successiva";
+  chips.appendChild(piu);
   c.appendChild(chips);
 
   const guida = n(doc, "p", "pr-guide");
@@ -896,11 +915,14 @@ function cartaRotazione(doc, r) {
   c.appendChild(guida);
 
   const prosp = n(doc, "div", "pr-prosp");
-  prosp.appendChild(n(doc, "div", "pr-prosp-h", "Prospetto · " + (r.profilo.durata || slot) + " sett" + (codici.length ? " (ciclo base " + codici.length + ")" : "") + " — spento"));
+  prosp.appendChild(n(doc, "div", "pr-prosp-h", "Prospetto · " + (r.profilo.durata || slot) + " sett" + (codici.length ? " (ciclo base " + codici.length + ")" : "") + " — previsto"));
   const corpo = n(doc, "div", "pr-prosp-b");
   const settimane = Math.max(1, Math.min(12, Number(r.profilo.durata) || codici.length || 4));
   for (let w = 0; w < settimane; w += 1) {
     const riga = n(doc, "div", "pr-prow");
+    /* Le colonne seguono gli slot veri (da 1 a 7): il CSS ne dichiara 4, ma
+     * con 5-7 giorni la riga deve restare su una linea sola. */
+    riga.style.gridTemplateColumns = "52px repeat(" + slot + ",minmax(0,1fr))";
     riga.appendChild(n(doc, "span", "", "Sett " + (w + 1)));
     for (let s = 0; s < slot; s += 1) {
       const valore = codici.length ? codici[(w + s) % codici.length] : "—";

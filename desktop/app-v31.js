@@ -895,7 +895,15 @@ export async function avvia(doc, win) {
       programma: {
         id: attivo && attivo.programma ? String(attivo.programma.id || "") : "",
         inizio: rp.profilo.inizio,
-        fase: nomePulito(rp.profilo.fase)
+        fase: nomePulito(rp.profilo.fase),
+        /* Punto 15 — anche giorni, settimane e rotazione si scrivono dalla
+         * stessa testata: i valori salvati arrivano qui, e il campo vuoto
+         * vuol dire «non registrato», non zero. */
+        giorni: rp.profilo.giorni,
+        settimane: rp.profilo.durata,
+        rotazione: rp.rotazione && rp.rotazione.fonte === "campo del programma"
+          ? rp.rotazione.codici.join(" ")
+          : ""
       },
       segnala: segnalaModifica,
       sincronizza: () => sincronizza(utente, { forza: true, motivo: "piano della scheda" })

@@ -14,6 +14,8 @@
  *  - dopo un ridisegno e dopo un Annulla il campo mostra il valore SALVATO.
  */
 
+import { lettereRotazione } from "./modifiche-b.js";
+
 export const MESSAGGIO_SCARICO = "Scarico non salvato: scegli la settimana e scrivi la percentuale (un numero da 0 a 100)";
 export const MESSAGGIO_DATA = "Data di inizio non salvata: scrivila come gg/mm/aaaa, per esempio 05/10/2026";
 
@@ -163,25 +165,57 @@ export function collegaPiano(doc, opzioni) {
   if (typeof editor.testataProgramma === "function" && programma.id) {
     const inizio = doc.querySelector('[data-pr-c="programma-inizio"]');
     const fase = doc.querySelector('[data-pr-c="programma-fase"]');
+    const giorni = doc.querySelector('[data-pr-c="programma-giorni"]');
+    const settimane = doc.querySelector('[data-pr-c="programma-settimane"]');
+    const rotazione = doc.querySelector('[data-pr-c="programma-rotazione"]');
     const inizioSalvato = inItaliano(programma.inizio);
     const faseSalvata = String(programma.fase || "");
     rimetti(inizio, inizioSalvato);
     if (fase) {
       fase.value = FASI.indexOf(faseSalvata) === -1 ? "" : faseSalvata;
     }
+    rimetti(giorni, programma.giorni == null ? "" : String(programma.giorni));
+    rimetti(settimane, programma.settimane == null ? "" : String(programma.settimane));
+    rimetti(rotazione, programma.rotazione == null ? "" : String(programma.rotazione));
 
-    const scrivi = (elemento, campo, valore, messaggio, cosa) => {
+    /* Le pastiglie sono l'ANTEPRIMA del campo: quando si scrive, si
+     * ridisegnano subito, senza aspettare la rilettura della pagina. */
+    const chipsRotazione = doc.querySelector(".pr-chips");
+    const mostraAnteprima = (valore) => {
+      if (!chipsRotazione) return;
+      Array.from(chipsRotazione.querySelectorAll("[data-pr-rotchip]")).forEach((c) => c.remove());
+      const letto = lettereRotazione(valore);
+      const lettere = letto.ok ? letto.lettere : [];
+      const ancora = chipsRotazione.querySelector(".jolly, [data-pr-rot-piu]") || null;
+      lettere.forEach((cod) => {
+        const chip = doc.createElement("span");
+        chip.className = "pr-rotchip";
+        chip.setAttribute("data-pr-rotchip", cod);
+        chip.textContent = cod;
+        chip.title = "anteprima di quello che \u00e8 scritto nel campo";
+        chipsRotazione.insertBefore(chip, ancora);
+      });
+    };
+
+    const scrivi = (elemento, campo, valore, messaggio, cosa, rifiuto) => {
       editor.testataProgramma({ idProgramma: programma.id, campo: campo, valore: valore }).then((esito) => {
         if (!esito || !esito.ok) {
-          segnala(cosa + " non salvata: " + ((esito && esito.motivo) || "non ho scritto niente"), "errore");
+          /* Il valore scritto RESTA nel campo: si corregge da l\u00ec. */
+          segnala((rifiuto || (cosa + " non salvata")) + ": " + ((esito && esito.motivo) || "non ho scritto niente"), "errore");
           return null;
         }
         segnala(messaggio + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
         return dopoIlFuoco(elemento, () => sincronizza());
       }, (e) => {
-        segnala(cosa + " non salvata: " + (e && e.message ? e.message : "scrittura non riuscita"), "errore");
+        segnala((rifiuto || (cosa + " non salvata")) + ": " + (e && e.message ? e.message : "scrittura non riuscita"), "errore");
         return null;
       });
+    };
+
+    const messaggioRotazione = (valore) => {
+      if (!String(valore).trim()) return "rotazione tolta dal programma";
+      const letto = lettereRotazione(valore);
+      return "rotazione: " + (letto.ok ? letto.lettere.join(" \u00b7 ") : String(valore).trim());
     };
 
     if (inizio) {
@@ -201,6 +235,58 @@ export function collegaPiano(doc, opzioni) {
       fase.addEventListener("change", () => {
         const valore = String(fase.value || "");
         scrivi(fase, "fase", valore, valore ? "fase: " + valore : "fase tolta dal programma", "Fase");
+      });
+    }
+
+    if (giorni) {
+      legati += 1;
+      giorni.addEventListener("change", () => {
+        const valore = String(giorni.value || "").trim();
+        scrivi(giorni, "giorni", valore, valore ? "giorni a settimana: " + valore : "giorni a settimana tolti dal programma", "Gg/sett", "Giorni a settimana non salvati");
+      });
+    }
+
+    if (settimane) {
+      legati += 1;
+      settimane.addEventListener("change", () => {
+        const valore = String(settimane.value || "").trim();
+        scrivi(settimane, "settimane", valore, valore ? "settimane: " + valore : "settimane tolte dal programma", "Settimane", "Settimane non salvate");
+      });
+    }
+
+    if (rotazione) {
+      legati += 1;
+      rotazione.addEventListener("input", () => mostraAnteprima(rotazione.value));
+      rotazione.addEventListener("change", () => {
+        const valore = String(rotazione.value || "").trim();
+        mostraAnteprima(valore);
+        scrivi(rotazione, "rotazione", valore, messaggioRotazione(valore), "Rotazione", "Rotazione non salvata");
+      });
+    }
+
+    const piuRotazione = doc.querySelector("[data-pr-rot-piu]");
+    if (piuRotazione) {
+      legati += 1;
+      piuRotazione.addEventListener("click", () => {
+        const valore = String(rotazione ? rotazione.value : "").trim();
+        const letto = lettereRotazione(valore);
+        if (!letto.ok) {
+          segnala("Rotazione non salvata: " + letto.motivo, "errore");
+          return;
+        }
+        if (letto.lettere.length >= 7) {
+          segnala("la rotazione ha gi\u00e0 7 schede: il massimo", "errore");
+          return;
+        }
+        let successiva = "";
+        for (let i = 0; i < 26 && !successiva; i += 1) {
+          const lettera = String.fromCharCode(65 + i);
+          if (letto.lettere.indexOf(lettera) === -1) successiva = lettera;
+        }
+        const nuovo = letto.lettere.concat(successiva ? [successiva] : []).join(" ");
+        if (rotazione) rimetti(rotazione, nuovo);
+        mostraAnteprima(nuovo);
+        scrivi(rotazione, "rotazione", nuovo, messaggioRotazione(nuovo), "Rotazione", "Rotazione non salvata");
       });
     }
   }
