@@ -53,8 +53,8 @@ const scheda = {
 const voce = (conto, nome) => conto.articolazioni.filter((a) => a.articolazione === nome)[0] || null;
 const somma = (a) => a.reduce((acc, v) => acc + v, 0);
 
-test("129.1 la mappa copre tutti i 179 esercizi del catalogo, con le articolazioni vere", () => {
-  assert.equal(Object.keys(MAPPA_ARTICOLARE).length, 179);
+test("129.1 la mappa copre tutti i 186 esercizi del catalogo, con le articolazioni vere", () => {
+  assert.equal(Object.keys(MAPPA_ARTICOLARE).length, 186);
   CATALOGO_ESERCIZI_B.forEach((v) => {
     assert.ok(MAPPA_ARTICOLARE[v.n], "manca " + v.n);
   });
@@ -101,8 +101,8 @@ test("129.4 il doppione conta col nome vero: l'alias non tocca il catalogo", () 
   assert.equal(nomeCanonico("Pressa 45Â°"), "Pressa 45°");
   assert.deepEqual(articolazioniDi("Pressa 45Â°").punti, articolazioniDi("Pressa 45°").punti);
   assert.equal(ALIAS["Push ups"], "Push Up");
-  /* Il catalogo ha ancora tutte e 179 le voci, doppioni compresi. */
-  assert.equal(CATALOGO_ESERCIZI_B.length, 179);
+  /* Il catalogo ha ancora tutte e 186 le voci, doppioni compresi. */
+  assert.equal(CATALOGO_ESERCIZI_B.length, 186);
   assert.ok(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45Â°"));
 });
 

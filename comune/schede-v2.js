@@ -403,6 +403,11 @@ export function ricostruisciSchede(documenti) {
   elenco.forEach((doc) => {
     const id = testo(doc && doc.id);
     const dati = (doc && doc.dati) || {};
+    /* Passo 20 — una scheda tolta dal programma esce da TUTTI i conti: non e'
+     * un'archiviata da leggere, e' una scheda che quel programma non ha piu'.
+     * Il documento resta in B (niente si cancella) e l'Annulla lo rimette:
+     * finche' `toltoDalProgramma` c'e', qui non si vede. */
+    if (testo(dati.toltoDalProgramma)) return;
     const daId = decodificaId(id);
     const famiglia = dati.kind === "archived" ? "archiviata" : (daId ? daId.famiglia : "scheda");
     const programId = testo(dati.programId) || (daId ? daId.programId : "");

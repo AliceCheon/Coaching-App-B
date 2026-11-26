@@ -23,6 +23,7 @@ import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from 
 import { codiceDistretto, nomeDistretto } from "./distretti-b.js";
 import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
+import { pulsanteCestino, apriConfermaEliminazione } from "./cestino-schede.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
   recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
@@ -1117,7 +1118,12 @@ function apriElencoProgrammi(doc, bottone, elenco, r) {
       bottone: tasto,
       nomeInUso: r && r.profilo ? nomePulito(r.profilo.nome) : "",
       confrontaSubito: confrontaSubito === true,
-      onSalvaCome: r && typeof r.onSalvaCome === "function" ? r.onSalvaCome : null
+      onSalvaCome: r && typeof r.onSalvaCome === "function" ? r.onSalvaCome : null,
+      /* Passo 20 — la finestra di sola lettura porta il cestino delle schede,
+       * con la stessa strada di scrittura del resto della pagina. */
+      onEliminaScheda: r && typeof r.onEliminaScheda === "function" ? r.onEliminaScheda : null,
+      contaScheda: r && typeof r.contaScheda === "function" ? r.contaScheda : null,
+      segnala: r && typeof r.segnala === "function" ? r.segnala : function () {}
     });
     chiudiPannelloElenco(doc);
   };
@@ -1129,6 +1135,48 @@ function apriElencoProgrammi(doc, bottone, elenco, r) {
     const stato = p.attivo ? "in uso" : (p.archiviato ? "archiviato" : (p.bozza ? "in bozza" : "disponibile"));
     testi.appendChild(n(doc, "span", "pr-elenco-stato", stato));
     if (p.dettaglio) testi.appendChild(n(doc, "span", "pr-elenco-dettaglio", p.dettaglio));
+    /* Passo 20 — le schede di QUESTO programma, una pastiglia per lettera, con
+     * il cestino accanto: da qui si toglie una scheda senza aprire niente,
+     * dopo la conferma in chiaro. L'ultima non si toglie. */
+    const mod = modificaCorrente;
+    const schedeDel = p.gruppo && Array.isArray(p.gruppo.schede) ? p.gruppo.schede : [];
+    if (schedeDel.length && mod && typeof mod.onEliminaScheda === "function") {
+      const fila = n(doc, "div", "pr-elenco-schede");
+      fila.appendChild(n(doc, "span", "pr-elenco-schede-t", "schede"));
+      schedeDel.forEach((sc) => {
+        const lettera = String((sc && sc.codice) || "").trim() || "—";
+        const pastiglia = n(doc, "span", "pr-rotchip", lettera);
+        pastiglia.setAttribute("data-elenco-scheda", lettera);
+        fila.appendChild(pastiglia);
+        const idScheda = String((sc && sc.id) || "");
+        if (!idScheda) return;
+        fila.appendChild(pulsanteCestino(doc, {
+          codice: lettera,
+          nomeProgramma: nomePulito(p.nome),
+          idScheda: idScheda,
+          spento: schedeDel.length <= 1,
+          motivo: "è l'ultima scheda del programma: un programma senza schede non si può usare",
+          onChiedi: (richiesta) => {
+            let conta = null;
+            try { conta = typeof mod.conta === "function" ? mod.conta(idScheda) : null; } catch (e) { conta = null; }
+            apriConfermaEliminazione(doc, {
+              codice: lettera,
+              nomeScheda: nomePulito((sc && sc.nome) || ""),
+              nomeProgramma: nomePulito(p.nome),
+              idScheda: idScheda,
+              idProgramma: p.id,
+              schedeAttive: schedeDel.length,
+              conta: conta,
+              bottone: richiesta && richiesta.bottone ? richiesta.bottone : null,
+              segnala: function () {},
+              onConferma: (rq) => mod.onEliminaScheda(rq),
+              chiudiDopo: () => { chiudiPannelloElenco(doc); }
+            });
+          }
+        }));
+      });
+      testi.appendChild(fila);
+    }
     riga.appendChild(testi);
     const tasti = n(doc, "span", "pr-elenco-tasti");
     if (p.attivo) {
@@ -2108,13 +2156,22 @@ function pannelloScheda(doc, scheda, r) {
   p.appendChild(filtriDistretti(doc, scheda, p));
 
   const note = n(doc, "div", "pr-note");
-  note.appendChild(n(doc, "div", "pr-note-h", "📌 NOTE SCHEDA " + scheda.codice + " — visibili nell'export/stampa"));
+  note.appendChild(n(doc, "div", "pr-note-h", "📌 NOTE SCHEDA " + scheda.codice + " — si salvano uscendo dal campo, visibili nell'export/stampa"));
+  /* PASSO 20 — la nota si scrive. Prima nasceva `readOnly = true`: si vedeva
+   * e non si poteva toccare. Ora e' un campo vero: `data-pr-c` la lega alla
+   * scheda, e la pagina non si ridisegna mentre il fuoco e' dentro (vedi
+   * `cellaInModifica()` in desktop/app-v31.js). Il testo si salva al cambio,
+   * nella scheda di B, con la voce di registro e l'Annulla. */
   const ta = n(doc, "textarea", "pr-ta pr-ta-note");
   ta.rows = 3;
-  ta.readOnly = true;
-  ta.value = nomePulito(scheda.note) || "";
+  ta.value = scheda.note ? nomePulito(scheda.note) : "";
+  ta.setAttribute("data-pr-c", "scheda-nota");
+  ta.setAttribute("aria-label", "note della scheda " + scheda.codice);
+  ta.setAttribute("title", "scrivi qui: la nota si salva quando esci dal campo (o premi Ctrl+Invio)");
   ta.setAttribute("placeholder", "Riscaldamento, prehab, note generali per l'atleta…");
-  if (scheda.note) ta.textContent = nomePulito(scheda.note);
+  /* Il testo iniziale anche come contenuto: la textarea lo mostra dal `value`,
+   * ma chi legge il documento (e le stampe) lo trova qui. */
+  ta.textContent = scheda.note ? nomePulito(scheda.note) : "";
   note.appendChild(ta);
   p.appendChild(note);
   p.appendChild(rigaTempo(doc, scheda));

@@ -806,3 +806,28 @@ td.c-rec.in-scrittura,td.c-tut.in-scrittura{overflow:visible}
 body[data-theme="light"] .pr-arrivo{color:#7b4bbf;border-color:#7b4bbf;opacity:1;font-weight:800}
 /* Passo 3b: la riga che il filtro per distretto nasconde. */
 .f-nascosta{display:none}
+
+/* Passo 20 — il cestino delle schede (Archivio, Confronto, pannello «Cambia»).
+   Piccolo e discreto accanto alla scheda: si vede, non ruba l'occhio, e la
+   sua aria-label dice cosa toglie. Il rosso arriva solo col passaggio del
+   mouse, perche' non e' un tasto da premere per sbaglio. */
+.pr-cestino{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  margin-left:6px;padding:0;background:transparent;border:1px solid var(--line);border-radius:7px;
+  color:var(--fioco);font-size:12px;line-height:1;cursor:pointer;vertical-align:middle}
+.pr-cestino:hover{border-color:var(--rosa);color:var(--rosa)}
+.pr-cestino:focus-visible{outline:2px solid var(--lav);outline-offset:2px}
+.pr-cestino[disabled]{opacity:.45;cursor:not-allowed}
+.pc-scheda-t .pr-cestino,.pc-col-scheda .pr-cestino{float:right;margin-top:-2px}
+.pr-elenco-schede{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:4px}
+.pr-elenco-schede .pr-elenco-schede-t{font-size:10.4px;letter-spacing:.05em;text-transform:uppercase;color:var(--fioco)}
+.pr-elenco-schede .pr-cestino{width:20px;height:20px;margin-left:2px;font-size:10.5px}
+/* La finestrella della conferma: poche righe, il conto di quello che esce e
+   cosa resta. Niente numeri inventati: se il conto non c'e', non si mostra. */
+.cestino-box{max-width:560px}
+.cestino-corpo{margin:4px 0 0}
+.cestino-domanda{margin:6px 0;font-size:13px;line-height:1.5;color:var(--testo);font-weight:700}
+.cestino-nota{margin:6px 0;font-size:12px;line-height:1.5;color:var(--muted)}
+.cestino-esito{margin:8px 0 0;font-size:11.8px;color:var(--muted);min-height:0}
+.cestino-esito[data-tono="ok"]{color:var(--verde);font-weight:700}
+.cestino-esito[data-tono="errore"]{color:var(--rosa);font-weight:700}
+.cestino-fila{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}

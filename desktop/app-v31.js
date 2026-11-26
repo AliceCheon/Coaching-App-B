@@ -973,6 +973,28 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "copia non riuscita" });
           });
         },
+        /* Passo 20 — il cestino: la scheda esce dal programma (il documento
+         * resta, niente si cancella). Una scrittura di B, una voce di registro,
+         * l'Annulla che la rimette; poi la pagina rilegge e la scheda sparisce. */
+        contaScheda: (idScheda) => {
+          try { return editor.conta(idScheda); } catch (e) { return null; }
+        },
+        onEliminaScheda: (richiesta) => {
+          modificheInVolo += 1;
+          return editor.togliScheda(richiesta).then((esito) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            if (esito && esito.ok) {
+              segnalaModifica((esito.testo || "scheda tolta dal programma") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+            } else {
+              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente, { forza: true, motivo: "scheda tolta dal programma" }).then(() => esito);
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("scheda non tolta: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "cestino non riuscito" }).then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
+          });
+        },
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
@@ -1096,7 +1118,29 @@ export async function avvia(doc, win) {
             ? { programma: attivo.programma, gruppo: gruppoInUso } : null,
           nomeInUso: rp.profilo ? nomePulito(rp.profilo.nome) : "",
           bottone: null,
-          onSalvaCome: salvaComeNuovoProgramma
+          onSalvaCome: salvaComeNuovoProgramma,
+          /* Passo 20 — dall'Archivio si toglie una scheda come dal pannello
+           * «Cambia»: stessa conferma, stessa scrittura, stesso Annulla. */
+          segnala: segnalaModifica,
+          contaScheda: (idScheda) => {
+            try { return editor.conta(idScheda); } catch (e) { return null; }
+          },
+          onEliminaScheda: (richiesta) => {
+            modificheInVolo += 1;
+            return editor.togliScheda(richiesta).then((esito) => {
+              modificheInVolo = Math.max(0, modificheInVolo - 1);
+              if (esito && esito.ok) {
+                segnalaModifica((esito.testo || "scheda tolta dal programma") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+              } else {
+                segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+              }
+              return sincronizza(utente, { forza: true, motivo: "scheda tolta dall'archivio" }).then(() => esito);
+            }, (e) => {
+              modificheInVolo = Math.max(0, modificheInVolo - 1);
+              segnalaModifica("scheda non tolta: " + (e && e.message ? e.message : "errore"), "errore");
+              return sincronizza(utente, { forza: true, motivo: "cestino non riuscito" }).then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
+            });
+          }
         })
       });
     }

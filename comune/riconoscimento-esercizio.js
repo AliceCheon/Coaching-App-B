@@ -47,10 +47,16 @@ export const ALIAS_NOMI = Object.freeze({
   "pulldown sbarra": "Pull down sbarra",
   "Stacco B stance con cavo": "Stacco B Stance cavo",
   "Push ups": "Push Up",
-  /* PASSO 6f: tre nomi che l'Excel scrive e il catalogo non ha */
-  "Affondo front squat machine": "Front squat machine",
-  "Pulley mono": "Pulley triangolo",
-  "Slanci laterali cavo basso": "Slanci cavo basso"
+  /* PASSO 20: i tre nomi che stavano qui (Affondo front squat machine,
+   * Pulley mono, Slanci laterali cavo basso) ora SONO esercizi del catalogo,
+   * con il loro distretto: l'alias non serve piu' e, se restasse, li
+   * riportare al nome vicino (sbagliato per Pendulum glutei, che finiva
+   * Quadricipiti). Restano qui i nomi vicini, scritti in un altro modo. */
+  "Pendulum glutei": "Pendulum focus glutei",
+  "Pendulum focus gluteo": "Pendulum focus glutei",
+  "Slancio laterale cavo basso": "Slanci laterali cavo basso",
+  "Pulley mono braccio": "Pulley mono",
+  "Lat machine presa neutra stretta": "Lat machine presa neutra"
 });
 
 /* Il nome che si conta davvero: se è un doppione, il suo nome canonico. */
@@ -129,7 +135,7 @@ const ALIAS_NORMALIZZATI = (() => {
   return indice;
 })();
 
-/* Il catalogo dei 179 esercizi, con il distretto tradotto. È la voce di
+/* Il catalogo dei 186 esercizi, con il distretto tradotto. È la voce di
  * catalogo che risponde anche quando la mappa dei muscoli non ha il nome. */
 let CATALOGO_BASE = null;
 export function catalogoBase() {

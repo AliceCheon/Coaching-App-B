@@ -159,6 +159,41 @@ export function collegaPiano(doc, opzioni) {
       vol.addEventListener("change", () => { scriviScarico(vol); });
     }
 
+    /* PASSO 20 — la nota della scheda si scrive. Si salva al cambio (uscendo
+     * dal campo, o con Ctrl+Invio), mai a ogni tasto; mentre il fuoco e'
+     * dentro la pagina non si ridisegna (cellaInModifica in app-v31), cosi'
+     * il testo non si perde a metà. Un rifiuto si dice, e il testo scritto
+     * resta nel campo per correggerlo. */
+    const nota = riquadro.querySelector('[data-pr-c="scheda-nota"]');
+    if (nota && typeof editor.notaScheda === "function") {
+      legati += 1;
+      let salvata = String(nota.value || "");
+      const salvaNota = () => {
+        const valore = String(nota.value || "");
+        if (valore === salvata) return Promise.resolve();
+        return Promise.resolve(editor.notaScheda({ idScheda: idScheda, valore: valore })).then((esito) => {
+          if (!esito || !esito.ok) {
+            segnala("Nota non salvata: " + ((esito && esito.motivo) || "non ho scritto niente"), "errore");
+            return null;
+          }
+          salvata = valore;
+          segnala((valore.trim() ? "nota della scheda salvata" : "nota tolta dalla scheda")
+            + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+          return dopoIlFuoco(nota, () => sincronizza());
+        }, (e) => {
+          segnala("Nota non salvata: " + (e && e.message ? e.message : "scrittura non riuscita"), "errore");
+          return null;
+        });
+      };
+      nota.addEventListener("change", salvaNota);
+      nota.addEventListener("keydown", (ev) => {
+        if (ev && (ev.key === "Enter" || ev.key === "Invio") && (ev.ctrlKey || ev.metaKey)) {
+          if (ev.preventDefault) ev.preventDefault();
+          if (typeof nota.blur === "function") nota.blur();
+        }
+      });
+    }
+
   });
 
   /* ---------- la testata del programma --------------------------------- */

@@ -39,7 +39,10 @@ import {
   scriviTecnica,
   rimuoviTecnica,
   cambiaPianoScheda,
-  cambiaTestataProgramma
+  cambiaTestataProgramma,
+  cambiaNotaScheda,
+  togliSchedaDalProgramma,
+  serieDellaScheda
 
 , copiaEsercizi as applicaCopiaEsercizi, rimettiElencoEsercizi } from "./modifiche-b.js";
 import { contaScheda, svuotaScheda, ripristinaScheda, svuotaProgramma } from "./igiene-scheda.js";
@@ -342,6 +345,27 @@ export function creaEditorSchede(opzioni) {
       if (String(voce.tipo || "") === "copia-esercizi" || String(voce.tipo || "") === "sposta-esercizi") {
         return annullaCopia(voce);
       }
+      /* Passo 20 — la scheda tolta dal programma non e' piu' nella mappa delle
+       * schede attive: si rimette leggendo il SUO documento per id, quello che
+       * la voce porta. Se manca l'id, si dice invece di cercare a caso. */
+      if (String(voce.tipo || "") === "togli-scheda") {
+        const idDoc = String(voce.documento || "").trim();
+        if (!idDoc) return { ok: false, motivo: "la voce del registro non dice quale documento rimettere" };
+        const lettoS = await conScadenza(leggiSchedaB(db, uid, idDoc), "la lettura della scheda tolta");
+        if (!lettoS || !lettoS.esiste) return { ok: false, motivo: "la scheda non e' piu' in B" };
+        const esitoS = annullaModifica(lettoS.dati, voce, { quando: quando(), uid: uid });
+        if (!esitoS.ok) return { ok: false, motivo: esitoS.motivo };
+        try {
+          await conScadenza(salvaSchedaConVersione(db, uid, idDoc, esitoS.dati, versioneDi(lettoS.dati)), "la scrittura della scheda");
+        } catch (e) {
+          return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+        }
+        const avvisoS = await scriviVoceSicura(esitoS.voce);
+        versioni[idDoc] = versioneDi(esitoS.dati);
+        ultima = ultimaAnnullabile(registro.concat([{ id: esitoS.voce.idVoce, dati: esitoS.voce }]));
+        return { ok: true, voce: esitoS.voce, avvisoRegistro: avvisoS };
+      }
+
       if (String(voce.tipo || "") === "testata-programma") {
         const idDoc = String(voce.programma || "");
         if (!idDoc) return { ok: false, motivo: "la voce del registro non dice quale programma rimettere" };
@@ -555,7 +579,10 @@ export function creaEditorSchede(opzioni) {
     if (k) {
       const idDoc = documentoScheda(k);
       const d = documenti.filter((x) => x && String(x.id || "") === idDoc)[0] || null;
-      return contaScheda(d ? d.dati : null, apertura[idDoc] || null);
+      const conto = contaScheda(d ? d.dati : null, apertura[idDoc] || null);
+      /* Passo 20 — anche le serie scritte, per la conferma del cestino. */
+      conto.serie = serieDellaScheda(d ? d.dati : null);
+      return conto;
     }
     const tot = { codice: "", schede: 0, esercizi: 0, tecniche: 0, righe: 0, modifiche: 0 };
     documenti.forEach((x) => {
@@ -874,6 +901,93 @@ export function creaEditorSchede(opzioni) {
     return { ok: true, voce: voceNuova, quante: rimesse.length, fallite: fallite, testo: testoEsito, avvisoRegistro: avvisoVoce };
   }
 
+  /* ---------- La nota della scheda (passo 20) ------------------------------
+   * La stessa strada di un campo della testata, ma sul documento della scheda:
+   * si rilegge, si controlla la versione, si scrive con versione +1 e la voce
+   * del registro (quindi l'Annulla). Il testo si scrive dentro `sheet`, dove
+   * la lettura lo cerca: un livello piu' su «riusciva» e non si vedeva.
+   */
+  function notaScheda(richiesta) {
+    const r = richiesta || {};
+    const idChiesto = String(r.idScheda == null ? "" : r.idScheda).trim();
+    if (!idChiesto) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato la scheda: non ho scritto niente" });
+    const idScheda = documentoScheda(idChiesto);
+    if (!idScheda) return Promise.resolve({ ok: false, motivo: "scheda non riconosciuta in B · " + schedaNonTrovata(idChiesto) });
+    return coda.esegui("scheda:" + idScheda, async () => {
+      const letto = await conScadenza(leggiSchedaB(db, uid, idScheda), "la lettura della scheda");
+      if (!letto || !letto.esiste) return { ok: false, motivo: "la scheda non e' ancora in B: fai prima la copia" };
+      const attesa = versioni[idScheda] == null ? versioneDi(letto.dati) : versioni[idScheda];
+      const esito = cambiaNotaScheda(letto.dati, r, { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+      if (versioneDi(letto.dati) !== attesa) {
+        return { ok: false, motivo: "la scheda e' cambiata nel frattempo (versione " + versioneDi(letto.dati) + " invece di " + attesa + "): non ho scritto niente" };
+      }
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, idScheda, esito.dati, attesa), "la scrittura della scheda");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      versioni[idScheda] = versioneDi(esito.dati);
+      ultima = esito.voce;
+      return { ok: true, voce: esito.voce, versione: versioni[idScheda], avvisoRegistro: avvisoVoce };
+    });
+  }
+
+  /* ---------- Togliere una scheda dal programma (passo 20) -----------------
+   * La scheda esce dal programma, il documento resta: nessuna cancellazione.
+   * Qui si conta anche quello che la conferma dice («quante schede restano»),
+   * cosi' l'ultima scheda non si toglie nemmeno se il tasto fosse rimasto
+   * acceso da una pagina vecchia.
+   */
+  function togliScheda(richiesta) {
+    const r = richiesta || {};
+    const idChiesto = String(r.idScheda == null ? "" : r.idScheda).trim();
+    if (!idChiesto) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato la scheda: non ho scritto niente" });
+    const idScheda = documentoScheda(idChiesto);
+    if (!idScheda) return Promise.resolve({ ok: false, motivo: "scheda non riconosciuta in B · " + schedaNonTrovata(idChiesto) });
+    return coda.esegui("scheda:" + idScheda, async () => {
+      const letto = await conScadenza(leggiSchedaB(db, uid, idScheda), "la lettura della scheda");
+      if (!letto || !letto.esiste) return { ok: false, motivo: "la scheda non e' piu' in B: niente da togliere" };
+      /* Quante schede attive restano in QUESTO programma, contate adesso sui
+       * documenti letti (una foto vecchia non conta): se e' l'ultima, no. */
+      const programma = String(r.idProgramma == null ? "" : r.idProgramma).trim();
+      /* Quante schede ATTIVE ha il programma adesso, questa compresa. */
+      const attive = documenti.filter((d) => {
+        const dati = (d && d.dati) || {};
+        if (!d || !d.id) return false;
+        if (!dati.sheet || typeof dati.sheet !== "object") return false;
+        if (dati.kind === "archived" || dati.archivedAt || dati.toltoDalProgramma) return false;
+        return String(dati.programId || "") === programma;
+      }).length;
+      const attesa = versioni[idScheda] == null ? versioneDi(letto.dati) : versioni[idScheda];
+      const esito = togliSchedaDalProgramma(letto.dati, Object.assign({}, r, {
+        idDocumento: idScheda,
+        schedeAttive: attive
+      }), { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+      if (versioneDi(letto.dati) !== attesa) {
+        return { ok: false, motivo: "la scheda e' cambiata nel frattempo (versione " + versioneDi(letto.dati) + " invece di " + attesa + "): non ho scritto niente" };
+      }
+      try {
+        await conScadenza(salvaSchedaConVersione(db, uid, idScheda, esito.dati, attesa), "la scrittura della scheda");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      versioni[idScheda] = versioneDi(esito.dati);
+      ultima = esito.voce;
+      return {
+        ok: true,
+        voce: esito.voce,
+        versione: versioni[idScheda],
+        testo: "scheda " + (esito.codice || "") + " tolta dal programma" + (esito.nome ? " · «" + esito.nome + "»" : ""),
+        schedeAttive: attive,
+        avvisoRegistro: avvisoVoce
+      };
+    });
+  }
+
   return {
     attivo: true,
     conta: conta,
@@ -884,6 +998,8 @@ export function creaEditorSchede(opzioni) {
     get ultima() { return ultima; },
     modifica: modifica,
     testataProgramma: testataProgramma,
+    notaScheda: notaScheda,
+    togliScheda: togliScheda,
     copiaEsercizi: copiaEsercizi,
     proponiScaricoTutte: proponiScaricoTutte,
     applicaScaricoTutte: applicaScaricoTutte,

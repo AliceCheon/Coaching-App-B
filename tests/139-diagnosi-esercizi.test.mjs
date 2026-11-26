@@ -76,8 +76,8 @@ test("139.2 il resolver risponde i quattro passi, e chi non si riconosce dichiar
   assert.equal(righe[0].motivo, null);
   assert.deepEqual(righe[0].primari, ["Pettorali"]);
 
-  assert.equal(righe[1].voce, "Pulley triangolo");
-  assert.equal(righe[1].passo, "alias");
+  assert.equal(righe[1].voce, "Pulley mono");
+  assert.equal(righe[1].passo, "esatto");
   assert.deepEqual(righe[1].primari, ["Dorsali"]);
 
   assert.equal(righe[1].origine, testoOrigine(origineV2()));

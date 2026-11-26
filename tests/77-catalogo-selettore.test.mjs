@@ -1,17 +1,17 @@
 /* tests/77-catalogo-selettore.test.mjs — catalogo e selettore del Database
  * esercizi (passo 35, sola lettura).
  *
- * Il catalogo e' la copia VERBATIM dei 179 esercizi del v31 (array CAT di
+ * Il catalogo e' la copia VERBATIM dei 186 esercizi del v31 (array CAT di
  * pc/index.html, r.5860: n = nome, g = distretto, nessun identificativo).
  * Il selettore e' il modal pg-lib del v31 rifatto in B: cerca per nome o
  * distretto, clic per scegliere, Esc per chiudere; la scelta torna a chi
  * ascolta e NIENTE si scrive (ne Firestore, ne storage).
  *
- *  77.1 il catalogo e' quello del v31: 179 voci, nome e distretto pieni,
+ *  77.1 il catalogo e' quello del v31 piu' le 7 aggiunte del passo 20:
  *       zero duplicati, stessa sequenza del file di origine;
  *  77.2 la ricerca come nel v31: nome o distretto, senza maiuscole,
  *       vuota = tutto l'elenco;
- *  77.3 il selettore apre con i 179, filtra, e alla scelta RESTITUISCE
+ *  77.3 il selettore apre con i 186, filtra, e alla scelta RESTITUISCE
  *       {n, g} a chi ascolta e chiude;
  *  77.4 Esc chiude senza scegliere; la x pure; alla riapertura la ricerca
  *       riparte pulita; nessuna scrittura su localStorage;
@@ -35,9 +35,9 @@ function documento() {
   return new JSDOM("<!doctype html><html><head></head><body></body></html>", { url: "http://localhost/" }).window.document;
 }
 
-test("77.1 il catalogo e' quello del v31: 179 esercizi, nome e distretto sempre pieni, nessun duplicato", () => {
-  assert.equal(conteggioCatalogoB(), 179);
-  assert.equal(CATALOGO_ESERCIZI_B.length, 179);
+test("77.1 il catalogo e' quello del v31: 186 esercizi, nome e distretto sempre pieni, nessun duplicato", () => {
+  assert.equal(conteggioCatalogoB(), 186);
+  assert.equal(CATALOGO_ESERCIZI_B.length, 186);
   const visti = Object.create(null);
   let doppioni = 0;
   CATALOGO_ESERCIZI_B.forEach((v) => {
@@ -49,21 +49,40 @@ test("77.1 il catalogo e' quello del v31: 179 esercizi, nome e distretto sempre 
     visti[v.n] = true;
   });
   assert.equal(doppioni, 0, "nomi duplicati nel catalogo");
-  /* stessa sequenza del file di origine: estratto dal v31, non riscritto */
+  /* Le 179 voci del v31 restano VERBATIM: nome e distretto come sono nel file
+   * di origine, non riscritti. In piu' ci sono solo le aggiunte dichiarate qui
+   * sotto (passo 20): gli esercizi che Alice ha nelle schede e che il catalogo
+   * non aveva. Cosi' una voce che sparisce o cambia nome si vede subito. */
   const sorg = readFileSync(join(radice, "pc", "index.html"), "utf8");
   const inizio = sorg.indexOf("var CAT = ");
   assert.ok(inizio > 0, "l'array CAT del v31 non si trova piu' dov'era");
   const origine = JSON.parse(sorg.slice(sorg.indexOf("[", inizio), sorg.indexOf("];", inizio) + 1));
-  assert.equal(origine.length, 179);
-  assert.deepEqual(CATALOGO_ESERCIZI_B, origine);
+  assert.equal(origine.length, 179, "l'array CAT del v31 ha 179 voci");
+  const perNome = new Map(CATALOGO_ESERCIZI_B.map((v) => [v.n, v]));
+  origine.forEach((v) => {
+    const qui = perNome.get(v.n);
+    assert.ok(qui, "la voce del v31 manca dal catalogo: " + v.n);
+    assert.equal(qui.g, v.g, "il distretto della voce del v31 e' cambiato: " + v.n);
+  });
+  const delV31 = new Set(origine.map((v) => v.n));
+  const aggiunte = CATALOGO_ESERCIZI_B.filter((v) => !delV31.has(v.n)).map((v) => v.n + " · " + v.g);
+  assert.deepEqual(aggiunte, [
+    "Affondo front squat machine · Quadricipiti",
+    "Curl bilanciere · Bicipiti",
+    "Lat machine presa neutra · Dorsali",
+    "Pendulum focus glutei · Glutei",
+    "Pulley basso · Centro schiena",
+    "Pulley mono · Centro schiena",
+    "Slanci laterali cavo basso · Glutei"
+  ], "le aggiunte al catalogo sono quelle dichiarate, con il loro distretto");
 });
 
 test("77.2 la ricerca come nel v31: nome o distretto, senza maiuscole, vuota = tutto", () => {
-  assert.equal(cercaNelCatalogoB("").length, 179);
-  assert.equal(cercaNelCatalogoB("   ").length, 179);
-  assert.equal(cercaNelCatalogoB(null).length, 179);
+  assert.equal(cercaNelCatalogoB("").length, 186);
+  assert.equal(cercaNelCatalogoB("   ").length, 186);
+  assert.equal(cercaNelCatalogoB(null).length, 186);
   const curl = cercaNelCatalogoB("curl");
-  assert.ok(curl.length > 0 && curl.length < 179, "la cerca per nome deve restringere il campo");
+  assert.ok(curl.length > 0 && curl.length < 186, "la cerca per nome deve restringere il campo");
   curl.forEach((v) => assert.ok(v.n.toLowerCase().indexOf("curl") > -1));
   const distretto = cercaNelCatalogoB("bicipiti");
   assert.ok(distretto.length > 0, "la cerca per distretto deve trovare");
@@ -76,7 +95,7 @@ test("77.2 la ricerca come nel v31: nome o distretto, senza maiuscole, vuota = t
   assert.equal(cercaNelCatalogoB("zzz-inesistente").length, 0);
 });
 
-test("77.3 il selettore apre con i 179, filtra, e alla scelta restituisce {n, g} e chiude", () => {
+test("77.3 il selettore apre con i 186, filtra, e alla scelta restituisce {n, g} e chiude", () => {
   const d = documento();
   const prese = [];
   const s = creaSelettoreEserciziB(d, { allaScelta: (scelta) => prese.push(scelta) });
@@ -87,8 +106,8 @@ test("77.3 il selettore apre con i 179, filtra, e alla scelta restituisce {n, g}
   assert.ok(card, "il modal sta nel documento");
   assert.equal(card.getAttribute("aria-label"), "Database esercizi");
   let voci = s.velo.querySelectorAll(".bdsel-it");
-  assert.equal(voci.length, 179);
-  assert.ok(s.velo.querySelector(".bdsel-n").textContent.indexOf("179") > -1, "il contatore dice 179");
+  assert.equal(voci.length, 186);
+  assert.ok(s.velo.querySelector(".bdsel-n").textContent.indexOf("186") > -1, "il contatore dice 186");
   /* la ricerca filtra come la 77.2 */
   const casella = s.velo.querySelector(".bdsel-q");
   casella.value = "curl";
@@ -115,7 +134,7 @@ test("77.4 Esc chiude senza scegliere; la x pure; riapertura pulita; nessuna scr
   assert.ok(s.velo.hidden, "Esc chiude");
   assert.equal(prese.length, 0, "Esc non sceglie");
   s.apri();
-  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 179, "alla riapertura la ricerca riparte pulita");
+  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 186, "alla riapertura la ricerca riparte pulita");
   s.velo.querySelector(".bdsel-x").dispatchEvent(new d.defaultView.MouseEvent("click", { bubbles: true }));
   assert.ok(s.velo.hidden, "la x chiude");
   assert.equal(prese.length, 0);

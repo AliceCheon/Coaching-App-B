@@ -33,7 +33,7 @@ export const PUNTI_SECONDARIA = 0.5;
 export const TETTO_ESERCIZIO = 2;
 
 /* I nomi del catalogo restano quelli veri (anche quelli con il carattere
- * rovinato): qui sotto ci sono tutti e 179, nell'ordine del catalogo. */
+ * rovinato): qui sotto ci sono tutti e 186, nell'ordine del catalogo. */
 export const MAPPA_ARTICOLARE = Object.freeze({
   "Ab Roll": { p: "colonna lombare", s: ["spalla"] },
   "Abductor": { p: "anca", s: [] },
@@ -42,6 +42,7 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Affondi al multypower": { p: "anca", s: ["ginocchio", "caviglia"] },
   "Affondi forntali manubri": { p: "anca", s: ["ginocchio", "caviglia"] },
   "Affondo con rotazione busto triset": { p: "anca", s: ["ginocchio", "colonna lombare"] },
+  "Affondo front squat machine": { p: "anca", s: ["ginocchio", "caviglia"] },
   "Affondo pesante triset": { p: "anca", s: ["ginocchio", "caviglia"] },
   "Alzata laterale su panca inclinata 30°": { p: "spalla", s: [] },
   "Alzata laterale su panca inclinata 30Â°": { p: "spalla", s: [] },
@@ -73,6 +74,7 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Crunch machine": { p: "colonna lombare", s: ["colonna toracica"] },
   "crunch obliqui": { p: "colonna lombare", s: ["colonna toracica"] },
   "Curl cavo basso con bilancere piccolo": { p: "gomito", s: ["polso"] },
+  "Curl bilanciere": { p: "gomito", s: ["polso"] },
   "Curl manubri": { p: "gomito", s: ["polso"] },
   "Curls Bilaciere Z": { p: "gomito", s: ["polso"] },
   "Curls manubri schiena al muro": { p: "gomito", s: ["polso"] },
@@ -124,6 +126,7 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Lat machine": { p: "spalla", s: ["gomito", "colonna toracica"] },
   "Lat Machine supina": { p: "spalla", s: ["gomito", "colonna toracica"] },
   "Lat machine Triangolo": { p: "spalla", s: ["gomito"] },
+  "Lat machine presa neutra": { p: "spalla", s: ["gomito"] },
   "Lat mono braccio": { p: "spalla", s: ["gomito"] },
   "Leg curls": { p: "ginocchio", s: ["anca"] },
   "Leg curls seduta": { p: "ginocchio", s: ["anca"] },
@@ -144,6 +147,7 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Peck deck": { p: "spalla", s: ["colonna toracica"] },
   "Pendaly Row": { p: "colonna toracica", s: ["gomito", "spalla"] },
   "Pendulum": { p: "ginocchio", s: ["anca"] },
+  "Pendulum focus glutei": { p: "anca", s: ["ginocchio", "colonna lombare"] },
   "Piegamenti sulle braccia": { p: "spalla", s: ["gomito", "colonna lombare"] },
   "Plank statico": { p: "colonna lombare", s: ["spalla"] },
   "Polpacci in piedi": { p: "caviglia", s: ["ginocchio"] },
@@ -159,6 +163,8 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "pulldown sbarra": { p: "spalla", s: ["gomito", "colonna toracica"] },
   "Pulley sbarra presa larga supina": { p: "colonna toracica", s: ["gomito", "spalla"] },
   "Pulley triangolo": { p: "colonna toracica", s: ["gomito", "spalla"] },
+  "Pulley basso": { p: "colonna toracica", s: ["gomito", "spalla"] },
+  "Pulley mono": { p: "colonna toracica", s: ["gomito", "spalla"] },
   "Pullover bilanciere": { p: "spalla", s: ["gomito", "colonna lombare"] },
   "Pullover manubrio": { p: "spalla", s: ["gomito"] },
   "Push Press Ktb": { p: "spalla", s: ["gomito", "ginocchio"] },
@@ -181,6 +187,7 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Side Plank": { p: "colonna lombare", s: ["spalla"] },
   "Sissy squat in piedi": { p: "ginocchio", s: ["anca"] },
   "Slanci cavo basso": { p: "anca", s: [] },
+  "Slanci laterali cavo basso": { p: "anca", s: [] },
   "Slancio laterale cavo basso triset": { p: "anca", s: ["ginocchio"] },
   "Spider curls": { p: "gomito", s: ["spalla"] },
   "Sprawl": { p: null, s: [] },

@@ -1185,6 +1185,74 @@ export function annullaModifica(dati, voce, opzioni) {
     });
     return { ok: true, dati: esito.dati, voce: voce2 };
   }
+  /* Passo 20 — la nota della scheda e la scheda tolta dal programma si
+   * annullano sul loro documento, senza passare dagli esercizi. */
+  if (tipo === "nota-scheda") {
+    const f = foglioDi(dati);
+    if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+    const chiave = chiaveNota(f);
+    const nuovoFoglio = Object.assign({}, f);
+    const primaNota = v.primaPiano == null ? "" : testo(v.primaPiano);
+    if (!primaNota) delete nuovoFoglio[chiave];
+    else nuovoFoglio[chiave] = primaNota;
+    const nuovoDati = Object.assign({}, dati, { sheet: nuovoFoglio });
+    nuovoDati.versione = versioneDi(dati) + 1;
+    nuovoDati[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "nota" };
+    const voceNota = {
+      idVoce: idVoceRegistro(quando),
+      quando: quando,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(v.idVoce || ""),
+      programma: testo(v.programma),
+      scheda: testo(v.scheda),
+      codice: codiceScheda(nuovoDati),
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "nota",
+      prima: testo(v.dopo),
+      dopo: primaNota,
+      dopoTesto: primaNota ? "nota della scheda rimessa com'era" : "nota della scheda tolta",
+      versionePrima: versioneDi(dati),
+      versioneDopo: nuovoDati.versione
+    };
+    return { ok: true, dati: nuovoDati, voce: voceNota };
+  }
+
+  if (tipo === "togli-scheda") {
+    const prima = v.primaPiano && typeof v.primaPiano === "object" ? v.primaPiano : {};
+    const nuovoDati = Object.assign({}, dati);
+    nuovoDati.kind = testo(prima.kind) || "sheet";
+    if (testo(prima.archivedAt)) nuovoDati.archivedAt = testo(prima.archivedAt);
+    else delete nuovoDati.archivedAt;
+    if (testo(prima.toltoDalProgramma)) nuovoDati.toltoDalProgramma = testo(prima.toltoDalProgramma);
+    else delete nuovoDati.toltoDalProgramma;
+    nuovoDati.versione = versioneDi(dati) + 1;
+    nuovoDati[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "scheda" };
+    const voceScheda = {
+      idVoce: idVoceRegistro(quando),
+      quando: quando,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(v.idVoce || ""),
+      programma: testo(v.programma),
+      scheda: testo(v.scheda),
+      codice: codiceScheda(nuovoDati),
+      esercizio: "",
+      idEsercizio: "",
+      settimana: null,
+      campo: "scheda",
+      prima: "",
+      dopo: testo(v.prima),
+      dopoTesto: "scheda rimessa nel programma",
+      documento: testo(v.documento),
+      versionePrima: versioneDi(dati),
+      versioneDopo: nuovoDati.versione
+    };
+    return { ok: true, dati: nuovoDati, voce: voceScheda };
+  }
+
   const campo = testo(v.campo);
   const aSettimana = campo === "serie" || campo === "ripetizioni";
   const aEsercizio = campo === "recupero" || campo === "tempo";
@@ -1221,7 +1289,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "togli-scheda")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -1857,6 +1925,178 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
     versioneDopo: nuovo.versione
   };
   return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: dopo };
+}
+
+/* ---------- La nota della scheda (passo 20) --------------------------------
+ * Alice (26/11/2026): «nelle note della scheda in programmi non mi fa
+ * scrivere». La textarea nasceva `readOnly` e la nota non aveva una strada di
+ * scrittura. Qui c'e' quella strada, la stessa di un campo della testata:
+ * si scrive DENTRO il foglio del documento («sheet»), che e' dove la lettura
+ * la cerca (`scheda.note` di schede-v2), con versione +1, il marchio di B, la
+ * voce del registro e l'Annulla. Scriverla un livello troppo in alto era il
+ * guasto del passo 15b: la scrittura «riusciva» e il valore non tornava mai.
+ *
+ * Il testo conserva gli a capo e gli spazi interni; si tolgono solo quelli ai
+ * bordi. Vuoto = nota tolta dalla scheda. Oltre il tetto si rifiuta, invece
+ * di tagliare di nascosto.
+ */
+export const LUNGHEZZA_MASSIMA_NOTA = 2000;
+
+/* Le chiavi con cui A ha scritto la nota, nell'ordine di schede-v2. Si scrive
+ * quella che c'e' gia', cosi' non si crea un secondo campo che la lettura
+ * preferirebbe al primo. */
+const CHIAVI_NOTA = Object.freeze(["note", "nota", "note2"]);
+
+function chiaveNota(foglio) {
+  for (let i = 0; i < CHIAVI_NOTA.length; i += 1) {
+    if (Object.prototype.hasOwnProperty.call(foglio, CHIAVI_NOTA[i])) return CHIAVI_NOTA[i];
+  }
+  return "note";
+}
+
+export function cambiaNotaScheda(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const valore = testo(r.valore);
+  if (valore.length > LUNGHEZZA_MASSIMA_NOTA) {
+    return {
+      ok: false,
+      motivo: "la nota della scheda supera i " + LUNGHEZZA_MASSIMA_NOTA + " caratteri: accorciala di " +
+        (valore.length - LUNGHEZZA_MASSIMA_NOTA)
+    };
+  }
+  const chiave = chiaveNota(f);
+  const prima = testo(f[chiave]);
+  if (prima === valore) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  const nuovoFoglio = Object.assign({}, f);
+  if (!valore) delete nuovoFoglio[chiave];
+  else nuovoFoglio[chiave] = valore;
+
+  const versionePrima = versioneDi(dati);
+  const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio, versione: versionePrima + 1 });
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "nota" };
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "nota-scheda",
+    origine: "modifica-fatta-in-B",
+    programma: testo(r.idProgramma),
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "nota",
+    prima: prima,
+    dopo: valore,
+    primaPiano: prima === "" ? null : prima,
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: valore };
+}
+
+/* Quante serie sono scritte nella scheda, sommando le settimane di ogni riga.
+ * Serve alla conferma del cestino: una scheda che esce si porta via questo
+ * numero, e Alice lo legge prima di dire di si'. Le righe di tecnica non
+ * portano serie proprie e non si contano. Un valore che non e' un numero non
+ * si conta: meglio un totale un filo basso che un numero inventato. */
+export function serieDellaScheda(dati) {
+  const f = foglioDi(dati);
+  if (!f) return 0;
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return 0;
+  let totale = 0;
+  (Array.isArray(f[chiave]) ? f[chiave] : []).forEach((e) => {
+    if (!e || typeof e !== "object" || e.deletedAt || e.tipo === "tecnica") return;
+    const posto = posizioneSettimane(e);
+    if (!posto) return;
+    (Array.isArray(posto.oggetto[posto.chiave]) ? posto.oggetto[posto.chiave] : []).forEach((w) => {
+      const n = Number(w && w.sets);
+      if (Number.isFinite(n) && n > 0) totale += n;
+    });
+  });
+  return totale;
+}
+
+/* ---------- Togliere una scheda dal programma (passo 20) -------------------
+ * Alice (26/11/2026): «aggiungere pulsante elimina accanto alle schede».
+ *
+ * Cosa vuol dire «togliere», e cosa NON vuol dire: la scheda esce dal
+ * programma, ma il documento non si cancella — nessun dato si perde. Il
+ * documento prende `toltoDalProgramma` (il quando), `kind: "archived"` e il
+ * marchio di B, con versione +1; da quel momento la ricostruzione delle schede
+ * lo salta, quindi la scheda non compare piu' in Programmi, ne' nei conti
+ * dell'Archivio, ne' nel Confronto. L'Annulla rimette il documento com'era
+ * (kind di prima, `toltoDalProgramma` via), e con lui tornano esercizi e
+ * settimane: sono ancora li', intatti.
+ *
+ * Non si tocca niente d'altro: il documento del programma resta com'e'
+ * (compresa la rotazione, che se cita la lettera tolta lo dice a schermo),
+ * il Logbook, le sedute e lo storico non si sfiorano. E l'ultima scheda di un
+ * programma non si toglie: un programma senza schede non si puo' usare.
+ */
+export function togliSchedaDalProgramma(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  if (testo(dati && dati.toltoDalProgramma)) {
+    return { ok: false, motivo: "questa scheda e' gia' fuori dal programma" };
+  }
+  /* `schedeAttive` e' quante schede il programma ha ADESSO, questa compresa:
+   * con una sola scheda non si toglie niente, perche' resterebbe un programma
+   * senza schede, che non si puo' usare. */
+  if (Number(r.schedeAttive) === 1) {
+    return {
+      ok: false,
+      motivo: "e' l'ultima scheda del programma: un programma senza schede non si puo' usare, quindi non la tolgo"
+    };
+  }
+  const codice = codiceScheda(dati);
+  const nome = testo(f.name || f.nome);
+  const versionePrima = versioneDi(dati);
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const nuovo = Object.assign({}, dati, {
+    kind: "archived",
+    archivedAt: quando,
+    toltoDalProgramma: quando,
+    versione: versionePrima + 1
+  });
+  nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "scheda" };
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "togli-scheda",
+    origine: "modifica-fatta-in-B",
+    programma: testo(r.idProgramma),
+    scheda: testo(r.idScheda),
+    codice: codice,
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "scheda",
+    prima: "Scheda " + codice + (nome ? " — " + nome : ""),
+    dopo: "",
+    /* Il documento da rimettere, per id: la scheda tolta non e' piu' nella
+     * mappa delle schede attive, quindi l'Annulla non puo' ritrovarla per id
+     * di scheda. E qui c'e' com'era: `kind` di prima e nessun `toltoDalProgramma`. */
+    documento: testo(r.idDocumento),
+    primaPiano: {
+      kind: testo(dati.kind) || "sheet",
+      archivedAt: testo(dati.archivedAt),
+      toltoDalProgramma: testo(dati.toltoDalProgramma)
+    },
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, codice: codice, nome: nome };
 }
 
 /* L'annullamento delle modifiche qui sopra. */

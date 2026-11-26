@@ -53,13 +53,20 @@ test("138.1 i quattro passi del resolver, e l'ambiguità dichiarata", () => {
   assert.equal(esatto.chiave, "Panca piana");
   assert.equal(esatto.distretto, "Pettorali");
 
-  /* 2. alias: i due nomi che il catalogo scrive diverso */
+  /* 2. due nomi che fino al passo 20 erano SOLO alias e ora sono esercizi del
+   * catalogo, col loro distretto: si riconoscono al passo esatto */
   const mono = risolviEsercizio("PULLEY   MONO");
-  assert.equal(mono.come, "alias");
-  assert.equal(mono.chiave, "Pulley triangolo");
+  assert.equal(mono.come, "esatto");
+  assert.equal(mono.chiave, "Pulley mono");
+  assert.equal(mono.distretto, "Centro schiena");
   const affondo = risolviEsercizio("Affondo front squat machine");
-  assert.equal(affondo.come, "alias");
-  assert.equal(affondo.chiave, "Front squat machine");
+  assert.equal(affondo.come, "esatto");
+  assert.equal(affondo.chiave, "Affondo front squat machine");
+  assert.equal(affondo.distretto, "Quadricipiti");
+  /* gli alias restano per i nomi vicini, scritti in un altro modo */
+  const vicino = risolviEsercizio("Pendulum glutei");
+  assert.equal(vicino.come, "alias");
+  assert.equal(vicino.chiave, "Pendulum focus glutei");
 
   /* 3. contiene una chiave sola */
   const dentro = risolviEsercizio("Panca piana con bilanciere");
@@ -77,15 +84,15 @@ test("138.1 i quattro passi del resolver, e l'ambiguità dichiarata", () => {
   assert.equal(ambiguo.chiave, null);
   assert.ok(ambiguo.candidati.length > 1, "l'ambiguità porta i candidati con sé");
 
-  /* il catalogo di base è quello vero: 179 voci, distretti della casa */
-  assert.equal(catalogoBase().length, 179);
+  /* il catalogo di base è quello vero: 186 voci, distretti della casa */
+  assert.equal(catalogoBase().length, 186);
   assert.equal(catalogoBase().filter((v) => !v.distretto).length, 0, "ogni voce ha un distretto tradotto");
 });
 
 test("138.2 muscoli-b: i nomi veri danno gli stessi muscoli del nome esatto", () => {
   const coppie = [
-    ["PULLEY   MONO", "Pulley triangolo"],
-    ["AFFONDO FRONT SQUAT MACHINE", "Front squat machine"],
+    ["PULLEY   MONO", "Pulley mono"],
+    ["AFFONDO FRONT SQUAT MACHINE", "Affondo front squat machine"],
     ["leg  EXTENSìON", "Leg extension"],
     ["  Panca   piana ", "Panca piana"]
   ];
@@ -189,6 +196,6 @@ test("138.5 un solo riconoscimento: nessuna seconda copia nei moduli", () => {
 
   /* il nome normalizzato che esporta muscoli-b è la stessa funzione, non una copia */
   assert.equal(normalizzaNome("Leg  Extensìon"), "leg extension");
-  assert.equal(nomeCanonico("Pulley mono"), "Pulley triangolo");
+  assert.equal(nomeCanonico("Pulley mono"), "Pulley mono");
   assert.equal(risolviInElenco("Leg extension", ["Leg Extension"]).come, "esatto");
 });
