@@ -59,8 +59,11 @@ function pagina() {
 test("152.4 la pagina vera: i tre gruppi scrivono, e il cognome pure", async () => {
   const doc = pagina();
   const scritte = [];
+  /* PASSO 19 — il cognome ora si prende dall'ACCOUNT in uso: qui l'account
+   * ha un nome e un cognome, come quello vero. */
   const montati = montaAnagrafica(doc, {
     stato: {},
+    account: { displayName: "Alice Clemente" },
     onCambia: (campo, valore, prima) => { scritte.push([campo, valore, prima]); return Promise.resolve(true); }
   });
   for (const chiave of ["cognome", "lingua", "obiettivo", "sesso", "eta", "altezza", "peso", "lbm", "data-nascita", "note", "livello", "anni-allenamento", "sedute-settimana", "attrezzatura"]) {
@@ -90,13 +93,24 @@ test("152.4 la pagina vera: i tre gruppi scrivono, e il cognome pure", async () 
   await new Promise((r) => setTimeout(r, 10));
   assert.equal(scritte.some(([c, v]) => c === "obiettivo" && v === "Dimagrimento"), true, "l'obiettivo non è stato scritto");
 
-  /* cognome */
-  const bottoneCognome = [...doc.querySelectorAll(".dc-banner button")].find((b) => /cognome/i.test(b.textContent || ""));
+  /* cognome: il banner c'è (campo vuoto, account con cognome) e scrive il
+   * cognome dell'account; poi sparisce, non resta spento a dire «riportato». */
+  const bottoneCognome = doc.querySelector("#dc-banner-cognome button");
+  assert.ok(bottoneCognome, "manca il tasto «Riporta il cognome»");
   bottoneCognome.click();
   await new Promise((r) => setTimeout(r, 10));
   assert.equal(scritte.some(([c, v]) => c === "cognome" && v === "Clemente"), true, "il cognome non è stato scritto");
   const rigaCognome = [...doc.querySelectorAll(".dc-f")].find((f) => /Cognome/.test(f.textContent || ""));
   assert.equal(rigaCognome.querySelector(".dc-val").textContent.trim(), "Clemente", "la riga del cognome non si aggiorna");
+  const banner = doc.getElementById("dc-banner-cognome");
+  assert.ok(!banner || banner.hidden || banner.isConnected === false, "il banner resta a schermo dopo il salvataggio");
+});
+
+test("152.4b senza account non c'è nessun cognome da riportare: niente banner", () => {
+  const doc = pagina();
+  montaAnagrafica(doc, { stato: {}, onCambia: () => Promise.resolve(true) });
+  const banner = doc.getElementById("dc-banner-cognome");
+  assert.ok(!banner || banner.hidden, "il banner compare anche senza un cognome d'account da riportare");
 });
 
 test("152.5 se la scrittura fallisce la pagina non finge", async () => {

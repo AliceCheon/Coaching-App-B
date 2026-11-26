@@ -142,7 +142,7 @@ function rigaConEtichetta(doc, etichetta) {
 
 /* Disegna lo stato sui comandi gia' montati. Non ne crea di nuovi e non tocca
  * una casella aperta: chi sta scrivendo non perde una lettera. */
-export function mostraAnagrafica(doc, stato) {
+export function mostraAnagrafica(doc, stato, account) {
   if (!doc || !doc.querySelector('[data-pan="anagrafica"]')) return 0;
   const s = stato && typeof stato === "object" ? stato : {};
   let mostrati = 0;
@@ -169,7 +169,79 @@ export function mostraAnagrafica(doc, stato) {
   const area = notaRiga ? notaRiga.querySelector("textarea") : null;
   const nota = testo(s.note);
   if (area && nota && !testo(area.value) && doc.activeElement !== area) area.value = nota;
+  /* Il banner del cognome segue lo stato disegnato — ma solo quando chi
+   * chiama sa chi è l'account (undefined = «non lo so ancora», non toccare). */
+  if (account !== undefined) aggiornaBannerCognome(doc, s, account);
   return mostrati;
+}
+
+/* ---- PASSO 19 — il banner del cognome, preso dall'account vero ----
+ * Prima la pagina si scriveva «Clemente» dentro il codice e teneva il banner
+ * a schermo sempre: anche a cognome già scritto, e dopo il salvataggio restava
+ * un «Cognome riportato» spento per sempre. Ora:
+ *  - il banner compare SOLO se il cognome nel profilo è davvero vuoto;
+ *  - il cognome da riportare è quello dell'ACCOUNT in uso (il nome della
+ *    sessione Google), mai una costante: un altro account porta un altro
+ *    cognome, e un account senza cognome non mostra niente;
+ *  - dopo il salvataggio sparisce del tutto, non resta a dire «fatto».
+ */
+
+/* «Alice Clemente» → { nome: "Alice", cognome: "Clemente" }.
+ * Un account col solo nome non ha un cognome da riportare: cognome vuoto. */
+export function nomeECognomeAccount(account) {
+  const intero = testo(account && (account.displayName || account.nome));
+  const parti = intero.split(/\s+/).filter(Boolean);
+  if (!parti.length) return { nome: "", cognome: "", intero: "" };
+  return { nome: parti[0], cognome: parti.slice(1).join(" "), intero: intero };
+}
+
+/* Il banner in pagina. Sta per id; il ripiego sul testo serve alle pagine
+ * vecchie che non hanno ancora l'id. */
+export function bannerCognome(doc) {
+  if (!doc) return null;
+  return doc.getElementById("dc-banner-cognome")
+    || [...doc.querySelectorAll(".dc-banner")].find((b) => /cognome/i.test(String(b.textContent || "")))
+    || null;
+}
+
+/* Il banner sparisce del tutto: non resta un tasto spento a dire «riportato». */
+function chiudiBanner(banner) {
+  if (!banner) return;
+  banner.hidden = true;
+  if (typeof banner.remove === "function") banner.remove();
+}
+
+/* Tiene il banner allineato allo stato: a schermo SOLO con cognome vuoto e un
+ * cognome d'account da riportare. Ritorna true se è visibile.
+ * `stato.nome`, se c'è, è il nome del profilo atleta da citare nel testo. */
+export function aggiornaBannerCognome(doc, stato, account) {
+  const banner = bannerCognome(doc);
+  if (!banner) return false;
+  const s = stato && typeof stato === "object" ? stato : {};
+  const daRiportare = nomeECognomeAccount(account);
+  if (testo(s.cognome) || !daRiportare.cognome) { banner.hidden = true; return false; }
+  const paragrafo = banner.querySelector("p") || banner;
+  const nomeAtleta = testo(s.nome) || daRiportare.nome;
+  /* Il testo si compone a pezzi, non con innerHTML: i nomi arrivano
+   * dall'account e non devono poter diventare markup. */
+  paragrafo.textContent = "";
+  const bAccount = doc.createElement("b");
+  bAccount.textContent = daRiportare.intero;
+  const bNome = doc.createElement("b");
+  bNome.textContent = nomeAtleta;
+  const bVuoto = doc.createElement("b");
+  bVuoto.textContent = "vuoto";
+  paragrafo.appendChild(doc.createTextNode("Il nome dell'account è "));
+  paragrafo.appendChild(bAccount);
+  paragrafo.appendChild(doc.createTextNode(". Nel profilo atleta risultano nome "));
+  paragrafo.appendChild(bNome);
+  paragrafo.appendChild(doc.createTextNode(" e cognome "));
+  paragrafo.appendChild(bVuoto);
+  paragrafo.appendChild(doc.createTextNode(": riporto «" + daRiportare.cognome + "» nel cognome?"));
+  banner.dataset.cognomeDaRiportare = daRiportare.cognome;
+  banner.dataset.nomeAccount = daRiportare.intero;
+  banner.hidden = false;
+  return true;
 }
 
 /* Attacca i comandi della pagina anagrafica. `onCambia(campo, valore, prima)`
@@ -198,6 +270,9 @@ export function montaAnagrafica(doc, opzioni) {
   const scriviEsito = (testo) => { if (esitoEl) esitoEl.textContent = testo; };
   /* PASSO 17 — si parte già con i valori letti dal registro (se ci sono). */
   mostraAnagrafica(doc, o.stato || {});
+  /* PASSO 19 — il banner del cognome nasce spento in pagina: qui si accende
+   * solo se c'è un cognome d'account da riportare e il campo è vuoto. */
+  aggiornaBannerCognome(doc, o.stato || {}, typeof o.account === "function" ? o.account() : o.account);
 
   const stato = o.stato || {};
   /* I tre gruppi a scelte: sesso, lingua, obiettivo. Li riconosco dalla prima
@@ -223,27 +298,31 @@ export function montaAnagrafica(doc, opzioni) {
     annodati.push(campo);
   }
 
-  /* «Riporta il cognome»: scrive il cognome che la pagina stessa dichiara. */
-  const banner = [...doc.querySelectorAll(".dc-banner button")].find((b) => /cognome/i.test(String(b.textContent || "")));
+  /* «Riporta il cognome»: scrive il cognome dell'ACCOUNT in uso (mai una
+   * costante). A cognome già scritto o senza cognome d'account il banner non
+   * è a schermo e questo gestore non ha niente da fare. */
+  const banner = bannerCognome(doc);
   if (banner && banner.dataset.anagraficaViva !== "1") {
     banner.dataset.anagraficaViva = "1";
-    banner.type = "button";
-    banner.addEventListener("click", () => {
-      const valore = "Clemente";
+    const tasto = banner.querySelector("button") || banner;
+    tasto.type = "button";
+    tasto.addEventListener("click", () => {
+      const account = typeof o.account === "function" ? o.account() : o.account;
+      const valore = testo(banner.dataset.cognomeDaRiportare) || nomeECognomeAccount(account).cognome;
+      if (!valore) { scriviEsito("Non c'è un cognome dell'account da riportare: non ho scritto niente."); return; }
       const prima = stato.cognome || "";
       scriviEsito("Sto salvando il cognome…");
       let esito = null;
       try { esito = o.onCambia ? o.onCambia("cognome", valore, prima) : null; } catch (e) { scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")); return; }
       const mostra = () => {
         stato.cognome = valore;
-        const riga = [...doc.querySelectorAll(".dc-f")].find((f) => /Cognome/.test(String(f.textContent || "")));
+        const riga = rigaConEtichetta(doc, "Cognome");
         const val = riga ? riga.querySelector(".dc-val") : null;
         if (val) { val.textContent = valore; val.classList.remove("vuoto"); }
-        banner.textContent = "Cognome riportato";
-        banner.disabled = true;
+        chiudiBanner(banner);
       };
-      if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) { mostra(); scriviEsito("Salvato: Cognome · Clemente"); } else scriviEsito("Non ho salvato: il valore non è passato"); }, (e) => scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")));
-      else { mostra(); scriviEsito("Salvato: Cognome · Clemente"); }
+      if (esito && typeof esito.then === "function") esito.then((ok) => { if (ok !== false) { mostra(); scriviEsito("Salvato: Cognome · " + valore); } else scriviEsito("Non ho salvato: il valore non è passato"); }, (e) => scriviEsito("Non ho salvato: " + ((e && e.message) || "errore")));
+      else { mostra(); scriviEsito("Salvato: Cognome · " + valore); }
     });
     annodati.push("cognome");
   }

@@ -46,7 +46,8 @@ import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anam
 import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 import { annodaGuideVive } from "../comune/guide-vive.js";
-import { montaAnagrafica, mostraAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica } from "../comune/anagrafica-b.js";
+import { montaAnagrafica, mostraAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica, aggiornaBannerCognome } from "../comune/anagrafica-b.js";
+import { montaImpostazioni } from "../comune/impostazioni-b.js";
 import { montaQuaderno, mostraQuaderno, quadernoDalRegistro, voceQuaderno, CAMPI_QUADERNO } from "../comune/quaderno-b.js";
 
 /* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
@@ -63,6 +64,14 @@ const contatoriQuaderno = Object.create(null);
 /* PASSO 29 — l'ultimo registro letto: il quaderno lo usa per mostrare i testi
  * già scritti senza rileggere il cloud a ogni disegno. */
 let registroLetto = [];
+/* PASSO 19 — l'account in uso, per il banner del cognome. Lo conosce la
+ * callback dell'accesso (dentro avvia), ma il montaggio dei tasti vive fuori:
+ * questa è la sua copia, aggiornata a ogni cambio di sessione. */
+let utenteInUso = null;
+/* PASSO 19 — il banner del cognome si accende solo DOPO che il registro è
+ * stato letto: prima non si sa se il cognome c'è già, e mostrarlo per poi
+ * ritirarlo sarebbe una bugia a schermo. */
+let anagraficaLetta = false;
 
 /* ---------- il foglio di stile di B --------------------------------------
  * Il file index.html e' il v31 e porta dentro di se' una copia vecchia delle
@@ -623,7 +632,12 @@ export async function avvia(doc, win) {
         if (!statoAnagrafica[campo]) statoAnagrafica[campo] = salvatiAnagrafica[campo].valore;
         contatoriAnagrafica[campo] = versioneDi(registroLetto, campo);
       });
-      mostraAnagrafica(doc, statoAnagrafica);
+      /* Passo 19 — il banner del cognome riceve l'account in uso: il cognome
+       * da riportare è quello della sessione, non una costante nel codice.
+       * Il registro è stato letto: da qui il banner può dire la verità. */
+      anagraficaLetta = true;
+      mostraAnagrafica(doc, statoAnagrafica, utente);
+      aggiornaBannerCognome(doc, statoAnagrafica, utente);
       const salvatiQuaderno = quadernoDalRegistro(registroLetto);
       Object.keys(salvatiQuaderno).forEach((campo) => {
         const voce = salvatiQuaderno[campo];
@@ -1245,6 +1259,8 @@ export async function avvia(doc, win) {
     if (!utente) {
       uidLetto = null;
       utenteCorrente = null;
+      utenteInUso = null;
+      anagraficaLetta = false;
       stato.impronta = null;
       carta.mostra(fattiAccesso());
       return;
@@ -1254,6 +1270,7 @@ export async function avvia(doc, win) {
      * in cui cadrà. Sessione e promemoria vivono su due piani diversi. */
     ricordaAccesso(memoria, utente, null, prefisso);
     utenteCorrente = utente;
+    utenteInUso = utente;
     /* Passo 25 — Impostazioni deve dire lo stato vero: chi sei entrata e
      * quando la lettura è riuscita. La riga del v31 diceva «non collegato»
      * proprio sulla parte che funziona. */
@@ -1285,6 +1302,16 @@ export async function avvia(doc, win) {
       contatoriAnagrafica[campo] = esito.voce.versioneDopo;
       statoAnagrafica[campo] = valore;
       return true;
+    };
+    /* Passo 19 — «Esporta modifiche» in Impostazioni scarica il registro VERO:
+     * si legge da B al momento del clic, così il file è quello di adesso e non
+     * l'ultimo visto. Se la sessione non è più questa, si rifiuta invece di
+     * consegnare il registro di un altro account. */
+    globalThis.BD_REGISTRO_B = async () => {
+      if (!utenteCorrente || utenteCorrente.uid !== utente.uid) throw new Error("entra con Google: il registro delle modifiche sta in B");
+      const letto = await leggiZonaB(db, utente.uid, "registro");
+      registroLetto = Array.isArray(letto) ? letto : [];
+      return registroLetto;
     };
     /* Passo 34 — la pagina Scheletri legge e scrive la sua raccolta: db e uid
      * vivono qui, la pagina chiede e basta. La scrittura passa dalla stessa
@@ -1490,6 +1517,9 @@ if (typeof document !== "undefined") {
   const collegaTutto = () => {
     montaAnagrafica(document, {
       stato: statoAnagrafica,
+      /* Passo 19 — chi è l'account in uso, letto al momento del clic: il
+       * cognome da riportare è il suo, mai una costante nel codice. */
+      account: () => (anagraficaLetta ? utenteInUso : null),
       onCambia: (campo, valore, prima) => {
         if (typeof globalThis.BD_SALVA_ANAGRAFICA !== "function") {
           return Promise.reject(new Error("non sei ancora collegata: entra con Google e riprova"));
@@ -1500,6 +1530,25 @@ if (typeof document !== "undefined") {
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaTutto);
   else collegaTutto();
+}
+
+/* Passo 19 — Impostazioni: «Modifiche in coda», «Esporta modifiche» e «Azzera
+ * modifiche locali» si montano al caricamento, come l'anagrafica. La coda
+ * locale si legge subito (non serve l'accesso); il registro delle modifiche e
+ * la memoria del dispositivo arrivano quando si preme il tasto. */
+if (typeof document !== "undefined") {
+  const collegaImpostazioni = () => {
+    montaImpostazioni(document, {
+      archivio: () => {
+        try { return typeof window !== "undefined" ? window.localStorage : null; } catch (e) { return null; }
+      },
+      registro: () => (typeof globalThis.BD_REGISTRO_B === "function"
+        ? globalThis.BD_REGISTRO_B()
+        : Promise.reject(new Error("entra con Google: il registro delle modifiche sta in B")))
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaImpostazioni);
+  else collegaImpostazioni();
 }
 
 /* Passo 34 — la pagina Scheletri: le linguette e «Miei scheletri» si montano al

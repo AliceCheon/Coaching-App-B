@@ -1094,6 +1094,7 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .dc-seg button.on{background:linear-gradient(180deg,#FF4FA3,#D93B86);border-color:#FF4FA3;color:#fff}
 .dc-seg button.off{opacity:.85}
 .dc-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:rgba(255,224,102,.07);border:1px solid #5B4A1E;border-radius:10px;padding:10px 12px;margin:12px 0}
+.dc-banner[hidden]{display:none}
 .dc-banner p{margin:0;flex:1 1 320px;font:600 12.5px/1.45 "Nunito Sans",sans-serif;color:#F3E2A8}
 .dc-banner p b{color:var(--core)}
 .dc-avviso{display:flex;align-items:center;gap:9px;background:rgba(255,224,102,.06);border:1px dashed #5B4A1E;border-radius:9px;padding:9px 11px;font:700 12px/1.4 "Nunito Sans",sans-serif;color:#F3E2A8;margin:10px 0 0}
@@ -1453,6 +1454,8 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
  padding:9px 14px;font:800 10.5px/1 'Nunito Sans',sans-serif;cursor:pointer}
 .st-act button:hover{border-color:#FF4FA3;color:#fff}
 .st-act button.prim{background:linear-gradient(135deg,#FF2D95,#A855F7);border:0;color:#fff}
+.st-nota{margin:2px 0 0;font:600 11.5px/1.45 'Nunito Sans',sans-serif;color:#C7AEE2}
+.st-nota[hidden]{display:none}
 </style>
 
 <style id="db-hero-css">
@@ -2009,9 +2012,9 @@ document.addEventListener('DOMContentLoaded',function(){
         <div class="dc-riga" style="margin-top:12px">
           <div class="dc-f"><label class="dc-lbl">Nome</label><div class="dc-val">Alice</div></div> <div class="dc-f"><label class="dc-lbl">Cognome</label><div class="dc-val vuoto">—</div><div class="dc-nota">Vuoto nel profilo atleta</div></div> <div class="dc-f"><label class="dc-lbl">Data di nascita</label><div class="dc-val vuoto">—</div><div class="dc-nota">Non registrata (birthDate: "")</div></div>
         </div>
-        <div class="dc-banner">
-          <p>Il nome dell'account è <b>Alice Clemente</b>. Nel profilo atleta risultano nome <b>Alice</b> e cognome <b>vuoto</b>: riporto «Clemente» nel cognome?</p>
-          <button class="dc-btn">Riporta il cognome</button>
+        <div class="dc-banner" id="dc-banner-cognome" hidden>
+          <p data-dc-banner-testo>Il cognome manca: lo riporto dall'account.</p>
+          <button class="dc-btn" type="button" data-dc-banner-salva>Riporta il cognome</button>
         </div>
         <div class="dc-riga">
           <div class="dc-f"><label class="dc-lbl">Età</label><div class="dc-val vuoto">—</div></div> <div class="dc-f"><label class="dc-lbl">Altezza (cm)</label><div class="dc-val vuoto">—</div></div> <div class="dc-f"><label class="dc-lbl">Peso (kg)</label><div class="dc-val vuoto">—</div></div> <div class="dc-f"><label class="dc-lbl">LBM · Massa Magra (kg)</label><div class="dc-val vuoto">—</div></div>
@@ -3499,9 +3502,11 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="st-row"><span>Accesso</span><b>ricordato qui finché non esci</b></div>
       <div class="st-row"><span>Rete</span><b id="st-sync-net">—</b></div>
       <div class="st-row"><span>Modifiche in coda</span><b id="st-sync-queue">0</b></div>
+      <p class="st-nota" id="st-coda-nota" role="status">Sto controllando la coda locale…</p>
       <p>I dati stanno nel tuo account (zona B di Firestore): si leggono e si salvano da qui, e li ritrovi sullo stesso account anche da un altro PC. La sessione resta su questo dispositivo finché non esci.</p>
       <div class="st-act"><button class="prim" id="st-verifica" type="button">Verifica connessione</button>
         <button id="st-esporta" type="button">Esporta modifiche</button></div>
+      <p class="st-nota" id="st-esporta-nota" role="status" hidden></p>
     </div>
     <div class="st-card"><h3>Aspetto</h3>
       <p>Scegli come ti fa stare meglio. La lampadina in alto fa la stessa cosa.</p>
@@ -3514,6 +3519,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="st-row"><span>Schede</span><b>4</b></div>
       <div class="st-row"><span>Esercizi in libreria</span><b>179</b></div>
       <div class="st-row"><span>Note coach</span><b id="st-note-n">0</b></div>
+      <p class="st-nota" id="st-azzera-nota" role="status" hidden></p>
       <div class="st-act"><button id="st-azzera" type="button">Azzera modifiche locali</button></div>
     </div>
     <div class="st-card"><h3>Cosa non funziona, e perché</h3>
@@ -6926,7 +6932,6 @@ tr.tr-tech td.c-reps span{color:var(--muted)}
  function agg(){
   var last=null; try{ last=localStorage.getItem('bd.saved'); }catch(e){}
   var el=document.getElementById('st-sync-last'); if(el) el.textContent=ora(last);
-  var q2=document.getElementById('st-sync-queue'); if(q2) q2.textContent=Object.keys(E).length;
   var nn=document.getElementById('st-note-n'); if(nn) nn.textContent=Object.keys(E).filter(function(k){return /-note$/.test(k);}).length;
   var nt=document.getElementById('st-sync-net'); if(nt) nt.textContent=navigator.onLine?'online':'offline';
   var te=document.getElementById('st-tema-ora'); if(te) te.textContent=(document.documentElement.getAttribute('data-theme')==='light'?'chiaro':'scuro');
@@ -6938,13 +6943,6 @@ tr.tr-tech td.c-reps span{color:var(--muted)}
   b.textContent='assente in questo file'; n.textContent=navigator.onLine?'online · nessun server da raggiungere':'offline';
   agg(); v.textContent='verificato'; setTimeout(function(){ v.textContent='Verifica connessione'; },2000);
  });
- var es=document.getElementById('st-esporta');
- if(es) es.addEventListener('click',function(){
-  var blob=new Blob([JSON.stringify(E,null,2)],{type:'application/json'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='barbell-diva-modifiche.json'; a.click();
- });
- var az=document.getElementById('st-azzera');
- if(az) az.addEventListener('click',function(){ var pre=snap(); E={}; spingi(pre); save(); ripristina(); conta(); az.textContent='azzerato · Ctrl+Z per tornare'; setTimeout(function(){ az.textContent='Azzera tutte le modifiche'; },2600); });
  var ts=document.getElementById('st-tema-scuro'), tc=document.getElementById('st-tema-chiaro');
  if(ts) ts.addEventListener('click',function(){ tema('scuro'); });
  if(tc) tc.addEventListener('click',function(){ tema('chiaro'); });
