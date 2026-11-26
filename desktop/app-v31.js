@@ -45,8 +45,8 @@ import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anam
 import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
 import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
 import { annodaGuideVive } from "../comune/guide-vive.js";
-import { montaAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica } from "../comune/anagrafica-b.js";
-import { montaQuaderno, quadernoDalRegistro, voceQuaderno, CAMPI_QUADERNO } from "../comune/quaderno-b.js";
+import { montaAnagrafica, mostraAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica } from "../comune/anagrafica-b.js";
+import { montaQuaderno, mostraQuaderno, quadernoDalRegistro, voceQuaderno, CAMPI_QUADERNO } from "../comune/quaderno-b.js";
 
 /* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
  * «Salvato alle 15:04» sparirebbe al primo giro di pagina. */
@@ -494,6 +494,26 @@ export async function avvia(doc, win) {
     const schedeGrezze = await leggiZonaB(db, utente.uid, "schede");
     const registroB = await leggiZonaB(db, utente.uid, "registro");
     registroLetto = Array.isArray(registroB) ? registroB : [];
+    /* PASSO 17 — i salvataggi tornano dopo il refresh. La memoria di sessione
+     * (statoAnagrafica/statoQuaderno) e' vuota a pagina nuova, il registro no:
+     * qui si rilegge da li' e si riapplica ai campi. Una scrittura appena fatta
+     * resta la piu' nuova e vince; il contatore delle versioni riparte dal
+     * registro, cosi' la voce nuova non nasce con una versione gia' usata. */
+    try {
+      const salvatiAnagrafica = anagraficaDalRegistro(registroLetto);
+      Object.keys(salvatiAnagrafica).forEach((campo) => {
+        if (!statoAnagrafica[campo]) statoAnagrafica[campo] = salvatiAnagrafica[campo].valore;
+        contatoriAnagrafica[campo] = versioneDi(registroLetto, campo);
+      });
+      mostraAnagrafica(doc, statoAnagrafica);
+      const salvatiQuaderno = quadernoDalRegistro(registroLetto);
+      Object.keys(salvatiQuaderno).forEach((campo) => {
+        const voce = salvatiQuaderno[campo];
+        if (!statoQuaderno[campo]) statoQuaderno[campo] = { valore: voce.valore, quando: voce.quando };
+        if (voce.versione > (contatoriQuaderno[campo] || 0)) contatoriQuaderno[campo] = voce.versione;
+      });
+      mostraQuaderno(doc, statoQuaderno);
+    } catch (e) { /* se un campo non si riapplica, gli altri restano */ }
     const fotografiaB = await leggiFotografia(db, utente.uid);
     /* B.21 — la fotografia di apertura, presa adesso se manca. Chi c'e' non
      * si tocca: la prima vince, per tutta la sessione. */

@@ -38,15 +38,40 @@ const TIPO = "anamnesi-campo";
 
 const testo = (v) => (typeof v === "string" ? v.trim() : "");
 
+/* PASSO 17 — la voce come arriva dalla lettura: `leggiZonaB` restituisce
+ * `{ id, dati }`, non la voce piatta. Leggere `v.tipo` sul contenitore dava
+ * «niente» per ogni campo, e dopo il refresh il quaderno tornava vuoto.
+ * Si accettano le due forme, come fa già `datiVoce` di anamnesi-b. */
+function datiDi(voce) {
+  if (!voce || typeof voce !== "object") return null;
+  const dati = voce.dati && typeof voce.dati === "object" ? voce.dati : voce;
+  return dati && typeof dati === "object" ? dati : null;
+}
+
+/* Le voci di un tipo, in ordine di data. Il registro non garantisce l'ordine
+ * (la lettura lo dà per id documento): l'ultima si sceglie per `quando`. */
+function vociPerTipo(registro, tipo) {
+  const voci = [];
+  (Array.isArray(registro) ? registro : []).forEach((voce, posizione) => {
+    const dati = datiDi(voce);
+    if (!dati || testo(dati.tipo) !== tipo) return;
+    voci.push({ dati: dati, quando: testo(dati.quando), posizione: posizione });
+  });
+  voci.sort((a, b) => (a.quando === b.quando ? a.posizione - b.posizione : (a.quando < b.quando ? -1 : 1)));
+  return voci;
+}
+
 /* L'ultima dichiarazione per campo: il valore e quando è stato messo. */
 export function quadernoDalRegistro(registro) {
-  const voci = Array.isArray(registro) ? registro : [];
   const esito = {};
-  for (const v of voci) {
-    if (!v || v.tipo !== TIPO) continue;
-    const campo = testo(v.campo);
+  for (const v of vociPerTipo(registro, TIPO)) {
+    const campo = testo(v.dati.campo);
     if (!campo) continue;
-    esito[campo] = { valore: testo(v.dopo), quando: v.quando || null };
+    esito[campo] = {
+      valore: testo(v.dati.dopo),
+      quando: v.dati.quando || null,
+      versione: Number(v.dati.versioneDopo) || 0
+    };
   }
   return esito;
 }
@@ -89,6 +114,29 @@ function nodoValore(riga) {
   return riga.querySelector(".dc-val") || riga.querySelector("span:not(.dc-lbl)") || null;
 }
 
+/* PASSO 17 — i valori già scritti si riapplicano ai campi montati. La pagina
+ * la chiama dopo OGNI lettura riuscita: dopo un refresh la memoria di sessione
+ * è vuota, il registro no, e senza questa i campi mostravano «—». Una casella
+ * aperta non si tocca (chi sta scrivendo non perde una lettera). */
+export function mostraQuaderno(doc, stato) {
+  if (!doc) return 0;
+  if (!doc.querySelector('[data-pan="anamnesi"]')) return 0;
+  const s = stato && typeof stato === "object" ? stato : {};
+  let mostrati = 0;
+  for (const campo of CAMPI_QUADERNO) {
+    const riga = trovaRiga(doc, campo);
+    if (!riga) continue;
+    const nodo = nodoValore(riga);
+    if (!nodo || nodo.dataset.quadernoArea === "1") continue;
+    const v = s[campo.chiave];
+    nodo.textContent = v && v.valore ? v.valore : "—";
+    nodo.classList.toggle("vuoto", !(v && v.valore));
+    if (v && v.valore) nodo.title = "un tocco per modificare";
+    mostrati += 1;
+  }
+  return mostrati;
+}
+
 export function montaQuaderno(doc, opzioni) {
   const o = opzioni && typeof opzioni === "object" ? opzioni : {};
   if (!doc) return [];
@@ -111,18 +159,7 @@ export function montaQuaderno(doc, opzioni) {
   const annodati = [];
 
   /* Mostra i valori già scritti, senza creare campi. */
-  const disegna = () => {
-    for (const campo of CAMPI_QUADERNO) {
-      const riga = trovaRiga(doc, campo);
-      if (!riga) continue;
-      const nodo = nodoValore(riga);
-      if (!nodo || nodo.dataset.quadernoArea === "1") continue;
-      const v = stato[campo.chiave];
-      nodo.textContent = v && v.valore ? v.valore : "—";
-      nodo.classList.toggle("vuoto", !(v && v.valore));
-      if (v && v.valore) nodo.title = "un tocco per modificare";
-    }
-  };
+  const disegna = () => { mostraQuaderno(doc, stato); };
   disegna();
 
   const apri = (campo, riga, nodo) => {

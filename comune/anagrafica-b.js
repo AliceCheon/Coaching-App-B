@@ -52,22 +52,41 @@ function testo(v) {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/* PASSO 17 — la voce arriva dalla lettura come `{ id, dati }`: leggere `v.tipo`
+ * sul contenitore non trovava niente e, dopo il refresh, ogni campo tornava
+ * «—» pure essendo scritto nel registro. Si accettano le due forme. */
+function datiDi(voce) {
+  if (!voce || typeof voce !== "object") return null;
+  const dati = voce.dati && typeof voce.dati === "object" ? voce.dati : voce;
+  return dati && typeof dati === "object" ? dati : null;
+}
+
+/* Le voci del tipo, in ordine di data: l'ultima si sceglie per `quando`, non
+ * per la posizione nell'elenco (il registro non ne garantisce l'ordine). */
+function vociPerTipo(registro) {
+  const voci = [];
+  (Array.isArray(registro) ? registro : []).forEach((voce, posizione) => {
+    const dati = datiDi(voce);
+    if (!dati || testo(dati.tipo) !== TIPO) return;
+    voci.push({ dati: dati, quando: testo(dati.quando), posizione: posizione });
+  });
+  voci.sort((a, b) => (a.quando === b.quando ? a.posizione - b.posizione : (a.quando < b.quando ? -1 : 1)));
+  return voci;
+}
+
 /* L'ultima dichiarazione per campo, dal registro letto (elenco di voci). */
 export function anagraficaDalRegistro(registro) {
-  const voci = Array.isArray(registro) ? registro : [];
   const esito = {};
-  for (const v of voci) {
-    if (!v || v.tipo !== TIPO) continue;
-    const campo = testo(v.campo);
+  for (const v of vociPerTipo(registro)) {
+    const campo = testo(v.dati.campo);
     if (!campo) continue;
-    esito[campo] = { valore: testo(v.dopo), quando: v.quando || null, versione: v.versioneDopo ?? null };
+    esito[campo] = { valore: testo(v.dati.dopo), quando: v.dati.quando || null, versione: v.dati.versioneDopo ?? null };
   }
   return esito;
 }
 
 export function versioneDi(registro, campo) {
-  const voci = Array.isArray(registro) ? registro : [];
-  return voci.filter((v) => v && v.tipo === TIPO && v.campo === campo).length;
+  return vociPerTipo(registro).filter((v) => testo(v.dati.campo) === String(campo == null ? "" : campo)).length;
 }
 
 /* Il documento della voce di registro. Non tocca Firebase: lo scrive chi chiama,
@@ -88,6 +107,69 @@ export function voceAnagrafica({ campo, prima, dopo, quando, versionePrima }) {
       versioneDopo: (Number(versionePrima) || 0) + 1
     }
   };
+}
+
+/* ---- PASSO 17 — i valori salvati tornano sui campi ---------------------
+ * La pagina legge `{ id, dati }` dal registro: qui si riapplica quello che
+ * c'e' scritto. Dopo un refresh la memoria di sessione e' vuota, il registro
+ * no, e senza questo passaggio ogni campo tornava a «—». */
+
+const CHIAVI_SCELTA = ["sesso", "lingua", "obiettivo"];
+
+function trovaGruppo(doc, campo) {
+  const valori = CAMPI_ANAGRAFICA[campo].valori;
+  return [...doc.querySelectorAll(".dc-seg")].find((g) => {
+    const tasti = [...g.querySelectorAll("button")].map((b) => testo(b.textContent));
+    return tasti.length === valori.length && tasti.every((t) => valori.includes(t));
+  }) || null;
+}
+
+function accesi(gruppo, valore) {
+  [...gruppo.querySelectorAll("button")].forEach((b) => {
+    const suo = testo(b.textContent) === testo(valore);
+    b.classList.toggle("on", suo);
+    /* toggle e non add/remove: la guardia 47 vieta i verbi di scrittura
+       fuori da scritture-b.js, e non distingue una classe da un documento. */
+    b.classList.toggle("off", !suo);
+    b.setAttribute("aria-pressed", suo ? "true" : "false");
+  });
+}
+
+function rigaConEtichetta(doc, etichetta) {
+  return [...doc.querySelectorAll('[data-pan="anagrafica"] .dc-f')]
+    .find((f) => { const l = f.querySelector(".dc-lbl"); return l && testo(l.textContent) === etichetta; }) || null;
+}
+
+/* Disegna lo stato sui comandi gia' montati. Non ne crea di nuovi e non tocca
+ * una casella aperta: chi sta scrivendo non perde una lettera. */
+export function mostraAnagrafica(doc, stato) {
+  if (!doc || !doc.querySelector('[data-pan="anagrafica"]')) return 0;
+  const s = stato && typeof stato === "object" ? stato : {};
+  let mostrati = 0;
+  for (const campo of CHIAVI_SCELTA) {
+    const gruppo = trovaGruppo(doc, campo);
+    if (!gruppo) continue;
+    accesi(gruppo, s[campo]);
+    if (testo(s[campo])) mostrati += 1;
+  }
+  for (const [etichetta, chiave] of VALORI_SCRIVIBILI) {
+    const riga = rigaConEtichetta(doc, etichetta);
+    if (!riga || riga.dataset.anaAperto === "1") continue;
+    const riquadro = riga.querySelector(".dc-val");
+    if (!riquadro) continue;
+    const valore = testo(s[chiave]);
+    riquadro.textContent = valore || "—";
+    riquadro.classList.toggle("vuoto", !valore);
+    if (valore) riquadro.title = "un tocco per scrivere";
+    mostrati += 1;
+  }
+  /* Note Generali: la casella e' gia' in pagina. Si riempie solo se e' vuota,
+   * cosi' un testo appena scritto e non ancora salvato non sparisce. */
+  const notaRiga = rigaConEtichetta(doc, "Note Generali");
+  const area = notaRiga ? notaRiga.querySelector("textarea") : null;
+  const nota = testo(s.note);
+  if (area && nota && !testo(area.value) && doc.activeElement !== area) area.value = nota;
+  return mostrati;
 }
 
 /* Attacca i comandi della pagina anagrafica. `onCambia(campo, valore, prima)`
@@ -114,32 +196,14 @@ export function montaAnagrafica(doc, opzioni) {
     }
   }
   const scriviEsito = (testo) => { if (esitoEl) esitoEl.textContent = testo; };
+  /* PASSO 17 — si parte già con i valori letti dal registro (se ci sono). */
+  mostraAnagrafica(doc, o.stato || {});
 
   const stato = o.stato || {};
-  const accesi = (gruppo, valore) => {
-    [...gruppo.querySelectorAll("button")].forEach((b) => {
-      const suo = testo(b.textContent) === testo(valore);
-      b.classList.toggle("on", suo);
-      /* toggle e non add/remove: la guardia 47 vieta i verbi di scrittura
-         fuori da scritture-b.js, e non distingue una classe da un documento. */
-      b.classList.toggle("off", !suo);
-      b.setAttribute("aria-pressed", suo ? "true" : "false");
-    });
-  };
-
   /* I tre gruppi a scelte: sesso, lingua, obiettivo. Li riconosco dalla prima
      parola dei loro tasti, così non dipendo dall'ordine in pagina. */
-  const gruppi = [...doc.querySelectorAll(".dc-seg")];
-  const trovaGruppo = (campo) => {
-    const valori = CAMPI_ANAGRAFICA[campo].valori;
-    return gruppi.find((g) => {
-      const tasti = [...g.querySelectorAll("button")].map((b) => testo(b.textContent));
-      return tasti.length === valori.length && tasti.every((t) => valori.includes(t));
-    });
-  };
-
-  for (const campo of ["sesso", "lingua", "obiettivo"]) {
-    const gruppo = trovaGruppo(campo);
+  for (const campo of CHIAVI_SCELTA) {
+    const gruppo = trovaGruppo(doc, campo);
     if (!gruppo || gruppo.dataset.anagraficaViva === "1") continue;
     gruppo.dataset.anagraficaViva = "1";
     accesi(gruppo, stato[campo]);
