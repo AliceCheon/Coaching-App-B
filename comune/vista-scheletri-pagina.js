@@ -14,6 +14,7 @@
  */
 
 import { scheletroDaCostruttore, messaggioNonSalvato } from "./scheletri.js";
+import { fraseNuovoProgramma } from "./nuovo-programma-b.js";
 import { nomePulito } from "./nome-pulito.js";
 
 function el(doc, tag, classe, testo) {
@@ -93,6 +94,28 @@ function serieTotali(s) {
   return Number(s && s.serie) > 0 ? Number(s.serie) : 0;
 }
 
+
+/* Una conferma dentro la pagina, con due tasti: niente finestrelle del browser.
+ * Torna il nodo, così la prova lo legge e il flusso lo toglie quando ha finito. */
+function confermaInPagina(doc, dove, testo, etichettaSi, alSi) {
+  const vecchio = dove.querySelector(".sk-conf-programma");
+  if (vecchio) vecchio.remove();
+  const box = el(doc, "div", "sk-conf-programma");
+  box.setAttribute("role", "dialog");
+  box.appendChild(el(doc, "p", "sk-conf-testo", testo));
+  const fila = el(doc, "div", "sk-conf-fila");
+  const no = el(doc, "button", "sk-annulla", "Annulla");
+  no.type = "button";
+  no.addEventListener("click", () => box.remove());
+  const si = el(doc, "button", "sk-conf-si", etichettaSi);
+  si.type = "button";
+  si.addEventListener("click", () => { box.remove(); if (typeof alSi === "function") alSi(); });
+  fila.appendChild(no);
+  fila.appendChild(si);
+  box.appendChild(fila);
+  dove.appendChild(box);
+  return box;
+}
 /* Il montaggio della pagina. servizi:
  *   costruttore()            -> { schede: [...] } (lo stato del costruttore)
  *   etichetta(k)             -> nome del gruppo muscolare da mostrare
@@ -237,6 +260,72 @@ export function montaPaginaScheletri(doc, servizi) {
           scriviEsito(messaggioNonSalvato((e && e.message) || "motivo non dichiarato"), false);
         })
         .then(() => { salva.disabled = false; salva.textContent = testoPrima; });
+    });
+  }
+
+  /* «Crea un programma nuovo» (passo 35): dallo stesso costruttore nasce un
+   * programma nuovo in bozza. Non tocca nessun programma che esiste già;
+   * aprirlo è un secondo passo, con la sua conferma e il suo Annulla. */
+  const crea = doc.getElementById("sk-crea-programma");
+  if (crea && !crea.__bdScheletriPagina) {
+    crea.__bdScheletriPagina = true;
+    crea.addEventListener("click", (ev) => {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      const stato = statoCostruttore();
+      const nome = testo((doc.getElementById("sk-nome") || {}).value);
+      const nota = testo((doc.getElementById("sk-desc") || {}).value);
+      const documento = scheletroDaCostruttore(stato, {
+        nome: nome,
+        nota: nota,
+        etichetta: typeof s.etichetta === "function" ? s.etichetta : null
+      });
+      if (!documento.esercizi.length) {
+        scriviEsito("Non c'è ancora nessun esercizio: clicca un gruppo muscolare e scegli l'esercizio.", false);
+        return;
+      }
+      if (typeof s.creaProgramma !== "function") {
+        scriviEsito(testo(s.nonCollegata) || "Non sei ancora collegata: entra con Google e riprova.", false);
+        return;
+      }
+      const attivo = typeof s.nomeAttivo === "function" ? testo(s.nomeAttivo()) : "";
+      const frase = fraseNuovoProgramma({
+        /* il nome mostrato passa da nomePulito, come ogni testo preso dai dati */
+        nome: nomePulito(nome) || nomePulito(documento.nome),
+        schede: (documento.schede && documento.schede.length) || 1,
+        esercizi: documento.esercizi.length
+      }, attivo);
+      confermaInPagina(doc, crea.parentNode, frase, "Sì, crea il programma", () => {
+        crea.disabled = true;
+        const prima = crea.textContent;
+        crea.textContent = "Creo…";
+        scriviEsito("Scrivo il programma nuovo nella zona B…", true);
+        Promise.resolve()
+          .then(() => s.creaProgramma(documento, { nome: nome, descrizione: nota }))
+          .then((ris) => {
+            if (!ris || ris.ok !== true) throw new Error((ris && (ris.motivo || ris.messaggio)) || "creazione non riuscita");
+            const schede = Number(ris.schede) || 0;
+            const esercizi = Number(ris.esercizi) || 0;
+            scriviEsito("Programma «" + (nomePulito(ris.nome) || ris.nome) + "» creato in bozza · "
+              + schede + (schede === 1 ? " scheda" : " schede") + " · " + esercizi + (esercizi === 1 ? " esercizio" : " esercizi")
+              + " · «" + (attivo || "il programma che stai usando") + "» non è stato toccato", true);
+            /* Aprire è una scelta, non un effetto collaterale. */
+            if (typeof s.apriProgramma === "function" && ris.id) {
+              confermaInPagina(doc, crea.parentNode,
+                "Vuoi aprirlo adesso? Diventa il programma aperto e «" + (attivo || "quello di prima")
+                  + "» resta salvato com'è (Annulla lo rimette attivo).",
+                "Apri «" + (nomePulito(ris.nome) || ris.nome) + "»", () => {
+                  scriviEsito("Apro il programma nuovo…", true);
+                  Promise.resolve()
+                    .then(() => s.apriProgramma(ris.id))
+                    .then((esito) => {
+                      if (!esito || esito.ok !== true) throw new Error((esito && (esito.motivo || esito.testo)) || "apertura non riuscita");
+                      scriviEsito("Programma «" + (nomePulito(ris.nome) || ris.nome) + "» aperto: lo vedi in Programmi", true);
+                    }, (e) => scriviEsito("Non ho aperto il programma: " + ((e && e.message) || "motivo non dichiarato"), false));
+                });
+            }
+          }, (e) => scriviEsito("Programma non creato: " + ((e && e.message) || "motivo non dichiarato"), false))
+          .then(() => { crea.disabled = false; crea.textContent = prima; });
+      });
     });
   }
 

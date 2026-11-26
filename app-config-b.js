@@ -7,7 +7,7 @@
  * - Nessun dato personale in questo file: solo identificativi di progetto.
  */
 window.BD_B = {
-  build: "b0.43-passo34b-permesso-spiegato",
+  build: "b0.44-passo35-programma-dallo-scheletro",
   nomeAppAuth: "B",
   prefissoChiavi: "bd-b.v1.",
   // Nome IndexedDB riservato a B: NON viene aperto in fase 0 (nessuna scrittura).

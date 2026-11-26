@@ -28,6 +28,7 @@ import { riepilogoPianificazione } from "../comune/pianificazione.js";
 import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { elencoScheletri, salvaScheletroCostruito } from "../comune/scheletri.js";
 import { montaPaginaScheletri } from "../comune/vista-scheletri-pagina.js";
+import { programmaDaScheletro, scriviProgrammaNuovo } from "../comune/nuovo-programma-b.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
@@ -530,6 +531,21 @@ export async function avvia(doc, win) {
       ultimaVoce: ultimaAnnullabile(registroB)
     });
     editorCorrente = editor;
+    /* Passo 35 — aprire il programma appena creato passa dallo stesso «Attiva»
+     * di sempre: una voce di registro, l'Annulla che rimette com'era. */
+    globalThis.BD_ATTIVA_PROGRAMMA = (idProgramma) => {
+      if (!editor || typeof editor.attivaProgramma !== "function") {
+        return Promise.resolve({ ok: false, motivo: "la pagina non ha un editor collegato: non ho scritto niente" });
+      }
+      return editor.attivaProgramma(String(idProgramma)).then((esito) => {
+        if (esito && esito.ok) {
+          segnalaModifica(esito.testo || "programma attivo in B", "ok");
+          return sincronizza(utenteCorrente, { forza: true, motivo: "programma nuovo aperto" }).then(() => esito);
+        }
+        segnalaModifica((esito && esito.motivo) || "apertura non riuscita", "errore");
+        return esito || { ok: false };
+      });
+    };
 
     /* Una cella e' in modifica se il fuoco e' dentro un campo scrivibile, o se
      * c'e' una cella aperta (classe "scrittura") anche quando il fuoco e' sul
@@ -1030,6 +1046,16 @@ export async function avvia(doc, win) {
      * strada della scheda (salvaScheletroDalCostruttore → scritture-b). */
     globalThis.BD_LEGGI_SCHELETRI = async () => elencoScheletri(await leggiScheletriB(db, utente.uid));
     globalThis.BD_SALVA_SCHELETRO = (documento) => salvaScheletroCostruito(documento, { db, uid: utente.uid });
+    /* Passo 35 — da uno scheletro nasce un programma NUOVO, in bozza: qui si
+     * costruiscono e si scrivono solo documenti nuovi, niente che esista già. */
+    globalThis.BD_CREA_PROGRAMMA = (scheletro, richiesta) => {
+      const r = richiesta || {};
+      /* Il nome che scrive lei diventa il nome del programma: si legge con le
+       * parentesi perché è un valore da salvare, non un testo da disegnare. */
+      const piano = programmaDaScheletro(scheletro, { nome: r["nome"], descrizione: r["descrizione"], quando: new Date() });
+      if (!piano.ok) return Promise.resolve(piano);
+      return scriviProgrammaNuovo(db, utente.uid, piano);
+    };
     if (globalThis.BD_SCHELETRI_PAGINA && typeof globalThis.BD_SCHELETRI_PAGINA.ricarica === "function") {
       globalThis.BD_SCHELETRI_PAGINA.ricarica();
     }
@@ -1210,6 +1236,22 @@ if (typeof document !== "undefined") {
           return Promise.reject(new Error("entra con Google e riprova"));
         }
         return globalThis.BD_SALVA_SCHELETRO(documento);
+      },
+      creaProgramma: (documento, richiesta) => {
+        if (typeof globalThis.BD_CREA_PROGRAMMA !== "function") {
+          return Promise.reject(new Error("entra con Google e riprova"));
+        }
+        return globalThis.BD_CREA_PROGRAMMA(documento, richiesta);
+      },
+      apriProgramma: (id) => {
+        if (typeof globalThis.BD_ATTIVA_PROGRAMMA !== "function") {
+          return Promise.reject(new Error("la pagina non ha ancora il programma sotto mano"));
+        }
+        return globalThis.BD_ATTIVA_PROGRAMMA(id);
+      },
+      nomeAttivo: () => {
+        const n = document.getElementById("nomeProgrammaAttivo");
+        return n ? String(n.textContent || "").trim() : "";
       },
       nonCollegata: "Non sei ancora collegata: entra con Google e la raccolta si legge."
     });

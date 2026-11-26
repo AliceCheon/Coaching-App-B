@@ -877,6 +877,14 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 .sk-salva{flex:1;background:linear-gradient(135deg,var(--pink),var(--purple));border:0;color:#1A1024;
   font-family:inherit;font-size:13.2px;font-weight:800;padding:10px;border-radius:11px;cursor:pointer;transition:.14s}
 .sk-salva:hover{filter:brightness(1.1)}
+/* Passo 35: il secondo tasto — crea un programma nuovo, non tocca l'attivo. */
+.sk-crea{flex:1;background:none;border:1px solid rgba(201,167,255,.55);color:var(--lav);font-family:inherit;font-weight:700;
+  font-size:12.5px;border-radius:10px;padding:10px 12px;cursor:pointer}
+.sk-crea:hover{background:rgba(201,167,255,.10);border-color:var(--lav)}
+.sk-crea[disabled]{opacity:.55;cursor:progress}
+.sk-conf-programma{margin-top:10px;border:1px solid rgba(201,167,255,.4);border-radius:10px;padding:10px 12px;background:rgba(201,167,255,.07)}
+.sk-conf-testo{margin:0 0 8px;font-size:12.4px;color:var(--texto)}
+.sk-conf-fila{display:flex;gap:8px;flex-wrap:wrap}
 .sk-annulla{background:none;border:1px solid var(--linea);color:var(--muto);font-family:inherit;font-size:12.6px;
   font-weight:700;padding:10px 18px;border-radius:11px;cursor:pointer}
 .sk-annulla:hover{color:var(--testo);border-color:var(--lav)}
@@ -3193,6 +3201,7 @@ document.addEventListener('DOMContentLoaded',function(){
               Rendi disponibile su tutti gli atleti &mdash; spento finch&eacute; c&rsquo;&egrave; una sola atleta</label>
             <div class="sk-bottoni">
               <button class="sk-salva" id="sk-salva" type="button">Salva Scheletro</button>
+              <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un programma nuovo, in bozza: quello che usi non viene toccato">Crea un programma nuovo</button>
               <button class="sk-annulla" id="sk-annulla" type="button">Annulla</button>
             </div>
             <div class="sk-esito" id="sk-esito"></div>
