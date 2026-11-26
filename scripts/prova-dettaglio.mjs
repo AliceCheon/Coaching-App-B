@@ -65,4 +65,11 @@ console.log("costruttore visibile:", await page.evaluate(() => {
   return { griglia: g.style.display === "" ? "visibile" : g.style.display, raccolta: r.style.display };
 }));
 console.log("esito:", (await page.locator("#sk-esito").textContent() || "").trim());
+console.log("riga modifica:", (await page.locator("#sk-modifica").textContent() || "").replace(/\s+/g, " ").trim());
+await page.locator("#sk-salva").click();
+await page.waitForTimeout(1200);
+console.log("dopo salva:", (await page.locator("#sk-esito").textContent() || "").trim());
+await page.locator("#pag-scheletri .sk-tab").nth(3).click();
+await page.waitForTimeout(700);
+console.log("scheletri in raccolta:", await page.locator("#sk-raccolta .skp-riga").count());
 await browser.close(); server.close(); process.exit(0);

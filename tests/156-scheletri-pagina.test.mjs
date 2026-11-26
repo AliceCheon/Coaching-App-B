@@ -326,3 +326,46 @@ test("157.5 se il costruttore non prende lo scheletro, il motivo si legge", asyn
   Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Modifica nel costruttore")[0].click();
   assert.match(doc.getElementById("sk-esito").textContent, /Non ho caricato lo scheletro/);
 });
+
+/* ---------- passo 39: salvare aggiorna quello che si sta modificando ---------- */
+
+test("158.1 senza modifica in corso nasce uno scheletro nuovo", async () => {
+  const chiamate = [];
+  const { doc } = paginaFinta({
+    salva: (documento, opzioni) => { chiamate.push({ nome: documento.nome, opzioni: opzioni || null }); return Promise.resolve({ ok: true, id: "sk-nuovo", nome: documento.nome }); }
+  });
+  doc.getElementById("sk-salva").click();
+  await attesa(60);
+  assert.equal(chiamate.length, 1);
+  assert.equal(chiamate[0].opzioni, null, "senza id: crea");
+  assert.match(doc.getElementById("sk-esito").textContent, /salvato ·/);
+});
+
+test("158.2 con uno scheletro riaperto il salvataggio lo aggiorna (stesso id)", async () => {
+  const chiamate = [];
+  const stato = {
+    schede: [{ lettera: "A", gruppo: "Push", righe: [{ k: "Petto", nome: "Panca piana", serie: 4 }] }],
+    idModificato: "sk-1"
+  };
+  const { doc } = paginaFinta({
+    costruttore: () => stato,
+    salva: (documento, opzioni) => { chiamate.push({ opzioni: opzioni || null }); return Promise.resolve({ ok: true, id: "sk-1", nome: documento.nome }); }
+  });
+  doc.getElementById("sk-salva").click();
+  await attesa(60);
+  assert.equal(chiamate.length, 1, "una scrittura");
+  assert.deepEqual(chiamate[0].opzioni, { id: "sk-1" }, "con lo stesso id: aggiorna, non crea");
+  assert.match(doc.getElementById("sk-esito").textContent, /aggiornato ·/, "e lo dice: " + doc.getElementById("sk-esito").textContent);
+});
+
+test("158.3 la pagina passa al costruttore lo scheletro CON il suo id", async () => {
+  let ricevuto = null;
+  const { doc } = conRaccolta({ modifica: (documento) => { ricevuto = documento; return true; } });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Modifica nel costruttore")[0].click();
+  assert.equal(ricevuto.id, "sk-1", "l'id viaggia col documento, altrimenti il salvataggio non sa cosa aggiornare");
+  assert.equal(ricevuto.nome, "Push Pull");
+});

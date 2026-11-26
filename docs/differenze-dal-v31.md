@@ -31,128 +31,131 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 830-832 — /* Passo 36: qui c'era overflow:hidden - l'elenco degli esercizi, che esce sotto la
 - righe 866-869 — .sk-sug.on{display:block;z-index:90}
 - righe 885-892 — /* Passo 35: il secondo tasto - crea un programma nuovo, non tocca l'attivo. */
-- righe 914 — #sk-legenda{padding:0 12px 10px;display:flex;flex-direction:column;gap:5px}
-- righe 1063-1065 — /* La guida che si apre sotto il tasto (passo 19): un riquadro di testo, niente di piu'. */
-- righe 1504-1625 — </style>
-- righe 1641 — var b=document.getElementById('bd-ver');if(b)b.textContent=(window.BD_VERSIONE//'')+' \u00b7 '+id;
-- righe 1645-1656 — /* Versione dell'app: un punto solo. Il menu qui sotto, Impostazioni -> Build e
-- righe 1663 — <div id="bd-ver" style="margin-top:8px;font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.06
-- righe 1688 — <button class="voce" data-vista="programma-1" onclick="BDVAI(this.getAttribute('data-vista'),this)">
-- righe 1707 — <span style="display:inline-block;margin-top:7px;color:#8A6FA8">Versione B &middot; in prova sui tuo
-- righe 1730-1731 — <b class="db-titolo">Il consiglio di oggi</b>
-- righe 1753-1754 — <text x="48" y="52" text-anchor="middle" \1&mdash;\2/text>
-- righe 1760-1763 — <h3>Readiness media <span class="ck-slash">-</span> <b>non registrato</b></h3>
-- righe 1768 — <div class="ck-chips"><span class="ck-chip"><em>Energia</em><b>&mdash;</b></span><span class="ck-chi
-- righe 1780 — <div class="ck-mets">            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" vi
-- righe 1802 — <!-- ============ 4 · PESO + SONNO ============ -->
-- righe 1805-1809 — <header class="ck-h"><h4><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" s
-- righe 1829 — <div class="ck-red-num"><b data-reds-num>-</b><span class="ck-pill mute" data-reds-stato>non calcola
-- righe 1832 — <div class="ck-red-cla" data-reds-classifica></div>
-- righe 1835 — <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" str
-- righe 1839-1840 — <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" str
-- righe 1858-1860 — <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto</p></div></header>
-- righe 1870-1873 — <div class="ck-fare-tit">Nessuna decisione automatica <span class="ck-tag">motore non attivo</span><
-- righe 1952-1958 — <button class="ck-link" type="button" data-vai="riepilogo-volume">Apri analisi completa →</button>
-- righe 1980-1982 — <div class="dc-mail">scaniscrini@gmail.com</div>
-- righe 1987 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
-- righe 1993 — <button class="dc-tab" data-dc="biofeedback">Biofeedback</button>
-- righe 2052-2058 — <!-- Passo 25: «Domande» esce (tornerà quando ci sarà un senso), e
-- righe 2088-2089 — <div class="dc-pan" data-pan="biofeedback"><div class="dc-card"><div class="dc-vuot"><b>Biofeedback:
-- righe 2100 — <div class="sr-who"><b>Alice Clemente</b> · <span data-sr-ck>check-in non ancora letto</span> · <spa
-- righe 2109-2112 — <div class="sr-i" data-sr-i="sleep"><span>Sonno percepito</span><b>-</b><i>non registrato</i></div>
-- righe 2117-2125 — <div class="sr-boxh"><b data-sr-ck-tit>Check-in di oggi</b><span class="sr-legend">scala 1-5 · 5 = i
-- righe 2143 — <p class="sr-legend" style="margin:10px 0 0">RPE medio <b style="color:var(--core)" id="sr-mrpe">-</
-- righe 2151 — <p class="sr-note"><b>Nessun giudizio senza il dato.</b> RPE medio <span id="sr-nota-rpe">-</span> (
-- righe 2154 — <script>
-- righe 2177 — <div class="ms-who"><b>Alice Clemente</b> &middot; altezza, et&agrave; e sessioni non registrate: ne
-- righe 2302 — (riga vuota)
-- righe 2374 — var S=null;
-- righe 2382 — var S=null;
-- righe 2715 — <div class="p7-note3"><b>Da dove vengono i numeri:</b> il peso dalle rilevazioni <b>della scheda del
-- righe 2726-2728 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-profilo>altezza e età non registrate</sp
-- righe 2734 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-legend">linea del peso · le pesate registr
-- righe 2740-2742 — <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il passo 21 l'aveva tolta
-- righe 2764-2766 — <div class="mp-note"><b>Perché qui non c'è la media a 7 giorni.</b> Le pesate sono poche e distanti 
-- righe 2779 — <div class="v-stato">Cosa conterr&agrave;: nome, dose, orario, periodo, note e l&rsquo;avviso di fin
-- righe 2796 — <div class="dperche" id="ov-p1">programma non ancora letto</div>
-- righe 2803 — <div class="dperche" id="ov-p2">logbook non ancora letto</div>
-- righe 2837 — <p class="p7-note2" id="lb-nota-b" hidden></p>
-- righe 2851-2854 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_SEED.sedute)//[];};
-- righe 2868 — var cand=sed().filter(function(x){return x.d===dd;});
-- righe 2881 — aggiornaMappa();
-- righe 2894 — if(cnt&&(fv//fo))cnt.textContent=vis+" di "+sed().length+" sedute";
-- righe 2906 — <div id="pianificazione-viva"></div>
-- righe 2916 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi</button></div>
-- righe 2948 — <p class="pr-sub">Le regole con cui le settimane salgono. Per applicare una progressione alla singol
-- righe 2958 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{display:block}
-- righe 3172-3173 — </div><button class="sp-btn" id="sp-guida">Guida Specializzazione</button></div>
-- righe 3177 — (riga vuota)
-- righe 3180-3182 — <div class="v-occhiello">Programmi &middot; Curve di forza</div>
-- righe 3185-3187 — <div class="cv-card" id="cv-real" data-curva="non-calcolata">
-- righe 3190 — <section class="voce-pag" id="pag-scheletri">
-- righe 3196 — scegli le serie. Quando salvi, lo scheletro entra nella tua raccolta e da lì lo applichi a una sched
-- righe 3200-3201 — <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: i template della l
-- righe 3217-3218 — <label class="sk-check" title="C'è una sola atleta: non c'è a chi altro renderlo disponibile"><input
-- righe 3221 — <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un program
-- righe 3232-3233 — <div class="sk-qh">Questionario</div>
-- righe 3243 — <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div id="programma-attivo"></div
-- righe 3330 — <button class="pr-btn" id="t8-appprog" type="button">Applica progressione a tutta la scheda</button>
-- righe 3363 — <div class="p8-box" id="box-A"><div class="p8-head"><div><div class="p8-nome">Scheda A - Dorsali, Sp
-- righe 3374 — (riga vuota)
-- righe 3407 — (riga vuota)
-- righe 3427-3428 — <div><b>Scarico</b><p>La settimana che la scheda segna come scarico tiene la tecnica e toglie volume
-- righe 3487 — </div></div></section><section class="voce-pag" id="pag-impostazioni">
-- righe 3508 — <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
-- righe 4164 — <p class="v-testo">Tutti i programmi del backup, attivo compreso: si leggono, non si modificano. Ser
-- righe 4168 — <tbody id="archivio-corpo"></tbody>
-- righe 5321-5329 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si
-- righe 5415 — (riga vuota)
-- righe 5514 — (riga vuota)
-- righe 5579 — apriSug(sug, t);
-- righe 5596 — apriSug(sug, t);
-- righe 5600-5627 — /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
-- righe 5630-5631 — function rinumera(){
-- righe 5645 — (riga vuota)
-- righe 5648-5685 — /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
-- righe 6018 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
-- righe 6276 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
-- righe 6393-6397 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
-- righe 7076-7077 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
-- righe 7205-7241 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
-- righe 7383 — (riga vuota)
-- righe 7410-7437 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
-- righe 7482 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
-- righe 7528 — (riga vuota)
-- righe 7578-7579 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
-- righe 7652 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
-- righe 7931 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
-- righe 8088 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
-- righe 8476-8477 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
-- righe 8930 — var SEED = {config:{}, sessioni:[]};
-- righe 8945-8948 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
-- righe 8972-8975 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
-- righe 8982-9009 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
-- righe 9012-9017 — function logbookVivo(){
-- righe 9020-9023 — function pittaOverview(){
-- righe 9026-9052 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
-- righe 9065-9067 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9073-9075 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
-- righe 9078 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
-- righe 9084 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
-- righe 9092-9094 — el('ov-barsn').textContent = PV.letto
-- righe 9097-9100 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
-- righe 9104-9111 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
-- righe 9114 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9122-9142 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
-- righe 9145-9157 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
-- righe 9196 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
-- righe 9247 — if(false){
-- righe 9444 — '<div class="ese-chips2">' +
-- righe 9995-9998 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
-- righe 10003 — kpi.innerHTML =
-- righe 10178-10187 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
-- righe 10297 — (riga vuota)
-- righe 10341-10660 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 897-900 — /* Passo 39: la riga che dice «stai modificando questo scheletro». */
+- righe 918 — #sk-legenda{padding:0 12px 10px;display:flex;flex-direction:column;gap:5px}
+- righe 1067-1069 — /* La guida che si apre sotto il tasto (passo 19): un riquadro di testo, niente di piu'. */
+- righe 1508-1629 — </style>
+- righe 1645 — var b=document.getElementById('bd-ver');if(b)b.textContent=(window.BD_VERSIONE//'')+' \u00b7 '+id;
+- righe 1649-1660 — /* Versione dell'app: un punto solo. Il menu qui sotto, Impostazioni -> Build e
+- righe 1667 — <div id="bd-ver" style="margin-top:8px;font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.06
+- righe 1692 — <button class="voce" data-vista="programma-1" onclick="BDVAI(this.getAttribute('data-vista'),this)">
+- righe 1711 — <span style="display:inline-block;margin-top:7px;color:#8A6FA8">Versione B &middot; in prova sui tuo
+- righe 1734-1735 — <b class="db-titolo">Il consiglio di oggi</b>
+- righe 1757-1758 — <text x="48" y="52" text-anchor="middle" \1&mdash;\2/text>
+- righe 1764-1767 — <h3>Readiness media <span class="ck-slash">-</span> <b>non registrato</b></h3>
+- righe 1772 — <div class="ck-chips"><span class="ck-chip"><em>Energia</em><b>&mdash;</b></span><span class="ck-chi
+- righe 1784 — <div class="ck-mets">            <article class="ck-met"><div class="ck-met-t"><svg class="ck-ic" vi
+- righe 1806 — <!-- ============ 4 · PESO + SONNO ============ -->
+- righe 1809-1813 — <header class="ck-h"><h4><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" s
+- righe 1833 — <div class="ck-red-num"><b data-reds-num>-</b><span class="ck-pill mute" data-reds-stato>non calcola
+- righe 1836 — <div class="ck-red-cla" data-reds-classifica></div>
+- righe 1839 — <div class="ck-dove-r"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" str
+- righe 1843-1844 — <div class="ck-avviso"><svg class="ck-ic" viewBox="0 0 16 16" width="12" height="12" fill="none" str
+- righe 1862-1864 — <p data-ck-bio-sotto>check-in · scala 1-5 · non ancora letto</p></div></header>
+- righe 1874-1877 — <div class="ck-fare-tit">Nessuna decisione automatica <span class="ck-tag">motore non attivo</span><
+- righe 1956-1962 — <button class="ck-link" type="button" data-vai="riepilogo-volume">Apri analisi completa →</button>
+- righe 1984-1986 — <div class="dc-mail">scaniscrini@gmail.com</div>
+- righe 1991 — <p>Anagrafica, Anamnesi, Biofeedback e Questionari</p>
+- righe 1997 — <button class="dc-tab" data-dc="biofeedback">Biofeedback</button>
+- righe 2056-2062 — <!-- Passo 25: «Domande» esce (tornerà quando ci sarà un senso), e
+- righe 2092-2093 — <div class="dc-pan" data-pan="biofeedback"><div class="dc-card"><div class="dc-vuot"><b>Biofeedback:
+- righe 2104 — <div class="sr-who"><b>Alice Clemente</b> · <span data-sr-ck>check-in non ancora letto</span> · <spa
+- righe 2113-2116 — <div class="sr-i" data-sr-i="sleep"><span>Sonno percepito</span><b>-</b><i>non registrato</i></div>
+- righe 2121-2129 — <div class="sr-boxh"><b data-sr-ck-tit>Check-in di oggi</b><span class="sr-legend">scala 1-5 · 5 = i
+- righe 2147 — <p class="sr-legend" style="margin:10px 0 0">RPE medio <b style="color:var(--core)" id="sr-mrpe">-</
+- righe 2155 — <p class="sr-note"><b>Nessun giudizio senza il dato.</b> RPE medio <span id="sr-nota-rpe">-</span> (
+- righe 2158 — <script>
+- righe 2181 — <div class="ms-who"><b>Alice Clemente</b> &middot; altezza, et&agrave; e sessioni non registrate: ne
+- righe 2306 — (riga vuota)
+- righe 2378 — var S=null;
+- righe 2386 — var S=null;
+- righe 2719 — <div class="p7-note3"><b>Da dove vengono i numeri:</b> il peso dalle rilevazioni <b>della scheda del
+- righe 2730-2732 — <div class="mp-who"><b>Alice Clemente</b> · <span data-peso-profilo>altezza e età non registrate</sp
+- righe 2738 — <div class="mp-boxh"><b>Andamento peso</b><span class="mp-legend">linea del peso · le pesate registr
+- righe 2744-2746 — <!-- Passo 24: la coppia «Pesate / Mesi» torna com'era. Il passo 21 l'aveva tolta
+- righe 2768-2770 — <div class="mp-note"><b>Perché qui non c'è la media a 7 giorni.</b> Le pesate sono poche e distanti 
+- righe 2783 — <div class="v-stato">Cosa conterr&agrave;: nome, dose, orario, periodo, note e l&rsquo;avviso di fin
+- righe 2800 — <div class="dperche" id="ov-p1">programma non ancora letto</div>
+- righe 2807 — <div class="dperche" id="ov-p2">logbook non ancora letto</div>
+- righe 2841 — <p class="p7-note2" id="lb-nota-b" hidden></p>
+- righe 2855-2858 — var sed=function(){return (window.BD_LB_SEED&&window.BD_LB_SEED.sedute)//[];};
+- righe 2872 — var cand=sed().filter(function(x){return x.d===dd;});
+- righe 2885 — aggiornaMappa();
+- righe 2898 — if(cnt&&(fv//fo))cnt.textContent=vis+" di "+sed().length+" sedute";
+- righe 2910 — <div id="pianificazione-viva"></div>
+- righe 2920 — </div><button class="db-btn" id="db-guida">Guida DB Esercizi</button></div>
+- righe 2952 — <p class="pr-sub">Le regole con cui le settimane salgono. Per applicare una progressione alla singol
+- righe 2962 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{display:block}
+- righe 3176-3177 — </div><button class="sp-btn" id="sp-guida">Guida Specializzazione</button></div>
+- righe 3181 — (riga vuota)
+- righe 3184-3186 — <div class="v-occhiello">Programmi &middot; Curve di forza</div>
+- righe 3189-3191 — <div class="cv-card" id="cv-real" data-curva="non-calcolata">
+- righe 3194 — <section class="voce-pag" id="pag-scheletri">
+- righe 3200 — scegli le serie. Quando salvi, lo scheletro entra nella tua raccolta e da lì lo applichi a una sched
+- righe 3204-3205 — <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: i template della l
+- righe 3221-3223 — <label class="sk-check" title="C'è una sola atleta: non c'è a chi altro renderlo disponibile"><input
+- righe 3226 — <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un program
+- righe 3237-3238 — <div class="sk-qh">Questionario</div>
+- righe 3248 — <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div id="programma-attivo"></div
+- righe 3335 — <button class="pr-btn" id="t8-appprog" type="button">Applica progressione a tutta la scheda</button>
+- righe 3368 — <div class="p8-box" id="box-A"><div class="p8-head"><div><div class="p8-nome">Scheda A - Dorsali, Sp
+- righe 3379 — (riga vuota)
+- righe 3412 — (riga vuota)
+- righe 3432-3433 — <div><b>Scarico</b><p>La settimana che la scheda segna come scarico tiene la tecnica e toglie volume
+- righe 3492 — </div></div></section><section class="voce-pag" id="pag-impostazioni">
+- righe 3513 — <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
+- righe 4169 — <p class="v-testo">Tutti i programmi del backup, attivo compreso: si leggono, non si modificano. Ser
+- righe 4173 — <tbody id="archivio-corpo"></tbody>
+- righe 5326-5334 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si
+- righe 5420 — (riga vuota)
+- righe 5422-5425 — /* Passo 39: quando uno scheletro viene riaperto dal suo elenco, qui resta il
+- righe 5523 — (riga vuota)
+- righe 5588 — apriSug(sug, t);
+- righe 5605 — apriSug(sug, t);
+- righe 5609-5636 — /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
+- righe 5639-5640 — function rinumera(){
+- righe 5650 — stato.idModificato = null;
+- righe 5655 — (riga vuota)
+- righe 5658-5706 — /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
+- righe 6039 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
+- righe 6297 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
+- righe 6414-6418 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
+- righe 7097-7098 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 7226-7262 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
+- righe 7404 — (riga vuota)
+- righe 7431-7458 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+- righe 7503 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
+- righe 7549 — (riga vuota)
+- righe 7599-7600 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
+- righe 7673 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
+- righe 7952 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
+- righe 8109 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
+- righe 8497-8498 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+- righe 8951 — var SEED = {config:{}, sessioni:[]};
+- righe 8966-8969 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
+- righe 8993-8996 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
+- righe 9003-9030 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+- righe 9033-9038 — function logbookVivo(){
+- righe 9041-9044 — function pittaOverview(){
+- righe 9047-9073 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
+- righe 9086-9088 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9094-9096 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
+- righe 9099 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
+- righe 9105 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
+- righe 9113-9115 — el('ov-barsn').textContent = PV.letto
+- righe 9118-9121 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+- righe 9125-9132 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+- righe 9135 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9143-9163 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
+- righe 9166-9178 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
+- righe 9217 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
+- righe 9268 — if(false){
+- righe 9465 — '<div class="ese-chips2">' +
+- righe 10016-10019 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+- righe 10024 — kpi.innerHTML =
+- righe 10199-10208 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
+- righe 10318 — (riga vuota)
+- righe 10362-10681 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
@@ -187,3 +190,4 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - **Passo 36** — l'elenco degli esercizi della pagina Scheletri non resta più tagliato: la scheda non ha più `overflow:hidden` (era quello a nascondere le voci sulle ultime righe), l'elenco sta sopra il resto della pagina e, quando la riga è in fondo allo schermo, si apre verso l'alto.
 - **Passo 37** — «Miei scheletri» non è più un elenco muto: ogni riga ha «Vedi gli esercizi» (il dettaglio vero, con le schede, gli esercizi e le serie scritte), «Rinomina» (campo + Salva, scrive in B), «Modifica nel costruttore» (riapre lo scheletro nel costruttore per rimetterlo a posto) ed «Elimina» (con conferma: toglie lo scheletro dalla raccolta, non tocca nessuna scheda). Dopo una scrittura la pagina Programmi si rilegge da sola, così lo scheletro nuovo compare anche lì senza ricaricare. Inoltre l'elenco degli esercizi si chiude uscendo dal campo o con Esc, e non copre più il tasto «Salva Scheletro».
 - **Passo 38** — «Modifica nel costruttore» funziona davvero: caricava i dati ma lasciava visibile la linguetta della raccolta, quindi sembrava non fare niente. Ora porta alla linguetta «Scheletri», scorre al costruttore, riempie nome, schede ed esercizi e lo dice con una riga d'esito; se il costruttore non prende lo scheletro, il motivo si legge.
+- **Passo 39** — «Salva Scheletro» aggiorna lo scheletro che stai modificando (stesso documento, versione che avanza) invece di crearne un altro identico. Sopra i tasti una riga dice «Stai modificando «X»: «Salva Scheletro» lo aggiorna. «Annulla» ricomincia da uno nuovo», e l'esito dice «aggiornato» quando è un aggiornamento e «salvato» quando è nuovo.

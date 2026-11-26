@@ -894,6 +894,10 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
   font-weight:700;padding:10px 18px;border-radius:11px;cursor:pointer}
 .sk-annulla:hover{color:var(--testo);border-color:var(--lav)}
 .sk-esito{margin-top:11px;font-size:12.2px;display:none}
+/* Passo 39: la riga che dice «stai modificando questo scheletro». */
+.sk-modifica{display:none;margin:2px 0 10px;padding:8px 10px;border-radius:9px;border:1px solid rgba(201,167,255,.4);
+  background:rgba(201,167,255,.07);font-size:12px;color:var(--testo)}
+.sk-modifica.on{display:block}
 .sk-esito.on{display:block}
 .sk-esito.ok{color:var(--verde)}
 .sk-esito.no{color:#FF8A8A}
@@ -3216,6 +3220,7 @@ document.addEventListener('DOMContentLoaded',function(){
             <button class="sk-addscheda" id="sk-addscheda" type="button">+ Aggiungi scheda</button>
             <label class="sk-check" title="C'è una sola atleta: non c'è a chi altro renderlo disponibile"><input type="checkbox" id="sk-condividi" disabled>
               Rendi disponibile su tutti gli atleti &mdash; spento finch&eacute; c&rsquo;&egrave; una sola atleta</label>
+            <div class="sk-modifica" id="sk-modifica"></div>
             <div class="sk-bottoni">
               <button class="sk-salva" id="sk-salva" type="button">Salva Scheletro</button>
               <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un programma nuovo, in bozza: quello che usi non viene toccato">Crea un programma nuovo</button>
@@ -5414,6 +5419,10 @@ disegnaCiambellaFaseD();
 
   var stato = { schede: [nuovaScheda("A")] };
   var contatore = 0;
+  /* Passo 39: quando uno scheletro viene riaperto dal suo elenco, qui resta il
+   * suo id: «Salva Scheletro» lo AGGIORNA invece di crearne un altro.
+   * «Annulla» azzera tutto e si ricomincia da uno nuovo. */
+  stato.idModificato = null;
 
   function nuovaScheda(l){ return { id: "s" + (++contatore), lettera: l, gruppo: "", righe: [] }; }
   function colore(k){ return (byK[k] && byK[k].c) || "#9AA7B8"; }
@@ -5638,6 +5647,7 @@ disegnaCiambellaFaseD();
     }
     if (ev.target.id === "sk-annulla") {
       stato = { schede: [nuovaScheda("A")] };
+      stato.idModificato = null;
       document.getElementById("sk-nome").value = "";
       document.getElementById("sk-desc").value = "";
       var e = document.getElementById("sk-esito"); if (e) e.className = "sk-esito";
@@ -5672,10 +5682,21 @@ disegnaCiambellaFaseD();
       return sc;
     });
     if (!stato.schede.length) stato.schede = [nuovaScheda("A")];
+    stato.idModificato = d.id || null;
     var nome = document.getElementById("sk-nome");
     var desc = document.getElementById("sk-desc");
     if (nome) nome.value = d.nome || "";
     if (desc) desc.value = d.notaScheda || "";
+    var avviso = document.getElementById("sk-modifica");
+    if (avviso) {
+      if (d.id) {
+        avviso.innerHTML = "Stai modificando <b>" + String(d.nome || "").replace(/</g, "&lt;") + "</b>: «Salva Scheletro» lo aggiorna. «Annulla» ricomincia da uno nuovo.";
+        avviso.className = "sk-modifica on";
+      } else {
+        avviso.className = "sk-modifica";
+        avviso.textContent = "";
+      }
+    }
     disegnaSchede();
     var dove = document.getElementById("sk-schede");
     if (dove && dove.scrollIntoView) dove.scrollIntoView({ block: "start", behavior: "smooth" });

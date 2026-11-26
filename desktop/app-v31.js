@@ -1052,7 +1052,7 @@ export async function avvia(doc, win) {
     /* La pagina riceve i documenti interi: le serve il dettaglio (schede ed
      * esercizi) oltre ai conteggi, e così non si legge due volte. */
     globalThis.BD_LEGGI_SCHELETRI = async () => leggiScheletriB(db, utente.uid);
-    globalThis.BD_SALVA_SCHELETRO = (documento) => salvaScheletroCostruito(documento, { db, uid: utente.uid }).then((esito) => {
+    globalThis.BD_SALVA_SCHELETRO = (documento, opzioni) => salvaScheletroCostruito(documento, { db, uid: utente.uid, id: opzioni && opzioni.id }).then((esito) => {
       /* Il salvataggio cambia la raccolta: la pagina Programmi la rilegge, così
        * il suo elenco non resta indietro (era il caso dello scheletro «che non
        * compare in Programma 1»). */
@@ -1265,11 +1265,12 @@ if (typeof document !== "undefined") {
     const pagina = montaPaginaScheletri(document, {
       costruttore: () => (typeof globalThis.BD_COSTRUTTORE_SCHELETRI === "function" ? globalThis.BD_COSTRUTTORE_SCHELETRI() : { schede: [] }),
       leggi: () => (typeof globalThis.BD_LEGGI_SCHELETRI === "function" ? globalThis.BD_LEGGI_SCHELETRI() : Promise.reject(new Error("entra con Google per vedere la raccolta"))),
-      salva: (documento) => {
+      salva: (documento, opzioni) => {
         if (typeof globalThis.BD_SALVA_SCHELETRO !== "function") {
           return Promise.reject(new Error("entra con Google e riprova"));
         }
-        return globalThis.BD_SALVA_SCHELETRO(documento);
+        /* con un id, lo scheletro esistente si aggiorna invece di crearne uno nuovo */
+        return globalThis.BD_SALVA_SCHELETRO(documento, opzioni);
       },
       /* La scrittura e la rilettura vivono nell'app (db, uid, sincronizza):
        * qui si passa solo la richiesta. */
@@ -1289,7 +1290,7 @@ if (typeof document !== "undefined") {
         if (typeof globalThis.BD_CARICA_SCHELETRO !== "function") {
           throw new Error("il costruttore non è ancora pronto: ricarica la pagina");
         }
-        return globalThis.BD_CARICA_SCHELETRO(scheletro.dati || {});
+        return globalThis.BD_CARICA_SCHELETRO(Object.assign({ id: scheletro.id }, scheletro.dati || {}));
       },
       creaProgramma: (documento, richiesta) => {
         if (typeof globalThis.BD_CREA_PROGRAMMA !== "function") {

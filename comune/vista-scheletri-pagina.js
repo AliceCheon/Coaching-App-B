@@ -402,16 +402,21 @@ export function montaPaginaScheletri(doc, servizi) {
         scriviEsito(testo(s.nonCollegata) || "Non sei ancora collegata: entra con Google e riprova.", false);
         return;
       }
+      /* Passo 39: se questo scheletro è stato riaperto dal suo elenco, il
+       * salvataggio lo AGGIORNA (stesso id, versione che avanza) invece di
+       * crearne un altro con lo stesso nome. */
+      const idInModifica = testo(stato && stato["idModificato"]);
       const testoPrima = salva.textContent;
       salva.disabled = true;
       salva.textContent = "Salvo…";
       scriviEsito("Scrivo lo scheletro nella tua raccolta…", true);
       Promise.resolve()
-        .then(() => s.salva(documento))
+        .then(() => (idInModifica ? s.salva(documento, { id: idInModifica }) : s.salva(documento)))
         .then((ris) => {
           if (!ris || ris.ok !== true) throw new Error((ris && (ris.motivo || ris.messaggio)) || "scrittura rifiutata");
           const quante = documento.esercizi.length;
-          const salvato = "Scheletro «" + (nomePulito(documento.nome) || documento.nome) + "» salvato · "
+          const salvato = "Scheletro «" + (nomePulito(documento.nome) || documento.nome) + "» "
+            + (idInModifica ? "aggiornato" : "salvato") + " · "
             + quante + (quante === 1 ? " esercizio" : " esercizi");
           scriviEsito(salvato + " · lo trovi in «Miei scheletri»", true);
           esitoRaccolta.className = "sk-esito on ok";
