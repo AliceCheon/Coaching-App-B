@@ -7431,6 +7431,77 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   color:var(--muted);font:inherit;font-size:10.6px;padding:1px 7px;cursor:pointer}
 .pg-guarda:hover{border-color:var(--rosa);color:var(--rosa)}
 .pg-guarda[disabled]{opacity:.5;cursor:not-allowed}
+/* Passo 43: il confronto è una finestra alta quanto lo schermo che scorre dentro
+   di sé: la barra delle settimane resta ferma in cima, i due programmi stanno
+   impilati e la pagina sotto non si allunga. Larga fino a 1080 px. */
+.pc-modale{background:color-mix(in srgb, var(--bg) 78%, transparent)}
+.pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1080px,100%);height:88vh;
+  max-height:calc(100vh - 48px);padding:0;overflow:hidden}
+.pc-finestra-testa{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+  padding:16px 20px 10px;border-bottom:1px solid var(--line);flex:0 0 auto;margin:0}
+.pc-finestra-sinistra{display:block;min-width:0}
+.pc-finestra-t{display:block;font-size:16px;color:var(--text)}
+.pc-nomi{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.pc-nome-riga{display:flex;align-items:center;gap:8px;font-size:12.3px;color:var(--text)}
+.pc-nome-riga b{font-weight:800}
+.pc-pallino{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block}
+.pc-pallino.a{background:var(--lav)}
+.pc-pallino.b{background:var(--pink)}
+.pc-etichetta{font-size:9.4px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--fioco);
+  border:1px solid var(--line);border-radius:99px;padding:1px 7px}
+.pc-settimane{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 20px;
+  border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--card)}
+.pc-sett-davanti{font-size:9.6px;letter-spacing:.09em;text-transform:uppercase;color:var(--fioco);margin-right:4px}
+.pc-sett{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  font:700 11.8px/1 "Nunito Sans",sans-serif;padding:6px 10px;min-width:44px;cursor:pointer}
+.pc-sett:hover{color:var(--text);border-color:var(--lav)}
+.pc-sett.on{background:rgba(255,79,163,.14);border-color:rgba(255,79,163,.55);color:var(--pink)}
+.pc-sett-sc{display:block;font:400 9.2px/1 'JetBrains Mono',monospace;opacity:.75;margin-top:3px}
+.pc-corpo-confronto{flex:1 1 auto;overflow:auto;min-height:0;margin-top:0;border-top:0;padding:4px 20px 16px}
+.pc-programma{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;margin-top:12px;background:var(--card-2)}
+.pc-programma-a{border-color:rgba(201,167,255,.4)}
+.pc-programma-b{border-color:rgba(255,79,163,.35)}
+.pc-p-testa{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.pc-p-titolo{display:flex;align-items:center;gap:8px;font-size:13.2px;font-weight:900;color:var(--text)}
+.pc-p-conto{font:400 10.6px/1 'JetBrains Mono',monospace;color:var(--fioco)}
+.pc-volumi{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.pc-vol{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;
+  padding:3px 8px;background:rgba(140,110,180,.08)}
+.pc-vol span{font-size:10.4px;color:var(--fioco)}
+.pc-vol b{font:600 11.6px/1 'JetBrains Mono',monospace;color:var(--text)}
+.pc-vol-vuoto{font-size:10.8px;color:var(--fioco);font-style:italic}
+.pc-programma .pc-schede{gap:8px;margin:0}
+.pc-programma .pc-scheda-t{margin:8px 0 4px}
+.pc-totali{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px;
+  padding-top:10px;border-top:1px dashed var(--line)}
+.pc-tot{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pc-tot .pc-tot-k{font-size:9.4px;letter-spacing:.07em;text-transform:uppercase;color:var(--fioco)}
+.pc-tot .pc-tot-v{font:600 13.4px/1.2 'JetBrains Mono',monospace;color:var(--text)}
+.pc-tot .pc-tot-v small{font:400 10.4px/1 "Nunito Sans",sans-serif;color:var(--fioco)}
+.pc-tot .pc-tot-v.pc-tot-no{font:400 10.8px/1.3 "Nunito Sans",sans-serif;color:var(--muted);font-style:italic}
+.pc-differenze{margin-top:14px;border:1px solid rgba(255,79,163,.28);border-radius:12px;
+  padding:12px 14px;background:rgba(255,79,163,.05)}
+.pc-diff-t{margin:0 0 8px;font-size:9.8px;letter-spacing:.09em;text-transform:uppercase;color:var(--pink);font-weight:800}
+.pc-diff-tab{width:auto;min-width:520px;font-size:11.8px}
+.pc-diff-tab th{padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.pc-diff-tab th.pc-dn{text-align:left}
+.pc-diff-tab th.pc-d1,.pc-diff-tab th.pc-d2,.pc-diff-tab th.pc-delta{text-align:right}
+.pc-diff-tab td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--text)}
+.pc-diff-tab tr:last-child td{border-bottom:0}
+.pc-diff-tab td.pc-d1,.pc-diff-tab td.pc-d2{text-align:right;font-family:'JetBrains Mono',monospace;
+  color:var(--fioco);width:110px}
+.pc-diff-tab td.pc-delta{text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;width:132px}
+.pc-delta.su{color:var(--verde)}
+.pc-delta.giu{color:var(--pink)}
+.pc-delta.pari{color:var(--fioco)}
+.pc-delta.non{font:400 10.4px/1.3 "Nunito Sans",sans-serif;color:var(--muted);font-style:italic}
+.pc-diff-vuoto{margin:6px 0 0;font-size:10.8px;color:var(--muted)}
+.pc-piede{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:10px 20px 14px;border-top:1px solid var(--line);flex:0 0 auto}
+.pc-piede .pc-suggerimento{font-size:10.8px;color:var(--fioco)}
+.pc-piede-tasti{display:flex;gap:8px}
+.pc-piede .pr-btn{width:auto}
+.pc-confronto .pc-piazza-salva{margin-bottom:4px}
 /* ============================================================
    T1 — RIGHE COMPATTE + SCORRIMENTO ORIZZONTALE DELLE SETTIMANE
    (prefisso html body per vincere sulle regole legacy senza !important)

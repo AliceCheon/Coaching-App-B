@@ -170,20 +170,33 @@ test("161.5 dal pannello «Cambia» e dall'Archivio si guarda senza attivare nie
   assert.equal(attivazioni, 0, "guardare non attiva niente");
   assert.equal(doc.querySelectorAll(".pr-elenco-programmi").length, 0, "e il pannello si chiude");
 
-  /* «Confronta con quello in uso»: affianca i due programmi veri. */
+  /* «Confronta con quello in uso»: apre la finestra del confronto (passo 43),
+   * con dentro i due programmi veri e le differenze della settimana 1. */
   const confronta = Array.from(vista.querySelectorAll("button")).filter((b) => b.textContent.trim() === "Confronta con quello in uso")[0];
   assert.ok(confronta, "c'è il tasto del confronto");
   assert.equal(confronta.disabled, false);
   confronta.click();
-  const tabella = vista.querySelector(".pc-confronto");
-  assert.ok(tabella, "il confronto si apre");
-  const testo = tabella.textContent;
+  const finestra = doc.querySelector(".pc-modale-confronto");
+  assert.ok(finestra, "il confronto si apre nella sua finestra");
+  assert.equal(doc.querySelectorAll(".pc-modale").length, 1, "e la vista di sola lettura non resta sotto: una finestra sola");
+  const corpo = finestra.querySelector(".pc-confronto");
+  assert.ok(corpo, "dentro c'è il corpo del confronto");
+  const testo = corpo.textContent;
   assert.match(testo, /Serie a settimana/);
   assert.match(testo, /Densità/);
   assert.match(testo, /Intensità di carico/);
   assert.match(testo, /non disponibile/);
   assert.match(testo, /logbook/);
-  assert.match(testo, /\+25%/, "la variazione del petto c'è");
+  /* petto: 4 serie nel consultato, 5 in uso → Δ «−1»; i dorsali stanno solo nel
+   * primo, quindi «non registrato», mai zero. */
+  const petto = corpo.querySelector('[data-distretto="petto"]');
+  assert.ok(petto, "la riga del petto c'è");
+  assert.equal(petto.querySelector(".pc-delta").textContent, "\u22121", "4 − 5 = −1");
+  assert.match(petto.querySelector(".pc-delta").className, /giu/, "e in rosso: qui se ne fanno meno");
+  const dorsali = corpo.querySelector('[data-distretto="dorsali"]');
+  assert.equal(dorsali.querySelector(".pc-delta").textContent, "non registrato");
+  assert.equal(dorsali.querySelector(".pc-d1").textContent, "3", "il valore di chi ce l'ha resta");
+  assert.equal(dorsali.querySelector(".pc-d2").textContent, "\u2014", "dall'altra parte un trattino, non uno zero");
 
   /* --- dall'Archivio --- */
   const apri = [];
@@ -241,9 +254,10 @@ test("161.7 dal pannello «Cambia» il tasto «Confronta» apre subito il confro
   assert.equal(confronta.disabled, false);
   confronta.click();
   const vista = doc.querySelector(".pc-modale");
-  assert.ok(vista, "si apre la vista");
-  const tabella = vista.querySelector(".pc-confronto");
-  assert.ok(tabella, "e il confronto è già aperto");
-  assert.match(tabella.textContent, /Intensità di carico/);
-  assert.match(tabella.textContent, /non disponibile/);
+  assert.ok(vista, "si apre la finestra");
+  assert.ok(vista.classList.contains("pc-modale-confronto"), "ed è già quella del confronto, non la sola lettura");
+  const corpo = vista.querySelector(".pc-confronto");
+  assert.ok(corpo, "e il confronto è già disegnato");
+  assert.match(corpo.textContent, /Intensità di carico/);
+  assert.match(corpo.textContent, /non disponibile/);
 });
