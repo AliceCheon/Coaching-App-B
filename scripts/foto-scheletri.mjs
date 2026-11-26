@@ -69,6 +69,7 @@ await page.locator('#pag-scheletri .sk-chip[data-i="0"]').nth(3).click();
 await page.waitForTimeout(200);
 await page.locator('.sk-ex[data-i="0"][data-j="1"]').fill("Squat");
 await page.fill('.sk-set[data-i="0"][data-j="0"]', "4");
+await page.keyboard.press("Escape");
 await page.waitForTimeout(200);
 await page.locator("#sk-salva").click();
 await page.waitForTimeout(1200);

@@ -13,7 +13,7 @@
  * riceve (db e uid stanno nell'app, non nella pagina).
  */
 
-import { scheletroDaCostruttore, messaggioNonSalvato } from "./scheletri.js";
+import { scheletroDaCostruttore, messaggioNonSalvato, elencoScheletri } from "./scheletri.js";
 import { fraseNuovoProgramma } from "./nuovo-programma-b.js";
 import { nomePulito } from "./nome-pulito.js";
 
@@ -56,6 +56,78 @@ export function testoRifiuto(motivo) {
   return "La raccolta non si legge: " + (String(motivo || "").trim() || "motivo non dichiarato");
 }
 
+
+/* Il contenuto di uno scheletro, letto dal documento vero: le schede con i
+ * loro esercizi e le serie scritte. Niente conteggi inventati. */
+function riempiDettaglio(doc, box, s) {
+  const dati = (s && s.dati) || null;
+  if (!dati) {
+    box.appendChild(el(doc, "p", "skp-vuoto", "Il dettaglio non è arrivato con l'elenco: riapri la linguetta e riprova."));
+    return;
+  }
+  const gruppi = Array.isArray(dati.schede) && dati.schede.length
+    ? dati.schede
+    : [{ lettera: "A", gruppo: "", esercizi: Array.isArray(dati.esercizi) ? dati.esercizi : [] }];
+  gruppi.forEach((g) => {
+    const blocco = el(doc, "div", "skp-gruppo");
+    const nome = "Scheda " + (testo(g.lettera) || "A") + (testo(g.gruppo) ? " — " + testo(g.gruppo) : "");
+    blocco.appendChild(el(doc, "p", "skp-gruppo-t", nome));
+    const ul = el(doc, "ul", "skp-esercizi");
+    const esercizi = Array.isArray(g.esercizi) ? g.esercizi : [];
+    esercizi.forEach((e) => {
+      const li = el(doc, "li");
+      li.appendChild(el(doc, "span", "skp-ex", nomePulito(e.nome) || "(senza nome)"));
+      li.appendChild(el(doc, "span", "skp-set", e.serie == null ? "serie non indicate" : e.serie + (Number(e.serie) === 1 ? " serie" : " serie")));
+      ul.appendChild(li);
+    });
+    if (!esercizi.length) ul.appendChild(el(doc, "li", "skp-vuoto", "scheda senza esercizi"));
+    blocco.appendChild(ul);
+    box.appendChild(blocco);
+  });
+  if (testo(dati.notaScheda)) box.appendChild(el(doc, "p", "skp-nota", "Nota: " + nomePulito(dati.notaScheda)));
+}
+
+/* Il nome si cambia da qui: una riga con il campo, Salva e Annulla. La
+ * scrittura la fa il servizio (versione + raccolta), non la pagina. */
+function apriRinomina(doc, rinomina, s, riga) {
+  const gia = riga.querySelector(".skp-rinomina");
+  if (gia) { gia.remove(); return; }
+  const box = el(doc, "div", "skp-rinomina");
+  const campo = doc.createElement("input");
+  campo.type = "text";
+  campo.className = "skp-campo";
+  campo.value = nomePulito(s.nome);
+  campo.setAttribute("aria-label", "Nuovo nome dello scheletro");
+  const salva = el(doc, "button", "skp-btn", "Salva il nome");
+  salva.type = "button";
+  const no = el(doc, "button", "skp-btn", "Annulla");
+  no.type = "button";
+  no.addEventListener("click", () => box.remove());
+  salva.addEventListener("click", () => {
+    const nuovo = testo(campo.value);
+    if (!nuovo) { campo.className = "skp-campo male"; campo.focus(); return; }
+    salva.disabled = true;
+    Promise.resolve()
+      .then(() => rinomina(s, nuovo))
+      .then((ris) => {
+        if (!ris || ris.ok !== true) throw new Error((ris && ris.motivo) || "rinomina non riuscita");
+        box.remove();
+        s["nome"] = nuovo;
+        if (s.dati) s.dati["nome"] = nuovo;
+        const b = riga.querySelector(".skp-nome");
+        if (b) b.textContent = nomePulito(nuovo) || nuovo;
+      }, (e) => {
+        salva.disabled = false;
+        box.appendChild(el(doc, "p", "skp-errore", "Non ho rinominato: " + ((e && e.message) || "motivo non dichiarato")));
+      });
+  });
+  box.appendChild(campo);
+  box.appendChild(salva);
+  box.appendChild(no);
+  riga.appendChild(box);
+  if (campo.focus) campo.focus();
+}
+
 /* Il pannello della raccolta: una riga per scheletro, letta dalla zona B. */
 export function pannelloRaccolta(doc, elenco, opzioni) {
   const o = opzioni || {};
@@ -84,6 +156,65 @@ export function pannelloRaccolta(doc, elenco, opzioni) {
      * qui, non un carico. */
     const serie = Number(s.serie) || 0;
     if (serie > 0) riga.appendChild(el(doc, "p", "skp-serie", "serie in tutto: " + serie));
+
+    /* Passo 37: la riga si apre. Dentro si legge davvero com'è fatto lo
+     * scheletro (schede, esercizi, serie) e ci sono i tasti per rinominarlo,
+     * eliminarlo o riprenderlo nel costruttore. */
+    const dettaglio = el(doc, "div", "skp-dettaglio");
+    dettaglio.hidden = true;
+    const atti = el(doc, "div", "skp-atti");
+    const btApri = el(doc, "button", "skp-btn", "Vedi gli esercizi");
+    btApri.type = "button";
+    btApri.setAttribute("aria-expanded", "false");
+    btApri.addEventListener("click", () => {
+      const aperto = dettaglio.hidden === false;
+      dettaglio.hidden = aperto;
+      btApri.setAttribute("aria-expanded", String(!aperto));
+      btApri.textContent = aperto ? "Vedi gli esercizi" : "Chiudi gli esercizi";
+      if (!aperto && !dettaglio.__bdRiempi) {
+        riempiDettaglio(doc, dettaglio, s);
+        dettaglio.__bdRiempi = true;
+      }
+    });
+    atti.appendChild(btApri);
+
+    if (typeof o.rinomina === "function") {
+      const btRin = el(doc, "button", "skp-btn", "Rinomina");
+      btRin.type = "button";
+      btRin.addEventListener("click", () => {
+        apriRinomina(doc, o.rinomina, s, riga);
+      });
+      atti.appendChild(btRin);
+    }
+    if (typeof o.modifica === "function") {
+      const btMod = el(doc, "button", "skp-btn", "Modifica nel costruttore");
+      btMod.type = "button";
+      btMod.addEventListener("click", () => o.modifica(s));
+      atti.appendChild(btMod);
+    }
+    if (typeof o.elimina === "function") {
+      const btDel = el(doc, "button", "skp-btn skp-elimina", "Elimina");
+      btDel.type = "button";
+      btDel.addEventListener("click", () => {
+        confermaInPagina(doc, riga, "Eliminare lo scheletro «" + (nomePulito(s.nome) || s.nome) + "»? Non tocca nessuna scheda: sparisce solo dalla raccolta.",
+          "Sì, elimina", () => {
+            btDel.disabled = true;
+            Promise.resolve()
+              .then(() => o.elimina(s))
+              .then((ris) => {
+                if (!ris || ris.ok !== true) throw new Error((ris && ris.motivo) || "eliminazione non riuscita");
+              }, (e) => { throw e; })
+              .then(() => { riga.remove(); o.dopo && o.dopo(); }, (e) => {
+                btDel.disabled = false;
+                const why = el(doc, "p", "skp-errore", "Non ho eliminato: " + ((e && e.message) || "motivo non dichiarato"));
+                riga.appendChild(why);
+              });
+          });
+      });
+      atti.appendChild(btDel);
+    }
+    riga.appendChild(atti);
+    riga.appendChild(dettaglio);
     c.appendChild(riga);
   });
   return c;
@@ -168,13 +299,23 @@ export function montaPaginaScheletri(doc, servizi) {
     if (miei) carica();
   };
 
-  function disegna(elenco) {
+  /* L'elenco si costruisce dai documenti veri (`lista`), così ogni riga porta
+   * il suo dettaglio; i conteggi li fa elencoScheletri, come il resto dell'app. */
+  function disegna(documenti) {
+    const docs = Array.isArray(documenti) ? documenti.filter((d) => d && d.dati) : [];
+    const perId = Object.create(null);
+    docs.forEach((d) => { perId[String(d.id)] = d.dati; });
+    const lista = elencoScheletri(docs).map((s) => Object.assign({}, s, { dati: perId[String(s.id)] || null }));
     const conto = doc.getElementById("sk-miei");
-    const lista = Array.isArray(elenco) ? elenco : [];
     if (conto) conto.textContent = String(lista.length);
     const vecchio = raccolta.querySelector(".skp-raccolta");
     if (vecchio) vecchio.remove();
-    raccolta.appendChild(pannelloRaccolta(doc, lista));
+    raccolta.appendChild(pannelloRaccolta(doc, lista, {
+      rinomina: typeof s.rinomina === "function" ? s.rinomina : null,
+      elimina: typeof s.elimina === "function" ? s.elimina : null,
+      modifica: typeof s.modifica === "function" ? s.modifica : null,
+      dopo: () => carica()
+    }));
     return lista.length;
   }
 

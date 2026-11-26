@@ -20,7 +20,7 @@ import { nomePulito } from "../comune/nome-pulito.js";
 import { entraConGoogle, ascoltaStato } from "../comune/accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
-import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB } from "../comune/scritture-b.js";
+import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB, leggiScheletroB, salvaScheletroConVersione, eliminaScheletroB } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
@@ -560,6 +560,11 @@ export async function avvia(doc, win) {
       return false;
     };
     const rimanda = () => { rinvioAutomatico = true; stato.rimandati += 1; };
+    /* Passo 37 — una rilettura a richiesta da fuori (la pagina Scheletri dopo
+     * una scrittura): passa dallo stesso sincronizza di sempre. Prima queste
+     * chiamate stavano in un punto che sincronizza non lo vedeva. */
+    globalThis.BD_RICARICA = (motivo) => sincronizza(utenteCorrente, { forza: true, motivo: String(motivo || "richiesta") });
+
     const sincronizza = (chi, opzioni) => {
       const o = opzioni || {};
       if (modificheInVolo > 0 || sincronizzazione !== null) { sincronizzazioneRichiesta = true; return Promise.resolve(); }
@@ -1044,8 +1049,37 @@ export async function avvia(doc, win) {
     /* Passo 34 — la pagina Scheletri legge e scrive la sua raccolta: db e uid
      * vivono qui, la pagina chiede e basta. La scrittura passa dalla stessa
      * strada della scheda (salvaScheletroDalCostruttore → scritture-b). */
-    globalThis.BD_LEGGI_SCHELETRI = async () => elencoScheletri(await leggiScheletriB(db, utente.uid));
-    globalThis.BD_SALVA_SCHELETRO = (documento) => salvaScheletroCostruito(documento, { db, uid: utente.uid });
+    /* La pagina riceve i documenti interi: le serve il dettaglio (schede ed
+     * esercizi) oltre ai conteggi, e così non si legge due volte. */
+    globalThis.BD_LEGGI_SCHELETRI = async () => leggiScheletriB(db, utente.uid);
+    globalThis.BD_SALVA_SCHELETRO = (documento) => salvaScheletroCostruito(documento, { db, uid: utente.uid }).then((esito) => {
+      /* Il salvataggio cambia la raccolta: la pagina Programmi la rilegge, così
+       * il suo elenco non resta indietro (era il caso dello scheletro «che non
+       * compare in Programma 1»). */
+      if (esito && esito.ok && typeof globalThis.BD_RICARICA === "function") globalThis.BD_RICARICA("scheletro salvato");
+      return esito;
+    });
+    /* Rinominare uno scheletro: si rilegge, si cambia il nome, si riscrive.
+     * Passa da scritture-b come tutto il resto. */
+    globalThis.BD_RINOMINA_SCHELETRO = async (id, nome) => {
+      const idSk = String(id == null ? "" : id);
+      const nuovo = String(nome == null ? "" : nome).trim();
+      if (!idSk) return { ok: false, motivo: "manca lo scheletro da rinominare" };
+      if (!nuovo) return { ok: false, motivo: "il nome non può restare vuoto" };
+      const letto = await leggiScheletroB(db, utente.uid, idSk);
+      if (!letto || !letto.esiste) return { ok: false, motivo: "lo scheletro non è più nella raccolta" };
+      const dati = Object.assign({}, letto.dati || {}, { nome: nuovo, aggiornatoIl: new Date().toISOString() });
+      await salvaScheletroConVersione(db, utente.uid, idSk, dati);
+      if (typeof globalThis.BD_RICARICA === "function") globalThis.BD_RICARICA("scheletro rinominato");
+      return { ok: true, id: idSk, nome: nuovo };
+    };
+    globalThis.BD_ELIMINA_SCHELETRO = async (id) => {
+      const idSk = String(id == null ? "" : id);
+      if (!idSk) return { ok: false, motivo: "manca lo scheletro da eliminare" };
+      await eliminaScheletroB(db, utente.uid, idSk);
+      if (typeof globalThis.BD_RICARICA === "function") globalThis.BD_RICARICA("scheletro eliminato");
+      return { ok: true, id: idSk };
+    };
     /* Passo 35 — da uno scheletro nasce un programma NUOVO, in bozza: qui si
      * costruiscono e si scrivono solo documenti nuovi, niente che esista già. */
     globalThis.BD_CREA_PROGRAMMA = (scheletro, richiesta) => {
@@ -1236,6 +1270,26 @@ if (typeof document !== "undefined") {
           return Promise.reject(new Error("entra con Google e riprova"));
         }
         return globalThis.BD_SALVA_SCHELETRO(documento);
+      },
+      /* La scrittura e la rilettura vivono nell'app (db, uid, sincronizza):
+       * qui si passa solo la richiesta. */
+      rinomina: (scheletro, nuovoNome) => {
+        if (typeof globalThis.BD_RINOMINA_SCHELETRO !== "function") {
+          return Promise.reject(new Error("entra con Google e riprova"));
+        }
+        return globalThis.BD_RINOMINA_SCHELETRO(scheletro.id, nuovoNome);
+      },
+      elimina: (scheletro) => {
+        if (typeof globalThis.BD_ELIMINA_SCHELETRO !== "function") {
+          return Promise.reject(new Error("entra con Google e riprova"));
+        }
+        return globalThis.BD_ELIMINA_SCHELETRO(scheletro.id);
+      },
+      modifica: (scheletro) => {
+        if (typeof globalThis.BD_CARICA_SCHELETRO !== "function") {
+          throw new Error("il costruttore non è ancora pronto: ricarica la pagina");
+        }
+        return globalThis.BD_CARICA_SCHELETRO(scheletro.dati || {});
       },
       creaProgramma: (documento, richiesta) => {
         if (typeof globalThis.BD_CREA_PROGRAMMA !== "function") {

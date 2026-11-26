@@ -86,8 +86,11 @@ test("156.2 «Miei scheletri» mostra la raccolta letta, e sa dire vuota", async
 
   const piena = paginaFinta({
     leggi: () => Promise.resolve([
-      { id: "sk-b", nome: "Push Pull", data: "25/11/2026", esercizi: 8, schede: 2, serie: 24 },
-      { id: "sk-a", nome: "Gambe", data: "18/11/2026", esercizi: 5, schede: 1, serie: 15 }
+      { id: "sk-b", dati: { tipo: "scheletro", nome: "Push Pull", creatoIl: "2026-11-25T10:00:00.000Z",
+        schede: [{ lettera: "A", gruppo: "Push", esercizi: [{ nome: "Panca", serie: 4 }] }, { lettera: "B", gruppo: "Pull", esercizi: [{ nome: "Rematore", serie: 4 }] }],
+        esercizi: [{ nome: "Panca", serie: 4 }, { nome: "Rematore", serie: 4 }] } },
+      { id: "sk-a", dati: { tipo: "scheletro", nome: "Gambe", creatoIl: "2026-11-18T10:00:00.000Z",
+        esercizi: [{ nome: "Squat", serie: 5 }, { nome: "Stacco rumeno", serie: 3 }] } }
     ])
   });
   await attesa();
@@ -96,7 +99,8 @@ test("156.2 «Miei scheletri» mostra la raccolta letta, e sa dire vuota", async
   const righe = piena.doc.querySelectorAll("#sk-raccolta .skp-riga");
   assert.equal(righe.length, 2, "due scheletri, due righe");
   assert.match(righe[0].textContent, /Push Pull/);
-  assert.match(righe[0].textContent, /8 esercizi · 2 schede/, "conto vero: " + righe[0].textContent);
+  assert.match(righe[0].textContent, /2 esercizi · 2 schede/, "conto vero: " + righe[0].textContent);
+  assert.match(righe[0].textContent, /serie in tutto: 8/, "serie vere, le stesse scritte nello scheletro");
   assert.equal(piena.doc.getElementById("sk-miei").textContent, "2", "il numero nella linguetta è quello letto");
   assert.equal(piena.doc.querySelector("#pag-scheletri .sk-grid").style.display, "none", "il costruttore lascia il posto alla raccolta");
 });
@@ -104,11 +108,14 @@ test("156.2 «Miei scheletri» mostra la raccolta letta, e sa dire vuota", async
 test("156.3 «Salva Scheletro» scrive in B e compare nella raccolta", async () => {
   const finto = fintoDb();
   let letta = [];
+  const documentoScheletro = { tipo: "scheletro", nome: "Push Pull", creatoIl: "2026-11-25T10:00:00.000Z",
+    schede: [{ lettera: "A", gruppo: "Push", esercizi: [{ nome: "Panca piana", serie: 4 }] }],
+    esercizi: [{ nome: "Panca piana", serie: 4 }, { nome: "Croci", serie: 3 }, { nome: "Rematore bilanciere", serie: 4 }] };
   const { doc } = paginaFinta({
     leggi: () => Promise.resolve(letta),
     salva: (documento) => salvaScheletroCostruito(documento, { db: finto.db, uid: "u1", seme: "t1", quando: new Date(Date.UTC(2026, 10, 25, 10, 0)) })
       .then((esito) => {
-        if (esito.ok) letta = [{ id: esito.id, nome: esito.nome, data: "25/11/2026", esercizi: 3, schede: 2, serie: 11 }];
+        if (esito.ok) letta = [{ id: esito.id, dati: documentoScheletro }];
         return esito;
       })
   });
@@ -206,4 +213,100 @@ test("156.8 l'elenco degli esercizi non resta tagliato dalla scheda", () => {
   assert.match(css, /\.sk-sug\.su\{[^}]*bottom/, "esiste la variante che si apre verso l'alto");
   assert.match(css, /function apriSug\(/, "esiste la funzione che sceglie sopra o sotto");
   assert.match(css, /sotto < 200/, "e decide guardando lo spazio che resta sotto la riga");
+});
+
+/* ---------- passo 37: dettaglio, rinomina, elimina, modifica ---------- */
+
+const DOC_PROVA = { id: "sk-1", dati: {
+  tipo: "scheletro", nome: "Push Pull", creatoIl: "2026-11-25T10:00:00.000Z", notaScheda: "dal costruttore",
+  schede: [
+    { lettera: "A", gruppo: "Push", esercizi: [{ nome: "Panca piana", serie: 4 }, { nome: "Croci", serie: 3 }] },
+    { lettera: "B", gruppo: "Pull", esercizi: [{ nome: "Rematore bilanciere", serie: 4 }] }
+  ]
+} };
+
+function conRaccolta(servizi) {
+  /* copia a ogni prova: rinominare cambia il documento, e le prove non devono
+     passarsi i cambiamenti l'una con l'altra */
+  const copia = () => [{ id: DOC_PROVA.id, dati: JSON.parse(JSON.stringify(DOC_PROVA.dati)) }];
+  return paginaFinta(Object.assign({ leggi: () => Promise.resolve(copia()) }, servizi));
+}
+
+test("157.1 «Vedi gli esercizi» apre il dettaglio vero, con schede e serie", async () => {
+  const { doc } = conRaccolta({});
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  const dettaglio = riga.querySelector(".skp-dettaglio");
+  assert.equal(dettaglio.hidden, true, "il dettaglio parte chiuso");
+  const tasto = riga.querySelector(".skp-atti .skp-btn");
+  assert.equal(tasto.textContent, "Vedi gli esercizi");
+  tasto.click();
+  assert.equal(dettaglio.hidden, false, "si apre");
+  assert.equal(tasto.getAttribute("aria-expanded"), "true");
+  const testo = dettaglio.textContent;
+  assert.match(testo, /Scheda A — Push/);
+  assert.match(testo, /Scheda B — Pull/);
+  assert.match(testo, /Panca piana/, "gli esercizi veri: " + testo);
+  assert.match(testo, /4 serie/);
+  assert.match(testo, /Rematore bilanciere/);
+  assert.match(testo, /Nota: [Dd]al costruttore/);
+  tasto.click();
+  assert.equal(dettaglio.hidden, true, "e si richiude");
+});
+
+test("157.2 «Rinomina» scrive il nome nuovo e lo mostra subito", async () => {
+  const chiamate = [];
+  const { doc } = conRaccolta({ rinomina: (s, nome) => { chiamate.push({ id: s.id, nome }); return Promise.resolve({ ok: true, nome }); } });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Rinomina")[0].click();
+  const campo = riga.querySelector(".skp-rinomina .skp-campo");
+  assert.ok(campo, "si apre il campo del nome");
+  assert.equal(campo.value, "Push Pull");
+  campo.value = "Push Pull nuovo";
+  Array.from(riga.querySelectorAll(".skp-rinomina .skp-btn")).filter((b) => b.textContent === "Salva il nome")[0].click();
+  await attesa(60);
+  assert.deepEqual(chiamate, [{ id: "sk-1", nome: "Push Pull nuovo" }]);
+  assert.equal(riga.querySelector(".skp-nome").textContent, "Push Pull nuovo");
+  assert.equal(riga.querySelector(".skp-rinomina"), null, "il campo si chiude");
+});
+
+test("157.3 «Elimina» chiede conferma e poi toglie la riga", async () => {
+  const eliminate = [];
+  let ancora = [DOC_PROVA];
+  const { doc } = conRaccolta({
+    leggi: () => Promise.resolve(ancora),
+    elimina: (s) => { eliminate.push(s.id); ancora = []; return Promise.resolve({ ok: true }); }
+  });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Elimina")[0].click();
+  assert.equal(eliminate.length, 0, "niente eliminato prima del sì");
+  const conferma = doc.querySelector(".sk-conf-programma");
+  assert.ok(conferma, "compare la conferma");
+  assert.match(conferma.textContent, /Non tocca nessuna scheda/);
+  conferma.querySelector(".sk-conf-si").click();
+  await attesa(80);
+  assert.deepEqual(eliminate, ["sk-1"]);
+  assert.equal(doc.querySelectorAll("#sk-raccolta .skp-riga").length, 0, "la riga sparisce");
+});
+
+test("157.4 «Modifica nel costruttore» riporta lo scheletro dentro il costruttore", async () => {
+  let ricevuto = null;
+  const { doc } = conRaccolta({ modifica: (s) => { ricevuto = s.dati || null; return true; } });
+  await attesa();
+  doc.querySelector("#pag-scheletri .sk-tabbar").querySelectorAll(".sk-tab")[3].click();
+  await attesa();
+  const riga = doc.querySelector("#sk-raccolta .skp-riga");
+  Array.from(riga.querySelectorAll(".skp-atti .skp-btn")).filter((b) => b.textContent === "Modifica nel costruttore")[0].click();
+  assert.ok(ricevuto, "la pagina passa il documento al costruttore");
+  assert.equal(ricevuto.nome, "Push Pull");
+  assert.equal(ricevuto.schede.length, 2, "con le sue due schede");
+  assert.equal(ricevuto.schede[0].esercizi.length, 2);
 });

@@ -105,7 +105,7 @@ export function pannelloScheletri(doc, r) {
 
   c.appendChild(el(doc, "h3", "skp-titolo", "Scheletri in B"));
   if (!elenco.length) {
-    c.appendChild(el(doc, "p", "skp-vuoto", "Nessuno scheletro salvato: si crea da un tasto \u00abSalva come scheletro\u00bb nella scheda, e da qui si applica a qualunque scheda."));
+    c.appendChild(el(doc, "p", "skp-vuoto", "Nessuno scheletro salvato. Si crea nella pagina Scheletri (tasto \u00abSalva Scheletro\u00bb) oppure con \u00abSalva come scheletro\u00bb dentro una scheda; da qui si applica a qualunque scheda."));
     return c;
   }
   c.appendChild(el(doc, "p", "skp-sub", elenco.length + (elenco.length === 1 ? " scheletro" : " scheletri") + " \u00b7 dal pi\u00f9 recente. Applicare non copia i carichi: le righe restano senza serie e ripetizioni."));

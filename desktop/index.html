@@ -1589,6 +1589,18 @@ body[data-theme="light"] #pag-programma-1 tr.p8-tec .tec-padre{color:#3A2A4E}
 .skp-sottotitolo{font-size:12px;color:var(--fioco);margin:2px 0 10px}
 .skp-serie{font-size:11.4px;color:var(--fioco);margin:0}
 .sk-raccolta-pane{margin-top:14px}
+/* Passo 37: dettaglio e tasti di uno scheletro nella raccolta. */
+.skp-dettaglio{margin-top:8px;border-top:1px dashed var(--linea);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.skp-gruppo-t{margin:0 0 4px;font-size:11.6px;font-weight:800;color:var(--lav)}
+.skp-esercizi{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.skp-esercizi li{display:flex;justify-content:space-between;gap:10px;font-size:12.2px;color:var(--testo)}
+.skp-set{color:var(--fioco);font-family:var(--mono);font-size:11px}
+.skp-nota{margin:6px 0 0;font-size:11.6px;color:var(--fioco)}
+.skp-rinomina{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.skp-campo{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--linea);border-radius:8px;color:var(--testo);
+  font-family:inherit;font-size:12.4px;padding:6px 9px;outline:none}
+.skp-campo:focus{border-color:var(--pink)}
+.skp-errore{margin:6px 0 0;font-size:11.6px;color:#ff8a8a}
 #sk-raccolta .skp-raccolta{display:flex;flex-direction:column;gap:10px}
 #sk-raccolta .sk-esito{margin:0 0 10px}
 .skp-riga{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--linea);border-radius:10px;background:var(--surface);margin-bottom:8px}
@@ -5587,6 +5599,23 @@ disegnaCiambellaFaseD();
 
   /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
    * sopra: altrimenti resta fuori schermo e sembra che non ci sia. */
+  /* L'elenco si chiude quando si esce dal campo o si preme Esc: altrimenti
+   * resta aperto sopra i tasti (era il caso del tasto «Salva Scheletro»
+   * coperto dall'elenco). Il ritardo lascia arrivare il clic sulla voce. */
+  document.addEventListener("focusout", function(ev){
+    var t = ev.target;
+    if (!t || !t.classList || !t.classList.contains("sk-ex")) return;
+    var i = t.getAttribute("data-i"), j = t.getAttribute("data-j");
+    setTimeout(function(){
+      var sugg = document.querySelector('.sk-sug[data-i="' + i + '"][data-j="' + j + '"]');
+      if (sugg) sugg.classList.remove("on");
+    }, 180);
+  }, true);
+  document.addEventListener("keydown", function(ev){
+    if (ev.key !== "Escape" && ev.key !== "Esc") return;
+    document.querySelectorAll(".sk-sug.on").forEach(function(s){ s.classList.remove("on"); });
+  }, true);
+
   function apriSug(sug, campo){
     if (!sug) return;
     sug.classList.add("on");
@@ -5621,6 +5650,37 @@ disegnaCiambellaFaseD();
      si salva e si ritrova in «Miei scheletri». Lo stato del costruttore resta qui, e il
      modulo lo legge da questa porta. */
   globalThis.BD_COSTRUTTORE_SCHELETRI = function(){ return stato; };
+  /* Passo 37 — «Modifica nel costruttore»: uno scheletro salvato si riapre qui,
+     con le sue schede e i suoi esercizi, e si rimette a posto con le stesse mani
+     (gruppi, serie, frecce). Non tocca la raccolta: per tenerlo si risalva. */
+  globalThis.BD_CARICA_SCHELETRO = function(documento){
+    var d = documento || {};
+    var gruppi = Array.isArray(d.schede) && d.schede.length
+      ? d.schede
+      : [{ lettera: "A", gruppo: "", esercizi: Array.isArray(d.esercizi) ? d.esercizi : [] }];
+    contatore = 0;
+    stato.schede = gruppi.map(function(g, i){
+      var sc = nuovaScheda((g && g.lettera) || String.fromCharCode(65 + i));
+      sc.gruppo = (g && g.gruppo) || "";
+      sc.righe = (Array.isArray(g && g.esercizi) ? g.esercizi : [])
+        .filter(function(e){ return e && String(e.nome || "").trim(); })
+        .map(function(e){
+          /* il distretto resta il testo dei dati: se non è uno dei gruppi del
+             costruttore si vede lo stesso, col colore neutro */
+          return { k: String(e.distretto || "").trim(), nome: String(e.nome || "").trim(), serie: e.serie == null ? 3 : e.serie };
+        });
+      return sc;
+    });
+    if (!stato.schede.length) stato.schede = [nuovaScheda("A")];
+    var nome = document.getElementById("sk-nome");
+    var desc = document.getElementById("sk-desc");
+    if (nome) nome.value = d.nome || "";
+    if (desc) desc.value = d.notaScheda || "";
+    disegnaSchede();
+    var dove = document.getElementById("sk-schede");
+    if (dove && dove.scrollIntoView) dove.scrollIntoView({ block: "start", behavior: "smooth" });
+    return true;
+  };
 
   disegnaSchede(); disegnaLegenda();
 })();
