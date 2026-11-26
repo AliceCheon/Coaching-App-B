@@ -905,7 +905,11 @@ export async function avvia(doc, win) {
         settimane: rp.profilo.durata,
         rotazione: rp.rotazione && rp.rotazione.fonte === "campo del programma"
           ? rp.rotazione.codici.join(" ")
-          : ""
+          : "",
+        /* Passo 16 — i due testi liberi, perché dopo il salvataggio la pagina
+         * ridisegna e i campi devono ritrovare quello che è stato scritto. */
+        descrizione: nomePulito(rp.profilo.descrizione),
+        messaggio: nomePulito(rp.profilo.messaggio)
       },
       segnala: segnalaModifica,
       sincronizza: () => sincronizza(utente, { forza: true, motivo: "piano della scheda" })

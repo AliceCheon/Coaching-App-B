@@ -1686,8 +1686,15 @@ const CAMPI_TESTATA = Object.freeze({
   fase: "phase",
   giorni: "daysPerWeek",
   settimane: "durationWeeks",
-  rotazione: "rotation"
+  rotazione: "rotation",
+  /* Passo 16 — la carta Programma le mostrava come testo da leggere: ora si
+   * scrivono come gli altri campi della testata. */
+  descrizione: "description",
+  messaggio: "message"
 });
+
+/* I due testi liberi: quanto si può scrivere, per non gonfiare il documento. */
+const LUNGHEZZA_MASSIMA = Object.freeze({ descrizione: 2000, messaggio: 1000 });
 
 /* "A B C D" / "A,B,C,D" / "ABCD" -> ["A","B","C","D"].
  * Si normalizza in maiuscolo e si tolgono spazi, virgole, punto e virgola e
@@ -1733,7 +1740,7 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
   if (!dati || typeof dati !== "object") return { ok: false, motivo: "questo documento non e' un programma" };
   const nomeCampo = testo(r.campo);
   const campo = Object.prototype.hasOwnProperty.call(CAMPI_TESTATA, nomeCampo) ? nomeCampo : "";
-  if (!campo) return { ok: false, motivo: "i campi della testata sono data di inizio, fase, giorni a settimana, settimane e rotazione" };
+  if (!campo) return { ok: false, motivo: "i campi della testata sono data di inizio, fase, giorni a settimana, settimane, rotazione, descrizione e messaggio per l'atleta" };
   const FASI = ["Bulk", "Cut", "Recomp", "Mantenimento"];
   const grezzo = testo(r.valore);
   const chiave = CAMPI_TESTATA[campo];
@@ -1771,6 +1778,19 @@ export function cambiaTestataProgramma(dati, richiesta, opzioni) {
       valore = Number(grezzo);
       dopo = String(valore);
     }
+  } else if (campo === "descrizione" || campo === "messaggio") {
+    /* Testo libero: si conservano gli a capo, si toglie solo lo spazio di
+     * troppo ai bordi. Vuoto = campo tolto. */
+    if (grezzo.length > LUNGHEZZA_MASSIMA[campo]) {
+      return {
+        ok: false,
+        motivo: (campo === "descrizione" ? "la descrizione" : "il messaggio per l'atleta") +
+          " supera i " + LUNGHEZZA_MASSIMA[campo] + " caratteri: accorcialo di " +
+          (grezzo.length - LUNGHEZZA_MASSIMA[campo])
+      };
+    }
+    valore = grezzo || null;
+    dopo = grezzo;
   } else {
     const letto = lettereRotazione(grezzo);
     if (!letto.ok) return { ok: false, motivo: letto.motivo };

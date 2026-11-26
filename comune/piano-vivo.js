@@ -168,6 +168,9 @@ export function collegaPiano(doc, opzioni) {
     const giorni = doc.querySelector('[data-pr-c="programma-giorni"]');
     const settimane = doc.querySelector('[data-pr-c="programma-settimane"]');
     const rotazione = doc.querySelector('[data-pr-c="programma-rotazione"]');
+    /* Passo 16 — i due testi liberi della carta Programma. */
+    const descrizione = doc.querySelector('[data-pr-c="programma-descrizione"]');
+    const messaggio = doc.querySelector('[data-pr-c="programma-messaggio"]');
     const inizioSalvato = inItaliano(programma.inizio);
     const faseSalvata = String(programma.fase || "");
     rimetti(inizio, inizioSalvato);
@@ -177,6 +180,8 @@ export function collegaPiano(doc, opzioni) {
     rimetti(giorni, programma.giorni == null ? "" : String(programma.giorni));
     rimetti(settimane, programma.settimane == null ? "" : String(programma.settimane));
     rimetti(rotazione, programma.rotazione == null ? "" : String(programma.rotazione));
+    rimetti(descrizione, programma.descrizione == null ? "" : String(programma.descrizione));
+    rimetti(messaggio, programma.messaggio == null ? "" : String(programma.messaggio));
 
     /* Le pastiglie sono l'ANTEPRIMA del campo: quando si scrive, si
      * ridisegnano subito, senza aspettare la rilettura della pagina. */
@@ -261,6 +266,73 @@ export function collegaPiano(doc, opzioni) {
         const valore = String(rotazione.value || "").trim();
         mostraAnteprima(valore);
         scrivi(rotazione, "rotazione", valore, messaggioRotazione(valore), "Rotazione", "Rotazione non salvata");
+      });
+    }
+
+    if (descrizione) {
+      legati += 1;
+      descrizione.addEventListener("change", () => {
+        const valore = String(descrizione.value || "");
+        scrivi(descrizione, "descrizione", valore,
+          valore.trim() ? "descrizione salvata" : "descrizione tolta dal programma",
+          "Descrizione", "Descrizione non salvata");
+      });
+    }
+
+    if (messaggio) {
+      legati += 1;
+      messaggio.addEventListener("change", () => {
+        const valore = String(messaggio.value || "");
+        scrivi(messaggio, "messaggio", valore,
+          valore.trim() ? "messaggio per l'atleta salvato" : "messaggio per l'atleta tolto dal programma",
+          "Messaggio per l'atleta", "Messaggio non salvato");
+      });
+    }
+
+    /* Passo 16 — l'interruttore della rotazione si preme: ON -> OFF toglie la
+     * rotazione dal documento (le schede restano), OFF -> ON la rimette se nel
+     * campo ci sono le lettere, altrimenti manda al campo. */
+    const interruttore = doc.querySelector("[data-pr-interruttore]");
+    if (interruttore && rotazione) {
+      legati += 1;
+      const disegnaInterruttore = (acceso) => {
+        interruttore.setAttribute("aria-checked", acceso ? "true" : "false");
+        interruttore.setAttribute("data-acceso", acceso ? "1" : "0");
+        const etichetta = interruttore.querySelector("b");
+        if (etichetta) etichetta.textContent = acceso ? "ON" : "OFF";
+        interruttore.title = acceso
+          ? "la rotazione è accesa: premi per spegnerla"
+          : "la rotazione è spenta: premi per riaccenderla";
+      };
+      const accesoOra = () => interruttore.getAttribute("aria-checked") === "true";
+      disegnaInterruttore(accesoOra());
+      interruttore.addEventListener("click", () => {
+        const acceso = accesoOra();
+        const scritto = String(rotazione.value || "").trim();
+        if (acceso) {
+          disegnaInterruttore(false);
+          mostraAnteprima("");
+          scrivi(rotazione, "rotazione", "", "rotazione spenta: le schede restano, si smette solo di ruotarle",
+            "Rotazione", "Rotazione non spenta");
+          return;
+        }
+        /* Se il campo è vuoto, le lettere si prendono dall'anteprima delle
+         * schede lette: accendere la rotazione le scrive nel programma. */
+        const dallAnteprima = Array.from(doc.querySelectorAll("[data-pr-rotchip]"))
+          .map((chip) => String(chip.getAttribute("data-pr-rotchip") || "").toUpperCase())
+          .filter(Boolean).join(" ");
+        const letto = lettereRotazione(scritto || dallAnteprima);
+        if (!letto.ok || !letto.lettere.length) {
+          disegnaInterruttore(false);
+          segnala("per accendere la rotazione scrivi le lettere delle schede nel campo (per esempio A B C D)", "errore");
+          rotazione.focus();
+          return;
+        }
+        const nuovo = letto.lettere.join(" ");
+        disegnaInterruttore(true);
+        rimetti(rotazione, nuovo);
+        mostraAnteprima(nuovo);
+        scrivi(rotazione, "rotazione", nuovo, messaggioRotazione(nuovo), "Rotazione", "Rotazione non accesa");
       });
     }
 

@@ -7163,7 +7163,13 @@ nav.rail .voce[data-vista="programma-2"],nav.rail .voce[data-vista="programma-3"
   letter-spacing:.06em;color:var(--text);background:var(--card-2);
 }
 #pag-programma-1 .pr-sw b{font-weight:800}
-#pag-programma-1 .pr-sw.off{border-color:var(--line);color:var(--muted)}
+#pag-programma-1 .pr-sw.off,
+#pag-programma-1 .pr-sw[data-acceso="0"]{border-color:var(--line);color:var(--muted);background:var(--card)}
+#pag-programma-1 .pr-sw:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+/* Passo 16 — i due testi liberi della carta Programma */
+#pag-programma-1 .pr-area{width:100%;min-height:58px;resize:vertical;line-height:1.45;
+  font:inherit;padding:8px 10px;border:1px solid var(--linea);border-radius:10px;background:var(--card-2);color:var(--text)}
+#pag-programma-1 .pr-f-aria{display:block;grid-column:1 / -1}
 #pag-programma-1 .pr-warn{
   margin:0 0 10px;font-size:12px;color:var(--text);border-left:3px solid var(--pink);
   padding:6px 10px;background:var(--card-2);border-radius:0 10px 10px 0;

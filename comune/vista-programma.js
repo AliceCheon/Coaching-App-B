@@ -167,6 +167,15 @@ function campoPiano(doc, etichetta, valore, chiave, tipo, scelte, extraClasse, o
      * mostra S1 come se fosse un dato scritto. */
     controllo.value = valore ? String(valore) : "";
     if (String(controllo.value) !== (valore == null ? "" : String(valore))) controllo.selectedIndex = 0;
+  } else if (tipo === "area") {
+    /* Passo 16 — descrizione e messaggio per l'atleta: testo libero, con gli a
+     * capo, senza la tastiera numerica che li rendeva scomodi sul telefono. */
+    controllo = n(doc, "textarea", "pr-in pr-vivo pr-area");
+    controllo.rows = o.righe || 3;
+    controllo.value = valore == null ? "" : String(valore);
+    controllo.placeholder = o.segnaposto || NON;
+    if (o.massimo) controllo.setAttribute("maxlength", String(o.massimo));
+    if (o.monoriga) controllo.setAttribute("wrap", "off");
   } else {
     controllo = n(doc, "input", "pr-in pr-vivo");
     controllo.type = "text";
@@ -821,8 +830,16 @@ function cartaProgramma(doc, r) {
   c.appendChild(campi);
 
   const due = n(doc, "div", "pr-two");
-  due.appendChild(campo(doc, "Descrizione programma", nomePulito(r.profilo.descrizione), "area"));
-  due.appendChild(campo(doc, "Messaggio per l'atleta (all'apertura)", nomePulito(r.profilo.messaggio), "area"));
+  /* Passo 16 — questi due erano testo da leggere: ora si scrivono e si salvano
+   * nella stessa testata degli altri campi (voce di registro e Annulla). */
+  due.appendChild(campoPiano(doc, "Descrizione programma",
+    nomePulito(r.profilo.descrizione),
+    "programma-descrizione", "area", null, "pr-f-aria pr-f-desc",
+    { righe: 3, massimo: 2000, segnaposto: "a cosa serve questo programma", titolo: "si salva da solo quando esci dal campo" }));
+  due.appendChild(campoPiano(doc, "Messaggio per l'atleta (all'apertura)",
+    nomePulito(r.profilo.messaggio),
+    "programma-messaggio", "area", null, "pr-f-aria pr-f-msg",
+    { righe: 3, massimo: 1000, segnaposto: "cosa legge l'atleta aprendo il programma", titolo: "si salva da solo quando esci dal campo" }));
   c.appendChild(due);
 
   return c;
@@ -840,11 +857,24 @@ function cartaRotazione(doc, r) {
   h.appendChild(n(doc, "h3", "", "Rotazione schede"));
   /* Punto 15 — la rotazione ora si scrive: l'interruttore dice che è accesa,
    * non «OFF» come quando la carta era solo da leggere. */
-  const interruttore = n(doc, "span", "pr-sw");
+  /* Passo 16 — l'interruttore dice lo stato VERO della rotazione nel documento:
+   * prima era sempre ON, quindi non si poteva spegnere. */
+  const rotScritta = r.rotazione && r.rotazione.fonte === "campo del programma"
+    ? (r.rotazione.codici || []).map((c) => String(c).toUpperCase()).join(" ")
+    : "";
+  const accesa = !!rotScritta;
+  const interruttore = n(doc, "button", "pr-sw");
+  interruttore.type = "button";
   interruttore.setAttribute("role", "switch");
-  interruttore.setAttribute("aria-checked", "true");
-  interruttore.setAttribute("title", "la rotazione si scrive nel campo qui sotto");
-  interruttore.appendChild(n(doc, "b", "", "ON"));
+  interruttore.setAttribute("aria-checked", accesa ? "true" : "false");
+  interruttore.setAttribute("data-acceso", accesa ? "1" : "0");
+  if (!accesa) interruttore.className = "pr-sw off";
+  interruttore.setAttribute("data-pr-interruttore", "rotazione");
+  interruttore.setAttribute("aria-label", "accendi o spegni la rotazione delle schede");
+  interruttore.setAttribute("title", accesa
+    ? "la rotazione \u00e8 accesa: premi per spegnerla"
+    : "la rotazione \u00e8 spenta: premi per accenderla");
+  interruttore.appendChild(n(doc, "b", "", accesa ? "ON" : "OFF"));
   h.appendChild(interruttore);
   c.appendChild(h);
 
@@ -880,7 +910,7 @@ function cartaRotazione(doc, r) {
   /* Il campo scrivibile: mostra solo quello che sta DAVVERO nel documento.
    * Se la rotazione non c'è, il campo resta vuoto anche quando le schede
    * lette bastano a disegnare l'anteprima: qui non si inventa un ordine. */
-  const scritta = r.rotazione && r.rotazione.fonte === "campo del programma" ? codici.join(" ") : "";
+  const scritta = rotScritta;
   c.appendChild(campoPiano(doc, "Rotazione schede", scritta, "programma-rotazione", "text", null, "pr-f-sm pr-f-rot", { titolo: "le lettere delle schede, nell'ordine in cui ruotano (es. A B C D)", segnaposto: "es. A B C D" }));
 
   const chips = n(doc, "div", "pr-chips");
