@@ -5879,6 +5879,9 @@ setTimeout(function(){
 #pag-monitor-peso .mp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--linea);margin-bottom:2px}
 #pag-monitor-peso .mp-tab{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muto);font-family:'Nunito Sans',sans-serif;font-weight:700;font-size:12.5px;padding:8px 13px;cursor:pointer}
 #pag-monitor-peso .mp-tab.on{color:var(--testo);border-bottom-color:var(--rosa)}
+/* Passo 40: le tabelle dentro i pannelli hanno la loro intestazione (thead):
+   la striscia `.mp-th` sopra era una seconda copia delle stesse colonne. */
+#pag-monitor-peso .mp-pane .mp-th{display:none}
 #pag-monitor-peso .mp-pane{display:none}
 #pag-monitor-peso .mp-pane.on{display:block}
 #pag-monitor-peso .mp-th,#pag-monitor-peso .mp-tr{display:grid;grid-template-columns:110px 60px 92px 96px 96px 80px;gap:8px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(58,39,73,.55)}
@@ -10625,6 +10628,22 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
         });
         mesi.innerHTML = '<table class="pg-tab"><thead><tr><th>Mese</th><th>Ril.</th><th>Media</th><th>Min – Max</th><th>Δ vs prec.</th><th>Δ %</th></tr></thead><tbody>'+rr+'</tbody></table>';
       }
+    }
+
+    /* Passo 40 — «Pesate / Mesi»: le due linguette si accendono davvero.
+     * Prima erano due disegni: si premeva «Mesi» e non succedeva niente. */
+    var barraMp = document.querySelector('#pag-monitor-peso .mp-tabs');
+    if (barraMp && !barraMp.__bdLegato) {
+      barraMp.__bdLegato = true;
+      barraMp.addEventListener('click', function(ev){
+        var b = ev.target && ev.target.closest ? ev.target.closest('.mp-tab') : null;
+        if (!b) return;
+        var quale = b.getAttribute('data-t');
+        var linguette = barraMp.querySelectorAll('.mp-tab');
+        for (var i = 0; i < linguette.length; i++) linguette[i].classList.toggle('on', linguette[i] === b);
+        var pannelli = document.querySelectorAll('#pag-monitor-peso .mp-pane');
+        for (var k = 0; k < pannelli.length; k++) pannelli[k].classList.toggle('on', pannelli[k].getAttribute('data-p') === quale);
+      });
     }
 
     var add = uno('#mp-add');

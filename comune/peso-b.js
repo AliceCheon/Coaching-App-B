@@ -136,18 +136,31 @@
   }
 
   /* Peso medio per anno e mese, per Monitor annuale. */
+  /* I mesi con le pesate che ci sono, dal più vecchio al più recente.
+   * Passo 40: si raggruppa per CHIAVE, non per vicinanza nell'elenco — prima
+   * due pesate dello stesso mese separate da un'altra data facevano due mesi
+   * uguali, con due medie sbagliate. */
   function perMese(stato) {
     var st = stato || leggiPeso();
-    var out = [];
-    for (var i = 0; i < st.pesate.length; i++) {
-      var p = st.pesate[i];
+    var pesate = (st && Array.isArray(st.pesate) ? st.pesate : [])
+      .filter(function (p) { return p && typeof p.data === "string" && p.data.length >= 7 && isFinite(p.kg); })
+      .slice()
+      .sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+    var per = {}, ordine = [];
+    pesate.forEach(function (p) {
       var chiave = p.data.slice(0, 7);
-      var ultimo = out[out.length - 1];
-      if (ultimo && ultimo.chiave === chiave) { ultimo.somma += p.kg; ultimo.n += 1; }
-      else out.push({ chiave: chiave, anno: Number(p.data.slice(0, 4)), mese: Number(p.data.slice(5, 7)), somma: p.kg, n: 1 });
-    }
-    out.forEach(function (m) { m.media = m.somma / m.n; });
-    return out;
+      if (!per[chiave]) {
+        per[chiave] = { chiave: chiave, anno: Number(p.data.slice(0, 4)), mese: Number(p.data.slice(5, 7)), somma: 0, n: 0 };
+        ordine.push(chiave);
+      }
+      per[chiave].somma += p.kg;
+      per[chiave].n += 1;
+    });
+    return ordine.map(function (k) {
+      var m = per[k];
+      m.media = m.somma / m.n;
+      return m;
+    });
   }
 
   var API = {

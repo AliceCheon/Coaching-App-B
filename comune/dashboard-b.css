@@ -400,8 +400,13 @@
 .pg-mess{display:flex;flex-direction:column;gap:3px;margin-top:11px;padding-left:10px;border-left:2px solid color-mix(in srgb,var(--pink) 40%,transparent)}
 .pg-mess p{margin:0;font-size:11px;line-height:1.55;color:var(--testo);white-space:pre-wrap}
 .pg-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.pg-tab{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--raised) 55%,transparent);font-size:10.4px;color:var(--testo)}
-.pg-tab i{font-family:var(--mono);font-size:9px;font-style:normal;color:var(--pink)}
+/* Passo 40 — qui `.pg-tab` era la «linguetta» del cruscotto, ma lo stesso nome
+ * è la classe delle TABELLE della pagina (`.pg-tab{width:100%;border-collapse}`):
+ * la regola vinceva e ogni tabella diventava inline-flex, con le righe
+ * schiacciate a destra (visto in Monitor peso e in Scheletri → Volumi).
+ * Ora vale solo dentro `.pg-tabs`. */
+.pg-tabs > .pg-tab{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--raised) 55%,transparent);font-size:10.4px;color:var(--testo)}
+.pg-tabs > .pg-tab i{font-family:var(--mono);font-size:9px;font-style:normal;color:var(--pink)}
 .pg-tabella{display:flex;flex-direction:column;gap:2px;margin-top:12px}
 .pg-tr{display:grid;grid-template-columns:58px minmax(0,1fr) 64px 64px 82px;gap:8px;align-items:center;padding:6px 8px;border-radius:9px;font-size:10.6px;color:var(--testo)}
 .pg-tr:nth-child(even){background:color-mix(in srgb,var(--raised) 45%,transparent)}

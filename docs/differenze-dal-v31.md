@@ -117,45 +117,46 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 5650 — stato.idModificato = null;
 - righe 5655 — (riga vuota)
 - righe 5658-5706 — /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
-- righe 6039 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
-- righe 6297 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
-- righe 6414-6418 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
-- righe 7097-7098 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
-- righe 7226-7262 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
-- righe 7404 — (riga vuota)
-- righe 7431-7458 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
-- righe 7503 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
-- righe 7549 — (riga vuota)
-- righe 7599-7600 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
-- righe 7673 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
-- righe 7952 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
-- righe 8109 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
-- righe 8497-8498 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
-- righe 8951 — var SEED = {config:{}, sessioni:[]};
-- righe 8966-8969 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
-- righe 8993-8996 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
-- righe 9003-9030 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
-- righe 9033-9038 — function logbookVivo(){
-- righe 9041-9044 — function pittaOverview(){
-- righe 9047-9073 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
-- righe 9086-9088 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9094-9096 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
-- righe 9099 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
-- righe 9105 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
-- righe 9113-9115 — el('ov-barsn').textContent = PV.letto
-- righe 9118-9121 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
-- righe 9125-9132 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
-- righe 9135 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9143-9163 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
-- righe 9166-9178 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
-- righe 9217 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
-- righe 9268 — if(false){
-- righe 9465 — '<div class="ese-chips2">' +
-- righe 10016-10019 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
-- righe 10024 — kpi.innerHTML =
-- righe 10199-10208 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
-- righe 10318 — (riga vuota)
-- righe 10362-10681 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 5882-5884 — /* Passo 40: le tabelle dentro i pannelli hanno la loro intestazione (thead):
+- righe 6042 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
+- righe 6300 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
+- righe 6417-6421 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
+- righe 7100-7101 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 7229-7265 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
+- righe 7407 — (riga vuota)
+- righe 7434-7461 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+- righe 7506 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
+- righe 7552 — (riga vuota)
+- righe 7602-7603 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
+- righe 7676 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
+- righe 7955 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
+- righe 8112 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
+- righe 8500-8501 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+- righe 8954 — var SEED = {config:{}, sessioni:[]};
+- righe 8969-8972 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
+- righe 8996-8999 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
+- righe 9006-9033 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+- righe 9036-9041 — function logbookVivo(){
+- righe 9044-9047 — function pittaOverview(){
+- righe 9050-9076 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
+- righe 9089-9091 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9097-9099 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
+- righe 9102 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
+- righe 9108 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
+- righe 9116-9118 — el('ov-barsn').textContent = PV.letto
+- righe 9121-9124 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+- righe 9128-9135 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+- righe 9138 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9146-9166 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
+- righe 9169-9181 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
+- righe 9220 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
+- righe 9271 — if(false){
+- righe 9468 — '<div class="ese-chips2">' +
+- righe 10019-10022 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+- righe 10027 — kpi.innerHTML =
+- righe 10202-10211 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
+- righe 10321 — (riga vuota)
+- righe 10365-10700 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
@@ -191,3 +192,4 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - **Passo 37** — «Miei scheletri» non è più un elenco muto: ogni riga ha «Vedi gli esercizi» (il dettaglio vero, con le schede, gli esercizi e le serie scritte), «Rinomina» (campo + Salva, scrive in B), «Modifica nel costruttore» (riapre lo scheletro nel costruttore per rimetterlo a posto) ed «Elimina» (con conferma: toglie lo scheletro dalla raccolta, non tocca nessuna scheda). Dopo una scrittura la pagina Programmi si rilegge da sola, così lo scheletro nuovo compare anche lì senza ricaricare. Inoltre l'elenco degli esercizi si chiude uscendo dal campo o con Esc, e non copre più il tasto «Salva Scheletro».
 - **Passo 38** — «Modifica nel costruttore» funziona davvero: caricava i dati ma lasciava visibile la linguetta della raccolta, quindi sembrava non fare niente. Ora porta alla linguetta «Scheletri», scorre al costruttore, riempie nome, schede ed esercizi e lo dice con una riga d'esito; se il costruttore non prende lo scheletro, il motivo si legge.
 - **Passo 39** — «Salva Scheletro» aggiorna lo scheletro che stai modificando (stesso documento, versione che avanza) invece di crearne un altro identico. Sopra i tasti una riga dice «Stai modificando «X»: «Salva Scheletro» lo aggiorna. «Annulla» ricomincia da uno nuovo», e l'esito dice «aggiornato» quando è un aggiornamento e «salvato» quando è nuovo.
+- **Passo 40** — «Mesi» in Monitor peso funziona: le due linguette «Pesate / Mesi» accendono i loro pannelli (prima erano due disegni e il clic non faceva niente), e la tabella dei mesi mostra, per ogni mese con pesate, quante rilevazioni, la media, il minimo e il massimo, e la differenza dal mese prima. Nessun mese inventato: se un mese non ha pesate non compare. Sistemato anche il raggruppamento (`perMese` ora raggruppa per chiave e ordina, prima due pesate dello stesso mese separate da un'altra data facevano due mesi uguali) e la collisione di nome fra `.pg-tab` (tabella) e `.pg-tab` (linguetta del cruscotto), che rendeva inline-flex ogni tabella della pagina: le righe finivano schiacciate a destra.
