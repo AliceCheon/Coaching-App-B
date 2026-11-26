@@ -21,7 +21,7 @@
  * maiuscola); i valori veri nei documenti restano intatti.
  */
 
-import { profiloProgramma } from "./programma.js";
+import { profiloProgramma, schedePerProgramma } from "./programma.js";
 import { settimanePerTabella } from "./schede-v2.js";
 import { nomePulito } from "./nome-pulito.js";
 
@@ -79,12 +79,15 @@ export function elencoArchivio(programmi, opzioni) {
   const o = opzioni || {};
   const elenco = Array.isArray(programmi) ? programmi.filter((p) => p && typeof p === "object") : [];
   const attivoId = o.attivoId == null ? "" : String(o.attivoId);
-  const perProgramma = o.schedeV2 && o.schedeV2.perProgramma ? o.schedeV2.perProgramma : null;
   return elenco
     .filter((p) => !p.deletedAt)
     .map((p) => {
       const profilo = profiloProgramma(p);
-      const conti = contiSchede(perProgramma ? (perProgramma[profilo.id] || null) : null);
+      /* Passo 42: il gruppo di schede serve due volte — ai conti della tabella
+       * e alla vista di sola lettura che si apre con «Guarda». Si cerca con la
+       * stessa funzione tollerante del resto dell'app (id nudo o id documento). */
+      const cerca = schedePerProgramma(o.schedeV2, profilo);
+      const conti = contiSchede(cerca.gruppo);
       return {
         id: profilo.id,
         nome: nomePulito(profilo.nome),
@@ -94,7 +97,11 @@ export function elencoArchivio(programmi, opzioni) {
         creatoGrezzo: String(p.createdAt || p.created || ""),
         schede: conti ? conti.schede : null,
         esercizi: conti ? conti.esercizi : null,
-        serie: conti ? conti.serie : null
+        serie: conti ? conti.serie : null,
+        /* Il documento vero e le sue schede: la vista di sola lettura non
+         * rilegge niente e non indovina niente. */
+        programma: p,
+        gruppo: cerca.gruppo
       };
     })
     .sort((a, b) => b.creatoGrezzo.localeCompare(a.creatoGrezzo) || a.nome.localeCompare(b.nome) || a.id.localeCompare(b.id));
@@ -135,6 +142,26 @@ export function renderArchivio(doc, contenitore, opzioni) {
       const em = doc.createElement("em");
       em.textContent = "(attiva)";
       nome.appendChild(em);
+    }
+    /* Passo 42 — «Guarda»: apre il programma in sola lettura, senza attivarlo.
+     * Sulla riga del programma in uso non c'è: quello si legge già in
+     * Programmi, ed è la stessa regola del pannello «Cambia». */
+    if (!riga.attivo) {
+      const apri = typeof opz.apri === "function" ? opz.apri : null;
+      const guarda = doc.createElement("button");
+      guarda.type = "button";
+      guarda.className = "pg-guarda";
+      guarda.textContent = "Guarda";
+      if (apri) {
+        guarda.title = "apre «" + nomePulito(riga.nome) + "» in sola lettura: non lo attiva e non cambia niente";
+        guarda.addEventListener("click", () => apri(riga));
+      } else {
+        guarda.disabled = true;
+        guarda.setAttribute("aria-disabled", "true");
+        guarda.title = "spento: questa pagina non ha letto le schede dei programmi";
+      }
+      nome.appendChild(doc.createTextNode(" "));
+      nome.appendChild(guarda);
     }
     tr.appendChild(nome);
     [["schede", riga.schede], ["esercizi", riga.esercizi], ["serie", riga.serie], ["sedute", null], ["ultima", null]]

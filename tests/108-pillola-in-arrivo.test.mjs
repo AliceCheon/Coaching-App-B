@@ -63,7 +63,6 @@ const pillola = (b) => b.querySelector("i.pr-arrivo");
 test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
   const s = scena();
   [
-    [".pr-acts", "Confronta con\u2026"],
     [".pr-acts", "Copia da Prog\u2026"],
     [".pr-acts", "Salva in Libreria"],
     [".pr-bar", "Periodizzazione"]
@@ -80,7 +79,6 @@ test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
 test("108.2 il tooltip dice cosa fara' il tasto", () => {
   const s = scena();
   const attesi = [
-    [".pr-acts", "Confronta con\u2026", "affiancati"],
     [".pr-acts", "Copia da Prog\u2026", "copia gli esercizi"],
     [".pr-acts", "Salva in Libreria", "libreria"],
     [".pr-bar", "Periodizzazione", "otto settimane"]
@@ -93,8 +91,14 @@ test("108.2 il tooltip dice cosa fara' il tasto", () => {
   });
 });
 
-test("108.3 Suggerimenti resta spento e senza pillola; Spiegazioni ora apre (passo 33)", () => {
+test("108.3 Suggerimenti resta spento e senza pillola; Spiegazioni ora apre (passo 33); Confronta apre (passo 42)", () => {
   const s = scena();
+  /* Passo 42: «Confronta con…» non è più «in arrivo»: apre l'elenco in modo
+     confronto e affianca le grandezze vere. */
+  const confronta = tasto(s, ".pr-acts", "Confronta con\u2026");
+  assert.equal(confronta.disabled, false, "«Confronta con…» è acceso");
+  assert.equal(pillola(confronta), null, "«Confronta con…» non porta più la pillola in arrivo");
+  assert.ok(confronta.title.indexOf("in arrivo") === -1, "e non promette più niente in arrivo");
   const sug = tasto(s, ".pr-bar", "Suggerimenti: ON");
   assert.equal(sug.disabled, true, "\u00abSuggerimenti\u00bb resta spento in attesa della robottina");
   assert.equal(pillola(sug), null, "\u00abSuggerimenti\u00bb NON porta la pillola in arrivo");

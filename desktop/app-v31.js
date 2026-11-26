@@ -23,7 +23,7 @@ import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB, leggiScheletroB, salvaScheletroConVersione, eliminaScheletroB } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
-import { riepilogoProgramma } from "../comune/programma.js";
+import { riepilogoProgramma, schedePerProgramma, profiloProgramma } from "../comune/programma.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
 import { renderPianificazione } from "../comune/vista-pianificazione.js";
 import { elencoScheletri, salvaScheletroCostruito } from "../comune/scheletri.js";
@@ -36,6 +36,8 @@ import { chiedeRilettura } from "../comune/ridisegno-b.js";
 import { renderVolume } from "../comune/vista-volume.js";
 import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
+import { apriConsultabile } from "../comune/vista-programma-consultabile.js";
+import { pianoCopiaProgramma, scriviProgrammaCopiato } from "../comune/salva-come-programma.js";
 import { seduteLogbook } from "../comune/logbook.js";
 import { applicaEsclusioni } from "../comune/esclusioni.js";
 import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
@@ -657,21 +659,45 @@ export async function avvia(doc, win) {
     if (rp.profilo && rp.profilo.presente && rp.profilo.fase && rp.profilo.fase === rp.profilo.nome) rp.profilo.fase = "";
     /* extra-3 — la linguetta Scheletri legge la raccolta arrivata con la zona B. */
     rp.scheletri = elencoScheletri(zona.scheletri);
-    /* Passo 41 — «Cambia»: l'elenco dei programmi di B, con lo stato di ognuno. */
+    /* Passo 42 — «Salva come nuovo programma»: crea SOLO documenti nuovi, con
+     * le funzioni di scritture-b (schede prima, programma dopo). Niente che
+     * esista già viene toccato; dopo la scrittura la pagina rilegge. */
+    const salvaComeNuovoProgramma = (idProgramma, nome) => {
+      const id = String(idProgramma == null ? "" : idProgramma);
+      const documento = (programmi.programmi || []).filter((p) => String((p && p.id) || "") === id)[0] || null;
+      if (!documento) return Promise.resolve({ ok: false, motivo: "il programma non è più fra quelli letti in B: non ho scritto niente" });
+      const piano = pianoCopiaProgramma(documento, schedeGrezze, { nome: nome, quando: new Date() });
+      if (!piano.ok) return Promise.resolve(piano);
+      return scriviProgrammaCopiato(db, utente.uid, piano).then((esito) => {
+        if (esito && esito.ok && typeof globalThis.BD_RICARICA === "function") {
+          globalThis.BD_RICARICA("programma copiato");
+        }
+        return esito;
+      });
+    };
+
+    /* Passo 41 — «Cambia»: l'elenco dei programmi di B, con lo stato di ognuno.
+     * Passo 42 — ogni voce porta il documento vero e le sue schede: da lì si
+     * apre la vista di sola lettura («Guarda») e il confronto, senza rileggere
+     * niente e senza indovinare l'id. */
     rp.altriProgrammi = (programmi.programmi || []).map((p) => {
       /* lettura dei campi del documento (non testo da disegnare) */
       const stato = String((p && (p.status || p["stato"])) || "").toLowerCase();
       const attivo = Boolean(p && p.active) || stato === "active";
-      const quante = schedeV2 && schedeV2.perProgramma && schedeV2.perProgramma[String(p && p.id)] ? schedeV2.perProgramma[String(p && p.id)].schede.length : 0;
+      const cerca = schedePerProgramma(schedeV2, profiloProgramma(p));
+      const quante = cerca.gruppo && Array.isArray(cerca.gruppo.schede) ? cerca.gruppo.schede.length : 0;
       return {
         id: String((p && p.id) || ""),
         nome: (p && (p.name || p["nome"])) || "",
         attivo: attivo,
         bozza: stato === "draft",
         archiviato: Boolean(p && p.archivedAt) || stato === "archived",
-        dettaglio: quante ? (quante + (quante === 1 ? " scheda" : " schede")) : ""
+        dettaglio: quante ? (quante + (quante === 1 ? " scheda" : " schede")) : "",
+        programma: p,
+        gruppo: cerca.gruppo
       };
     });
+    rp.onSalvaCome = salvaComeNuovoProgramma;
     const scorrimentoPrima = prendiScorrimento(doc, win);
     if (contenitore) {
       stato.ridisegni += 1;
@@ -877,9 +903,26 @@ export async function avvia(doc, win) {
 
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
-    /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri. */
+    /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri.
+     * Passo 42 — «Guarda» apre il programma in sola lettura; il confronto è
+     * sempre con il programma in uso, che qui è quello aperto in Programmi. */
     const corpoArchivio = doc.getElementById("archivio-corpo");
-    if (corpoArchivio) renderArchivio(doc, corpoArchivio, { righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }) });
+    if (corpoArchivio) {
+      const gruppoInUso = attivo && attivo.programma
+        ? schedePerProgramma(schedeV2, profiloProgramma(attivo.programma)).gruppo : null;
+      renderArchivio(doc, corpoArchivio, {
+        righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }),
+        apri: (riga) => apriConsultabile(doc, {
+          programma: riga.programma,
+          gruppo: riga.gruppo,
+          attivo: attivo && attivo.programma
+            ? { programma: attivo.programma, gruppo: gruppoInUso } : null,
+          nomeInUso: rp.profilo ? nomePulito(rp.profilo.nome) : "",
+          bottone: null,
+          onSalvaCome: salvaComeNuovoProgramma
+        })
+      });
+    }
     /* Il Logbook (passo 3c): le sedute vere dentro la carta del v31, nella
      * stessa forma del seme tolto; niente scritture, controlli spenti. */
     const lb = seduteLogbook(sedutePulite.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), escluse: sedutePulite.escluse, infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });

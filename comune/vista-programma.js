@@ -33,6 +33,7 @@ import { nomePulito } from "./nome-pulito.js";
 import { PROG, PRG } from "./progressioni-b.js";
 import { creaSelettoreEserciziB } from "./selettore-esercizi-b.js";
 import { supAttivi } from "./modifiche-b.js";
+import { apriConsultabile } from "./vista-programma-consultabile.js";
 
 function n(doc, tag, classe, testo) {
   const e = doc.createElement(tag);
@@ -935,7 +936,10 @@ function cartaStato(doc, r) {
   const atti = n(doc, "div", "pr-acts");
   atti.appendChild(tastoAttiva(doc, r));
   atti.appendChild(tastoCambia(doc, r));
-  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Confronta con…", "mette due programmi affiancati e segna le differenze"));
+  /* Passo 42 — «Confronta con…» è acceso: apre l'elenco dei programmi di B in
+   * modo confronto; scelto uno, si affacciano le grandezze vere (volume,
+   * esercizi, schede, densità) e si dichiara quello che non c'è. */
+  atti.appendChild(tastoConfronta(doc, r));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Copia da Prog…", "copia gli esercizi di un altro programma dentro questo"));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "⭐ Salva in Libreria", "salva questo programma nella libreria, per riusarlo come base"));
   c.appendChild(atti);
@@ -954,16 +958,91 @@ function tastoCambia(doc, r) {
     return pulsanteSpento(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B: si accende quando la pagina sa leggere la zona B");
   }
   const b = pulsanteVivo(doc, "pr-btn", "Cambia", "apre l'elenco dei programmi presenti in B e ti fa scegliere quale guardare", () => {
-    apriElencoProgrammi(doc, b, elenco);
+    apriElencoProgrammi(doc, b, elenco, r);
   });
   return b;
 }
 
-function apriElencoProgrammi(doc, bottone, elenco) {
-  const gia = bottone.parentNode.querySelector(".pr-elenco-programmi");
-  if (gia) { gia.remove(); return; }
+/* Passo 42 — «Confronta con…»: stesso elenco, in modo confronto. */
+function tastoConfronta(doc, r) {
+  const elenco = Array.isArray(r && r.altriProgrammi) ? r.altriProgrammi : [];
+  /* Se la zona B non ha nessun altro programma, il pannello lo dice: il tasto
+   * non si spegne, perché la pagina sa leggere (e il perché starebbe in un
+   * tooltip invece che davanti agli occhi). */
+  const b = pulsanteVivo(doc, "pr-btn", "Confronta con…", "sceglie un programma e lo affianca a quello in uso: volume, esercizi, schede e densità, con la variazione", () => {
+    apriElencoProgrammi(doc, b, elenco, r);
+  });
+  b.setAttribute("data-confronta", "1");
+  return b;
+}
+
+/* Passo 42 — il pannello di «Cambia» sta SOPRA la pagina, ancorato al tasto.
+ *
+ * Alice (26/11/2026): «non mi piace come diventa la pagina quando clicco
+ * cambia: si allunga tutto». Prima il riquadro entrava nella carta e spingeva
+ * in basso schede e tabella; adesso è una finestrella in posizione fissa,
+ * agganciata al tasto, con z-index alto: non sposta niente.
+ *
+ * La posizione si calcola qui, in una funzione pura, così la prova la può
+ * leggere: sotto il tasto se c'è spazio, altrimenti SOPRA il tasto (la parte
+ * che serviva). La larghezza resta dentro la finestra: a 1280 px le voci si
+ * leggono intere.
+ */
+export function posizionePannello(ancora, misura, vista) {
+  const a = ancora || {};
+  const m = misura || {};
+  const v = vista || {};
+  const larghezzaVista = Number(v.larghezza) > 0 ? Number(v.larghezza) : 1280;
+  const altezzaVista = Number(v.altezza) > 0 ? Number(v.altezza) : 800;
+  const margine = 8;
+  const distacco = 6;
+  const larghezza = Math.max(240, Math.min(Number(m.larghezza) || 360, larghezzaVista - margine * 2));
+  const altezza = Math.max(0, Number(m.altezza) || 0);
+  let left = Number(a.left) || 0;
+  if (left + larghezza > larghezzaVista - margine) left = Math.max(margine, larghezzaVista - margine - larghezza);
+  if (left < margine) left = margine;
+  const sotto = altezzaVista - (Number(a.bottom) || 0) - margine;
+  const sopra = (Number(a.top) || 0) - margine;
+  /* Verso l'alto quando sotto non ci sta e sopra c'è più spazio. */
+  const versoAlto = altezza > sotto && sopra > sotto;
+  const top = versoAlto
+    ? Math.max(margine, (Number(a.top) || 0) - distacco - Math.min(altezza, sopra))
+    : Math.min(altezzaVista - margine, (Number(a.bottom) || 0) + distacco);
+  return {
+    left: Math.round(left),
+    top: Math.round(top),
+    larghezza: Math.round(larghezza),
+    altezza: Math.round(Math.min(altezza, versoAlto ? sopra : sotto)),
+    versoAlto: versoAlto,
+    margine: margine
+  };
+}
+
+let pannelloElenco = null;
+
+/* Chiude il pannello e stacca i suoi ascoltatori: fuori restano la pagina e i
+ * suoi tasti, com'erano. */
+function chiudiPannelloElenco(doc) {
+  const aperto = pannelloElenco;
+  pannelloElenco = null;
+  if (!aperto) return;
+  if (aperto.togliAscoltatori) aperto.togliAscoltatori();
+  if (aperto.scatola && aperto.scatola.parentNode) aperto.scatola.remove();
+  if (aperto.bottone && aperto.bottone.setAttribute) aperto.bottone.setAttribute("aria-expanded", "false");
+  if (doc) {
+    const altri = doc.querySelectorAll("body > .pr-elenco-programmi");
+    for (let i = 0; i < altri.length; i += 1) altri[i].remove();
+  }
+}
+
+function apriElencoProgrammi(doc, bottone, elenco, r) {
+  if (pannelloElenco && pannelloElenco.bottone === bottone) { chiudiPannelloElenco(doc); return; }
+  chiudiPannelloElenco(doc);
+  if (!doc || !doc.body) return;
+
   const scatola = n(doc, "div", "pr-elenco-programmi");
   scatola.setAttribute("role", "dialog");
+  scatola.setAttribute("aria-label", "programmi in B");
   const titolo = n(doc, "p", "pr-elenco-t", "Programmi in B");
   scatola.appendChild(titolo);
   if (!elenco.length) {
@@ -971,6 +1050,26 @@ function apriElencoProgrammi(doc, bottone, elenco) {
   } else if (elenco.length === 1) {
     scatola.appendChild(n(doc, "p", "pr-guide", "C'è un programma solo: «" + (nomePulito(elenco[0].nome) || "(senza nome)") + "». Quando ne avrai altri compariranno qui."));
   }
+
+  /* Chi può essere guardato: chi ha le schede lette. Chi non le ha non si apre
+   * a metà: il tasto lo dice. */
+  const guardabile = (p) => Boolean(p && p.programma && typeof p.programma === "object");
+  const inUso = elenco.filter((p) => p && p.attivo)[0] || null;
+
+  const apriGuarda = (p, tasto, confrontaSubito) => {
+    const attivo = inUso && guardabile(inUso) ? inUso : null;
+    apriConsultabile(doc, {
+      programma: p.programma,
+      gruppo: p.gruppo || null,
+      attivo: attivo ? { programma: attivo.programma, gruppo: attivo.gruppo || null } : null,
+      bottone: tasto,
+      nomeInUso: r && r.profilo ? nomePulito(r.profilo.nome) : "",
+      confrontaSubito: confrontaSubito === true,
+      onSalvaCome: r && typeof r.onSalvaCome === "function" ? r.onSalvaCome : null
+    });
+    chiudiPannelloElenco(doc);
+  };
+
   elenco.forEach((p) => {
     const riga = n(doc, "div", "pr-elenco-riga");
     const testi = n(doc, "div", "pr-elenco-testi");
@@ -979,25 +1078,98 @@ function apriElencoProgrammi(doc, bottone, elenco) {
     testi.appendChild(n(doc, "span", "pr-elenco-stato", stato));
     if (p.dettaglio) testi.appendChild(n(doc, "span", "pr-elenco-dettaglio", p.dettaglio));
     riga.appendChild(testi);
+    const tasti = n(doc, "span", "pr-elenco-tasti");
     if (p.attivo) {
-      riga.appendChild(n(doc, "span", "pr-elenco-ora", "lo stai guardando"));
-    } else if (p.archiviato) {
-      const spento = pulsanteSpento(doc, "pr-btn", "Apri", "questo programma è archiviato: prima lo riapri dall'Archivio");
-      riga.appendChild(spento);
+      tasti.appendChild(n(doc, "span", "pr-elenco-ora", "lo stai guardando"));
     } else {
-      const apri = pulsanteVivo(doc, "pr-btn pri", "Apri", "rende attivo questo programma in B e lo mostra qui", () => {
-        apriConfermaAttivaDalCambia(doc, apri, p);
-      });
-      riga.appendChild(apri);
+      /* «Guarda»: la vista di sola lettura (passo 42). C'è su ogni programma
+       * che non sia quello in uso, archiviato compreso. */
+      if (guardabile(p)) {
+        const guarda = pulsanteVivo(doc, "pr-btn", "Guarda", "apre questo programma in sola lettura: non lo attiva e non cambia niente", () => apriGuarda(p, guarda));
+        guarda.setAttribute("data-guarda", String(p.id || ""));
+        tasti.appendChild(guarda);
+      } else {
+        const spento = pulsanteSpento(doc, "pr-btn", "Guarda", "spento: la pagina non ha letto le schede di questo programma");
+        spento.setAttribute("data-guarda", String(p.id || ""));
+        tasti.appendChild(spento);
+      }
+      /* «Confronta con quello in uso»: dalla stessa finestra, senza passare
+       * dalla vista. Se il programma in uso non si legge, il tasto dice perché. */
+      if (inUso && guardabile(p) && guardabile(inUso)) {
+        const confronta = pulsanteVivo(doc, "pr-btn", "Confronta", "affianca questo programma a quello in uso: volume, esercizi, schede e densità", () => apriGuarda(p, confronta, true));
+        confronta.setAttribute("data-confronta-programma", String(p.id || ""));
+        tasti.appendChild(confronta);
+      } else {
+        const spento = pulsanteSpento(doc, "pr-btn", "Confronta", "spento: mancano le schede di uno dei due programmi, non c'è niente da affiancare");
+        spento.setAttribute("data-confronta-programma", String(p.id || ""));
+        tasti.appendChild(spento);
+      }
+      if (p.archiviato) {
+        tasti.appendChild(pulsanteSpento(doc, "pr-btn", "Apri", "questo programma è archiviato: prima lo riapri dall'Archivio"));
+      } else {
+        const apri = pulsanteVivo(doc, "pr-btn pri", "Apri", "rende attivo questo programma in B e lo mostra qui", () => {
+          apriConfermaAttivaDalCambia(doc, apri, p);
+        });
+        tasti.appendChild(apri);
+      }
     }
+    riga.appendChild(tasti);
     scatola.appendChild(riga);
   });
+
   const chiudi = n(doc, "button", "pr-btn", "Chiudi");
   chiudi.type = "button";
-  chiudi.addEventListener("click", () => scatola.remove());
   scatola.appendChild(chiudi);
-  bottone.parentNode.appendChild(scatola);
-  if (chiudi.focus) chiudi.focus();
+
+  doc.body.appendChild(scatola);
+  if (bottone && bottone.setAttribute) bottone.setAttribute("aria-expanded", "true");
+
+  /* La posizione si ricalcola a ogni scorrimento: il pannello resta appiccicato
+   * al tasto. Se il tasto non è più nella pagina (un ridisegno l'ha
+   * sostituito), il pannello si chiude invece di restare a galleggiare. */
+  const posiziona = () => {
+    if (!bottone || !bottone.getBoundingClientRect) { chiudiPannelloElenco(doc); return; }
+    if (bottone.isConnected === false) { chiudiPannelloElenco(doc); return; }
+    const vista = { larghezza: (doc.defaultView && doc.defaultView.innerWidth) || 1280, altezza: (doc.defaultView && doc.defaultView.innerHeight) || 800 };
+    const misura = { larghezza: 360, altezza: scatola.offsetHeight || scatola.scrollHeight || 0 };
+    const pos = posizionePannello(bottone.getBoundingClientRect(), misura, vista);
+    scatola.style.left = pos.left + "px";
+    scatola.style.top = pos.top + "px";
+    scatola.style.width = pos.larghezza + "px";
+    scatola.setAttribute("data-verso-alto", pos.versoAlto ? "1" : "0");
+    if (pos.altezza > 0) scatola.style.maxHeight = pos.altezza + "px";
+  };
+  const fuori = (ev) => {
+    const dentro = scatola.contains ? scatola.contains(ev.target) : false;
+    const sulTasto = bottone && (ev.target === bottone || (bottone.contains && bottone.contains(ev.target)));
+    if (!dentro && !sulTasto) chiudiPannelloElenco(doc);
+  };
+  const suTasto = (ev) => {
+    if (ev && (ev.key === "Escape" || ev.key === "Esc")) {
+      if (ev.stopPropagation) ev.stopPropagation();
+      chiudiPannelloElenco(doc);
+    }
+  };
+  const suVista = () => posiziona();
+  chiudi.addEventListener("click", () => { chiudiPannelloElenco(doc); });
+  doc.addEventListener("click", fuori, true);
+  doc.addEventListener("keydown", suTasto, true);
+  const vistaFinestra = doc.defaultView;
+  if (vistaFinestra && vistaFinestra.addEventListener) {
+    vistaFinestra.addEventListener("scroll", suVista, true);
+    vistaFinestra.addEventListener("resize", suVista);
+  }
+  const togliAscoltatori = () => {
+    doc.removeEventListener("click", fuori, true);
+    doc.removeEventListener("keydown", suTasto, true);
+    if (vistaFinestra && vistaFinestra.removeEventListener) {
+      vistaFinestra.removeEventListener("scroll", suVista, true);
+      vistaFinestra.removeEventListener("resize", suVista);
+    }
+  };
+  pannelloElenco = { scatola: scatola, bottone: bottone, togliAscoltatori: togliAscoltatori };
+  posiziona();
+  if (chiudi.focus) { try { chiudi.focus(); } catch (e) { /* senza fuoco si legge lo stesso */ } }
 }
 
 /* L'apertura da «Cambia»: stessa strada e stessa conferma di «Attiva», che
@@ -1020,7 +1192,14 @@ function apriConfermaAttivaDalCambia(doc, bottone, programma) {
       bottone.disabled = true;
       bottone.textContent = "Apro…";
       const esito = mod.onAttiva(String(programma.id || ""));
-      const fine = () => { bottone.disabled = false; bottone.textContent = prima; };
+      /* Il pannello si chiude quando la scrittura è finita: la pagina rilegge e
+       * il tasto che l'ha aperto non esiste più, quindi restare aperti
+       * vorrebbe dire galleggiare su dati vecchi. */
+      const fine = () => {
+        bottone.disabled = false;
+        bottone.textContent = prima;
+        chiudiPannelloElenco(doc);
+      };
       if (esito && typeof esito.then === "function") esito.then(fine, fine);
       else fine();
     }

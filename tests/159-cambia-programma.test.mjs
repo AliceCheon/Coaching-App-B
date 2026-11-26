@@ -30,10 +30,18 @@ const ESE = (nome) => ({ id: "ex-" + nome, name: nome, muscle: "dorsali", prescr
 const scheda = { id: "program-v2-sheet-prg-41__sh-A", dati: { programId: "prg-41", sheetId: "sh-A", kind: "sheet",
   sheet: { id: "sh-A", code: "A", name: "Dorsali", exercises: [ESE("Rematore")] } } };
 
+/* Passo 42: ogni voce porta il documento vero e le sue schede (servono a
+ * «Guarda» e al confronto). Le schede del programma in uso sono quelle lette
+ * dalla scena; le altre due restano senza, come capita quando la lettura non
+ * arriva: il tasto lo dichiara invece di aprirsi a metà. */
+const SCHEDE = ricostruisciSchede([scheda]);
 const PROGRAMMI = [
-  { id: "prg-41", nome: "Intensità ottobre-dicembre", attivo: true, bozza: false, archiviato: false, dettaglio: "1 scheda" },
-  { id: "prg-35", nome: "Push Pull", attivo: false, bozza: true, archiviato: false, dettaglio: "2 schede" },
-  { id: "prg-vecchio", nome: "Vecchio blocco", attivo: false, bozza: false, archiviato: true }
+  { id: "prg-41", nome: "Intensità ottobre-dicembre", attivo: true, bozza: false, archiviato: false, dettaglio: "1 scheda",
+    programma: meta, gruppo: SCHEDE.perProgramma["prg-41"] },
+  { id: "prg-35", nome: "Push Pull", attivo: false, bozza: true, archiviato: false, dettaglio: "2 schede",
+    programma: { id: "prg-35", name: "Push Pull", status: "draft" }, gruppo: null },
+  { id: "prg-vecchio", nome: "Vecchio blocco", attivo: false, bozza: false, archiviato: true,
+    programma: { id: "prg-vecchio", name: "Vecchio blocco", status: "archived" }, gruppo: null }
 ];
 
 function scena(opzioni) {
@@ -48,8 +56,11 @@ function scena(opzioni) {
     onCambia: () => Promise.resolve({ ok: true }),
     onAttiva: (id) => { chiamate.push(id); return Promise.resolve({ ok: true, testo: "programma attivo" }); }
   };
-  const r = riepilogoProgramma(meta, [], { schedeV2: ricostruisciSchede([scheda]), indice: 0, totaleProgrammi: 3, oggi: new Date(Date.UTC(2026, 10, 26)), quante: 8 });
-  const extra = { altriProgrammi: o.programmi === null ? [] : (o.programmi || PROGRAMMI) };
+  const r = riepilogoProgramma(meta, [], { schedeV2: SCHEDE, indice: 0, totaleProgrammi: 3, oggi: new Date(Date.UTC(2026, 10, 26)), quante: 8 });
+  const extra = {
+    altriProgrammi: o.programmi === null ? [] : (o.programmi || PROGRAMMI),
+    onSalvaCome: () => Promise.resolve({ ok: true, nome: "Copia", schede: 1, esercizi: 1 })
+  };
   renderProgramma(doc, doc.querySelector("#programma-attivo"), { presente: true, numeroSedute: 0 },
     Object.assign({}, r, extra, { modifica: o.senzaEditor ? {} : mod }));
   return { dom, doc, chiamate };
@@ -57,13 +68,19 @@ function scena(opzioni) {
 const tasto = (doc, parola) => Array.from(doc.querySelectorAll("#programma-attivo .pr-acts button")).filter((b) => b.textContent.trim() === parola)[0] || null;
 
 test("159.1 «Cambia» è acceso e apre il pannello", () => {
-  const { doc } = scena();
+  const { doc, dom } = scena();
   const b = tasto(doc, "Cambia");
   assert.ok(b, "il tasto c'è");
   assert.equal(b.disabled, false, "ed è acceso");
   assert.equal(doc.querySelectorAll(".pr-elenco-programmi").length, 0, "il pannello parte chiuso");
   b.click();
   assert.equal(doc.querySelectorAll(".pr-elenco-programmi").length, 1, "il clic apre il pannello");
+  /* Passo 42: il pannello è una finestra sul corpo, non un riquadro dentro la
+   * carta: la pagina non si allunga. */
+  const pannello = doc.querySelector(".pr-elenco-programmi");
+  assert.equal(pannello.parentNode, doc.body, "il pannello sta sul corpo della pagina");
+  assert.equal(pannello.closest("#programma-attivo"), null, "non sta dentro la carta del programma");
+  assert.equal(dom.window.getComputedStyle(pannello).position, "fixed", "è posizionato fuori dal flusso della pagina");
   b.click();
   assert.equal(doc.querySelectorAll(".pr-elenco-programmi").length, 0, "e il clic lo richiude");
 });
@@ -84,9 +101,14 @@ test("159.2 l'elenco dice il vero e il programma in uso non ha «Apri»", () => 
   const bottoni = (i) => Array.from(righe[i].querySelectorAll("button")).map((b) => b.textContent.trim());
   assert.deepEqual(bottoni(0), [], "il programma in uso non si riapre: nessun tasto");
   assert.ok(bottoni(1).indexOf("Apri") !== -1, "la bozza si apre: " + bottoni(1).join(","));
-  const archiviato = righe[2].querySelector("button");
-  assert.equal(archiviato.disabled, true, "l'archiviato resta spento");
-  assert.match(archiviato.title, /archiviato/, "e dice perché: " + archiviato.title);
+  assert.ok(bottoni(1).indexOf("Guarda") !== -1, "la bozza si può anche guardare: " + bottoni(1).join(","));
+  /* Passo 42: l'archiviato ha «Guarda» (sola lettura) e «Apri» spento col
+   * motivo di prima: il tasto non è stato tolto. */
+  assert.ok(bottoni(2).indexOf("Guarda") !== -1, "l'archiviato si guarda: " + bottoni(2).join(","));
+  const apriArchiviato = Array.from(righe[2].querySelectorAll("button")).filter((b) => b.textContent.trim() === "Apri")[0];
+  assert.ok(apriArchiviato, "il tasto «Apri» dell'archiviato c'è ancora");
+  assert.equal(apriArchiviato.disabled, true, "l'archiviato resta spento su «Apri»");
+  assert.match(apriArchiviato.title, /archiviato/, "e dice perché: " + apriArchiviato.title);
 });
 
 test("159.3 «Apri» chiede conferma e poi scrive", async () => {
@@ -95,7 +117,7 @@ test("159.3 «Apri» chiede conferma e poi scrive", async () => {
   const righe = Array.from(doc.querySelectorAll(".pr-elenco-riga"));
   Array.from(righe[1].querySelectorAll("button")).filter((b) => b.textContent.trim() === "Apri")[0].click();
   assert.equal(chiamate.length, 0, "niente scritto prima del sì");
-  const conferma = doc.querySelector("#programma-attivo .pr-conf[role='dialog']");
+  const conferma = doc.querySelector(".pr-conf[role='dialog']");
   assert.ok(conferma, "si apre una conferma");
   assert.match(conferma.textContent, /Aprire «Push Pull»/);
   assert.match(conferma.textContent, /resta salvato com'è/);
