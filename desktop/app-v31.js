@@ -1146,7 +1146,12 @@ export async function avvia(doc, win) {
        * parentesi perché è un valore da salvare, non un testo da disegnare. */
       const piano = programmaDaScheletro(scheletro, { nome: r["nome"], descrizione: r["descrizione"], quando: new Date() });
       if (!piano.ok) return Promise.resolve(piano);
-      return scriviProgrammaNuovo(db, utente.uid, piano);
+      return scriviProgrammaNuovo(db, utente.uid, piano).then((esito) => {
+        /* Il programma nuovo deve comparire subito in «Cambia» e in Programmi:
+         * senza questa rilettura la pagina restava con l'elenco di prima. */
+        if (esito && esito.ok && typeof globalThis.BD_RICARICA === "function") globalThis.BD_RICARICA("programma nuovo");
+        return esito;
+      });
     };
     if (globalThis.BD_SCHELETRI_PAGINA && typeof globalThis.BD_SCHELETRI_PAGINA.ricarica === "function") {
       globalThis.BD_SCHELETRI_PAGINA.ricarica();
