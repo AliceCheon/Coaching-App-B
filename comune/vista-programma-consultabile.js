@@ -35,7 +35,6 @@ import {
   valoriSettimana, FORMULA_DENSITA, MOTIVO_CARICO
 } from "./programma-consultabile.js";
 import { nomeCopia, fraseCopia } from "./salva-come-programma.js";
-import { pulsanteCestino, apriConfermaEliminazione } from "./cestino-schede.js";
 
 const NON = "non registrato";
 const TRATTINO = "\u2014";
@@ -122,56 +121,6 @@ function impalcatura(doc, titolo, bottone, opzioni) {
   return { modale: modale, scatola: scatola, testa: testa, chiudi: chiudi };
 }
 
-/* Passo 20 — l'id della scheda in B a partire dalla lettera: il modello porta
- * la lettera (è quella che si legge), il documento porta l'id. Se la lettera
- * cade su due schede non si sceglie: si lascia stare (il cestino non compare).
- * Un id di scheda è unico in B, quindi qui non si indovina niente. */
-function idDellaScheda(gruppo, codice) {
-  const schede = (gruppo && Array.isArray(gruppo.schede)) ? gruppo.schede : [];
-  const trovate = schede.filter((s) => testo(s && s.codice) === testo(codice));
-  return trovate.length === 1 ? testo(trovate[0].id) : "";
-}
-
-/* Il cestino di una scheda: la conferma la disegna comune/cestino-schede.js, la
- * scrittura la fa la pagina. `opzioni.chiudiDopo` chiude la finestra che sta
- * intorno (dopo una scheda tolta, i numeri a schermo non valgono più). */
-function cestinoScheda(doc, opzioni) {
-  const o = opzioni || {};
-  const dalle = o.dalle || {};
-  const idScheda = o.idScheda || "";
-  if (!idScheda || typeof dalle.onEliminaScheda !== "function") return null;
-  const chiedi = (richiesta) => {
-    let conta = null;
-    try {
-      conta = typeof dalle.contaScheda === "function" ? dalle.contaScheda(idScheda) : null;
-    } catch (e) {
-      conta = null;
-    }
-    apriConfermaEliminazione(doc, {
-      codice: o.codice,
-      nomeScheda: o.nomeScheda,
-      nomeProgramma: o.nomeProgramma,
-      idScheda: idScheda,
-      idProgramma: o.idProgramma,
-      schedeAttive: o.schedeAttive,
-      conta: conta,
-      bottone: richiesta && richiesta.bottone ? richiesta.bottone : null,
-      segnala: dalle.segnala,
-      onConferma: (r) => dalle.onEliminaScheda(r),
-      chiudiDopo: typeof o.chiudiDopo === "function" ? o.chiudiDopo : null
-    });
-  };
-  const b = pulsanteCestino(doc, {
-    codice: o.codice,
-    nomeProgramma: o.nomeProgramma,
-    idScheda: idScheda,
-    spento: o.schedeAttive != null && Number(o.schedeAttive) <= 1,
-    motivo: "è l'ultima scheda del programma: un programma senza schede non si può usare",
-    onChiedi: chiedi
-  });
-  return b;
-}
-
 /* La scheda vera di un programma per la settimana scelta: una riga per
  * esercizio, con serie, ripetizioni e recupero come sono scritti. Quello che la
  * progressione non scrive per quella settimana è «—», mai zero. Niente
@@ -182,10 +131,6 @@ function bloccoSchedaIntera(doc, scheda, numero, opzioni) {
   const testa = el(doc, "p", "pc-scheda-t");
   testa.appendChild(el(doc, "b", null, "Scheda " + nomePulito(scheda.codice)));
   if (testo(scheda.nome)) testa.appendChild(doc.createTextNode(" \u2014 " + nomePulito(scheda.nome)));
-  /* Passo 20 — il cestino accanto alla scheda: la toglie dal programma, dopo
-   * aver chiesto conferma. Nella vista di sola lettura è l'unica cosa che
-   * scrive, e scrive solo sulla scheda (Logbook e sedute non si toccano). */
-  if (o.cestino) testa.appendChild(o.cestino);
   box.appendChild(testa);
   if (!scheda.esercizi.length) {
     box.appendChild(el(doc, "p", "pc-vuoto", "Questa scheda non ha esercizi leggibili."));
@@ -447,9 +392,6 @@ function colonnaProgramma(doc, voci) {
   }));
   const titolo = el(doc, "p", "pc-col-scheda", "Scheda " + codice
     + (testo(o.scheda.nome) ? " \u2014 " + nomePulito(o.scheda.nome) : ""));
-  /* Passo 20 — anche qui il cestino accanto alla scheda: si toglie dal
-   * programma di QUESTA colonna, e la conferma dice quale. */
-  if (o.cestino) titolo.appendChild(o.cestino);
   col.appendChild(titolo);
   if (!o.scheda.esercizi.length) {
     col.appendChild(el(doc, "p", "pc-vuoto", "Questa scheda non ha esercizi leggibili."));
@@ -913,21 +855,11 @@ export function apriConfronto(doc, opzioni) {
     duetto.setAttribute("data-scheda", schedaScelta == null ? "" : schedaScelta);
     duetto.appendChild(colonnaProgramma(doc, {
       modello: modelloUno, settimana: settUno, righe: righe, lato: "uno",
-      numero: n, codice: schedaScelta, scheda: schedaUno, etichetta: etichettaUno,
-      cestino: schedaUno ? cestinoScheda(doc, {
-        dalle: o, codice: schedaScelta, nomeScheda: nomePulito(schedaUno.nome),
-        nomeProgramma: nomeUno, idScheda: idDellaScheda(gruppi[0], schedaScelta),
-        idProgramma: modelloUno.id, schedeAttive: modelloUno.numeroSchede, chiudiDopo: () => chiudi()
-      }) : null
+      numero: n, codice: schedaScelta, scheda: schedaUno, etichetta: etichettaUno
     }));
     duetto.appendChild(colonnaProgramma(doc, {
       modello: modelloDue, settimana: settDue, righe: righe, lato: "due",
-      numero: n, codice: schedaScelta, scheda: schedaDue, etichetta: "in uso",
-      cestino: schedaDue ? cestinoScheda(doc, {
-        dalle: o, codice: schedaScelta, nomeScheda: nomePulito(schedaDue.nome),
-        nomeProgramma: nomeDue, idScheda: idDellaScheda(gruppi[1], schedaScelta),
-        idProgramma: modelloDue.id, schedeAttive: modelloDue.numeroSchede, chiudiDopo: () => chiudi()
-      }) : null
+      numero: n, codice: schedaScelta, scheda: schedaDue, etichetta: "in uso"
     }));
     corpo.appendChild(duetto);
     /* Se qualche riga è accoppiata per posizione, lo si dice una volta sola:
@@ -1041,18 +973,7 @@ export function apriConsultabile(doc, opzioni) {
     corpo.appendChild(el(doc, "p", "pc-vuoto", modello.motivoSchede || "nessuna scheda letta"));
   } else {
     const schede = el(doc, "div", "pc-schede");
-    modello.schede.forEach((s) => schede.appendChild(bloccoSchedaIntera(doc, s, 1, {
-      cestino: cestinoScheda(doc, {
-        dalle: o,
-        codice: s.codice,
-        nomeScheda: nomePulito(s.nome),
-        nomeProgramma: nomePulito(modello.nome),
-        idScheda: idDellaScheda(o.gruppo, s.codice),
-        idProgramma: modello.id,
-        schedeAttive: modello.numeroSchede,
-        chiudiDopo: () => chiudi()
-      })
-    })));
+    modello.schede.forEach((s) => schede.appendChild(bloccoSchedaIntera(doc, s, 1, {})));
     corpo.appendChild(schede);
   }
 

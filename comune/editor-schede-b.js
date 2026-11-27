@@ -42,6 +42,7 @@ import {
   cambiaTestataProgramma,
   cambiaNotaScheda,
   togliSchedaDalProgramma,
+  eliminaProgrammaDocumento,
   serieDellaScheda
 
 , copiaEsercizi as applicaCopiaEsercizi, rimettiElencoEsercizi } from "./modifiche-b.js";
@@ -1022,12 +1023,58 @@ export function creaEditorSchede(opzioni) {
     });
   }
 
+  /* ---------- Eliminare un programma (passo 25) ---------------------------
+   * Il documento del programma NON si cancella: prende il marchio
+   * `eliminato` (+ quando e chi), versione +1 e la voce di registro. Da quel
+   * momento la lettura lo salta, quindi sparisce da Archivio, Cambia,
+   * Confronto e Prospetto. Il programma in uso si rifiuta qui, sui dati letti
+   * adesso (una riga rimasta aperta da una pagina vecchia non basta).
+   */
+  function eliminaProgramma(richiesta) {
+    const r = richiesta || {};
+    const idDocumento = String(r.idDocumento == null ? "" : r.idDocumento).trim();
+    if (!idDocumento) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato il documento del programma: non ho scritto niente" });
+    return coda.esegui("programma", async () => {
+      const letto = await conScadenza(leggiProgrammaB(db, uid, idDocumento), "la lettura del programma");
+      if (!letto || !letto.esiste) return { ok: false, motivo: "il programma non e' in B: niente da eliminare" };
+      /* Il documento deve essere DAVVERO quello del programma chiesto: se non
+       * lo e', non si tocca niente invece di marcare un altro. */
+      const dati = letto.dati || {};
+      const meta = (dati.programMeta && typeof dati.programMeta === "object") ? dati.programMeta
+        : (dati.program && typeof dati.program === "object" ? dati.program : dati);
+      const idChiesto = String(r.idProgramma == null ? "" : r.idProgramma).trim();
+      const idDel = String((meta && meta.id) || dati.programId || "").trim();
+      if (idChiesto && idDel && idChiesto !== idDel) {
+        return { ok: false, motivo: "il documento non e' quello del programma «" + idChiesto + "»: non ho scritto niente" };
+      }
+      const esito = eliminaProgrammaDocumento(dati, Object.assign({}, r, {
+        idDocumento: idDocumento,
+        attivo: r.attivo === true
+      }), { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+      try {
+        await conScadenza(salvaProgrammaConVersione(db, uid, idDocumento, esito.dati, Number(dati.versione) || 0), "la scrittura del programma");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      ultima = esito.voce;
+      return {
+        ok: true,
+        voce: esito.voce,
+        testo: "programma" + (esito.nome ? " «" + esito.nome + "»" : "") + " eliminato: sparisce da tutte le viste, il documento resta in B",
+        avvisoRegistro: avvisoVoce
+      };
+    });
+  }
+
   return {
     attivo: true,
     conta: conta,
     svuotaProgramma: svuotaProgrammaIntero,
     attivaProgramma: attivaProgramma,
     mettiInBozza: mettiInBozza,
+    eliminaProgramma: eliminaProgramma,
     get annullabile() { return Boolean(ultima); },
     get ultima() { return ultima; },
     modifica: modifica,

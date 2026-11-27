@@ -11,10 +11,12 @@
  *   172.3  nella pagina vera la textarea delle note non è più `readOnly`, si
  *          scrive, il valore arriva nel documento e TORNA dopo il refresh (due
  *          caricamenti, lo stesso finto Firestore);
- *   172.4  il cestino, nella finestra «Guarda» dell'Archivio: prima chiede
- *          conferma in chiaro (quanti esercizi e serie escono, cosa resta), poi
- *          toglie la scheda con la voce di registro; la scheda è ancora in B
- *          con i suoi esercizi, e l'ultima scheda non si toglie;
+ *   172.4  il cestino NON è più per scheda (passo 25): in Confronta e in
+ *          «Cambia» non c'è, le pastiglie restano; nell'Archivio c'è UN cestino
+ *          per programma, che prima chiede conferma in chiaro (schede,
+ *          esercizi, serie, cosa non si tocca) e poi marchia il documento del
+ *          programma: sparisce da tutte le viste, il programma in uso non si
+ *          elimina;
  *   172.5  il catalogo contiene OGNI esercizio che sta nelle schede: quelli del
  *          programma vero di Alice nel v31 e quelli del finto Firestore qui
  *          sotto. È la guardia che impedisce al database di restare indietro.
@@ -250,78 +252,107 @@ test("172.3 la textarea delle note si scrive, la nota arriva nel documento e tor
   await coda();
 });
 
-/* ---------- 172.4 · il cestino nella finestra «Guarda» -------------------- */
+/* ---------- 172.4 · un cestino per programma, solo nell'Archivio ----------
+ * Passo 25: Alice ha chiesto «1 cestino solo per programma, e lo voglio solo
+ * nell'archivio». Qui si prova la pagina vera sul finto Firestore: niente
+ * cestini per scheda, un cestino per riga, la conferma, il marchio, e il
+ * programma che sparisce da Archivio e da «Cambia». */
 
-test("172.4 il cestino chiede conferma, toglie la scheda con la voce di registro, e l'ultima non si toglie", async () => {
+test("172.4 nessun cestino per scheda; nell'Archivio un cestino per programma, con conferma e marchio", async () => {
   const dom = await carica(3);
   const doc = dom.window.document;
   await attendiFinche(() => doc.getElementById("archivio-corpo"), 20000, "l'Archivio non si è montato");
 
   const rigaAltro = () => [...doc.querySelectorAll("#archivio-corpo tr")]
     .find((tr) => String(tr.textContent || "").indexOf("Blocco autunno") > -1) || null;
-  await attendiFinche(() => rigaAltro() && rigaAltro().querySelector(".pg-guarda"), 15000, "nell'Archivio non c'è il tasto «Guarda» del programma di prova");
+  await attendiFinche(() => rigaAltro() && rigaAltro().querySelector(".pg-guarda"), 15000, "nell'Archivio non c'è la riga del programma di prova");
 
+  /* (a) in giro non c'è nessun cestino per scheda */
+  assert.equal(doc.querySelectorAll(".pr-cestino").length, 0, "c'è ancora un cestino per scheda in pagina");
+
+  /* (b) il pannello «Cambia»: le pastiglie restano, il cestino no */
+  const tastoCambia = () => [...doc.querySelectorAll("#programma-attivo .pr-acts button")]
+    .find((b) => (b.textContent || "").trim() === "Cambia") || null;
+  await attendiFinche(() => tastoCambia(), 15000, "il tasto «Cambia» non c'è");
+  clic(dom.window, tastoCambia());
+  await attendiFinche(() => doc.querySelector(".pr-elenco-programmi"), 10000, "il pannello «Cambia» non si è aperto");
+  const pannello = doc.querySelector(".pr-elenco-programmi");
+  assert.ok(pannello.querySelector(".pr-elenco-schede"), "le pastiglie delle schede devono restare nel pannello");
+  assert.match(String(pannello.querySelector(".pr-elenco-schede").textContent || ""), /A/);
+  assert.equal(pannello.querySelectorAll(".pr-cestino").length, 0, "il pannello «Cambia» ha ancora un cestino per scheda");
+  clic(dom.window, tastoCambia());
+  await attendiFinche(() => !doc.querySelector(".pr-elenco-programmi"), 10000, "il pannello «Cambia» non si è chiuso");
+
+  /* (c) la finestra «Guarda» (e quindi il Confronto): nessun cestino per scheda */
   clic(dom.window, rigaAltro().querySelector(".pg-guarda"));
   await attendiFinche(() => doc.querySelector(".pc-modale .pc-scheda"), 15000, "la finestra «Guarda» non si è aperta con le schede");
-  const blocchi = () => [...doc.querySelectorAll(".pc-modale .pc-scheda")];
-  assert.equal(blocchi().length, 2, "il programma di prova deve mostrare due schede");
-  const cestini = () => [...doc.querySelectorAll(".pc-modale .pr-cestino")];
-  assert.equal(cestini().length, 2, "non c'è un cestino per ogni scheda");
-  assert.match(String(cestini()[0].getAttribute("aria-label")), /^elimina la scheda A dal programma «Blocco autunno»/,
-    "l'aria-label del cestino non dice cosa fa: " + JSON.stringify(cestini()[0].getAttribute("aria-label")));
+  assert.equal(doc.querySelectorAll(".pc-modale .pc-scheda").length, 2, "il programma di prova deve mostrare due schede");
+  assert.equal(doc.querySelectorAll(".pc-modale .pr-cestino").length, 0, "la finestra «Guarda» ha ancora un cestino per scheda");
+  const chiudi = [...doc.querySelectorAll(".pc-modale button")].find((b) => (b.textContent || "").trim() === "Chiudi");
+  assert.ok(chiudi, "manca il tasto «Chiudi» della finestra");
+  clic(dom.window, chiudi);
+  await attendiFinche(() => doc.querySelectorAll(".pc-modale").length === 0, 15000, "la finestra non si è chiusa");
 
-  /* Il primo clic non scrive niente: apre la conferma in chiaro. */
-  clic(dom.window, cestini()[0]);
-  const conferma = await (async () => {
-    await attendiFinche(() => doc.querySelector(".cestino-modale"), 10000, "la conferma del cestino non si è aperta");
-    return doc.querySelector(".cestino-modale");
-  })();
+  /* (d) UN cestino per riga nell'Archivio, con il nome del programma */
+  const cestini = () => [...doc.querySelectorAll("#archivio-corpo .pg-cestino")];
+  assert.equal(cestini().length, 2, "non c'è un cestino per ogni riga dell'Archivio");
+  const cestinoAltro = rigaAltro().querySelector(".pg-cestino");
+  assert.ok(cestinoAltro, "la riga «Blocco autunno» non ha il cestino");
+  assert.equal(cestinoAltro.disabled, false, "il cestino del programma non in uso deve essere acceso");
+  assert.match(String(cestinoAltro.getAttribute("aria-label")), /^elimina il programma «Blocco autunno»/,
+    "l'aria-label del cestino non dice il nome del programma: " + JSON.stringify(cestinoAltro.getAttribute("aria-label")));
+  const rigaAttivo = cestini().map((b) => b.closest("tr")).find((tr) => String(tr.textContent || "").includes("(attiva)"));
+  const cestinoAttivo = rigaAttivo.querySelector(".pg-cestino");
+  assert.equal(cestinoAttivo.disabled, true, "il cestino del programma in uso non deve poter scrivere");
+  assert.match(String(cestinoAttivo.getAttribute("title")), /programma in uso/, "il cestino del programma in uso non dice perché è spento");
+
+  /* (e) il primo clic non scrive: apre la conferma in chiaro */
+  clic(dom.window, cestinoAltro);
+  await attendiFinche(() => doc.querySelector(".cestino-programma-modale"), 10000, "la conferma del cestino non si è aperta");
+  const conferma = doc.querySelector(".cestino-programma-modale");
   const domanda = String((conferma.querySelector(".cestino-domanda") || {}).textContent || "");
-  assert.match(domanda, /escono/i, "la conferma non dice cosa esce: " + JSON.stringify(domanda));
-  assert.match(domanda, /2 esercizi/, "la conferma non conta gli esercizi: " + JSON.stringify(domanda));
-  assert.match(domanda, /serie programmate/, "la conferma non conta le serie: " + JSON.stringify(domanda));
-  assert.match(String((conferma.querySelector(".cestino-nota") || {}).textContent || ""), /Logbook, le sedute fatte e lo storico/,
+  assert.match(domanda, /Archivio, Cambia, Confronto e Prospetto/, "la conferma non dice da dove sparisce: " + JSON.stringify(domanda));
+  assert.match(domanda, /2 schede/);
+  assert.match(domanda, /4 esercizi/);
+  assert.match(domanda, /serie programmate/);
+  assert.match(String((conferma.querySelector(".cestino-nota") || {}).textContent || ""), /Logbook, le sedute fatte, lo storico e gli scheletri/,
     "la conferma non dice cosa NON si tocca");
-  assert.equal(zona.datiDi("schede", ID_ALTRO_A).toltoDalProgramma, undefined, "la conferma ha scritto prima del sì");
+  assert.equal(zona.datiDi("programmi", "program-v2-meta-prg-altro").eliminato, undefined, "la conferma ha scritto prima del sì");
 
-  /* Il sì: la scheda esce dal programma, con la voce di registro. */
-  const confermaBtn = conferma.querySelector("[data-cestino-conferma]");
+  /* (f) il sì: il documento resta in B, marcato */
+  const confermaBtn = conferma.querySelector("[data-elimina-programma-conferma]");
   assert.ok(confermaBtn, "manca il tasto che conferma");
-  assert.match(String(confermaBtn.textContent), /Togli la scheda A/);
   clic(dom.window, confermaBtn);
-  await attendiFinche(() => Boolean(zona.datiDi("schede", ID_ALTRO_A).toltoDalProgramma), 15000,
-    "la scheda non è stata tolta dal programma: " + JSON.stringify(zona.datiDi("schede", ID_ALTRO_A)));
-  const tolta = zona.datiDi("schede", ID_ALTRO_A);
-  assert.equal(tolta.sheet.exercises.length, 2, "togliendo la scheda si sono persi gli esercizi");
-  assert.equal(tolta.sheet.name, "Glutei e femorali", "il documento della scheda è stato svuotato");
-  await attendiFinche(() => vociRegistro("togli-scheda").length === 1, 15000, "la voce di registro della scheda tolta non è arrivata");
-  const voci = vociRegistro("togli-scheda");
-  assert.equal(voci.length, 1, "la voce di registro della scheda tolta non c'è");
-  assert.equal(voci[0].dati.campo, "scheda");
-  assert.equal(voci[0].dati.documento, ID_ALTRO_A, "la voce non dice quale documento rimettere");
-  assert.equal(voci[0].dati.versioneDopo, 2);
-  /* Il Logbook e le sedute non si sono mossi. */
+  await attendiFinche(() => Boolean(zona.datiDi("programmi", "program-v2-meta-prg-altro").eliminato), 15000,
+    "il programma non è stato marcato eliminato: " + JSON.stringify(zona.datiDi("programmi", "program-v2-meta-prg-altro")));
+  const marcato = zona.datiDi("programmi", "program-v2-meta-prg-altro");
+  assert.equal(marcato.eliminato, true);
+  assert.match(String(marcato.eliminatoIl || ""), /^20\d\d-/, "il marchio non dice quando");
+  assert.ok(marcato.eliminatoDa, "il marchio non dice chi");
+  assert.equal(marcato.programMeta.name, "Blocco autunno", "il documento è stato svuotato invece di marcato");
+  await attendiFinche(() => vociRegistro("elimina-programma").length === 1, 15000, "la voce di registro dell'eliminazione non è arrivata");
+  const voce = vociRegistro("elimina-programma")[0].dati;
+  assert.equal(voce.campo, "programma");
+  assert.equal(voce.programma, "program-v2-meta-prg-altro", "la voce non dice quale documento");
+  assert.equal(voce.conta.schede, 2);
+
+  /* Le schede e le sedute non si sono mosse. */
+  assert.equal(zona.datiDi("schede", ID_ALTRO_A).toltoDalProgramma, undefined);
+  assert.equal(zona.datiDi("schede", ID_ALTRO_A).sheet.exercises.length, 2, "eliminando il programma si sono persi gli esercizi della scheda");
   assert.equal(zona.datiDi("sedute", "sed-1").session.exercises.length, 1, "la seduta è stata toccata");
 
-  /* La finestra si chiude e la pagina si rilegge: in «Guarda» resta una scheda. */
-  await attendiFinche(() => doc.querySelectorAll(".pc-modale").length === 0, 15000, "la finestra non si è chiusa dopo la conferma");
+  /* (g) è sparito: dall'Archivio e dal pannello «Cambia» */
   await coda();
-  const cellaSchede = () => {
-    const r = rigaAltro();
-    const c = r ? r.querySelector('[data-colonna="schede"]') : null;
-    return c ? String(c.textContent || "").trim() : "";
-  };
-  await attendiFinche(() => cellaSchede() === "1", 15000,
-    "l'Archivio non si è aggiornato dopo la scheda tolta: " + JSON.stringify(cellaSchede()));
-  clic(dom.window, rigaAltro().querySelector(".pg-guarda"));
-  await attendiFinche(() => doc.querySelector(".pc-modale .pc-scheda"), 15000, "la finestra «Guarda» non si è riaperta");
-  assert.equal(blocchi().length, 1, "dopo la scheda tolta la finestra ne mostra ancora due");
-  const ultimo = doc.querySelector(".pc-modale .pr-cestino");
-  assert.ok(ultimo, "l'ultima scheda non ha il cestino: deve averlo, spento, con il motivo");
-  assert.equal(ultimo.disabled, true, "il cestino dell'ultima scheda non deve poter scrivere");
-  assert.match(String(ultimo.getAttribute("title")), /ultima scheda/, "il cestino dell'ultima scheda non dice perché è spento");
-  /* E niente si è mosso: la scheda B è ancora intatta. */
-  assert.equal(zona.datiDi("schede", ID_ALTRO_B).toltoDalProgramma, undefined);
+  await attendiFinche(() => !rigaAltro(), 15000, "l'Archivio mostra ancora il programma eliminato");
+  const rigaRimasta = [...doc.querySelectorAll("#archivio-corpo tr")].find((tr) => String(tr.textContent || "").includes("(attiva)"));
+  assert.ok(rigaRimasta && String(rigaRimasta.textContent).includes("Programma in uso"),
+    "l'Archivio ha perso anche il programma in uso");
+  clic(dom.window, tastoCambia());
+  await attendiFinche(() => doc.querySelector(".pr-elenco-programmi"), 10000, "il pannello «Cambia» non si è riaperto");
+  const dopo = String(doc.querySelector(".pr-elenco-programmi").textContent || "");
+  assert.ok(dopo.indexOf("Blocco autunno") === -1, "il pannello «Cambia» elenca ancora il programma eliminato: " + JSON.stringify(dopo));
+  assert.match(dopo, /Programma in uso/);
+  clic(dom.window, tastoCambia());
   await coda();
 });
 

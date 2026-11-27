@@ -23,7 +23,6 @@ import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from 
 import { codiceDistretto, nomeDistretto } from "./distretti-b.js";
 import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
-import { pulsanteCestino, apriConfermaEliminazione } from "./cestino-schede.js";
 import {
   separaRecupero, separaTempo, sostituisciRecupero, sostituisciTempo,
   recuperoInColonna, tempoInColonna, etichettaSpostata, recuperoVisibile,
@@ -1528,12 +1527,7 @@ function apriElencoProgrammi(doc, bottone, elenco, r) {
       bottone: tasto,
       nomeInUso: r && r.profilo ? nomePulito(r.profilo.nome) : "",
       confrontaSubito: confrontaSubito === true,
-      onSalvaCome: r && typeof r.onSalvaCome === "function" ? r.onSalvaCome : null,
-      /* Passo 20 — la finestra di sola lettura porta il cestino delle schede,
-       * con la stessa strada di scrittura del resto della pagina. */
-      onEliminaScheda: r && typeof r.onEliminaScheda === "function" ? r.onEliminaScheda : null,
-      contaScheda: r && typeof r.contaScheda === "function" ? r.contaScheda : null,
-      segnala: r && typeof r.segnala === "function" ? r.segnala : function () {}
+      onSalvaCome: r && typeof r.onSalvaCome === "function" ? r.onSalvaCome : null
     });
     chiudiPannelloElenco(doc);
   };
@@ -1545,12 +1539,11 @@ function apriElencoProgrammi(doc, bottone, elenco, r) {
     const stato = p.attivo ? "in uso" : (p.archiviato ? "archiviato" : (p.bozza ? "in bozza" : "disponibile"));
     testi.appendChild(n(doc, "span", "pr-elenco-stato", stato));
     if (p.dettaglio) testi.appendChild(n(doc, "span", "pr-elenco-dettaglio", p.dettaglio));
-    /* Passo 20 — le schede di QUESTO programma, una pastiglia per lettera, con
-     * il cestino accanto: da qui si toglie una scheda senza aprire niente,
-     * dopo la conferma in chiaro. L'ultima non si toglie. */
-    const mod = modificaCorrente;
+    /* Le schede di QUESTO programma: una pastiglia per lettera. Passo 25 —
+     * il cestino per scheda è stato tolto da qui: si elimina un programma solo,
+     * dall'Archivio. */
     const schedeDel = p.gruppo && Array.isArray(p.gruppo.schede) ? p.gruppo.schede : [];
-    if (schedeDel.length && mod && typeof mod.onEliminaScheda === "function") {
+    if (schedeDel.length) {
       const fila = n(doc, "div", "pr-elenco-schede");
       fila.appendChild(n(doc, "span", "pr-elenco-schede-t", "schede"));
       schedeDel.forEach((sc) => {
@@ -1558,32 +1551,6 @@ function apriElencoProgrammi(doc, bottone, elenco, r) {
         const pastiglia = n(doc, "span", "pr-rotchip", lettera);
         pastiglia.setAttribute("data-elenco-scheda", lettera);
         fila.appendChild(pastiglia);
-        const idScheda = String((sc && sc.id) || "");
-        if (!idScheda) return;
-        fila.appendChild(pulsanteCestino(doc, {
-          codice: lettera,
-          nomeProgramma: nomePulito(p.nome),
-          idScheda: idScheda,
-          spento: schedeDel.length <= 1,
-          motivo: "è l'ultima scheda del programma: un programma senza schede non si può usare",
-          onChiedi: (richiesta) => {
-            let conta = null;
-            try { conta = typeof mod.conta === "function" ? mod.conta(idScheda) : null; } catch (e) { conta = null; }
-            apriConfermaEliminazione(doc, {
-              codice: lettera,
-              nomeScheda: nomePulito((sc && sc.nome) || ""),
-              nomeProgramma: nomePulito(p.nome),
-              idScheda: idScheda,
-              idProgramma: p.id,
-              schedeAttive: schedeDel.length,
-              conta: conta,
-              bottone: richiesta && richiesta.bottone ? richiesta.bottone : null,
-              segnala: function () {},
-              onConferma: (rq) => mod.onEliminaScheda(rq),
-              chiudiDopo: () => { chiudiPannelloElenco(doc); }
-            });
-          }
-        }));
       });
       testi.appendChild(fila);
     }

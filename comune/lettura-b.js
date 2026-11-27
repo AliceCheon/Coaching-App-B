@@ -69,12 +69,26 @@ function programmaPiuRecente(a, b) {
  * Ritorna { programmi, documenti, scartati, v1Doppioni, v2Doppioni }. */
 export function programmiDaDocumenti(documenti) {
   const elenco = (Array.isArray(documenti) ? documenti : []).filter((d) => d && typeof d === "object");
+  /* Passo 25 — i programmi marcati eliminati non entrano in nessuna vista.
+   * Il marchio sta sul documento (`eliminato` + `eliminatoIl` + `eliminatoDa`)
+   * e vale per programId: se dello stesso programma esiste anche una copia
+   * v1 senza marchio, sparisce lo stesso — il programma e' uno. */
+  const eliminati = Object.create(null);
+  elenco.forEach((d) => {
+    const dati = (d && d.dati) || {};
+    if (dati.eliminato !== true && !testo(dati.eliminato)) return;
+    const pid = programIdVoce(dati);
+    if (pid) eliminati[pid] = true;
+  });
   const metaPerId = Object.create(null);
   /* Passo 15b — il documento che porta il programma: senza il suo id, la
    * scrittura della testata (data, fase, giorni, settimane, rotazione) cerca
    * `prg-…` fra i documenti e non lo trova, quindi rifiuta. */
   const docPerId = Object.create(null);
   const v1PerId = Object.create(null);
+  /* Passo 25 — anche i programmi del formato v1 hanno bisogno del loro
+   * documento quando si marchiano come eliminati: qui si tiene il doc id. */
+  const v1DocPerId = Object.create(null);
   const ordineMeta = [];
   const ordineV1 = [];
   let scartati = 0;
@@ -108,6 +122,7 @@ export function programmiDaDocumenti(documenti) {
         return;
       }
       v1PerId[chiave] = dati.program;
+      v1DocPerId[chiave] = testo(d.id);
       ordineV1.push(chiave);
       return;
     }
@@ -117,14 +132,17 @@ export function programmiDaDocumenti(documenti) {
 
   const finali = [];
   const giaPresenti = Object.create(null);
+  const vivi = (chiave) => !eliminati[chiave];
   ordineMeta.forEach((chiave) => {
     giaPresenti[chiave] = true;
+    if (!vivi(chiave)) return;
     finali.push({ chiave, programma: Object.assign({}, metaPerId[chiave], { docId: docPerId[chiave] }) });
   });
   ordineV1.forEach((chiave) => {
     if (giaPresenti[chiave]) { v1Doppioni += 1; return; }
     giaPresenti[chiave] = true;
-    finali.push({ chiave, programma: v1PerId[chiave] });
+    if (!vivi(chiave)) return;
+    finali.push({ chiave, programma: Object.assign({}, v1PerId[chiave], { docId: v1DocPerId[chiave] || "" }) });
   });
   finali.sort((a, b) => confrontaTesto(a.chiave, b.chiave)
     || confrontaTesto(testo(a.programma && a.programma.id), testo(b.programma && b.programma.id)));

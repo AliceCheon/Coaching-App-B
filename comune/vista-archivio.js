@@ -26,6 +26,7 @@
 import { profiloProgramma, schedePerProgramma } from "./programma.js";
 import { settimanePerTabella } from "./schede-v2.js";
 import { nomePulito } from "./nome-pulito.js";
+import { pulsanteEliminaProgramma, apriConfermaEliminazioneProgramma } from "./cestino-programma.js";
 
 const NON = "non registrato";
 
@@ -105,7 +106,7 @@ export function elencoArchivio(programmi, opzioni) {
   const attivoId = o.attivoId == null ? "" : String(o.attivoId);
   const seduteLogbook = Array.isArray(o.sedute) ? o.sedute : null;
   return elenco
-    .filter((p) => !p.deletedAt)
+    .filter((p) => !p.deletedAt && p.eliminato !== true)
     .map((p) => {
       const profilo = profiloProgramma(p);
       /* Passo 42: il gruppo di schede serve due volte — ai conti della tabella
@@ -147,6 +148,7 @@ export function elencoArchivio(programmi, opzioni) {
 export function renderArchivio(doc, contenitore, opzioni) {
   const opz = opzioni || {};
   const righe = Array.isArray(opz.righe) ? opz.righe : [];
+  const elimina = typeof opz.elimina === "function" ? opz.elimina : null;
   while (contenitore.firstChild) contenitore.firstChild.remove();
 
   if (!righe.length) {
@@ -192,6 +194,32 @@ export function renderArchivio(doc, contenitore, opzioni) {
       }
       nome.appendChild(doc.createTextNode(" "));
       nome.appendChild(guarda);
+    }
+    /* Passo 25 — UN cestino per riga, accanto ai tasti del programma. Sul
+     * programma in uso è spento e dice perché (aprine un altro, poi eliminalo):
+     * non si resta senza programma attivo. Eliminando si marchia il documento,
+     * e il programma esce da tutte le viste. */
+    if (elimina) {
+      const cestino = pulsanteEliminaProgramma(doc, {
+        nomeProgramma: nomePulito(riga.nome),
+        idProgramma: riga.id,
+        attivo: riga.attivo,
+        onChiedi: (richiesta) => {
+          apriConfermaEliminazioneProgramma(doc, {
+            nomeProgramma: nomePulito(riga.nome),
+            idProgramma: riga.id,
+            idDocumento: String((riga.programma && riga.programma.docId) || ""),
+            schede: riga.schede,
+            esercizi: riga.esercizi,
+            serie: riga.serie,
+            bottone: richiesta && richiesta.bottone ? richiesta.bottone : null,
+            segnala: opz.segnala,
+            onConferma: (richiesta2) => elimina(riga, richiesta2)
+          });
+        }
+      });
+      nome.appendChild(doc.createTextNode(" "));
+      nome.appendChild(cestino);
     }
     tr.appendChild(nome);
     [["schede", riga.schede], ["esercizi", riga.esercizi], ["serie", riga.serie],

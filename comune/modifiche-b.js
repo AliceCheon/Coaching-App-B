@@ -2143,6 +2143,82 @@ export function togliSchedaDalProgramma(dati, richiesta, opzioni) {
   return { ok: true, dati: nuovo, voce: voce, codice: codice, nome: nome };
 }
 
+/* ---------- Eliminare un programma (passo 25) ------------------------------
+ * Alice (27/11/2026): «1 cestino solo per programma, e lo voglio solo
+ * nell'archivio che poi se lo cancello da lì sparisce automaticamente da tutte
+ * le parti».
+ *
+ * Cosa vuol dire «eliminare», e cosa NON vuol dire: il programma esce da ogni
+ * vista (Archivio, Cambia, Confronto, Prospetto, e non risulta più attivo),
+ * ma il documento non si cancella e le regole Firestore non si toccano. Il
+ * documento prende il marchio `eliminato` con quando e chi, piu' il marchio di
+ * B e la versione +1; da quel momento ogni lettura lo salta
+ * (comune/lettura-b.js, `programmiDaDocumenti`). Resta in B: un giro futuro
+ * lo puo' recuperare senza aver perso niente.
+ *
+ * Il programma IN USO non si elimina: lo dice il documento stesso (status
+ * active / active: true) e lo dice la pagina (`richiesta.attivo`). Non si
+ * inventa un «programma attivo» vuoto.
+ *
+ * Non si tocca niente d'altro: le schede restano in B, il Logbook, le sedute e
+ * lo storico pure. Se torna, torna com'era.
+ */
+export function eliminaProgrammaDocumento(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  if (!dati || typeof dati !== "object") return { ok: false, motivo: "questo documento non e' un programma" };
+  if (dati.eliminato === true || testo(dati.eliminato)) {
+    return { ok: false, motivo: "questo programma e' gia' marcato eliminato" };
+  }
+  const meta = contenitoreTestata(dati);
+  const inUso = r.attivo === true
+    || String(meta.status == null ? "" : meta.status).toLowerCase() === "active"
+    || meta.active === true;
+  if (inUso) {
+    return {
+      ok: false,
+      motivo: "e' il programma in uso: aprine un altro, poi eliminalo"
+    };
+  }
+  const nome = testo(meta.name || meta.nome);
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const versionePrima = versioneDi(dati);
+  const nuovo = Object.assign({}, dati, {
+    eliminato: true,
+    eliminatoIl: quando,
+    eliminatoDa: o.uid == null ? null : String(o.uid),
+    versione: versionePrima + 1
+  });
+  nuovo[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "elimina-programma" };
+
+  const conta = r.conta && typeof r.conta === "object" ? r.conta : {};
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "elimina-programma",
+    origine: "modifica-fatta-in-B",
+    programma: testo(r.idDocumento),
+    scheda: "",
+    codice: "",
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "programma",
+    nome: nome,
+    prima: "Programma" + (nome ? " «" + nome + "»" : ""),
+    dopo: "",
+    dopoTesto: "programma marcato eliminato: il documento resta in B",
+    conta: {
+      schede: conta.schede == null ? null : Number(conta.schede),
+      esercizi: conta.esercizi == null ? null : Number(conta.esercizi),
+      serie: conta.serie == null ? null : Number(conta.serie)
+    },
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce, nome: nome };
+}
+
 /* L'annullamento delle modifiche qui sopra. */
 /* Passo 21 — l'Annulla di una scrittura sulle progressioni custom: si rimette
  * l'elenco INTERO di prima (creare, duplicare, modificare, rinominare ed
