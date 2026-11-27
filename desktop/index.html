@@ -2666,7 +2666,12 @@ document.addEventListener('DOMContentLoaded',function(){
     if(txt.charAt(0)==="{"||txt.charAt(0)==="["){
      var j=JSON.parse(txt); res=ingest(j,{fonte:"import JSON"});
     } else { res=ingest(parseTesto(txt),{fonte:"import testo"}); }
-    render(); report(res,"Import fatto. Le righe scartate sono quelle che non riesco a leggere: nessuna viene indovinata. Il risultato è già qui sotto e nella linguetta Misure.","ms-import-esito");
+    render();
+    /* Il risultato si vede QUI: quante sessioni sono in archivio adesso e
+       qual è l'ultima, senza cambiare linguetta. */
+    var ultimaIn = ST.sessioni.length ? ST.sessioni[ST.sessioni.length-1].data.split("-").reverse().join("/") : "";
+    var quantiIn = ST.sessioni.length;
+    report(res,"Import fatto. Le righe scartate sono quelle che non riesco a leggere: nessuna viene indovinata. Ora in archivio: "+quantiIn+(quantiIn===1?" sessione":" sessioni")+(ultimaIn?", ultima "+ultimaIn:"")+".","ms-import-esito");
    }catch(e){
     /* L'errore si legge accanto al tasto, non in una linguetta che non stai guardando. */
     var msg='<p class="ms-note2">JSON non valido: '+String(e.message)+'</p>';
