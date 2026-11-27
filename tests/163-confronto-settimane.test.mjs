@@ -140,13 +140,14 @@ test("163.1 la finestra: due file di tab ferme, due colonne, scroll dentro", () 
 
   const regolaBox = /\.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola .pc-box-confronto c'è");
-  /* Passo 28: la finestra è 94vh (non più 92vh) e larga min(1680px, 96vw). */
-  assert.match(regolaBox[1], /height:\s*94vh/, "alta quasi quanto lo schermo (94vh, passo 28)");
-  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*32px\)/, "e non esce dallo schermo");
+  /* Passo 29: la finestra è 96vh e larga min(1900px, 99vw) — tutto lo schermo. */
+  assert.match(regolaBox[1], /height:\s*96vh/, "alta quasi quanto lo schermo (96vh, passo 29)");
+  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*12px\)/, "e non esce dallo schermo");
   assert.match(regolaBox[1], /overflow:\s*hidden/, "la scatola non scorre: scorre il corpo");
-  const larghezza = /width:\s*min\((\d+)px,\s*96vw\)/.exec(regolaBox[1]);
+  const larghezza = /width:\s*min\((\d+)px,\s*(\d+)vw\)/.exec(regolaBox[1]);
   assert.ok(larghezza, "ha una larghezza massima dichiarata, con un margine ai lati");
-  assert.equal(Number(larghezza[1]), 1680, "larga fino a 1680 px (passo 28)");
+  assert.equal(Number(larghezza[1]), 1900, "larga fino a 1900 px (passo 29)");
+  assert.equal(Number(larghezza[2]), 99, "e quasi tutta la larghezza dello schermo");
 
   const regolaCorpo = /\.pc-corpo-confronto\{([^}]*)\}/.exec(css);
   assert.match(regolaCorpo[1], /overflow:\s*auto/, "il corpo scorre dentro");
@@ -367,7 +368,8 @@ test("163.6 le righe delle due colonne sono allineate, col trattino dove manca",
   const regola = /\.pc-col-tab td\{([^}]*)\}/.exec(css);
   assert.ok(regola, "la regola delle celle c'è");
   const altezzaFissa = Number(/height:\s*(\d+)px/.exec(regola[1])[1]);
-  assert.ok(altezzaFissa >= 40, "righe di altezza fissa, e alte (passo 28): le due colonne non scivolano");
+  assert.ok(altezzaFissa >= 30 && altezzaFissa <= 34,
+    "righe di altezza fissa e compatte (passo 29, 30-32 px): le due colonne non scivolano — " + altezzaFissa + " px");
 });
 
 test("163.7 i distretti di un programma solo: «non registrato», mai zero", () => {

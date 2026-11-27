@@ -306,9 +306,11 @@ function righeUnite(schedaUno, schedaDue) {
 function tabellaColonna(doc, righe, lato, numero) {
   const tab = el(doc, "table", "pc-tab pc-col-tab");
   const cg = doc.createElement("colgroup");
-  /* Passo 44: la finestra è più larga, quindi le tre caselle dei numeri si
-   * allargano e il testo non finisce più nei puntini appena è un filo lungo. */
-  ["auto", "64px", "70px", "74px"].forEach((larghezza) => {
+  /* Passo 29 — larghezze proporzionali, non px fissi: la colonna ESERCIZIO si
+   * prende quasi tutto, SERIE/RIP./REC. restano strette ma sempre DENTRO la
+   * finestra (la REC. veniva coperta dalla Diva ed era il taglio che Alice
+   * vedeva). Con `table-layout:fixed` il contenuto non allarga la tabella. */
+  ["62%", "11%", "12%", "15%"].forEach((larghezza) => {
     const c = doc.createElement("col");
     c.setAttribute("style", "width:" + larghezza);
     cg.appendChild(c);

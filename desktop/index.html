@@ -7745,72 +7745,97 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 /* Passo 44 — la finestra si legge. Alice: «la pagina del confronta la voglio un
    po' più grande, non si vede molto bene».
    Passo 28 (27/11/2026): «non riesco a vedere bene (o è troppo grande il
-   contenuto, o sono troppo piccoli i bordi)». Quindi: quasi tutto lo schermo ma
-   con un margine vero ai lati — min(1680px, 96vw) — 94vh di altezza e non più
-   di 100vh meno 32px; lo scorrimento resta DENTRO (overflow:hidden sulla
-   scatola, auto sul corpo) e ogni fascia (testa, barre, corpo, piede) ha il suo
-   respiro di 22 px, così il testo non tocca il bordo. La pagina sotto resta
-   ferma e non si allunga. */
-.pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1680px,96vw);height:94vh;
-  max-height:calc(100vh - 32px);padding:0;overflow:hidden}
-.pc-finestra-testa{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
-  padding:20px 22px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;margin:0}
-.pc-finestra-sinistra{display:block;min-width:0}
-.pc-finestra-t{display:block;font-size:16px;color:var(--text)}
-.pc-nomi{display:flex;flex-direction:column;gap:3px;margin-top:6px}
-.pc-finestra-sotto{display:block;margin-top:5px;font:400 10.8px/1.3 'JetBrains Mono',monospace;color:var(--fioco)}
-.pc-nome-riga{display:flex;align-items:center;gap:8px;font-size:12.3px;color:var(--text)}
+   contenuto, o sono troppo piccoli i bordi)».
+   Passo 29 (27/11/2026) — la direzione era sbagliata: «mi rimpicciolisci
+   l'interno o mi allarghi l'esterno». Il suo schermo è 1905×813 (largo e basso)
+   e nella finestra entrava UNA riga di esercizi. Quindi: fuori più largo
+   (min(1900px, 99vw), 96vh, margine 10-12 px) e dentro più compatto (testo
+   12 px, righe ~31 px), intestazione su una riga sola. Lo scorrimento resta
+   DENTRO (overflow:hidden sulla scatola, auto sul corpo); la pagina sotto non
+   si allunga. */
+.pc-modale .pc-box-confronto{display:flex;flex-direction:column;width:min(1900px,99vw);height:96vh;
+   max-height:calc(100vh - 12px);padding:0;overflow:hidden}
+/* Passo 29 — la Diva e la lampadina del tema galleggiano SOPRA ogni finestra
+   (la Diva arriva a 2147483000): sul confronto la Diva copriva la colonna
+   «REC.» di destra e la lampadina copriva la ×. Il confronto passa sopra ai
+   due galleggianti, non sotto. */
+.pc-modale-confronto{position:fixed;z-index:2147483001 !important;padding:8px}
+.pc-finestra-testa{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:6px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;margin:0}
+/* Passo 29 — «Confronto programmi», i due nomi e «Settimana 1 · Scheda A» su
+   una riga sola (a schermo stretto vanno a capo, non su quattro righe). */
+.pc-finestra-sinistra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.pc-finestra-t{display:block;font-size:13.5px;color:var(--text);white-space:nowrap}
+.pc-nomi{display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:0}
+.pc-finestra-sotto{display:block;margin-top:0;font:400 10.2px/1.3 'JetBrains Mono',monospace;color:var(--fioco);
+  white-space:nowrap}
+.pc-nome-riga{display:flex;align-items:center;gap:6px;font-size:11.6px;color:var(--text)}
 .pc-nome-riga b{font-weight:800}
 .pc-pallino{width:9px;height:9px;border-radius:50%;flex:0 0 auto;display:inline-block}
 .pc-pallino.a{background:var(--lav)}
 .pc-pallino.b{background:var(--pink)}
-.pc-etichetta{font-size:9.4px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--fioco);
-  border:1px solid var(--line);border-radius:99px;padding:1px 7px}
-.pc-settimane{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 22px;
+.pc-etichetta{font-size:8.8px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--fioco);
+  border:1px solid var(--line);border-radius:99px;padding:1px 6px}
+.pc-settimane{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:4px 12px;
   border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--card)}
-.pc-sett-davanti{font-size:9.6px;letter-spacing:.09em;text-transform:uppercase;color:var(--fioco);margin-right:4px}
-.pc-sett{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
-  font:700 11.8px/1 "Nunito Sans",sans-serif;padding:6px 10px;min-width:44px;cursor:pointer}
+.pc-sett-davanti{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--fioco);margin-right:4px}
+.pc-sett{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  font:700 11px/1 "Nunito Sans",sans-serif;padding:4px 7px;min-width:34px;cursor:pointer}
 .pc-sett:hover{color:var(--text);border-color:var(--lav)}
 .pc-sett.on{background:rgba(255,79,163,.14);border-color:rgba(255,79,163,.55);color:var(--pink)}
-.pc-sett-sc{display:block;font:400 9.2px/1 'JetBrains Mono',monospace;opacity:.75;margin-top:3px}
-.pc-schede-tab{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 22px;
+/* Passo 29 — il range (o «scarico») sta SULLA STESSA RIGA del numero: era sotto,
+   e ogni tasto era alto il doppio. */
+.pc-sett-sc{display:inline;font:400 8.6px/1 'JetBrains Mono',monospace;opacity:.75;margin-left:4px}
+.pc-schede-tab{display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding:3px 12px;
   border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--card)}
-.pc-st{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
-  font:800 11.8px/1 "Nunito Sans",sans-serif;padding:6px 11px;min-width:38px;cursor:pointer}
+.pc-st{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  font:800 11px/1 "Nunito Sans",sans-serif;padding:4px 9px;min-width:30px;cursor:pointer}
 .pc-st:hover{color:var(--text);border-color:var(--lav)}
 .pc-st.on{background:rgba(201,167,255,.16);border-color:rgba(201,167,255,.6);color:var(--lav)}
-.pc-corpo-confronto{flex:1 1 auto;overflow:auto;min-height:0;margin-top:0;border-top:0;padding:10px 22px 20px}
-.pc-duetto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:10px;
-  border:1px solid var(--line);border-radius:12px;background:var(--card-2);overflow:hidden}
+.pc-corpo-confronto{flex:1 1 auto;overflow:auto;min-height:0;margin-top:0;border-top:0;
+  /* niente respiro sopra: così l'intestazione ferma della tabella si appoggia al
+     bordo e le righe che scorrono non si vedono a fette sopra di lei */
+  padding:0 12px 8px}
+.pc-duetto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:6px;
+  border:1px solid var(--line);border-radius:10px;background:var(--card-2);
+  /* `clip` e non `hidden`: ritaglia gli angoli tondi come prima, ma NON crea un
+     contenitore che scorre — così l'intestazione della tabella può restare
+     ferma in cima (con `hidden` lo sticky si sganciava). */
+  overflow:clip}
 /* Passo 43d — la colonna è una colonna anche nel layout: i totali si appoggiano
    al fondo, così le due colonne finiscono alla stessa altezza anche quando una
    ha più pastiglie di volume (era il «dislivello» in fondo). */
-.pc-col{padding:12px 14px 10px;min-width:0;display:flex;flex-direction:column}
+.pc-col{padding:6px 8px;min-width:0;display:flex;flex-direction:column}
 .pc-col > .pc-totali{margin-top:auto}
 .pc-col-a{border-right:1px solid var(--line)}
-.pc-col-testa{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px}
-.pc-col-testa .pc-nome-riga{font-size:13.4px}
-.pc-col-conto{margin:0 0 8px;font:400 10.8px/1 'JetBrains Mono',monospace;color:var(--fioco)}
-.pc-col-scheda{margin:2px 0 4px;font-size:12.4px;font-weight:900;color:var(--text)}
-.pc-scheda-manca{margin:8px 0;font-style:italic}
-.pc-volumi{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.pc-vol{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;
-  padding:3px 8px;background:rgba(140,110,180,.08)}
-.pc-vol span{font-size:10.4px;color:var(--fioco)}
-.pc-vol b{font:600 11.6px/1 'JetBrains Mono',monospace;color:var(--text)}
-.pc-vol-vuoto{font-size:10.8px;color:var(--fioco);font-style:italic}
-.pc-col-tab{table-layout:fixed;width:100%;font-size:13.2px}
-.pc-col-tab th{padding:6px 5px;font-size:10.2px}
-.pc-col-tab td{padding:7px 5px;vertical-align:middle;height:40px}
+.pc-col-testa{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:0}
+.pc-col-testa .pc-nome-riga{font-size:12px}
+.pc-col-conto{margin:0 0 4px;font:400 9.8px/1.2 'JetBrains Mono',monospace;color:var(--fioco)}
+.pc-col-scheda{margin:0 0 3px;font-size:11px;font-weight:900;color:var(--text)}
+.pc-scheda-manca{margin:6px 0;font-style:italic}
+.pc-volumi{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 5px}
+.pc-vol{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:7px;
+  padding:2px 6px;background:rgba(140,110,180,.08)}
+.pc-vol span{font-size:9.2px;color:var(--fioco)}
+.pc-vol b{font:600 10.4px/1 'JetBrains Mono',monospace;color:var(--text)}
+.pc-vol-vuoto{font-size:10.2px;color:var(--fioco);font-style:italic}
+/* Passo 29 — più contenuto, non testo più grande: corpo 12 px, righe ~31 px,
+   celle con 3-4 px di respiro (non 8). */
+.pc-col-tab{table-layout:fixed;width:100%;font-size:12px}
+.pc-col-tab th{padding:3px 4px;font-size:9.4px}
+.pc-col-tab td{padding:3px 4px;vertical-align:middle;height:31px}
+/* L'intestazione resta ferma in cima mentre la scheda scorre dentro la
+   finestra: ESERCIZIO / SERIE / RIP. / REC. non spariscono mai. */
+.pc-col-tab thead th{position:sticky;top:0;z-index:2;background:var(--card-2);
+  box-shadow:inset 0 -1px 0 var(--line)}
 /* Il testo lungo non esce più nella colonna accanto: si taglia con i puntini e
    il testo intero resta nel suggerimento (e nella vista «Guarda»). */
-.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:12.6px;white-space:nowrap;
+.pc-col-tab .pc-n{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.4px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;max-width:0}
 .pc-col-tab td.pc-nome{overflow:hidden;max-width:0}
-.pc-col-tab td.pc-nome b{display:block;font-size:13.4px;font-weight:600;color:var(--text);
+.pc-col-tab td.pc-nome b{display:block;font-size:12.2px;line-height:1.15;font-weight:600;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-col-tab td.pc-nome small{display:block;font-size:11px;color:var(--fioco);
+.pc-col-tab td.pc-nome small{display:block;font-size:9.6px;line-height:1.15;color:var(--fioco);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-col-tab td.pc-manca{color:var(--muted);font-style:italic}
 .pc-col-tab tr.pc-riga-manca td{background:rgba(255,255,255,.015)}
@@ -7832,8 +7857,8 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
    (Alice, 27/11/2026): il blocco «Volume» dice le stesse cose meglio. Con
    lei se ne sono andati i suoi stili. */
 .pc-piede{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-  padding:12px 22px 16px;border-top:1px solid var(--line);flex:0 0 auto}
-.pc-piede .pc-suggerimento{font-size:10.8px;color:var(--fioco)}
+  padding:6px 12px 8px;border-top:1px solid var(--line);flex:0 0 auto}
+.pc-piede .pc-suggerimento{font-size:10px;color:var(--fioco)}
 .pc-piede-tasti{display:flex;gap:8px}
 .pc-piede .pr-btn{width:auto}
 .pc-confronto .pc-piazza-salva{margin-bottom:4px}
@@ -7854,7 +7879,7 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   padding:14px 16px;background:rgba(201,167,255,.05)}
 .pc-vol2 .pc-vol-t{margin:0 0 5px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--lav);font-weight:800}
-.pc-vol-guida{margin:0 0 10px;font-size:11.8px;line-height:1.45;color:var(--muted)}
+.pc-vol-guida{margin:0 0 10px;font-size:11.4px;line-height:1.45;color:var(--muted)}
 .pc-vol-vuoto{display:block;margin-top:4px;font-size:10.6px;color:var(--fioco);font-style:italic}
 .pc-vol2-barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 9px}
 .pc-vol2-settimane{display:flex;gap:4px;flex-wrap:wrap}
@@ -7881,7 +7906,7 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-vol2-kpi-c{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:var(--card-2)}
 .pc-vol2-kpi-k{display:block;font-size:9.2px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--fioco);font-weight:800}
-.pc-vol2-kpi-v{display:block;margin-top:3px;font:700 20px/1.1 'JetBrains Mono',monospace;
+.pc-vol2-kpi-v{display:block;margin-top:3px;font:700 18px/1.1 'JetBrains Mono',monospace;
   letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
 .pc-vol2-kpi-v small{font:500 10.2px/1 "Nunito Sans",sans-serif;color:var(--fioco);margin-left:4px}
 .pc-vol2-kpi-c[data-kpi="a"] .pc-vol2-kpi-v{color:var(--lav)}
@@ -7901,8 +7926,8 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-vol2-riga{display:grid;grid-template-columns:140px minmax(0,1fr) 104px;gap:12px;align-items:center;
   padding:9px 0;border-top:1px solid var(--line-soft)}
 .pc-vol2-riga:first-of-type{border-top:0}
-.pc-vol2-nome{margin:0;font-size:12.8px;font-weight:700;color:var(--text);line-height:1.25}
-.pc-vol2-nome small{display:block;font:400 10.8px/1.2 'JetBrains Mono',monospace;color:var(--muted);
+.pc-vol2-nome{margin:0;font-size:12px;font-weight:700;color:var(--text);line-height:1.25}
+.pc-vol2-nome small{display:block;font:400 10.2px/1.2 'JetBrains Mono',monospace;color:var(--muted);
   margin-top:2px;font-variant-numeric:tabular-nums}
 .pc-vol2-pista{position:relative;height:26px;border-radius:7px;border:1px solid var(--line);
   overflow:hidden;background:var(--card-2)}
@@ -7916,7 +7941,7 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   background:repeating-linear-gradient(45deg,var(--line-soft) 0 5px,transparent 5px 10px);
   border:1px dashed color-mix(in srgb,var(--line) 80%,transparent)}
 .pc-vol2-delta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;text-align:right}
-.pc-vol2-delta b{font:700 13.2px/1.1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.pc-vol2-delta b{font:700 12.2px/1.1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
 .pc-vol2-delta small{font-size:10.4px;color:var(--fioco);font-variant-numeric:tabular-nums}
 .pc-vol2-delta[data-stato="su"] b{color:var(--verde)}
 .pc-vol2-delta[data-stato="giu"] b{color:var(--pink)}
@@ -10949,7 +10974,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 })();
 </script>
 <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
-<script src="../app-config-b.js?v=b0.72-passo28-confronto-piu-comodo"></script>
+<script src="../app-config-b.js?v=b0.73-passo29-confronto-compatto"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -11282,7 +11307,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   pitta();
 })();
 </script>
-<script type="module" src="./app-v31.js?v=b0.72-passo28-confronto-piu-comodo"></script>
+<script type="module" src="./app-v31.js?v=b0.73-passo29-confronto-compatto"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff72c2'/%3E%3Crect x='6' y='14' width='20' height='4' rx='2' fill='%23fff'/%3E%3Crect x='3' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3Crect x='25' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 </body>
 </html>

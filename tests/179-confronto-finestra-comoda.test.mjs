@@ -1,23 +1,24 @@
-/* Guardia 179 (passo 28, 27/11/2026) — il confronto senza la tabella
- * «Differenze» e con la finestra comoda da leggere.
+/* Guardia 179 (passo 28, riscritta nel passo 29 il 27/11/2026) — il confronto
+ * senza la tabella «Differenze» e con la finestra che usa tutto lo schermo.
  *
- * Alice: «togli anche questo perché non mi serve» (la tabella DIFFERENZE ·
- * scheda X · settimana Y) e «rendi più grande la pagina del confronta perché
- * non riesco a vedere bene (o è troppo grande il contenuto, o sono troppo
- * piccoli i bordi)».
+ * Alice, passo 28: «togli anche questo perché non mi serve» (la tabella
+ * DIFFERENZE · scheda X · settimana Y). Passo 29: «è ancora troppo grande
+ * all'interno di un riquadro piccolo, quindi o mi rimpicciolisci l'interno o mi
+ * allarghi l'esterno» — la finestra si allarga e il dentro si compatta (le
+ * righe visibili sono il doppio, misurate nella guardia 180).
  *
  *  179.1  la tabella Differenze non è più disegnata: niente `.pc-differenze`,
  *         niente titolo orfano, e subito dopo le due colonne arriva il blocco
  *         Volume (nessun buco al suo posto)
- *  179.2  la finestra dichiara i nuovi limiti: min(1680px, 96vw) di larghezza,
- *         94vh di altezza, non più di 100vh − 32px, e ogni fascia (testa,
- *         corpo, piede) ha un margine interno vero di 16–24 px
+ *  179.2  la finestra dichiara i nuovi limiti del passo 29: min(1900px, 99vw)
+ *         di larghezza, 96vh di altezza, non più di 100vh − 12px, margine
+ *         interno stretto (10-12 px) e l'intestazione su una riga sola
  *  179.3  nel browser vero, a 1440, 1600 e 1680 px: la finestra sta dentro lo
  *         schermo con un margine ai lati, le due colonne restano affiancate con
  *         le intestazioni allineate, il corpo scorre dentro e la pagina sotto
  *         non si allunga (scrollHeight uguale prima e dopo l'apertura)
- *  179.4  il testo del corpo è più grande e le righe più alte, e i numeri non
- *         vanno a capo
+ *  179.4  il testo del corpo è compatto (11,6-12 px) e le righe sono 30-32 px,
+ *         e i numeri non vanno a capo
  */
 
 import test from "node:test";
@@ -137,34 +138,55 @@ test("179.2 la finestra dichiara i nuovi limiti e il suo respiro interno", () =>
   const regolaBox = /\.pc-modale \.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola della finestra c'è");
   const regola = regolaBox[1];
-  assert.match(regola, /width:\s*min\(1680px,\s*96vw\)/, "larga 1680 px al massimo, 96vw di schermo");
-  assert.match(regola, /height:\s*94vh/, "alta 94vh");
-  assert.match(regola, /max-height:\s*calc\(100vh\s*-\s*32px\)/, "e mai oltre 100vh − 32px");
+  assert.match(regola, /width:\s*min\(1900px,\s*99vw\)/, "larga 1900 px al massimo, 99vw di schermo");
+  assert.match(regola, /height:\s*96vh/, "alta 96vh");
+  assert.match(regola, /max-height:\s*calc\(100vh\s*-\s*12px\)/, "e mai oltre 100vh − 12px");
   assert.match(regola, /overflow:\s*hidden/, "la scatola non scorre: scorre il corpo");
+  /* La finestra passa sopra ai galleggianti (Diva e lampadina del tema), che
+   * coprivano la colonna «REC.» e la ×. */
+  const regolaModale = /\.pc-modale-confronto\{([^}]*)\}/.exec(css);
+  assert.ok(regolaModale, "la regola della modale del confronto c'è");
+  assert.match(regolaModale[1], /z-index:\s*\d+\s*!important/, "la finestra sta sopra ai galleggianti");
 
   const respiro = (selettore) => {
     const fuga = selettore.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const r = new RegExp(fuga + "\\{([^}]*)\\}").exec(css);
     assert.ok(r, "la regola " + selettore + " c'è");
-    const m = /padding:\s*([\d.]+)px\s+([\d.]+)px(?:\s+([\d.]+)px)?(?:\s+([\d.]+)px)?/.exec(r[1]);
+    /* il primo valore può essere lo zero senza unità (`padding:0 12px 8px`) */
+    const m = /padding:\s*(0|[\d.]+px)\s+([\d.]+)px(?:\s+([\d.]+)px)?(?:\s+([\d.]+)px)?/.exec(r[1]);
     assert.ok(m, selettore + " dichiara un padding");
-    return { sopra: Number(m[1]), lato: Number(m[2]) };
+    return { sopra: parseFloat(m[1]), lato: Number(m[2]) };
   };
   const testa = respiro(".pc-finestra-testa");
   const corpo = respiro(".pc-corpo-confronto");
   const piede = respiro(".pc-piede");
   [["testa", testa], ["corpo", corpo], ["piede", piede]].forEach(([nome, r]) => {
-    assert.ok(r.lato >= 16 && r.lato <= 24, "margine interno vero nella " + nome + ": " + r.lato + " px");
+    assert.ok(r.lato >= 10 && r.lato <= 14,
+      "margine interno stretto ma vero nella " + nome + " (10-12 px): " + r.lato + " px");
   });
-  assert.ok(corpo.sopra >= 8, "e un filo di respiro anche sopra il corpo: " + corpo.sopra + " px");
+  /* Sopra il corpo non c'è respiro: l'intestazione ferma della tabella si
+   * appoggia al bordo, altrimenti le righe che scorrono si vedono a fette. */
+  assert.equal(corpo.sopra, 0, "nessun margine sopra il corpo (l'intestazione si appoggia al bordo)");
 
-  /* Le barre ferme in cima hanno lo stesso margine delle altre fasce: il testo
-   * dei tasti non tocca il bordo. */
+  /* Le barre ferme in cima hanno lo stesso margine stretto delle altre fasce. */
   ["\.pc-settimane", "\.pc-schede-tab"].forEach((sel) => {
     const r = new RegExp("\\" + sel + "\\{([^}]*)\\}").exec(css);
     const m = /padding:\s*[\d.]+px\s+([\d.]+)px/.exec(r[1]);
-    assert.ok(m && Number(m[1]) >= 16, "margine interno in " + sel + ": " + (m && m[1]) + " px");
+    assert.ok(m && Number(m[1]) >= 10 && Number(m[1]) <= 14,
+      "margine interno in " + sel + ": " + (m && m[1]) + " px");
   });
+
+  /* Passo 29 — l'intestazione sta su una riga: titolo, i due nomi e «Settimana
+   * N · Scheda X» sono fratelli in fila. */
+  const sinistra = /\.pc-finestra-sinistra\{([^}]*)\}/.exec(css);
+  assert.ok(sinistra, "la regola della testa (parte sinistra) c'è");
+  assert.match(sinistra[1], /display:\s*flex/, "la testa è una fila");
+  assert.match(sinistra[1], /flex-wrap:\s*wrap/, "che va a capo solo se non ci sta");
+  const nomi = /\.pc-nomi\{([^}]*)\}/.exec(css);
+  assert.match(nomi[1], /flex-direction:\s*row/, "i due nomi sono in fila, non uno sopra l'altro");
+  const regolaTesta = /\.pc-finestra-testa\{([^}]*)\}/.exec(css);
+  assert.ok(regolaTesta, "la regola della testa c'è");
+  assert.match(regolaTesta[1], /align-items:\s*center/, "e tutto è allineato sulla stessa riga");
 
   /* Il corpo scorre dentro, la pagina sotto no. */
   const regolaCorpo = /\.pc-corpo-confronto\{([^}]*)\}/.exec(css)[1];
@@ -319,13 +341,14 @@ test("179.3 a 1440, 1600 e 1680 px: finestra dentro lo schermo, colonne affianca
     const m = await misuraA(vw);
     assert.equal(m.dopo, m.prima,
       "a " + vw + " px la pagina sotto non si allunga: " + m.prima + " → " + m.dopo);
-    const attesa = Math.min(1680, vw * 0.96);
+    /* Passo 29: 99vw, ma la modale tiene 8 px di margine per lato. */
+    const attesa = Math.min(1900, vw * 0.99, vw - 16);
     assert.ok(Math.abs(m.box.w - attesa) <= 2,
       "a " + vw + " px la finestra è larga " + Math.round(m.box.w) + " px (attesa " + Math.round(attesa) + ")");
-    assert.ok(m.box.x >= 20, "a " + vw + " px resta un margine a sinistra: " + Math.round(m.box.x) + " px");
-    assert.ok(m.box.destra >= 20, "e a destra: " + Math.round(m.box.destra) + " px");
-    assert.ok(m.box.h <= 968 + 1, "a " + vw + " px non esce in basso: alta " + Math.round(m.box.h) + " px");
-    assert.ok(m.box.h >= 900, "e usa lo schermo: " + Math.round(m.box.h) + " px su 1000");
+    assert.ok(m.box.x >= 7, "a " + vw + " px resta un margine a sinistra: " + Math.round(m.box.x) + " px");
+    assert.ok(m.box.destra >= 7, "e a destra: " + Math.round(m.box.destra) + " px");
+    assert.ok(m.box.h <= 960 + 1, "a " + vw + " px non esce in basso: alta " + Math.round(m.box.h) + " px");
+    assert.ok(m.box.h >= 940, "e usa lo schermo: " + Math.round(m.box.h) + " px su 1000");
 
     assert.ok(m.colonne.affiancate, "a " + vw + " px le due colonne restano affiancate");
     assert.ok(m.colonne.stessoTop, "a " + vw + " px partono dalla stessa riga");
@@ -335,12 +358,14 @@ test("179.3 a 1440, 1600 e 1680 px: finestra dentro lo schermo, colonne affianca
 
     assert.ok(m.corpo.scorre,
       "a " + vw + " px il corpo scorre dentro (" + m.corpo.contenuto + " px di contenuto in " + m.corpo.cliente + ")");
-    assert.ok(m.corpo.paddingSx >= 16 && m.corpo.paddingDx >= 16,
+    assert.ok(m.corpo.paddingSx >= 10 && m.corpo.paddingDx >= 10,
       "a " + vw + " px il testo non tocca i bordi: " + m.corpo.paddingSx + " px");
     assert.ok(m.numeriANastro, "a " + vw + " px i numeri non vanno a capo");
     assert.equal(m.tavolaDifferenze, 0, "a " + vw + " px la tabella Differenze non c'è");
-    assert.ok(m.fontRiga >= 13, "a " + vw + " px il nome dell'esercizio è leggibile: " + m.fontRiga + " px");
-    assert.ok(m.altezzaRiga >= 40, "a " + vw + " px le righe sono alte: " + Math.round(m.altezzaRiga) + " px");
+    assert.ok(m.fontRiga >= 11.6 && m.fontRiga <= 12.4,
+      "a " + vw + " px il nome dell'esercizio è compatto e leggibile: " + m.fontRiga + " px");
+    assert.ok(m.altezzaRiga >= 30 && m.altezzaRiga <= 34,
+      "a " + vw + " px le righe sono compatte (30-32 px): " + Math.round(m.altezzaRiga) + " px");
   }
   const gravi = errori.filter((e) => !/gstatic|firebase|Firestore|permission|Failed to fetch/i.test(e));
   assert.deepEqual(gravi, [], "nessun errore di pagina che non sia la SDK bloccata: " + gravi.join(" | ").slice(0, 300));
@@ -353,22 +378,32 @@ test("179.3 a 1440, 1600 e 1680 px: finestra dentro lo schermo, colonne affianca
   page = null; browser = null; server = null;
 });
 
-test("179.4 il testo del confronto è un filo più grande e le righe più alte", () => {
+test("179.4 il testo del confronto è compatto (11,6-12 px) e le righe sono 30-32 px", () => {
   const regolaTab = /\.pc-col-tab\{([^}]*)\}/.exec(css)[1];
   const corpo = Number(/font-size:\s*([\d.]+)px/.exec(regolaTab)[1]);
-  assert.ok(corpo >= 13, "il corpo del confronto è a " + corpo + " px (prima 12,2)");
+  assert.ok(corpo >= 11.6 && corpo <= 12.2, "il corpo del confronto è a " + corpo + " px (passo 29: 11,6-12)");
+  assert.match(regolaTab, /table-layout:\s*fixed/, "la tabella ha le colonne fissate: il contenuto non la allarga");
   const regolaCelle = /\.pc-col-tab td\{([^}]*)\}/.exec(css)[1];
   const altezza = Number(/height:\s*(\d+)px/.exec(regolaCelle)[1]);
-  assert.ok(altezza >= 40, "le righe sono alte " + altezza + " px (prima 38)");
+  assert.ok(altezza >= 30 && altezza <= 32, "le righe sono alte " + altezza + " px (passo 29: 30-32)");
+  const padCelle = /padding:\s*([\d.]+)px\s+([\d.]+)px/.exec(regolaCelle);
+  assert.ok(padCelle && Number(padCelle[1]) >= 3 && Number(padCelle[1]) <= 4,
+    "le celle respirano 3-4 px in verticale, non 8: " + (padCelle && padCelle[1]) + " px");
   const nome = Number(/font-size:\s*([\d.]+)px/.exec(/\.pc-col-tab td\.pc-nome b\{([^}]*)\}/.exec(css)[1])[1]);
-  assert.ok(nome >= 13, "il nome dell'esercizio è a " + nome + " px (prima 12,4)");
+  assert.ok(nome >= 12 && nome <= 12.4, "il nome dell'esercizio è a " + nome + " px (passo 29: 12,2)");
   const numero = Number(/font-size:\s*([\d.]+)px/.exec(/\.pc-col-tab \.pc-n\{([^}]*)\}/.exec(css)[1])[1]);
-  assert.ok(numero >= 12.4, "i numeri sono a " + numero + " px");
+  assert.ok(numero >= 11.2 && numero <= 11.6, "i numeri sono a " + numero + " px (passo 29: 11,4)");
 
-  /* Il blocco Volume: testo un filo più grande, ma nessun colore o struttura
-   * nuova (il passo 27 non si tocca). */
+  /* L'intestazione della tabella resta ferma in cima allo scorrimento. */
+  const th = /\.pc-col-tab thead th\{([^}]*)\}/.exec(css);
+  assert.ok(th, "la regola dell'intestazione ferma c'è");
+  assert.match(th[1], /position:\s*sticky/, "ESERCIZIO / SERIE / RIP. / REC. restano in cima");
+  assert.match(th[1], /top:\s*0/, "appoggiate al bordo dello scorrimento");
+  assert.match(th[1], /background:/, "con lo sfondo pieno: le righe non si vedono attraverso");
+
+  /* Il blocco Volume: struttura del passo 27 intatta, solo le misure compatte. */
   const volNome = Number(/font-size:\s*([\d.]+)px/.exec(/\.pc-vol2-nome\{([^}]*)\}/.exec(css)[1])[1]);
-  assert.ok(volNome >= 12.4, "i distretti del Volume sono a " + volNome + " px");
+  assert.ok(volNome >= 11.8 && volNome <= 12.2, "i distretti del Volume sono a " + volNome + " px");
   const volDelta = Number(/font:\s*\d+\s+([\d.]+)px/.exec(/\.pc-vol2-delta b\{([^}]*)\}/.exec(css)[1])[1]);
-  assert.ok(volDelta >= 12.8, "il Δ del Volume è a " + volDelta + " px");
+  assert.ok(volDelta >= 12 && volDelta <= 12.4, "il Δ del Volume è a " + volDelta + " px");
 });

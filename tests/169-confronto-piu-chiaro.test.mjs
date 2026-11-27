@@ -302,12 +302,12 @@ test("169.4 più schede accese: il volume di tutte insieme, e si sa quale si con
 test("169.5 la finestra è più grande, resta fissa e la pagina sotto non si allunga", () => {
   const regolaBox = /\.pc-modale \.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola della finestra c'è");
-  /* Passo 28: larga 1680 px al massimo ma non più del 96% dello schermo, alta
-   * 94vh e mai oltre 100vh meno 32 px: un margine vero ai lati e in altezza. */
+  /* Passo 29: larga 1900 px al massimo ma non più del 99% dello schermo, alta
+   * 96vh e mai oltre 100vh meno 12 px: un margine vero ai lati e in altezza. */
   const larghezza = /width:\s*min\((\d+)px,\s*(\d+)vw\)/.exec(regolaBox[1]);
   assert.ok(larghezza, "ha una larghezza massima dichiarata, in px e in vw");
-  assert.ok(Number(larghezza[1]) >= 1560, "larga quasi tutto lo schermo: " + larghezza[1] + " px");
-  assert.ok(Number(larghezza[2]) <= 97, "ma lascia un margine ai lati: " + larghezza[2] + "vw");
+  assert.ok(Number(larghezza[1]) >= 1880, "larga quasi tutto lo schermo: " + larghezza[1] + " px");
+  assert.ok(Number(larghezza[2]) <= 99, "ma lascia un margine ai lati: " + larghezza[2] + "vw");
   const altezza = /height:\s*(\d+)vh/.exec(regolaBox[1]);
   assert.ok(altezza, "ha un'altezza in vh");
   assert.notEqual(altezza[1], "88", "non è più ferma a 88vh: la finestra è stata alzata");
@@ -319,19 +319,22 @@ test("169.5 la finestra è più grande, resta fissa e la pagina sotto non si all
   assert.match(regolaCorpo[1], /min-height:\s*0/);
   /* Passo 28: il testo non tocca più i bordi — ogni fascia ha il suo respiro. */
   const interno = (regola) => {
-    const m = /padding:\s*([\d.]+)px\s+([\d.]+)px/.exec(regola);
-    return m ? { sopra: Number(m[1]), lato: Number(m[2]) } : null;
+    /* il primo valore può essere lo zero senza unità (`padding:0 12px 8px`) */
+    const m = /padding:\s*(0|[\d.]+px)\s+([\d.]+)px/.exec(regola);
+    return m ? { sopra: parseFloat(m[1]), lato: Number(m[2]) } : null;
   };
   const respiroCorpo = interno(regolaCorpo[1]);
   assert.ok(respiroCorpo, "il corpo dichiara il suo margine interno");
-  assert.ok(respiroCorpo.lato >= 16 && respiroCorpo.lato <= 24,
-    "margine interno vero ai lati del corpo: " + respiroCorpo.lato + " px");
+  assert.ok(respiroCorpo.lato >= 10 && respiroCorpo.lato <= 14,
+    "margine interno stretto ai lati del corpo (passo 29: 10-12 px): " + respiroCorpo.lato + " px");
   const regolaTesta = /\.pc-finestra-testa\{([^}]*)\}/.exec(css);
   const respiroTesta = interno(regolaTesta[1]);
-  assert.ok(respiroTesta && respiroTesta.lato >= 16, "e la testa pure: " + (respiroTesta && respiroTesta.lato) + " px");
+  assert.ok(respiroTesta && respiroTesta.lato >= 10 && respiroTesta.lato <= 14,
+    "e la testa pure: " + (respiroTesta && respiroTesta.lato) + " px");
   const regolaPiede = /\.pc-piede\{([^}]*)\}/.exec(css);
   const respiroPiede = interno(regolaPiede[1]);
-  assert.ok(respiroPiede && respiroPiede.lato >= 16, "e il piede pure: " + (respiroPiede && respiroPiede.lato) + " px");
+  assert.ok(respiroPiede && respiroPiede.lato >= 10 && respiroPiede.lato <= 14,
+    "e il piede pure: " + (respiroPiede && respiroPiede.lato) + " px");
 
   const { dom, doc, modale, prima } = scena();
   /* Pannello fisso, non un pezzo di pagina: la pagina sotto non si muove. */
@@ -353,5 +356,6 @@ test("169.5 la finestra è più grande, resta fissa e la pagina sotto non si all
   assert.ok(corpo > 11.4, "il testo della tabella è più grande di prima: " + corpo + "px");
   const regolaCelle = /\.pc-col-tab td\{([^}]*)\}/.exec(css);
   const altezzaRiga = Number(/height:\s*(\d+)px/.exec(regolaCelle[1])[1]);
-  assert.ok(altezzaRiga >= 36, "righe più alte e leggibili: " + altezzaRiga + "px");
+  assert.ok(altezzaRiga >= 30 && altezzaRiga <= 34,
+    "righe compatte e leggibili (passo 29: 30-32 px): " + altezzaRiga + "px");
 });
