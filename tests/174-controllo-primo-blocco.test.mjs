@@ -184,8 +184,11 @@ test("174.6 Misure: il BMI dice quale dato manca, le sessioni sono di plicometri
   const dom = new JSDOM(HTML, { runScripts: "outside-only", url: "http://localhost/desktop/index.html", virtualConsole: new VirtualConsole() });
   const w = dom.window;
   const doc = w.document;
+  /* Una sessione già salvata sul computer: deve tornare all'apertura. */
+  w.localStorage.setItem("bd.misure.v1", JSON.stringify({ sessioni: [{ data: "2026-11-02", peso: 84, circ: {}, pl7: {}, fonte: "app" }], config: {}, sync: null }));
   w.eval(scriptMisure());
   assert.equal(w.__msReady, 1, "lo script delle Misure non si è montato");
+  assert.equal(String(doc.getElementById("ms-n").textContent).trim(), "1", "le sessioni salvate non tornano all'apertura");
 
   /* L'etichetta del KPI non è più «SESSIONI»: è plicometria. */
   const etichette = [...doc.querySelectorAll("#pag-misure .ms-k span")].map((s) => String(s.textContent).trim());
@@ -195,6 +198,7 @@ test("174.6 Misure: il BMI dice quale dato manca, le sessioni sono di plicometri
   doc.getElementById("ms-in").value = '{"sessioni":[{"data":"2026-11-03","peso":84}]}';
   doc.getElementById("ms-import").click();
   assert.match(String(doc.getElementById("ms-bmih").textContent), /manca l'altezza/);
+  assert.match(String(doc.getElementById("ms-import-esito").textContent), /Ora in archivio: 2 sessioni/);
   assert.match(String(doc.getElementById("ms-bmih").textContent), /Anagrafica/);
 
   /* L'esito è accanto al tasto (nella linguetta dove si clicca) e nella riga di stato. */

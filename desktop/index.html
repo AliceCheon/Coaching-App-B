@@ -2449,6 +2449,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
  function boot(){
   if(typeof document==="undefined"||!document.getElementById||!document.getElementById("ms-rows"))return;
+  /* Passo 23: le sessioni salvate in locale si rileggono all'apertura. Prima
+     `load()` esisteva ma non veniva mai chiamata: un'importazione restava fino
+     al refresh e poi spariva, mentre la pagina promette «restano su questo
+     computer». */
+  load();
   var q=function(i){return document.getElementById(i);};
   var f=function(v,d){return v==null?"—":v.toFixed(d==null?1:d);};
   var BO={circ:{},pl7:{},pl3:{},peso:null,eta:null,sesso:"u",data:new Date().toISOString().slice(0,10)};
