@@ -69,9 +69,14 @@ function sintesi(doc, modello, r) {
   d.appendChild(n(doc, "div", "ck-ready-testa", "Blocco attivo"));
   const pr = modello.programma;
   d.appendChild(n(doc, "h3", "", pr && pr.nome ? nomePulito(pr.nome) : "Programma attivo: " + NON));
+  /* Passo 23 — la settimana arriva già calcolata da comune/settimana-blocco.js:
+   * qui non si ricalcola, così la frase e il motivo sono gli stessi della
+   * Dashboard e dell'Overview. */
+  const settFrase = pr && pr.settimanaEtichetta
+    ? " · " + pr.settimanaEtichetta
+    : (pr && pr.settimana != null ? " · settimana " + pr.settimana : " · settimana " + NON);
   d.appendChild(n(doc, "p", "ck-frase", pr && pr.nome
-    ? (pr.esplicito ? "marcato come attivo nel programma · " : "aggiornato più di recente, ripiego di A · ")
-      + (pr.settimana != null ? "settimana " + pr.settimana + " secondo i logbook" : "settimana " + NON)
+    ? (pr.esplicito ? "marcato come attivo nel programma" : "aggiornato più di recente, ripiego di A") + settFrase
     : "Il documento-programma non c'è o non è leggibile: nessun nome inventato al posto suo."));
   d.appendChild(n(doc, "p", "ck-ready-nota pz-sint-nota",
     r.totale

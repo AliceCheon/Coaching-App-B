@@ -84,8 +84,9 @@ test("138.1 i quattro passi del resolver, e l'ambiguità dichiarata", () => {
   assert.equal(ambiguo.chiave, null);
   assert.ok(ambiguo.candidati.length > 1, "l'ambiguità porta i candidati con sé");
 
-  /* il catalogo di base è quello vero: 186 voci, distretti della casa */
-  assert.equal(catalogoBase().length, 186);
+  /* il catalogo di base è quello vero: 176 voci (i dieci doppioni da codifica
+   * sono uniti al passo 23), distretti della casa */
+  assert.equal(catalogoBase().length, 176);
   assert.equal(catalogoBase().filter((v) => !v.distretto).length, 0, "ogni voce ha un distretto tradotto");
 });
 

@@ -81,15 +81,22 @@
       finestra: finestra, ultima: ultima, motivo: null };
   }
 
-  /* La settimana del programma in cui cade oggi, dalla data d'inizio. */
+  /* La settimana del programma in cui cade oggi: UNA funzione per tutte le
+   * pagine, in comune/settimana-blocco.js (passo 23). Dashboard, Overview e
+   * Pianificazione passano da qui, così il numero è lo stesso e, quando il
+   * conto non si può fare, anche il motivo è lo stesso. */
   function settimanaInCorso(inizioDMY, oggi, quante) {
-    var inizio = dataDMY(inizioDMY);
-    if (!inizio) return { numero: null, motivo: "manca la data d'inizio del programma: non so quale settimana è oggi" };
-    var g = giorniFra(inizio, oggi || new Date());
-    if (g < 0) return { numero: null, inizio: inizio, motivo: "il programma comincia il " + breve(inizio) };
-    var n = Math.floor(g / 7) + 1;
-    if (quante && n > quante) return { numero: null, inizio: inizio, motivo: "il programma è di " + quante + " settimane ed è finito: oggi sarebbe la settimana " + n };
-    return { numero: n, inizio: inizio, motivo: null };
+    var modulo = radice.BDSettimana;
+    if (!modulo || typeof modulo.settimanaDelBlocco !== "function") {
+      return { numero: null, inizio: dataDMY(inizioDMY), motivo: "manca il modulo della settimana: non so quale settimana è oggi" };
+    }
+    var r = modulo.settimanaDelBlocco({
+      programmaPresente: true,
+      inizio: inizioDMY,
+      durata: quante == null ? null : quante,
+      oggi: oggi || new Date()
+    });
+    return { numero: r.numero, inizio: dataDMY(inizioDMY), motivo: r.motivo, totale: r.totale, etichetta: r.etichetta };
   }
 
   /* opzioni: { letto: bool, motivoProgramma, serie: [[n per settimana] per riga], inizio: "gg/mm/aaaa", oggi } */

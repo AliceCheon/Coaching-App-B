@@ -22,13 +22,14 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { JSDOM, VirtualConsole } from "jsdom";
 import "../comune/checkin-b.js";
+import "../comune/settimana-blocco.js";
 import "../comune/overview-vivo-b.js";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
 const K = globalThis.BDCheckinB;
 const OV = globalThis.BDOverviewB;
 const sorgente = readFileSync(join(radice, "desktop", "index.html"), "utf8");
-const MODULI = ["peso-b", "checkin-b", "overview-vivo-b"];
+const MODULI = ["peso-b", "settimana-blocco", "checkin-b", "overview-vivo-b"];
 
 function pagina() {
   let html = sorgente;

@@ -195,6 +195,65 @@ export function nomeECognomeAccount(account) {
   return { nome: parti[0], cognome: parti.slice(1).join(" "), intero: intero };
 }
 
+/* PASSO 23 — il nome che si legge in pagina, preso dall'anagrafica.
+ *
+ * Prima «Alice Clemente» era scritto a mano in cinque punti del file del v31
+ * (barra laterale, intestazione Dati cliente, Salute, Misure, Monitor peso).
+ * Il nome viene dall'account in uso e il cognome dal registro dell'anagrafica:
+ * finché il cognome non è dichiarato, si legge SOLO il nome. «Clemente» non si
+ * inventa perché l'account lo porta: è proprio la domanda che il banner del
+ * cognome fa, e la risposta è di Alice.
+ * Senza né account né anagrafica: stringa vuota, e chi disegna dichiara che il
+ * nome non è registrato (mai un nome di esempio). */
+export function nomeAtleta(account, anagrafica) {
+  const a = nomeECognomeAccount(account);
+  const s = anagrafica && typeof anagrafica === "object" ? anagrafica : {};
+  const nome = testo(s.nome) || a.nome;
+  const cognome = testo(s.cognome);
+  if (!nome) return "";
+  return cognome ? nome + " " + cognome : nome;
+}
+
+/* Le iniziali per il cerchio di Dati cliente: «Alice» → «A», «Alice Rossi» →
+ * «AR». Con il nome vuoto resta «—»: non si inventa un'iniziale. */
+export function inizialiAtleta(nome) {
+  const parti = testo(nome).split(/\s+/).filter(Boolean);
+  if (!parti.length) return "—";
+  const prime = parti.slice(0, 2).map((p) => p.charAt(0).toUpperCase());
+  return prime.join("");
+}
+
+/* Il nome nei cinque punti del file (più il saluto della Dashboard). Si
+ * sostituisce il testo dentro i nodi veri, senza innerHTML. `#ck-nome` è il
+ * saluto «Benvenuta, <i>Alice</i>!»: lì va il solo nome di battesimo. */
+export function mostraNomeAtleta(doc, nome) {
+  const pulito = testo(nome);
+  const scritto = pulito || "nome non registrato";
+  if (!doc || typeof doc.querySelectorAll !== "function") return false;
+
+  const chi = doc.querySelector(".rail .chi");
+  if (chi) {
+    const primo = chi.firstChild;
+    if (primo && primo.nodeType === 3) primo.textContent = scritto + " ";
+    else {
+      chi.insertBefore(doc.createTextNode(scritto + " "), chi.firstChild);
+    }
+  }
+  const dcNome = doc.querySelector("#pag-dati-cliente .dc-nome");
+  if (dcNome) dcNome.textContent = scritto;
+  const dcAv = doc.querySelector("#pag-dati-cliente .dc-av");
+  if (dcAv) dcAv.textContent = inizialiAtleta(pulito);
+
+  ["#pag-salute-recupero .sr-who b", "#pag-misure .ms-who b", "#pag-monitor-peso .mp-who b"].forEach((sel) => {
+    const b = doc.querySelector(sel);
+    if (b) b.textContent = scritto;
+  });
+
+  const saluto = doc.getElementById("ck-nome");
+  if (saluto) saluto.textContent = pulito ? pulito.split(/\s+/)[0] : "atleta";
+  return true;
+}
+
 /* Il banner in pagina. Sta per id; il ripiego sul testo serve alle pagine
  * vecchie che non hanno ancora l'id. */
 export function bannerCognome(doc) {

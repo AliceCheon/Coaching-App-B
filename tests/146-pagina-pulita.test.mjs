@@ -4,8 +4,9 @@
  *         il questionario fisso (sk-qrisp / sk-qscore / disegnaQuestionario)
  *  146.2  nessuna traccia di Cloudflare: niente /cdn-cgi/, niente
  *         __cf_email__, niente email-decode; l'indirizzo e' testo semplice
- *  146.3  una versione sola: la stringa compare UNA volta nel file e i tre
- *         posti (menu, Build, cambio pagina) mostrano la stessa
+ *  146.3  una versione sola: BD_VERSIONE compare una volta come ripiego, ma i
+ *         tre posti (menu, Build, cambio pagina) leggono la build vera di B
+ *         (app-config-b.js) e, senza quella, ripiegano tutti sulla stessa
  *  146.4  la pagina si apre in jsdom, si visitano le venti pagine e non resta
  *         nessun errore non preso in carico
  */
@@ -45,7 +46,9 @@ test("146.3 una versione sola, uguale nei tre posti", () => {
   assert.match(sorgente, /window\.BD_VERSIONE="v26\.\d+"/);
   assert.equal(sorgente.includes("v26.5"), false, "resta la versione vecchia del menu");
   assert.equal(sorgente.includes("v25.7"), false, "resta la versione vecchia del cambio pagina");
-  assert.match(sorgente, /bd-ver'\);if\(b\)b\.textContent=\(window\.BD_VERSIONE\|\|''\)/);
+  /* Passo 23: la build mostrata è quella di B; BD_VERSIONE resta solo il
+   * ripiego quando app-config-b.js non c'è (prova jsdom senza SDK). */
+  assert.match(sorgente, /function buildVera\(\)\{ var b=window\.BD_B&&window\.BD_B\.build;/);
 });
 
 test("146.4 le venti pagine si aprono senza errori non presi in carico", async () => {

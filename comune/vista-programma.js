@@ -654,6 +654,19 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta, opzioni) {
       chiudiProgressioni();
     });
   }
+  /* PASSO 23 — il pannello «Applica progressione» si chiude con Esc, come le
+   * altre finestre della pagina. In cattura, così non arriva ai gestori che
+   * stanno sotto; e solo quando il pannello c'è davvero. */
+  if (!doc.__progEsc) {
+    doc.__progEsc = true;
+    doc.addEventListener("keydown", (ev) => {
+      if (!pannelloProgressioni) return;
+      if (ev && (ev.key === "Escape" || ev.key === "Esc" || ev.keyCode === 27)) {
+        ev.stopPropagation();
+        chiudiProgressioni();
+      }
+    }, true);
+  }
 }
 
 /* Le liste, nella forma che serve al pannello. Le custom stanno in coda, con
@@ -1390,7 +1403,7 @@ function cartaStato(doc, r) {
    * modo confronto; scelto uno, si affacciano le grandezze vere (volume,
    * esercizi, schede, densità) e si dichiara quello che non c'è. */
   atti.appendChild(tastoConfronta(doc, r));
-  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Copia da Prog…", "copia gli esercizi di un altro programma dentro questo"));
+  atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "Copia da un altro programma", "copia gli esercizi di un altro programma dentro questo"));
   atti.appendChild(pulsanteInArrivo(doc, "pr-btn", "⭐ Salva in Libreria", "salva questo programma nella libreria, per riusarlo come base"));
   c.appendChild(atti);
 
@@ -1419,7 +1432,7 @@ function tastoConfronta(doc, r) {
   /* Se la zona B non ha nessun altro programma, il pannello lo dice: il tasto
    * non si spegne, perché la pagina sa leggere (e il perché starebbe in un
    * tooltip invece che davanti agli occhi). */
-  const b = pulsanteVivo(doc, "pr-btn", "Confronta con…", "sceglie un programma e lo affianca a quello in uso: volume, esercizi, schede e densità, con la variazione", () => {
+  const b = pulsanteVivo(doc, "pr-btn", "Confronta con un altro programma", "sceglie un programma e lo affianca a quello in uso: volume, esercizi, schede e densità, con la variazione", () => {
     apriElencoProgrammi(doc, b, elenco, r);
   });
   b.setAttribute("data-confronta", "1");
@@ -2369,7 +2382,13 @@ function barraStrumenti(doc, scheda, r) {
   bar.appendChild(btSpiega);
   bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
   bar.appendChild(pulsanteStampa(doc, "Stampa da Compilare", "stampa una settimana con le caselle vuote da spuntare a mano", "compilare"));
-  const sug = pulsanteSpento(doc, "pr-btn on", "Suggerimenti: ON", "accende o spegne i suggerimenti");
+  /* PASSO 23 — il tasto diceva «Suggerimenti: ON» ma non accendeva niente:
+   * un motore di suggerimenti non c'è. Ora il testo dice che non sono
+   * disponibili e il titolo dice perché, invece di far credere che siano
+   * accesi. Il tasto resta (non si toglie): cambia la verità che mostra. */
+  const sug = pulsanteSpento(doc, "pr-btn", "Suggerimenti: non disponibili", "i suggerimenti automatici non ci sono ancora");
+  sug.title = "spento: i suggerimenti automatici non ci sono ancora — questa pagina non ne propone nessuno";
+  sug.setAttribute("aria-label", "Suggerimenti non disponibili: i suggerimenti automatici non ci sono ancora");
   bar.appendChild(sug);
   const btProgScheda = pulsanteVivo(doc, "pr-btn", "Applica progressione a tutta la scheda",
     "applica la progressione alle 8 settimane di tutte le righe", () => {

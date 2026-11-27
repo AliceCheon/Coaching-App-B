@@ -8,11 +8,13 @@
  * sono i programmi letti da Firestore, i numeri si contano dalle schede lette.
  *
  * Dove un dato non c'è, «non registrato». Due casi veri:
- *  - le sedute lette portano data, codice ed esercizi ma NON il programma a
- *    cui appartenevano: il collegamento seduta→programma non è nei dati
- *    letti, quindi Sedute e Ultima restano «non registrato» per tutti (se un
- *    giorno il documento di una seduta porterà il programma, la colonna si
- *    accende — qui non si deduce dai codici);
+ *  - PASSO 23 — Sedute e Ultima leggono lo STESSO logbook dell'Overview. Il
+ *    logbook attribuisce una seduta a un programma solo quando il codice
+ *    della scheda appartiene a un programma solo (è la regola di
+ *    comune/logbook.js, non una deduzione nuova): quelle sedute si contano
+ *    qui, per nome del programma. Le sedute che il logbook non sa attribuire
+ *    restano fuori, e la nota sotto la tabella lo dice. Se il logbook non è
+ *    stato letto, la colonna dice «non registrato» col motivo nel titolo;
  *  - se anche una sola serie della settimana 1 non si legge, la colonna
  *    Serie dell'intero programma è «non registrato»: una somma a buchi non
  *    si presenta come un numero.
@@ -71,6 +73,28 @@ function contiSchede(gruppo) {
   };
 }
 
+/* gg/mm/aaaa → aaaammgg per ordinare; vuoto quando non si legge. */
+function chiaveData(valore) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(valore == null ? "" : valore).trim());
+  return m ? m[3] + m[2].padStart(2, "0") + m[1].padStart(2, "0") : "";
+}
+
+/* Le sedute del logbook che appartengono a un programma: il logbook mette il
+ * nome del programma in `pn` solo quando il codice della scheda è di UN solo
+ * programma. Stessa fonte, stessa regola, stesso numero dell'Overview. */
+function seduteDelProgramma(sedute, nome) {
+  if (!Array.isArray(sedute)) return null;
+  const cercato = String(nome == null ? "" : nome).trim().toLowerCase();
+  const mie = sedute.filter((s) => s && String(s.pn == null ? "" : s.pn).trim().toLowerCase() === cercato);
+  let ultima = null;
+  mie.forEach((s) => {
+    const k = chiaveData(s.d);
+    if (!k) return;
+    if (!ultima || k > ultima.chiave) ultima = { chiave: k, testo: String(s.d).trim() };
+  });
+  return { numero: mie.length, ultima: ultima ? ultima.testo : null };
+}
+
 /* Le righe della tabella: TUTTI i programmi letti, attivo compreso (è il v31:
  * «I blocchi, chiusi e attivo»), i più recenti in cima. `attivoId` marca la
  * riga del programma attivo; `schedeV2` serve ai conti e resta null quando la
@@ -79,6 +103,7 @@ export function elencoArchivio(programmi, opzioni) {
   const o = opzioni || {};
   const elenco = Array.isArray(programmi) ? programmi.filter((p) => p && typeof p === "object") : [];
   const attivoId = o.attivoId == null ? "" : String(o.attivoId);
+  const seduteLogbook = Array.isArray(o.sedute) ? o.sedute : null;
   return elenco
     .filter((p) => !p.deletedAt)
     .map((p) => {
@@ -88,6 +113,9 @@ export function elencoArchivio(programmi, opzioni) {
        * stessa funzione tollerante del resto dell'app (id nudo o id documento). */
       const cerca = schedePerProgramma(o.schedeV2, profilo);
       const conti = contiSchede(cerca.gruppo);
+      /* Stesso logbook dell'Overview: una seduta si attribuisce a un programma
+       * solo se il suo codice scheda è di un programma solo. */
+      const conto = seduteLogbook ? seduteDelProgramma(seduteLogbook, nomePulito(profilo.nome)) : null;
       return {
         id: profilo.id,
         nome: nomePulito(profilo.nome),
@@ -98,6 +126,8 @@ export function elencoArchivio(programmi, opzioni) {
         schede: conti ? conti.schede : null,
         esercizi: conti ? conti.esercizi : null,
         serie: conti ? conti.serie : null,
+        sedute: conto ? conto.numero : null,
+        ultima: conto ? conto.ultima : null,
         /* Il documento vero e le sue schede: la vista di sola lettura non
          * rilegge niente e non indovina niente. */
         programma: p,
@@ -164,12 +194,20 @@ export function renderArchivio(doc, contenitore, opzioni) {
       nome.appendChild(guarda);
     }
     tr.appendChild(nome);
-    [["schede", riga.schede], ["esercizi", riga.esercizi], ["serie", riga.serie], ["sedute", null], ["ultima", null]]
+    [["schede", riga.schede], ["esercizi", riga.esercizi], ["serie", riga.serie],
+     ["sedute", riga.sedute], ["ultima", riga.sedute === 0 ? "—" : riga.ultima]]
       .forEach(([chiave, valore]) => {
         const td = doc.createElement("td");
         td.className = "pg-m";
         td.setAttribute("data-colonna", chiave);
         td.textContent = valore == null ? NON : String(valore);
+        if (chiave === "sedute" || chiave === "ultima") {
+          td.title = valore == null
+            ? "il logbook non è stato letto: nessun conto invece di uno zero finto"
+            : (riga.sedute === 0
+              ? "nessuna seduta del logbook porta una scheda di questo programma"
+              : "sedute del logbook con il codice di una scheda di questo programma");
+        }
         tr.appendChild(td);
       });
     contenitore.appendChild(tr);

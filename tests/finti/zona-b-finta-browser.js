@@ -160,8 +160,8 @@
   window.BD_B = { nomeAppAuth: "B", prefissoChiavi: "bd-b.v1.", firebase: { projectId: "prova", apiKey: "prova", appId: "prova:prova" } };
   var auth = {
     setPersistence: function () { return Promise.resolve("ok"); },
-    onAuthStateChanged: function (cb) { cb({ uid: "alice-prova" }); return function () {}; },
-    signInWithPopup: function () { return Promise.resolve({ user: { uid: "alice-prova" } }); },
+    onAuthStateChanged: function (cb) { cb({ uid: "alice-prova", displayName: "Alice Clemente" }); return function () {}; },
+    signInWithPopup: function () { return Promise.resolve({ user: { uid: "alice-prova", displayName: "Alice Clemente" } }); },
     signInWithRedirect: function () { return Promise.resolve({ via: "redirect" }); },
     signOut: function () { return Promise.resolve({ via: "uscita" }); }
   };

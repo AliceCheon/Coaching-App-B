@@ -53,8 +53,8 @@ const scheda = {
 const voce = (conto, nome) => conto.articolazioni.filter((a) => a.articolazione === nome)[0] || null;
 const somma = (a) => a.reduce((acc, v) => acc + v, 0);
 
-test("129.1 la mappa copre tutti i 186 esercizi del catalogo, con le articolazioni vere", () => {
-  assert.equal(Object.keys(MAPPA_ARTICOLARE).length, 186);
+test("129.1 la mappa copre tutti i 176 esercizi del catalogo, con le articolazioni vere", () => {
+  assert.ok(Object.keys(MAPPA_ARTICOLARE).length >= 176, "la mappa ha almeno i 176 esercizi veri");
   CATALOGO_ESERCIZI_B.forEach((v) => {
     assert.ok(MAPPA_ARTICOLARE[v.n], "manca " + v.n);
   });
@@ -96,14 +96,16 @@ test("129.3 Triset glutei e' UN esercizio: la riga vale una volta, non tre", () 
   assert.deepEqual(voce(conto, "anca").esercizi, ["Triset glutei"]);
 });
 
-test("129.4 il doppione conta col nome vero: l'alias non tocca il catalogo", () => {
+test("129.4 il doppione conta col nome vero: l'alias resta, il doppione non è più nel catalogo", () => {
   assert.equal(ALIAS["Pressa 45Â°"], "Pressa 45°");
   assert.equal(nomeCanonico("Pressa 45Â°"), "Pressa 45°");
   assert.deepEqual(articolazioniDi("Pressa 45Â°").punti, articolazioniDi("Pressa 45°").punti);
   assert.equal(ALIAS["Push ups"], "Push Up");
-  /* Il catalogo ha ancora tutte e 186 le voci, doppioni compresi. */
-  assert.equal(CATALOGO_ESERCIZI_B.length, 186);
-  assert.ok(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45Â°"));
+  /* Passo 23: il doppione rovinato non è più nel catalogo (176 voci), ma il
+   * suo nome resta come alias e conta lo stesso esercizio. */
+  assert.equal(CATALOGO_ESERCIZI_B.length, 176);
+  assert.equal(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45Â°"), false);
+  assert.ok(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45°"));
 });
 
 test("129.5 la riga che non conta nel volume non da' punti, e nemmeno il cardio", () => {

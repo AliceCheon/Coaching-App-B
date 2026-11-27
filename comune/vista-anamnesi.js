@@ -217,6 +217,61 @@ export function montaCampoAnamnesi(doc, dichiarazione, opzioni) {
   return { montato: primoGiro, modo: riga.modoAnamnesi, testo: letto };
 }
 
+/* PASSO 23 — «Compila / Modifica» in Dati cliente → Anamnesi.
+ *
+ * Il tasto c'era ma non aveva un gestore: un tasto muto, che è peggio di un
+ * tasto spento. Il commento nel file prometteva l'editor del campo «Patologie o
+ * infortuni», che è davvero l'unico posto dove l'anamnesi si scrive. Ora il
+ * tasto porta lì: se la riga è già aperta le mette il fuoco nell'area di
+ * testo, altrimenti accende il suo «Modifica», e lo dice anche nella riga
+ * d'avviso sopra l'elenco. Non scrive niente da sé. */
+export function collegaCompila(doc) {
+  if (!doc || typeof doc.getElementById !== "function") return false;
+  const bottone = doc.getElementById("dc-compila");
+  if (!bottone) return false;
+  if (bottone.dataset.compilaVivo === "1") return true;
+  bottone.dataset.compilaVivo = "1";
+  bottone.addEventListener("click", () => {
+    const pannello = pannelloAnamnesi(doc);
+    const riga = pannello ? rigaPatologie(pannello) : null;
+    const avviso = doc.getElementById("dc-avviso");
+    const apriBtn = riga && typeof riga.querySelector === "function" ? riga.querySelector('[data-anamnesi="modifica"]') : null;
+    const area = riga && typeof riga.querySelector === "function" ? riga.querySelector('[data-anamnesi="area"]') : null;
+    if (!riga || !apriBtn) {
+      if (avviso) {
+        avviso.textContent = riga
+          ? "L'anamnesi non si può compilare adesso: la riga «Patologie o infortuni» non ha potuto leggere la dichiarazione. Il motivo è scritto accanto al nome del campo."
+          : "L'anamnesi non si può compilare adesso: manca la riga «Patologie o infortuni» in questa pagina.";
+      }
+      return;
+    }
+    if (riga.modoAnamnesi === "modifica" && area) {
+      if (typeof area.focus === "function") area.focus();
+    } else if (typeof apriBtn.click === "function") {
+      apriBtn.click();
+    }
+    if (leggeAria(riga)) {
+      if (typeof riga.scrollIntoView === "function") riga.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    /* Il clic sul tasto porta il fuoco su di sé quando il gestore ha già
+     * finito: si rimette il fuoco nell'area al giro dopo, così si scrive
+     * subito senza un secondo clic. */
+    if (area && typeof area.focus === "function") {
+      const win = doc.defaultView;
+      if (win && typeof win.setTimeout === "function") win.setTimeout(() => { try { area.focus(); } catch (e) { /* niente */ } }, 0);
+      else if (typeof area.focus === "function") area.focus();
+    }
+    if (avviso) {
+      avviso.textContent = "L'anamnesi si scrive qui sotto, nel campo «Patologie o infortuni»: l'ho aperto per te. Quando hai finito, «Salva» scrive nel registro della zona B.";
+    }
+  });
+  return true;
+}
+
+function leggeAria(riga) {
+  return !riga || !riga.getAttribute || riga.getAttribute("aria-hidden") !== "true";
+}
+
 function apri(riga, n, o) {
   riga.modoAnamnesi = "modifica";
   riga.dirty = false;

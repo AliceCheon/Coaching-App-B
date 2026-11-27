@@ -63,7 +63,7 @@ const pillola = (b) => b.querySelector("i.pr-arrivo");
 test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
   const s = scena();
   [
-    [".pr-acts", "Copia da Prog\u2026"],
+    [".pr-acts", "Copia da un altro programma"],
     [".pr-acts", "Salva in Libreria"],
     [".pr-bar", "Periodizzazione"]
   ].forEach(([zona, parola]) => {
@@ -79,7 +79,7 @@ test("108.1 la pillola sta dentro i tasti che restano spenti", () => {
 test("108.2 il tooltip dice cosa fara' il tasto", () => {
   const s = scena();
   const attesi = [
-    [".pr-acts", "Copia da Prog\u2026", "copia gli esercizi"],
+    [".pr-acts", "Copia da un altro programma", "copia gli esercizi"],
     [".pr-acts", "Salva in Libreria", "libreria"],
     [".pr-bar", "Periodizzazione", "otto settimane"]
   ];
@@ -95,13 +95,16 @@ test("108.3 Suggerimenti resta spento e senza pillola; Spiegazioni ora apre (pas
   const s = scena();
   /* Passo 42: «Confronta con…» non è più «in arrivo»: apre l'elenco in modo
      confronto e affianca le grandezze vere. */
-  const confronta = tasto(s, ".pr-acts", "Confronta con\u2026");
-  assert.equal(confronta.disabled, false, "«Confronta con…» è acceso");
-  assert.equal(pillola(confronta), null, "«Confronta con…» non porta più la pillola in arrivo");
+  const confronta = tasto(s, ".pr-acts", "Confronta con un altro programma");
+  assert.equal(confronta.disabled, false, "«Confronta con un altro programma» è acceso");
+  assert.equal(pillola(confronta), null, "«Confronta con un altro programma» non porta più la pillola in arrivo");
   assert.ok(confronta.title.indexOf("in arrivo") === -1, "e non promette più niente in arrivo");
-  const sug = tasto(s, ".pr-bar", "Suggerimenti: ON");
-  assert.equal(sug.disabled, true, "\u00abSuggerimenti\u00bb resta spento in attesa della robottina");
+  /* Passo 23: il testo non dice più «ON» (non c'era niente di acceso) e il
+   * tooltip dice perché resta spento. */
+  const sug = tasto(s, ".pr-bar", "Suggerimenti: non disponibili");
+  assert.equal(sug.disabled, true, "\u00abSuggerimenti\u00bb resta spento: il motore non c'è");
   assert.equal(pillola(sug), null, "\u00abSuggerimenti\u00bb NON porta la pillola in arrivo");
+  assert.ok(sug.title.indexOf("non ci sono ancora") !== -1, "il tooltip dice perché è spento: " + sug.title);
   /* Passo 33: le quattro spiegazioni sono scritte e si aprono: il tasto non e'
      piu' spento, ma non porta nessuna pillola perche' non c'e' niente in arrivo. */
   const sp = tasto(s, ".pr-bar", "Spiegazioni (4/4)");

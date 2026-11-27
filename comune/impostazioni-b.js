@@ -222,6 +222,32 @@ function scriviNota(doc, id, testoNota) {
   el.hidden = !testo(testoNota);
 }
 
+/* PASSO 23 — la riga «Versione» non si scrive a mano.
+ *
+ * Prima la build era la costante del v31 («v26.12», che non è la build di B),
+ * le schede erano un «4» fisso e gli esercizi un «179» che non seguiva il
+ * catalogo. Ora:
+ *   - la build è quella vera di app-config-b.js (window.BD_B.build);
+ *   - le schede sono quelle del programma aperto, contate dai documenti letti;
+ *   - gli esercizi sono quelli del catalogo condiviso (comune/catalogo-esercizi-b.js).
+ * Quando un dato non c'è, la riga dice «non registrato»: mai un numero civetta.
+ */
+export function mostraVersione(doc, dati) {
+  const d = dati && typeof dati === "object" ? dati : {};
+  if (!doc || typeof doc.getElementById !== "function") return null;
+  const build = testo(d.build) || testo(typeof window !== "undefined" && window.BD_B ? window.BD_B.build : "");
+  const schede = Number.isFinite(Number(d.schede)) && d.schede != null ? Number(d.schede) : null;
+  const esercizi = Number.isFinite(Number(d.esercizi)) && d.esercizi != null ? Number(d.esercizi) : null;
+
+  const b = doc.getElementById("st-ver");
+  if (b) b.textContent = build || "non registrata";
+  const s = doc.getElementById("st-schede");
+  if (s) s.textContent = schede == null ? "non registrato" : String(schede);
+  const e = doc.getElementById("st-esercizi");
+  if (e) e.textContent = esercizi == null ? "non registrato" : String(esercizi);
+  return { build: build || null, schede: schede, esercizi: esercizi };
+}
+
 /* Attacca i tre comandi della pagina Impostazioni. Opzioni:
  *  - archivio: () => Storage | Storage — la memoria del dispositivo;
  *  - registro: () => Promise<Array> | Array — le voci lette da B;

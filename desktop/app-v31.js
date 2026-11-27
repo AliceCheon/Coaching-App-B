@@ -17,6 +17,8 @@
 
 import { inizializzaAppB, authDi, firestoreDi, persistenzaLocale } from "../comune/firebase-client.js";
 import { nomePulito } from "../comune/nome-pulito.js";
+import { testoNastro } from "../comune/nastro-b.js";
+import { conteggioCatalogoB } from "../comune/catalogo-esercizi-b.js";
 import { entraConGoogle, ascoltaStato, esci } from "../comune/accesso.js";
 import { promemoriaAccesso, ricordaAccesso, dimenticaAccesso, testoEntra, testoNota, testoSpiegazione } from "../comune/promemoria-accesso.js";
 import { programmaAttivo } from "../comune/lettura-dati.js";
@@ -46,10 +48,10 @@ import { applicaEsclusioni } from "../comune/esclusioni.js";
 import { riempiRischioDaZonaBSicuro } from "../comune/vista-reds.js";
 import { riconosciArticolazioni, dichiarazioneDalRegistro } from "../comune/anamnesi-b.js";
 import { creaPonteAnamnesi } from "../comune/anamnesi-viva.js";
-import { montaCampoAnamnesi } from "../comune/vista-anamnesi.js";
+import { montaCampoAnamnesi, collegaCompila } from "../comune/vista-anamnesi.js";
 import { annodaGuideVive } from "../comune/guide-vive.js";
-import { montaAnagrafica, mostraAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica, aggiornaBannerCognome } from "../comune/anagrafica-b.js";
-import { montaImpostazioni } from "../comune/impostazioni-b.js";
+import { montaAnagrafica, mostraAnagrafica, anagraficaDalRegistro, versioneDi, voceAnagrafica, aggiornaBannerCognome, nomeAtleta, mostraNomeAtleta } from "../comune/anagrafica-b.js";
+import { montaImpostazioni, mostraVersione } from "../comune/impostazioni-b.js";
 import { montaQuaderno, mostraQuaderno, quadernoDalRegistro, voceQuaderno, CAMPI_QUADERNO } from "../comune/quaderno-b.js";
 
 /* PASSO 14d — l'esito della dichiarazione sopravvive ai ridisegni: se no,
@@ -90,6 +92,59 @@ function caricaFoglioB(doc, base) {
   doc.body.appendChild(l);
 }
 if (typeof document !== "undefined") caricaFoglioB(document);
+
+/* ---------- PASSO 23 — le tre cose che erano scritte a mano ----------
+ *
+ * 1. La settimana del blocco: UNA funzione (comune/settimana-blocco.js) per
+ *    Dashboard, Overview e Pianificazione. Qui la chiamata, con i valori del
+ *    programma letto; se i dati mancano, `etichetta` è la stessa frase in
+ *    tutte e tre le pagine e porta il perché.
+ * 2. Il nastro: gli esercizi sono quelli del programma aperto (il conto della
+ *    carta), non il costruttore d'esempio del v31.
+ * 3. La riga «Versione» di Impostazioni: build vera, schede ed esercizi contati
+ *    dai dati (comune/impostazioni-b.js).
+ */
+function settimanaCorrente(rp, attivo, oggi) {
+  const modulo = typeof globalThis !== "undefined" ? globalThis.BDSettimana : null;
+  if (!modulo || typeof modulo.settimanaDelBlocco !== "function") {
+    return {
+      numero: null, totale: rp && rp.profilo ? rp.profilo.durata : null,
+      motivo: "manca il modulo della settimana",
+      etichetta: "settimana non registrata: manca il modulo della settimana"
+    };
+  }
+  return modulo.settimanaDelBlocco({
+    programmaPresente: Boolean(attivo && attivo.programma),
+    inizio: rp && rp.profilo ? rp.profilo.inizio : "",
+    durata: rp && rp.profilo ? rp.profilo.durata : null,
+    oggi: oggi || new Date()
+  });
+}
+
+/* La testata della Dashboard: nome del programma e settimana del blocco.
+ * Prima erano «Intensità ottobre-dicembre» e «settimana 1 di 8», scritti nel
+ * file del v31. */
+function aggiornaTestataDashboard(doc, rp, settimana, attivo) {
+  const nome = doc.getElementById("ck-programma-nome");
+  if (nome) nome.textContent = attivo && attivo.programma && rp.profilo.presente
+    ? nomePulito(rp.profilo.nome)
+    : "nessun programma letto";
+  const sett = doc.getElementById("ck-settimana");
+  if (sett) sett.textContent = settimana && settimana.etichetta ? settimana.etichetta : "settimana non registrata: motivo non registrato";
+}
+
+/* Il pezzo destro del nastro: esercizi del programma letto + ultima seduta del
+ * logbook. Se il programma non c'è, lo dice. */
+function aggiornaNastroEsercizi(doc, rp, sedute, programmaPresente) {
+  const fr = doc.getElementById("fr-nastro");
+  if (!fr) return;
+  const ultima = Array.isArray(sedute) && sedute[0] && sedute[0].d ? String(sedute[0].d) : "";
+  fr.textContent = testoNastro({
+    programmaPresente: Boolean(programmaPresente),
+    esercizi: rp && rp.esercizi != null ? rp.esercizi : null,
+    ultima: ultima
+  });
+}
 
 /* Passo 18 — la memoria del dispositivo, provata davvero: se il browser la
  * nega (finestra privata, storage bloccato) resta null e la carta lo dice,
@@ -312,9 +367,19 @@ function notaLogbook(doc, lb) {
   righe.push("Esclusi: " + (d.escluseDaAlice || 0) + (d.escluseDaAlice === 1 ? " seduta" : " sedute") + " escluse da Alice, lette dalla sottoraccolta esclusioni di B: la seduta resta in A, sparisce solo qui");
   if (d.doppioniContenuto) righe.push("Contenuto doppio: " + d.doppioniContenuto + (d.doppioniContenuto === 1 ? " seduta" : " sedute") + " con la stessa data, la stessa scheda e gli stessi esercizi di un\u0027altra: A ne mostra una sola (r.3948), B fa lo stesso. Assorbita: " + (d.assorbite || []).map(function (x) { return (x.id || "senza id") + (x.data ? " del " + x.data : "") + (x.tenuta ? " \u2192 tenuta " + x.tenuta : ""); }).join("; "));
   const info = d.documenti != null && (d.senzaId || d.duplicati) ? " Letti " + d.tenute + " documenti validi su " + d.documenti + " (" + d.senzaId + " senza id, " + d.duplicati + " doppioni): come A, gli scartati non contano." : "";
+  /* PASSO 23 — la nota era un verbale da sviluppatori («Passo 3c», «il seme di
+   * esempio del v31 ne aveva 120», «la sottoraccolta sedute»). Adesso è una
+   * frase per chi legge: quante sedute ci sono davvero, e cosa non è
+   * collegato. I tendini dei filtri restano spiegati dal loro testo, non da
+   * questa riga. */
   const nota = doc.getElementById("lb-nota-b");
-  if (nota && righe.length) {
-    nota.textContent = "Passo 3c \u2014 " + d.tenute + " sedute lette dal cloud in sola lettura (il seme di esempio del v31 ne aveva 120). " + righe.join(". ") + "." + info;
+  if (nota) {
+    const quante = Number(d.tenute) || 0;
+    let frase = quante + (quante === 1 ? " seduta letta dal logbook" : " sedute lette dal logbook");
+    const escluse = Number(d.escluseDaAlice) || 0;
+    if (escluse) frase += "; " + escluse + (escluse === 1 ? " esclusa da te, resta in A" : " escluse da te, restano in A");
+    if (d.conJournal === 0) frase += "; il diario non è collegato";
+    nota.textContent = frase + ".";
     nota.hidden = false;
   }
 }
@@ -640,6 +705,10 @@ export async function avvia(doc, win) {
       anagraficaLetta = true;
       mostraAnagrafica(doc, statoAnagrafica, utente);
       aggiornaBannerCognome(doc, statoAnagrafica, utente);
+      /* Passo 23 — il nome nei cinque punti scritti a mano, e il tasto
+       * «Compila / Modifica» dell'anamnesi che ora porta al suo campo. */
+      mostraNomeAtleta(doc, nomeAtleta(utente, statoAnagrafica));
+      collegaCompila(doc);
       const salvatiQuaderno = quadernoDalRegistro(registroLetto);
       Object.keys(salvatiQuaderno).forEach((campo) => {
         const voce = salvatiQuaderno[campo];
@@ -803,6 +872,9 @@ export async function avvia(doc, win) {
       oggi: new Date(),
       quante: 8
     });
+    /* Passo 23 — la settimana del blocco: stesso conto per Dashboard, Overview
+     * e Pianificazione (comune/settimana-blocco.js). */
+    const settimanaBlocco = settimanaCorrente(rp, attivo, new Date());
     /* Passo 8 — la Pianificazione disegna la rotazione che i logbook dimostrano,
      * non piu' il calendario del mockup. Se il programma non ha un nome, la
      * vista lo dichiara: qui non si inventa niente. */
@@ -813,7 +885,8 @@ export async function avvia(doc, win) {
         programma: progAttivo ? {
           nome: nomePulito(progAttivo.name || progAttivo.nome || ""),
           esplicito: Boolean(progAttivo.active || String(progAttivo.status || "") === "active"),
-          settimana: null
+          settimana: settimanaBlocco.numero,
+          settimanaEtichetta: settimanaBlocco.etichetta
         } : null
       }, riepilogoPianificazione(sedutePulite.sedute, { oggi: new Date(), quante: 8, settimane: 8 }));
     }
@@ -1145,6 +1218,16 @@ export async function avvia(doc, win) {
 
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
     if (strumenti) strumenti.hidden = true;
+    /* Il Logbook (passo 3c): le sedute vere dentro la carta del v31, nella
+     * stessa forma del seme tolto; niente scritture, controlli spenti. */
+    const lb = seduteLogbook(sedutePulite.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), escluse: sedutePulite.escluse, infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });
+    if (win.BD_LB) {
+      win.BD_LB_SEED = { fonte: lb.fonte, sedute: lb.sedute };
+      win.BD_LB._prende(win.BD_LB_SEED);
+      win.BD_LB.tutto();
+      const ovSed = doc.getElementById("ov-sed");
+      if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
+    }
     /* L'Archivio (passo 3b): la tabella del v31 con i programmi veri.
      * Passo 42 — «Guarda» apre il programma in sola lettura; il confronto è
      * sempre con il programma in uso, che qui è quello aperto in Programmi. */
@@ -1153,7 +1236,7 @@ export async function avvia(doc, win) {
       const gruppoInUso = attivo && attivo.programma
         ? schedePerProgramma(schedeV2, profiloProgramma(attivo.programma)).gruppo : null;
       renderArchivio(doc, corpoArchivio, {
-        righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2 }),
+        righe: elencoArchivio(programmi.programmi || [], { attivoId: attivo ? String(attivo.programma.id || "") : "", schedeV2, sedute: lb.sedute }),
         apri: (riga) => apriConsultabile(doc, {
           programma: riga.programma,
           gruppo: riga.gruppo,
@@ -1187,21 +1270,19 @@ export async function avvia(doc, win) {
         })
       });
     }
-    /* Il Logbook (passo 3c): le sedute vere dentro la carta del v31, nella
-     * stessa forma del seme tolto; niente scritture, controlli spenti. */
-    const lb = seduteLogbook(sedutePulite.sedute, { programmi: programmi.programmi || [], schedeV2, oggi: new Date(), escluse: sedutePulite.escluse, infoSedute: { documenti: sedute.documenti, senzaId: sedute.senzaId, duplicati: sedute.duplicati } });
-    if (win.BD_LB) {
-      win.BD_LB_SEED = { fonte: lb.fonte, sedute: lb.sedute };
-      win.BD_LB._prende(win.BD_LB_SEED);
-      win.BD_LB.tutto();
-      const ovSed = doc.getElementById("ov-sed");
-      if (ovSed && win.BD_LB.chips) ovSed.innerHTML = win.BD_LB.chips();
-    }
     /* B.14f: il volume è solo quello programmato (le schede). */
     renderVolume(doc, doc.querySelector("#rv-vivo"), rp.schede, { quante: 8 });
     /* B.14k: la Specializzazione conta dal programma attivo, stessa regola del Riepilogo volume. */
     renderSpecializzazione(doc, doc.querySelector("#sp-corpo"), rp.schede, { quante: 8 });
     notaLogbook(doc, lb);
+    /* Passo 23 — i tre numeri che erano scritti a mano. */
+    aggiornaTestataDashboard(doc, rp, settimanaBlocco, attivo);
+    aggiornaNastroEsercizi(doc, rp, lb.sedute, Boolean(attivo && attivo.programma));
+    mostraVersione(doc, {
+      build: win.BD_B && win.BD_B.build,
+      schede: rp.schede ? rp.schede.length : null,
+      esercizi: conteggioCatalogoB()
+    });
     rimettiScorrimento(doc, win, scorrimentoPrima);
     return { ridisegnato: true };
   };
