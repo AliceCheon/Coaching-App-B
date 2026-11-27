@@ -7846,11 +7846,14 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
 .pc-piede-tasti{display:flex;gap:8px}
 .pc-piede .pr-btn{width:auto}
 .pc-confronto .pc-piazza-salva{margin-bottom:4px}
-/* Passo 44 — multi-selezione delle schede e «Volume della settimana».
-   Il volume di prima era il totale del PROGRAMMA per ogni scheda; ora le
-   pastiglie dicono la scheda («Scheda D · settimana 3») e la tavola del volume
-   ha una colonna per scheda accesa più il totale, con lo stesso vestito delle
-   altre righe (stesso bordo, stesse pastiglie, niente tabelle nuove inventate). */
+/* Passo 27 — il blocco «Volume» del confronto, rifatto sul mockup nuovo di
+   Alice (27/11/2026): A resta sullo sfondo e B ci balla sopra, il Δ a destra,
+   «Tutte le settimane» come griglia di calore. I colori sono i gettoni della
+   pagina — lav per la scheda A, pink per la B, verde per chi sale — non quelli
+   del mockup: questo blocco deve sembrare della stessa casa del resto.
+   Non c'è nessun colore nuovo: gli alfa passano da color-mix sui gettoni, così
+   valgono uguali nel tema chiaro e nello scuro. Il tratteggio del «dato non
+   registrato» è --line-soft + bordo --line. */
 .pc-scelta-nota{margin:0 0 8px;font-size:11.4px;color:var(--lav);
   border:1px solid rgba(201,167,255,.32);border-radius:9px;padding:6px 9px;
   background:rgba(201,167,255,.07)}
@@ -7858,26 +7861,98 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   text-transform:uppercase;color:var(--fioco)}
 .pc-volume-sett{margin-top:14px;border:1px solid rgba(201,167,255,.28);border-radius:12px;
   padding:12px 14px;background:rgba(201,167,255,.05)}
-.pc-volume-sett .pc-vol-t{margin:0 0 6px;font-size:9.8px;letter-spacing:.09em;text-transform:uppercase;
+.pc-vol2 .pc-vol-t{margin:0 0 4px;font-size:10.4px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--lav);font-weight:800}
 .pc-vol-guida{margin:0 0 10px;font-size:11.2px;color:var(--muted)}
-.pc-vol-blocco{margin-top:10px}
-.pc-vol-blocco + .pc-vol-blocco{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
-.pc-vol-nome{margin:0 0 6px}
-.pc-vol-tab{width:auto;min-width:520px;font-size:12px}
-.pc-vol-tab th.pc-vol-col,.pc-vol-tab td.pc-vol-col{width:120px}
-.pc-vol-tab td.pc-vol-dn{min-width:190px}
-.pc-vol-tab th{padding:5px 8px;white-space:nowrap}
-.pc-vol-tab th.pc-vol-dn{text-align:left}
-.pc-vol-tab th.pc-vol-col{text-align:right;font-size:9.6px}
-.pc-vol-tab th.pc-vol-tot{color:var(--lav)}
-.pc-vol-tab td{padding:5px 8px;height:30px}
-.pc-vol-tab td.pc-vol-dn{color:var(--text)}
-.pc-vol-tab td.pc-vol-col{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.8px;
-  color:var(--muted)}
-.pc-vol-tab td.pc-vol-tot{color:var(--text);font-weight:700}
-.pc-vol-tab tr:last-child td{border-bottom:0}
 .pc-vol-vuoto{display:block;margin-top:4px;font-size:10.6px;color:var(--fioco);font-style:italic}
+.pc-vol2-barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 9px}
+.pc-vol2-settimane{display:flex;gap:4px;flex-wrap:wrap}
+.pc-vol2-sett{min-width:34px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);
+  background:transparent;color:var(--muted);font:700 11.4px/1 "Nunito Sans",sans-serif;cursor:pointer}
+.pc-vol2-sett:hover{color:var(--text);border-color:var(--lav)}
+.pc-vol2-sett.on{background:color-mix(in srgb,var(--lav) 18%,transparent);
+  border-color:color-mix(in srgb,var(--lav) 60%,transparent);color:var(--lav)}
+.pc-vol2-modi{display:flex;padding:2px;border-radius:9px;border:1px solid var(--line);background:var(--card-2)}
+.pc-vol2-modo{border:0;background:transparent;color:var(--muted);font:700 11.2px/1 "Nunito Sans",sans-serif;
+  padding:6px 10px;border-radius:7px;cursor:pointer}
+.pc-vol2-modo.on{background:var(--card);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.pc-vol2-ordina{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:9.6px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--fioco);font-weight:800}
+.pc-vol2-ordine{font:600 11.4px/1 "Nunito Sans",sans-serif;color:var(--text);background:var(--card-2);
+  border:1px solid var(--line);border-radius:8px;padding:6px 8px;cursor:pointer}
+.pc-vol2-chi{margin:0 0 10px;display:flex;flex-direction:column;gap:2px}
+.pc-vol2-chi-riga{margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px;
+  font-size:10.6px;color:var(--muted)}
+.pc-vol2-chi-riga b{color:var(--text);font-size:11px}
+.pc-vol2-chi-schede{color:var(--text);font-weight:700}
+.pc-vol2-chi-nome{color:var(--fioco)}
+.pc-vol2-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 12px}
+.pc-vol2-kpi-c{border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:var(--card-2)}
+.pc-vol2-kpi-k{display:block;font-size:9.2px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--fioco);font-weight:800}
+.pc-vol2-kpi-v{display:block;margin-top:3px;font:700 19px/1.1 'JetBrains Mono',monospace;
+  letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+.pc-vol2-kpi-v small{font:500 10.2px/1 "Nunito Sans",sans-serif;color:var(--fioco);margin-left:4px}
+.pc-vol2-kpi-c[data-kpi="a"] .pc-vol2-kpi-v{color:var(--lav)}
+.pc-vol2-kpi-c[data-kpi="b"] .pc-vol2-kpi-v{color:var(--pink)}
+.pc-vol2-kpi-v.su{color:var(--verde)}
+.pc-vol2-kpi-v.giu{color:var(--pink)}
+.pc-vol2-kpi-v.pari{color:var(--muted)}
+.pc-vol2-vuoto{margin:0 0 8px;font-size:11px;color:var(--muted);font-style:italic}
+/* `hidden` deve vincere sulle regole di layout qui sopra (kpi è una griglia). */
+.pc-vol2-kpi[hidden],.pc-vol2-vista[hidden],.pc-vol2-vuoto[hidden]{display:none}
+.pc-vol2-assi{display:grid;grid-template-columns:132px minmax(0,1fr) 96px;gap:12px;
+  align-items:end;margin-bottom:2px}
+.pc-vol2-ticks{position:relative;height:13px}
+.pc-vol2-ticks span{position:absolute;transform:translateX(-50%);font:400 9.4px/1 'JetBrains Mono',monospace;
+  color:var(--fioco);font-variant-numeric:tabular-nums}
+.pc-vol2-assi-v{text-align:right;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--fioco)}
+.pc-vol2-riga{display:grid;grid-template-columns:132px minmax(0,1fr) 96px;gap:12px;align-items:center;
+  padding:8px 0;border-top:1px solid var(--line-soft)}
+.pc-vol2-riga:first-of-type{border-top:0}
+.pc-vol2-nome{margin:0;font-size:12px;font-weight:700;color:var(--text);line-height:1.2}
+.pc-vol2-nome small{display:block;font:400 10.2px/1.2 'JetBrains Mono',monospace;color:var(--muted);
+  margin-top:2px;font-variant-numeric:tabular-nums}
+.pc-vol2-pista{position:relative;height:26px;border-radius:7px;border:1px solid var(--line);
+  overflow:hidden;background:var(--card-2)}
+.pc-vol2-bar-a{position:absolute;left:0;top:0;bottom:0;border-radius:6px 3px 3px 6px;
+  background:color-mix(in srgb,var(--lav) 34%,transparent);border-right:2px solid var(--lav);
+  transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.pc-vol2-bar-b{position:absolute;left:0;top:50%;transform:translateY(-50%);height:10px;border-radius:5px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--pink) 55%,transparent),var(--pink));
+  transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.pc-vol2-fantasma{position:absolute;inset:0;border-radius:7px;
+  background:repeating-linear-gradient(45deg,var(--line-soft) 0 5px,transparent 5px 10px);
+  border:1px dashed color-mix(in srgb,var(--line) 80%,transparent)}
+.pc-vol2-delta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;text-align:right}
+.pc-vol2-delta b{font:700 12.4px/1.1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.pc-vol2-delta small{font-size:9.8px;color:var(--fioco);font-variant-numeric:tabular-nums}
+.pc-vol2-delta[data-stato="su"] b{color:var(--verde)}
+.pc-vol2-delta[data-stato="giu"] b{color:var(--pink)}
+.pc-vol2-delta[data-stato="pari"] b{color:var(--muted)}
+.pc-vol2-delta[data-stato="nd"] b{color:var(--fioco);font-size:10.4px;letter-spacing:.06em;text-transform:uppercase}
+.pc-vol2-legenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10.2px;color:var(--muted)}
+.pc-vol2-legenda i{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:5px;vertical-align:0}
+.pc-vol2-legenda .la{background:color-mix(in srgb,var(--lav) 40%,transparent);border-right:2px solid var(--lav)}
+.pc-vol2-legenda .lb{background:var(--pink)}
+.pc-vol2-nota{margin:8px 0 0;font-size:10.4px;line-height:1.5;color:var(--muted);
+  border-left:2px solid var(--lav);padding-left:9px}
+.pc-vol2-calore{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums}
+.pc-vol2-calore th{font-size:9.2px;letter-spacing:.08em;text-transform:uppercase;color:var(--fioco);
+  font-weight:800;padding:0 0 4px;text-align:center}
+.pc-vol2-calore th.pc-vol2-th-n{text-align:left;padding-left:2px}
+.pc-vol2-calore td{height:26px;text-align:center;border-radius:6px;font:600 10.6px/1 'JetBrains Mono',monospace;
+  border:1px solid transparent;color:var(--text)}
+.pc-vol2-calore td.pc-vol2-nm{font:700 11.8px/1.2 "Nunito Sans",sans-serif;padding-right:8px;
+  white-space:nowrap;text-align:left;border:0;height:auto;overflow:hidden;text-overflow:ellipsis}
+.pc-vol2-calore td.pc-vol2-nm small{display:block;font:500 9.8px/1.2 "Nunito Sans",sans-serif;
+  color:var(--muted);margin-top:2px}
+.pc-vol2-calore td.pc-vol2-tag{width:20px;text-align:center;font:800 9.6px/1 "Nunito Sans",sans-serif;border:0}
+.pc-vol2-calore td.pc-vol2-tag-a{color:var(--lav)}
+.pc-vol2-calore td.pc-vol2-tag-b{color:var(--pink)}
+.pc-vol2-cella.manca{border:1px dashed color-mix(in srgb,var(--line) 85%,transparent);
+  background:repeating-linear-gradient(45deg,var(--line-soft) 0 4px,transparent 4px 8px);
+  color:var(--fioco)}
 /* ============================================================
    T1 — RIGHE COMPATTE + SCORRIMENTO ORIZZONTALE DELLE SETTIMANE
    (prefisso html body per vincere sulle regole legacy senza !important)
@@ -10883,7 +10958,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 })();
 </script>
 <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
-<script src="../app-config-b.js?v=b0.70-passo26-progressioni-modifica-e-note"></script>
+<script src="../app-config-b.js?v=b0.71-passo27-volume-a-confronto"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -11216,7 +11291,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   pitta();
 })();
 </script>
-<script type="module" src="./app-v31.js?v=b0.70-passo26-progressioni-modifica-e-note"></script>
+<script type="module" src="./app-v31.js?v=b0.71-passo27-volume-a-confronto"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff72c2'/%3E%3Crect x='6' y='14' width='20' height='4' rx='2' fill='%23fff'/%3E%3Crect x='3' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3Crect x='25' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 </body>
 </html>

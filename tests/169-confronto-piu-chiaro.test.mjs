@@ -253,24 +253,30 @@ test("169.4 più schede accese: il volume di tutte insieme, e si sa quale si con
   assert.match(nota.textContent, /2 schede \(A, D\)/);
   assert.match(nota.textContent, /è sulla scheda D/, "dice quale scheda si sta confrontando");
 
-  /* La vista del volume: una riga per distretto, una colonna per scheda accesa
-   * più il totale, per la settimana scelta. */
+  /* Passo 27 — il blocco del volume è quello del mockup nuovo: una riga per
+   * distretto con la barra A di sfondo e la B sopra, e le schede accese sommate
+   * (la riga in chiaro dice quali). Il confronto riga per riga resta suo. */
   const sezione = doc.querySelector(".pc-volume-sett");
-  assert.ok(sezione, "c'è la vista «Volume della settimana»");
-  assert.match(sezione.querySelector(".pc-vol-t").textContent, /Volume della settimana \u00b7 settimana 1/);
-  const blocchi = Array.from(sezione.querySelectorAll(".pc-vol-blocco"));
-  assert.equal(blocchi.length, 2, "una lettura per programma");
-  const primo = blocchi[0];
-  const intestazioni = Array.from(primo.querySelectorAll("thead th")).map((th) => euro(th.textContent));
-  assert.deepEqual(intestazioni, ["Distretto", "Scheda A", "Scheda D", "Totale"]);
-  const riga = (d) => primo.querySelector('.pc-vol-riga[data-distretto="' + d + '"]');
-  const celle = (d) => Array.from(riga(d).children).map((td) => euro(td.textContent));
-  assert.deepEqual(celle("Glutei"), ["Glutei", "4", "11", "15"], "ogni scheda la sua colonna, e il totale somma");
-  assert.deepEqual(celle("Attivazione"), ["Attivazione", "\u2014", "2", "2"], "dove la scheda non ha il distretto: trattino");
-  assert.deepEqual(celle("Femorali"), ["Femorali", "3", "\u2014", "3"]);
-  /* Il totale delle schede accese è la somma delle colonne, non un altro numero. */
-  const glutei = riga("Glutei");
-  assert.equal(euro(glutei.lastElementChild.textContent), "15");
+  assert.ok(sezione, "c'è il blocco Volume");
+  assert.equal(sezione.getAttribute("aria-label"), "Volume per distretto");
+  assert.match(euro(sezione.querySelector(".pc-vol-t").textContent), /Volume per distretto · settimana 1/);
+  assert.equal(sezione.querySelectorAll(".pc-vol2-chi-riga").length, 2, "una riga per programma");
+  const schedeDi = (quale) => euro(sezione.querySelector(
+    '.pc-vol2-chi-riga[data-quale="' + quale + '"] .pc-vol2-chi-schede').textContent);
+  assert.equal(schedeDi("a"), "schede A+D", "il volume somma le schede accese del consultato");
+  assert.equal(schedeDi("b"), "schede A+D", "e quelle accese del programma in uso");
+
+  const rigaVolume = (d) => sezione.querySelector('.pc-vol2-riga[data-distretto="' + d + '"]');
+  const glutei = rigaVolume("Glutei");
+  assert.match(euro(glutei.querySelector(".pc-vol2-nome small").textContent), /15 → 3/,
+    "A: 4 (scheda A) + 11 (scheda D); B: 3 del solo Bulgaro");
+  assert.equal(glutei.querySelector(".pc-vol2-delta").getAttribute("data-stato"), "giu");
+  assert.match(euro(glutei.querySelector(".pc-vol2-delta").textContent), /−12/);
+  /* Le barre sono due e stanno nella stessa pista: A di sfondo, B sopra. */
+  assert.ok(glutei.querySelector(".pc-vol2-pista .pc-vol2-bar-a"), "la barra A c'è");
+  assert.ok(glutei.querySelector(".pc-vol2-pista .pc-vol2-bar-b"), "la barra B c'è");
+  /* Le differenze restano al loro posto: il blocco volume non le ha toccate. */
+  assert.ok(doc.querySelector(".pc-differenze"), "le differenze della scheda ci sono ancora");
 
   /* Almeno una resta accesa: spegnere l'ultima non fa niente. */
   tastoScheda(doc, "A").click();

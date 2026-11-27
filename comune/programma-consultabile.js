@@ -378,6 +378,31 @@ export function grandezzeProgramma(gruppo, opzioni) {
   };
 }
 
+/* PASSO 27 — il volume di UNA settimana sommando SOLO le schede indicate.
+ * Torna `{ distretto: serie }` con dentro i distretti che almeno una di quelle
+ * schede registra in quella settimana: un distretto che nessuna scheda scrive
+ * NON c'è (chi legge lo tratta come dato mancante e lo dichiara), mentre una
+ * scheda che non lo ha semplicemente non aggiunge niente alla somma — è la
+ * stessa regola del totale delle schede accese del passo 44, ma per una
+ * settimana qualsiasi. Una scheda che non è nel programma si salta: non si
+ * prendono i numeri di un'altra.
+ * `codici` sono le lettere delle schede accese (quelle che la barra in cima al
+ * confronto ha acceso); `grandezze` è quello che esce da grandezzeProgramma. */
+export function volumeDelleSchede(grandezze, codici, numero) {
+  const dentro = Object.create(null);
+  const elenco = grandezze && Array.isArray(grandezze.perScheda) ? grandezze.perScheda : [];
+  const indice = Math.max(0, (Number(numero) || 1) - 1);
+  (Array.isArray(codici) ? codici : []).forEach((codice) => {
+    const scheda = elenco.filter((s) => s.codice === codice)[0];
+    if (!scheda) return;
+    const numeri = scheda.perSettimana[indice];
+    (numeri && Array.isArray(numeri.volume) ? numeri.volume : []).forEach((v) => {
+      dentro[v.distretto] = Math.round(((dentro[v.distretto] || 0) + v.serie) * 100) / 100;
+    });
+  });
+  return dentro;
+}
+
 /* I tasti della barra delle settimane: tanti quante sono le settimane dei due
  * programmi (il massimo fra i due, mai meno di 8). Per ognuna il range di
  * ripetizioni scritto in quella settimana — il minimo e il massimo dei numeri

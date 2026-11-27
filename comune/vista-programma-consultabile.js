@@ -32,7 +32,7 @@
 import { nomePulito } from "./nome-pulito.js";
 import {
   modelloConsultabile, grandezzeProgramma, confrontoSettimana, settimaneDelConfronto,
-  valoriSettimana, FORMULA_DENSITA, MOTIVO_CARICO
+  valoriSettimana, volumeDelleSchede, FORMULA_DENSITA, MOTIVO_CARICO
 } from "./programma-consultabile.js";
 import { nomeCopia, fraseCopia } from "./salva-come-programma.js";
 
@@ -478,111 +478,427 @@ function motivoSettimanaVuota(numeri) {
   return "nessuna serie scritta";
 }
 
-/* «Volume della settimana» (passo 44): una riga per distretto e una colonna per
- * OGNI scheda accesa, più il totale delle schede accese. È la vista che risponde
- * alla richiesta di Alice («vedere il volume settimanale di tutte insieme»):
- * una lettura per programma, con lo stesso linguaggio del resto (le stesse
- * righe e pastiglie, non un'altra tabella di un'altra famiglia).
- * Una scheda che non scrive la settimana ha la colonna vuota e lo dichiara; il
- * totale somma solo quello che c'è. */
-function volumeDellaSettimana(doc, o) {
-  const box = el(doc, "section", "pc-volume-sett");
-  box.setAttribute("aria-label", "Volume della settimana");
-  box.setAttribute("data-settimana", String(o.numero));
-  box.appendChild(el(doc, "h5", "pc-vol-t", "Volume della settimana \u00b7 settimana " + o.numero));
-  box.appendChild(el(doc, "p", "pc-vol-guida", o.guida));
+/* Passo 27 — il blocco «Volume» del confronto è quello del mockup nuovo di
+ * Alice (27/11/2026). Dentro il confronto A resta sullo sfondo e B ci balla
+ * sopra: non è più una tabella per scheda, è una lettura per PROGRAMMA.
+ *
+ * Cosa c'è (e cosa vuol dire):
+ *  - il selettore W1…Wn sulle settimane del programma e i due modi:
+ *    «Settimana» (due barre per distretto e il Δ) e «Tutte le settimane»
+ *    (griglia di calore distretto × settimana, una riga A e una B);
+ *  - tre riquadri: serie della scheda A, serie della scheda B e variazione in
+ *    % (verde se sale, rosa se scende, grigio se pari), più chi sale, chi
+ *    scende e i distretti senza dato;
+ *  - una riga per distretto con la barra A di sfondo e la barra B sopra, su una
+ *    scala comune, e il Δ a destra;
+ *  - l'ordinamento: Δ maggiore, Δ minore, volume della scheda B, A→Z;
+ *  - la legenda con l'unità: serie dirette per distretto nella settimana.
+ *
+ * Le barre sommano le schede ACCESE di quel programma, e una riga in chiaro
+ * dice quali («A · schede A+B»). «A» è il programma consultato (a sinistra),
+ * «B» quello in uso (a destra), come nel resto del confronto.
+ * Un dato mancante non diventa mai uno zero: la cella è tratteggiata e il Δ
+ * scrive «n.d.» col motivo. Il Δ si calcola solo quando ci sono entrambi. */
+function sezioneVolume(doc, o) {
+  const quadro = o.quadro || { modo: "settimana", ordine: "delta-desc" };
+  if (!quadro.modo) quadro.modo = "settimana";
+  if (!quadro.ordine) quadro.ordine = "delta-desc";
+  const settimane = (Array.isArray(o.settimane) ? o.settimane : []).slice();
+  const schede = (Array.isArray(o.schede) ? o.schede : []).slice();
+  const programmi = (Array.isArray(o.programmi) ? o.programmi : []).slice(0, 2);
+  const nomeScheda = (c) => (c === NON || c == null || c === "" ? "senza lettera" : c);
 
-  o.programmi.forEach((p) => {
-    const blocco = el(doc, "div", "pc-vol-blocco");
-    const testa = el(doc, "p", "pc-vol-nome");
-    testa.appendChild(rigaNome(doc, p.quale === "uno" ? "a" : "b",
-      nomePulito(p.nome) || "(senza nome)", p.etichetta));
-    blocco.appendChild(testa);
-
-    const presenti = o.schede.filter((c) => schedaConCodice(p.modello, c));
-    if (!p.modello.schedeLette) {
-      blocco.appendChild(el(doc, "p", "pc-vuoto", p.modello.motivoSchede || "nessuna scheda letta"));
-      box.appendChild(blocco);
-      return;
-    }
-    if (!presenti.length) {
-      blocco.appendChild(el(doc, "p", "pc-vuoto",
-        "Nessuna delle schede accese è in questo programma: non c'è un volume da contare."));
-      box.appendChild(blocco);
-      return;
-    }
-
-    const colonne = presenti.map((codice) => ({
-      codice: codice,
-      numeri: numeriSchedaDi(p.grandezze, codice, o.numero)
-    }));
-    const distretti = [];
-    colonne.forEach((c) => {
-      (c.numeri && Array.isArray(c.numeri.volume) ? c.numeri.volume : []).forEach((v) => {
-        if (distretti.indexOf(v.distretto) === -1) distretti.push(v.distretto);
-      });
-    });
-    if (!distretti.length) {
-      blocco.appendChild(el(doc, "p", "pc-vuoto",
-        "Nessuna serie scritta nella settimana " + o.numero + " nelle schede accese di questo programma."));
-      blocco.appendChild(el(doc, "p", "pc-vol-vuoto",
-        "Non è una settimana a zero: è una settimana che i dati non scrivono."));
-      box.appendChild(blocco);
-      return;
-    }
-
-    const serieDi = (numeri, d) => {
-      const voce = (numeri && Array.isArray(numeri.volume) ? numeri.volume : [])
-        .filter((v) => v.distretto === d)[0];
-      return voce ? voce.serie : null;
+  /* Per ogni programma: le schede accese che ci sono davvero e il volume per
+   * distretto settimana per settimana (solo quelle schede). */
+  const letture = programmi.map((p) => {
+    const perScheda = p && p.grandezze && Array.isArray(p.grandezze.perScheda) ? p.grandezze.perScheda : [];
+    const codici = schede.filter((c) => perScheda.some((s) => s.codice === c));
+    return {
+      nome: nomePulito(p && p.nome),
+      etichetta: testo(p && p.etichetta),
+      codici: codici,
+      settimane: settimane.map((n) => (codici.length ? volumeDelleSchede(p.grandezze, codici, n) : Object.create(null)))
     };
-    const righe = distretti.map((d) => {
-      const celle = colonne.map((c) => serieDi(c.numeri, d));
-      const totale = celle.reduce((a, v) => a + (v == null ? 0 : v), 0);
-      return { distretto: d, celle: celle, totale: Math.round(totale * 100) / 100 };
-    });
-    righe.sort((a, b) => b.totale - a.totale || a.distretto.localeCompare(b.distretto, "it"));
+  });
+  while (letture.length < 2) {
+    letture.push({ nome: "", etichetta: "", codici: [], settimane: settimane.map(() => Object.create(null)) });
+  }
 
-    const tab = el(doc, "table", "pc-tab pc-vol-tab");
+  const distretti = [];
+  letture.forEach((l) => l.settimane.forEach((m) => {
+    Object.keys(m).forEach((d) => { if (distretti.indexOf(d) === -1) distretti.push(d); });
+  }));
+
+  /* La scala comune alle due barre (e alla griglia): il valore più alto di tutti
+   * quelli disegnati, arrotondato a un numero pari — la stessa scelta del
+   * mockup, così le tacche cadono sui numeri tondi. */
+  let massimo = 0;
+  letture.forEach((l) => l.settimane.forEach((m) => Object.keys(m).forEach((d) => {
+    if (m[d] > massimo) massimo = m[d];
+  })));
+  const scala = Math.max(2, Math.ceil(massimo / 2) * 2);
+
+  const valore = (k, i, d) => {
+    const m = letture[k] && letture[k].settimane[i] ? letture[k].settimane[i] : null;
+    const v = m ? m[d] : null;
+    return typeof v === "number" ? v : null;
+  };
+  const deltaDi = (i, d) => {
+    const a = valore(0, i, d);
+    const b = valore(1, i, d);
+    return a == null || b == null ? null : Math.round((b - a) * 100) / 100;
+  };
+
+  const box = el(doc, "section", "pc-volume-sett pc-vol2");
+  box.setAttribute("aria-label", "Volume per distretto");
+  box.setAttribute("data-schede", schede.join(","));
+  const titolo = el(doc, "h5", "pc-vol-t", "");
+  box.appendChild(titolo);
+  box.appendChild(el(doc, "p", "pc-vol-guida",
+    "Scheda A = il programma consultato (a sinistra), scheda B = quello in uso (a destra). "
+    + "Una riga per distretto: la barra A resta sullo sfondo, la B ci balla sopra, sulla stessa scala. "
+    + "Le W sono le settimane del programma, e sono le stesse del confronto qui sopra: cambiando qui cambia anche quello."));
+
+  /* ---------- i comandi: settimana, modo, ordinamento ---------- */
+  const barra = el(doc, "div", "pc-vol2-barra");
+  const settBox = el(doc, "div", "pc-vol2-settimane");
+  settBox.setAttribute("role", "tablist");
+  settBox.setAttribute("aria-label", "Settimana del volume");
+  const tastiSett = settimane.map((n) => {
+    const b = el(doc, "button", "pc-vol2-sett", "W" + n);
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("data-w", String(n));
+    b.addEventListener("click", () => {
+      if (typeof o.onSettimana === "function") o.onSettimana(n);
+      else { quadro.settimana = n; render(); }
+    });
+    settBox.appendChild(b);
+    return b;
+  });
+  const modi = el(doc, "div", "pc-vol2-modi");
+  modi.setAttribute("role", "group");
+  modi.setAttribute("aria-label", "Vista del volume");
+  const tastiModo = [["settimana", "Settimana"], ["tutte", "Tutte le settimane"]].map((voce) => {
+    const b = el(doc, "button", "pc-vol2-modo", voce[1]);
+    b.type = "button";
+    b.setAttribute("data-modo", voce[0]);
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => { quadro.modo = voce[0]; render(); });
+    modi.appendChild(b);
+    return b;
+  });
+  const ordina = el(doc, "label", "pc-vol2-ordina");
+  ordina.appendChild(el(doc, "span", null, "Ordina"));
+  const sel = doc.createElement("select");
+  sel.className = "pc-vol2-ordine";
+  sel.setAttribute("aria-label", "Ordina le righe");
+  [["delta-desc", "\u0394 maggiore"], ["delta-asc", "\u0394 minore"],
+    ["volume", "Volume scheda B"], ["az", "A \u2192 Z"]].forEach((voce) => {
+    const opt = doc.createElement("option");
+    opt.value = voce[0];
+    opt.textContent = voce[1];
+    sel.appendChild(opt);
+  });
+  sel.value = quadro.ordine;
+  sel.addEventListener("change", () => { quadro.ordine = sel.value; render(); });
+  ordina.appendChild(sel);
+  barra.appendChild(settBox);
+  barra.appendChild(modi);
+  barra.appendChild(ordina);
+  box.appendChild(barra);
+
+  /* ---------- quali schede sommano, per programma ---------- */
+  const chi = el(doc, "div", "pc-vol2-chi");
+  letture.forEach((l, k) => {
+    const riga = el(doc, "p", "pc-vol2-chi-riga");
+    riga.setAttribute("data-quale", k === 0 ? "a" : "b");
+    riga.appendChild(el(doc, "i", "pc-pallino " + (k === 0 ? "a" : "b")));
+    riga.appendChild(el(doc, "b", null, k === 0 ? "A" : "B"));
+    riga.appendChild(doc.createTextNode(" "));
+    riga.appendChild(el(doc, "span", null, k === 0 ? (l.etichetta || "consultato") : "in uso"));
+    riga.appendChild(doc.createTextNode(" \u00b7 "));
+    riga.appendChild(el(doc, "span", "pc-vol2-chi-schede", l.codici.length
+      ? "schede " + l.codici.map(nomeScheda).join("+")
+      : "nessuna delle schede accese \u00e8 in questo programma"));
+    if (l.nome) riga.appendChild(el(doc, "span", "pc-vol2-chi-nome", " \u2014 " + nomePulito(l.nome)));
+    chi.appendChild(riga);
+  });
+  box.appendChild(chi);
+
+  const kpi = el(doc, "div", "pc-vol2-kpi");
+  const vuoto = el(doc, "p", "pc-vol2-vuoto", "");
+  const vistaSett = el(doc, "div", "pc-vol2-vista");
+  const vistaTutte = el(doc, "div", "pc-vol2-vista");
+  box.appendChild(kpi);
+  box.appendChild(vuoto);
+  box.appendChild(vistaSett);
+  box.appendChild(vistaTutte);
+
+  const ordinati = (indice) => {
+    const arr = distretti.slice();
+    const confronta = (x, y) => nomePulito(x).localeCompare(nomePulito(y), "it");
+    const sommaB = (d) => letture[1].settimane.reduce((s, m) => {
+      const v = m[d];
+      return s + (typeof v === "number" ? v : 0);
+    }, 0);
+    if (quadro.ordine === "az") {
+      arr.sort(confronta);
+    } else if (quadro.ordine === "volume") {
+      arr.sort((x, y) => sommaB(y) - sommaB(x) || confronta(x, y));
+    } else {
+      arr.sort((x, y) => {
+        const dx = deltaDi(indice, x);
+        const dy = deltaDi(indice, y);
+        if (dx == null && dy == null) return confronta(x, y);
+        if (dx == null) return 1;
+        if (dy == null) return -1;
+        const d = quadro.ordine === "delta-asc" ? dx - dy : dy - dx;
+        return d || confronta(x, y);
+      });
+    }
+    return arr;
+  };
+
+  const legenda = (destinazione, unita, nota) => {
+    const l = el(doc, "div", "pc-vol2-legenda");
+    const voce = (classe, t) => {
+      const s = el(doc, "span", null, "");
+      s.appendChild(el(doc, "i", classe));
+      s.appendChild(doc.createTextNode(t));
+      l.appendChild(s);
+    };
+    voce("la", "scheda A \u00b7 " + (letture[0].nome ? nomePulito(letture[0].nome) : "consultato"));
+    voce("lb", "scheda B \u00b7 " + (letture[1].nome ? nomePulito(letture[1].nome) : "in uso"));
+    l.appendChild(el(doc, "span", null, unita));
+    destinazione.appendChild(l);
+    if (nota) destinazione.appendChild(el(doc, "p", "pc-vol2-nota", nota));
+  };
+
+  const cellaCalore = (v, quale, n) => {
+    const td = el(doc, "td", "pc-vol2-cella");
+    td.setAttribute("data-settimana", String(n));
+    td.setAttribute("data-quale", quale);
+    if (v == null) {
+      td.className = "pc-vol2-cella manca";
+      td.textContent = "\u2013";
+      td.setAttribute("title", "dato non registrato: settimana " + n + ", scheda " + quale.toUpperCase());
+      return td;
+    }
+    /* Il colore è il gettone della scheda (lav per A, pink per B), caricato
+     * quanto serie ci sono: mai un colore nuovo. */
+    const peso = Math.round(Math.max(10, Math.min(42, 10 + 32 * (v / scala))));
+    td.setAttribute("style", "background:color-mix(in srgb, var("
+      + (quale === "a" ? "--lav" : "--pink") + ") " + peso + "%, transparent)");
+    td.textContent = numeroInChiaro(v);
+    return td;
+  };
+
+  function render() {
+    const indice = Math.max(0, settimane.indexOf(Number(quadro.settimana)));
+    const numero = settimane.length ? settimane[indice] : 1;
+    const tutte = quadro.modo === "tutte";
+    box.setAttribute("data-vista", tutte ? "tutte" : "settimana");
+    box.setAttribute("data-settimana", String(numero));
+    box.setAttribute("data-ordine", quadro.ordine);
+    titolo.textContent = "Volume per distretto \u00b7 "
+      + (tutte ? "tutte le settimane" : "settimana " + numero);
+    tastiSett.forEach((b) => {
+      const suo = Number(b.getAttribute("data-w")) === numero;
+      b.classList.toggle("on", suo);
+      b.setAttribute("aria-selected", suo ? "true" : "false");
+    });
+    tastiModo.forEach((b) => {
+      const suo = b.getAttribute("data-modo") === quadro.modo;
+      b.classList.toggle("on", suo);
+      b.setAttribute("aria-pressed", suo ? "true" : "false");
+    });
+    sel.value = quadro.ordine;
+
+    /* ---------- i tre riquadri ---------- */
+    const sommaDi = (k, i) => distretti.reduce((s, d) => {
+      const v = valore(k, i, d);
+      return s + (v == null ? 0 : v);
+    }, 0);
+    const totA = sommaDi(0, indice);
+    const totB = sommaDi(1, indice);
+    const pct = totA > 0 ? Math.round((totB - totA) / totA * 100) : null;
+    let su = 0;
+    let giu = 0;
+    let pari = 0;
+    let senza = 0;
+    distretti.forEach((d) => {
+      const a = valore(0, indice, d);
+      const b = valore(1, indice, d);
+      if (a == null || b == null) senza += 1;
+      else if (b > a) su += 1;
+      else if (b < a) giu += 1;
+      else pari += 1;
+    });
+    kpi.textContent = "";
+    const carta = (chiave, etichetta, testoValore, piccolo, classeValore) => {
+      const c = el(doc, "div", "pc-vol2-kpi-c");
+      c.setAttribute("data-kpi", chiave);
+      c.appendChild(el(doc, "span", "pc-vol2-kpi-k", etichetta));
+      const v = el(doc, "span", "pc-vol2-kpi-v" + (classeValore ? " " + classeValore : ""), testoValore);
+      if (piccolo != null && piccolo !== "") v.appendChild(el(doc, "small", null, piccolo));
+      c.appendChild(v);
+      kpi.appendChild(c);
+    };
+    const classePct = pct == null ? "pari" : (pct > 0 ? "su" : (pct < 0 ? "giu" : "pari"));
+    carta("a", "Serie \u00b7 scheda A", numeroInChiaro(totA), "W" + numero, null);
+    carta("b", "Serie \u00b7 scheda B", numeroInChiaro(totB), "W" + numero, null);
+    carta("pct", "Variazione volume",
+      pct == null ? TRATTINO : (pct > 0 ? "+" : (pct < 0 ? "\u2212" : "")) + Math.abs(pct),
+      pct == null ? "totale A a zero" : "% \u00b7 W" + numero + " " + numeroInChiaro(totA) + "\u2192" + numeroInChiaro(totB),
+      classePct);
+    carta("distretti", "Distretti", su + "\u2191 " + giu + "\u2193 ",
+      (pari ? pari + " = \u00b7 " : "") + senza + " senza dato", null);
+
+    const nessunDato = !distretti.length;
+    kpi.hidden = nessunDato;
+    vuoto.hidden = !nessunDato;
+    if (nessunDato) {
+      const perche = letture.map((l) => (l.codici.length || !l.nome ? ""
+        : "\u00ab" + nomePulito(l.nome) + "\u00bb: nessuna delle schede accese \u00e8 in questo programma")).filter(Boolean);
+      vuoto.textContent = "Nessuna serie scritta " + (tutte ? "in nessuna settimana" : "nella settimana " + numero)
+        + " nelle schede accese. Non \u00e8 una settimana a zero: \u00e8 una settimana che i dati non scrivono."
+        + (perche.length ? " " + perche.join(". ") + "." : "");
+      vistaSett.textContent = "";
+      vistaTutte.textContent = "";
+      return;
+    }
+    vuoto.textContent = "";
+
+    /* ---------- vista «Settimana»: due barre e il Δ ---------- */
+    vistaSett.textContent = "";
+    const assi = el(doc, "div", "pc-vol2-assi");
+    assi.appendChild(el(doc, "div", null, ""));
+    const ticks = el(doc, "div", "pc-vol2-ticks");
+    for (let v = 0; v <= scala; v += 2) {
+      const t = el(doc, "span", null, String(v));
+      t.setAttribute("style", "left:" + (v / scala * 100) + "%");
+      ticks.appendChild(t);
+    }
+    assi.appendChild(ticks);
+    assi.appendChild(el(doc, "div", "pc-vol2-assi-v", "Variazione"));
+    vistaSett.appendChild(assi);
+
+    ordinati(indice).forEach((d) => {
+      const a = valore(0, indice, d);
+      const b = valore(1, indice, d);
+      const delta = deltaDi(indice, d);
+      const riga = el(doc, "div", "pc-vol2-riga");
+      riga.setAttribute("data-distretto", d);
+      const nome = el(doc, "p", "pc-vol2-nome", nomePulito(d));
+      nome.appendChild(el(doc, "small", null,
+        (a == null ? "\u2013" : numeroInChiaro(a)) + " \u2192 " + (b == null ? "\u2013" : numeroInChiaro(b))));
+      riga.appendChild(nome);
+      const pista = el(doc, "div", "pc-vol2-pista");
+      if (a == null && b == null) {
+        const fantasma = el(doc, "span", "pc-vol2-fantasma");
+        fantasma.setAttribute("title", "dato non registrato in nessuno dei due programmi");
+        pista.appendChild(fantasma);
+      } else {
+        if (a != null) {
+          const barraA = el(doc, "span", "pc-vol2-bar-a");
+          barraA.setAttribute("style", "width:" + (a / scala * 100) + "%");
+          barraA.setAttribute("title", "scheda A: " + numeroInChiaro(a) + " serie");
+          pista.appendChild(barraA);
+        }
+        if (b != null) {
+          const barraB = el(doc, "span", "pc-vol2-bar-b");
+          barraB.setAttribute("style", "width:" + (b / scala * 100) + "%");
+          barraB.setAttribute("title", "scheda B: " + numeroInChiaro(b) + " serie");
+          pista.appendChild(barraB);
+        }
+        if (a == null || b == null) pista.setAttribute("data-manca", a == null ? "a" : "b");
+      }
+      riga.appendChild(pista);
+      const cella = el(doc, "div", "pc-vol2-delta");
+      if (delta == null) {
+        const manca = a == null && b == null ? "manca A e B" : (a == null ? "manca A" : "manca B");
+        cella.setAttribute("data-stato", "nd");
+        cella.setAttribute("title", "il \u0394 non si calcola: " + manca.toLowerCase());
+        cella.appendChild(el(doc, "b", null, "n.d."));
+        cella.appendChild(el(doc, "small", null, manca));
+      } else if (delta > 0) {
+        cella.setAttribute("data-stato", "su");
+        cella.appendChild(el(doc, "b", null, "\u25b2 " + differenzaInChiaro(delta)));
+        cella.appendChild(el(doc, "small", null,
+          variazioneInChiaro(a > 0 ? Math.round((b - a) / a * 100) : null)));
+      } else if (delta < 0) {
+        cella.setAttribute("data-stato", "giu");
+        cella.appendChild(el(doc, "b", null, "\u25bc " + differenzaInChiaro(delta)));
+        cella.appendChild(el(doc, "small", null,
+          variazioneInChiaro(a > 0 ? Math.round((b - a) / a * 100) : null)));
+      } else {
+        cella.setAttribute("data-stato", "pari");
+        cella.appendChild(el(doc, "b", null, "= 0"));
+        cella.appendChild(el(doc, "small", null, "identico"));
+      }
+      riga.appendChild(cella);
+      vistaSett.appendChild(riga);
+    });
+    legenda(vistaSett, "Unit\u00e0: serie dirette per distretto nella settimana",
+      "Cella tratteggiata = dato non registrato: mai uno zero al suo posto. "
+      + "Il \u0394 si scrive solo quando ci sono entrambi i valori; altrimenti \u00abn.d.\u00bb e il motivo.");
+    vistaSett.hidden = tutte;
+
+    /* ---------- vista «Tutte le settimane»: griglia di calore ---------- */
+    vistaTutte.textContent = "";
+    const tab = el(doc, "table", "pc-vol2-calore");
+    /* Le colonne: il nome stretto, la lettera A/B, e le settimane che si
+     * dividono lo spazio che resta (con il layout fisso il nome non si mangia
+     * metà della griglia). */
+    const cg = doc.createElement("colgroup");
+    [["150px"], ["24px"]].forEach((larghezza) => {
+      const c = doc.createElement("col");
+      c.setAttribute("style", "width:" + larghezza[0]);
+      cg.appendChild(c);
+    });
+    settimane.forEach(() => cg.appendChild(doc.createElement("col")));
+    tab.appendChild(cg);
     const thead = el(doc, "thead");
     const trh = el(doc, "tr");
-    const thDn = el(doc, "th", "pc-vol-dn", "Distretto");
-    trh.appendChild(thDn);
-    colonne.forEach((c) => {
-      const th = el(doc, "th", "pc-vol-col", "Scheda " + (c.codice === NON ? "senza lettera" : c.codice));
-      th.setAttribute("data-scheda", c.codice);
-      trh.appendChild(th);
-    });
-    const thTot = el(doc, "th", "pc-vol-col pc-vol-tot", "Totale");
-    trh.appendChild(thTot);
+    const thn = el(doc, "th", "pc-vol2-th-n", "Distretto");
+    thn.setAttribute("colspan", "2");
+    trh.appendChild(thn);
+    settimane.forEach((n) => trh.appendChild(el(doc, "th", null, "W" + n)));
     thead.appendChild(trh);
     tab.appendChild(thead);
-    const corpo = el(doc, "tbody");
-    righe.forEach((r) => {
-      const tr = el(doc, "tr", "pc-vol-riga");
-      tr.setAttribute("data-distretto", r.distretto);
-      tr.appendChild(el(doc, "td", "pc-vol-dn", nomePulito(r.distretto)));
-      r.celle.forEach((valore, i) => {
-        const td = el(doc, "td", "pc-vol-col", valore == null ? TRATTINO : numeroInChiaro(valore));
-        td.setAttribute("data-scheda", colonne[i].codice);
-        tr.appendChild(td);
-      });
-      tr.appendChild(el(doc, "td", "pc-vol-col pc-vol-tot", numeroInChiaro(r.totale)));
-      corpo.appendChild(tr);
+    const corpoTab = el(doc, "tbody");
+    ordinati(indice).forEach((d) => {
+      const diff = settimane.map((n, i) => deltaDi(i, d)).filter((x) => x != null);
+      const media = diff.length ? diff.reduce((s, x) => s + x, 0) / diff.length : null;
+      const nomeCella = el(doc, "td", "pc-vol2-nm");
+      nomeCella.setAttribute("rowspan", "2");
+      nomeCella.setAttribute("data-distretto", d);
+      nomeCella.appendChild(doc.createTextNode(nomePulito(d)));
+      const mediaTesto = media == null ? "n.d. in tutte le settimane"
+        : (media > 0 ? "\u25b2 +" : (media < 0 ? "\u25bc \u2212" : "= "))
+          + Math.abs(media).toFixed(1).replace(".", ",") + " media";
+      nomeCella.appendChild(el(doc, "small", null, mediaTesto));
+      const rigaA = el(doc, "tr", "pc-vol2-riga-a");
+      rigaA.setAttribute("data-distretto", d);
+      rigaA.appendChild(nomeCella);
+      rigaA.appendChild(el(doc, "td", "pc-vol2-tag pc-vol2-tag-a", "A"));
+      settimane.forEach((n, i) => rigaA.appendChild(cellaCalore(valore(0, i, d), "a", n)));
+      corpoTab.appendChild(rigaA);
+      const rigaB = el(doc, "tr", "pc-vol2-riga-b");
+      rigaB.setAttribute("data-distretto", d);
+      rigaB.appendChild(el(doc, "td", "pc-vol2-tag pc-vol2-tag-b", "B"));
+      settimane.forEach((n, i) => rigaB.appendChild(cellaCalore(valore(1, i, d), "b", n)));
+      corpoTab.appendChild(rigaB);
     });
-    tab.appendChild(corpo);
-    blocco.appendChild(tab);
+    tab.appendChild(corpoTab);
+    vistaTutte.appendChild(tab);
+    legenda(vistaTutte, "Pi\u00f9 il colore \u00e8 carico, pi\u00f9 serie. Cella tratteggiata = dato non registrato.",
+      "I riquadri in alto restano quelli della settimana scelta (W" + numero + "): la griglia invece le mostra tutte.");
+    vistaTutte.hidden = !tutte;
+  }
 
-    colonne.forEach((c) => {
-      const perche = motivoSettimanaVuota(c.numeri);
-      if (perche) {
-        blocco.appendChild(el(doc, "p", "pc-vol-vuoto",
-          "Scheda " + (c.codice === NON ? "senza lettera" : c.codice) + ": " + perche
-          + " nella settimana " + o.numero + ", la colonna resta vuota."));
-      }
-    });
-    box.appendChild(blocco);
-  });
+  render();
   return box;
 }
 
@@ -721,6 +1037,11 @@ export function apriConfronto(doc, opzioni) {
   let schedeAccese = vociScheda.length ? [vociScheda[0].codice] : [];
   let schedaScelta = vociScheda.length ? vociScheda[0].codice : null;
   let sottoTitolo = null;
+  /* Passo 27 — la vista del volume ha una settimana, una vista e un ordine
+   * suoi; la settimana resta la stessa del confronto (cambiarla da lì muove
+   * anche le colonne, così non si leggono due settimane diverse nello stesso
+   * pannello), mentre vista e ordine vivono solo dentro il blocco. */
+  const statoVolume = { settimana: 1, modo: "settimana", ordine: "delta-desc" };
 
   const nomeDiScheda = (codice) => (codice === NON || codice == null ? "senza lettera" : codice);
 
@@ -845,7 +1166,7 @@ export function apriConfronto(doc, opzioni) {
     if (schedeAccese.length > 1) {
       notaScelta.textContent = "Sono accese " + schedeAccese.length + " schede (" + accese.join(", ") + "): "
         + "il confronto esercizio per esercizio qui sotto è sulla scheda " + nomeDiScheda(schedaScelta)
-        + ". Il volume di tutte le schede accese è nella vista \u00abVolume della settimana\u00bb, pi\u00f9 sotto.";
+        + ". Il volume per distretto di tutte le schede accese è nel blocco \u00abVolume\u00bb, pi\u00f9 sotto.";
       notaScelta.setAttribute("data-schede-accese", schedeAccese.join(","));
       corpo.appendChild(notaScelta);
     }
@@ -884,19 +1205,18 @@ export function apriConfronto(doc, opzioni) {
       corpo.appendChild(sezioneDifferenze(doc, conf, nomeUno, nomeDue, etichettaDiff));
     }
 
-    /* Il volume di tutte le schede accese: una riga per distretto, una colonna
-     * per scheda più il totale. */
-    corpo.appendChild(volumeDellaSettimana(doc, {
-      numero: n,
+    /* Passo 27 — il volume per distretto è il blocco del mockup nuovo: A di
+     * sfondo e B sopra, le schede accese sommate, «Tutte le settimane» a
+     * griglia di calore. */
+    statoVolume.settimana = n;
+    corpo.appendChild(sezioneVolume(doc, {
+      settimane: tastiSettimana.map((s) => s.numero),
       schede: schedeAccese,
-      guida: schedeAccese.length > 1
-        ? "Una riga per distretto, una colonna per ogni scheda accesa, pi\u00f9 il totale delle schede accese. "
-          + "Una casella vuota vuol dire che quella scheda non ha serie di quel distretto in questa settimana."
-        : "Una riga per distretto, con la scheda accesa e il totale. "
-          + "Accendi altre schede dai tasti sopra per vederle tutte insieme: il totale somma le colonne accese.",
+      quadro: statoVolume,
+      onSettimana: (numero) => { settimanaScelta = numero; disegna(); },
       programmi: [
-        { quale: "uno", nome: nomeUno, etichetta: etichettaUno, modello: modelloUno, grandezze: grandezzeUno },
-        { quale: "due", nome: nomeDue, etichetta: "in uso", modello: modelloDue, grandezze: grandezzeDue }
+        { quale: "uno", nome: nomeUno, etichetta: etichettaUno, grandezze: grandezzeUno },
+        { quale: "due", nome: nomeDue, etichetta: "in uso", grandezze: grandezzeDue }
       ]
     }));
 

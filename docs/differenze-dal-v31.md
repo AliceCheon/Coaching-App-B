@@ -163,45 +163,45 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 7399-7400 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 - righe 7465-7471 — #pag-programma-1 .pr-sw.off,
 - righe 7534-7570 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
-- righe 7682-7880 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
-- righe 7911 — (riga vuota)
-- righe 7938-7965 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
-- righe 8010 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
-- righe 8056 — (riga vuota)
-- righe 8106-8107 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
-- righe 8180 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
-- righe 8459 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
-- righe 8616 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
-- righe 8718 — if (cont) cont.textContent = this.filtrate().length + (this.filtrate().length === 1 ? ' seduta' : ' 
-- righe 8722-8724 — for (i2 = 0; i2 < a2.length; i2++) a2[i2].textContent = (this.fonte // 'istantanea incorporata') + '
-- righe 8923 — listaModal('Confronta con un altro programma', 'Confronto tra programmi: nel mockup la vista di diff
-- righe 8928 — listaModal('Copia da un altro programma', 'I programmi della Libreria: la copia reale non è collegat
-- righe 9004-9005 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
-- righe 9458 — var SEED = {config:{}, sessioni:[]};
-- righe 9473-9476 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
-- righe 9500-9503 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
-- righe 9510-9540 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
-- righe 9543-9548 — function logbookVivo(){
-- righe 9551-9554 — function pittaOverview(){
-- righe 9557-9596 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
-- righe 9609-9611 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9617-9619 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
-- righe 9622 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
-- righe 9628 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
-- righe 9636-9638 — el('ov-barsn').textContent = PV.letto
-- righe 9641-9644 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
-- righe 9648-9655 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
-- righe 9658 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9666-9686 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
-- righe 9689-9701 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
-- righe 9740 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
-- righe 9791 — if(false){
-- righe 9988 — '<div class="ese-chips2">' +
-- righe 10539-10542 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
-- righe 10547 — kpi.innerHTML =
-- righe 10722-10731 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
-- righe 10841 — (riga vuota)
-- righe 10885-11220 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 7682-7955 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
+- righe 7986 — (riga vuota)
+- righe 8013-8040 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+- righe 8085 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
+- righe 8131 — (riga vuota)
+- righe 8181-8182 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
+- righe 8255 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
+- righe 8534 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
+- righe 8691 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
+- righe 8793 — if (cont) cont.textContent = this.filtrate().length + (this.filtrate().length === 1 ? ' seduta' : ' 
+- righe 8797-8799 — for (i2 = 0; i2 < a2.length; i2++) a2[i2].textContent = (this.fonte // 'istantanea incorporata') + '
+- righe 8998 — listaModal('Confronta con un altro programma', 'Confronto tra programmi: nel mockup la vista di diff
+- righe 9003 — listaModal('Copia da un altro programma', 'I programmi della Libreria: la copia reale non è collegat
+- righe 9079-9080 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+- righe 9533 — var SEED = {config:{}, sessioni:[]};
+- righe 9548-9551 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
+- righe 9575-9578 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
+- righe 9585-9615 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+- righe 9618-9623 — function logbookVivo(){
+- righe 9626-9629 — function pittaOverview(){
+- righe 9632-9671 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
+- righe 9684-9686 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 9692-9694 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
+- righe 9697 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
+- righe 9703 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
+- righe 9711-9713 — el('ov-barsn').textContent = PV.letto
+- righe 9716-9719 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+- righe 9723-9730 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+- righe 9733 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 9741-9761 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
+- righe 9764-9776 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
+- righe 9815 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
+- righe 9866 — if(false){
+- righe 10063 — '<div class="ese-chips2">' +
+- righe 10614-10617 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+- righe 10622 — kpi.innerHTML =
+- righe 10797-10806 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
+- righe 10916 — (riga vuota)
+- righe 10960-11295 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 

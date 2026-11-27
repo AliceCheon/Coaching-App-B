@@ -80,10 +80,12 @@ const tasto = (doc, codice) => doc.querySelector('.pc-st[data-scheda="' + codice
 
 function foglioDiScheda(doc, titolo) {
   const testa = doc.querySelector(".pc-finestra-sotto");
-  const volume = Array.from(doc.querySelectorAll(".pc-volume-sett .pc-vol-blocco")).map((b) => {
-    const nome = euro((b.querySelector(".pc-vol-nome") || {}).textContent || "");
-    const righe = Array.from(b.querySelectorAll(".pc-vol-riga")).map((tr) => euro(tr.textContent));
-    return nome + " → " + righe.join(" | ");
+  /* Passo 27 — il blocco del volume non è più una tavola per scheda: due barre
+   * per distretto e il Δ. */
+  const volume = Array.from(doc.querySelectorAll(".pc-volume-sett .pc-vol2-riga")).map((r) => {
+    const nome = euro(r.querySelector(".pc-vol2-nome").textContent);
+    const delta = euro(r.querySelector(".pc-vol2-delta").textContent);
+    return nome + " [" + delta + "]";
   });
   console.log("  " + titolo);
   console.log("  finestra: " + euro(testa ? testa.textContent : "—"));
@@ -91,7 +93,7 @@ function foglioDiScheda(doc, titolo) {
   console.log("  colonna destra:   " + pastiglie(doc, "b").join(" | "));
   console.log("  titolo differenze: " + euro((doc.querySelector(".pc-diff-t") || {}).textContent || "—"));
   console.log("  prima riga differenze: " + (differenze(doc)[0] || "—"));
-  console.log("  volume della settimana: " + (volume.join("  ;;  ") || "—"));
+  console.log("  volume per distretto: " + (volume.join("  ;;  ") || "—"));
   console.log("  righe sinistra: " + nomi(doc, "a").join(" / "));
   console.log("  righe destra:   " + nomi(doc, "b").join(" / "));
 }
