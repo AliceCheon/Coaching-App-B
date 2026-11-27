@@ -23,6 +23,7 @@ import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB, leggiScheletroB, salvaScheletroConVersione, eliminaScheletroB } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
+import { elencoCustom } from "../comune/progressioni-custom-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma, schedePerProgramma, profiloProgramma } from "../comune/programma.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
@@ -867,6 +868,12 @@ export async function avvia(doc, win) {
 
     }
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
+      /* Passo 21 — le progressioni custom stanno nel documento del programma
+       * aperto: qui si dice quale è e cosa porta, così il pannello le mostra. */
+      progressioni: {
+        id: attivo && attivo.programma ? String(attivo.programma.docId || attivo.programma.id || "") : "",
+        custom: attivo && attivo.programma ? elencoCustom(attivo.programma) : []
+      },
       modifica: {
         attivo: true,
         get annullabile() { return editor.annullabile; },
@@ -993,6 +1000,26 @@ export async function avvia(doc, win) {
             modificheInVolo = Math.max(0, modificheInVolo - 1);
             segnalaModifica("scheda non tolta: " + (e && e.message ? e.message : "errore"), "errore");
             return sincronizza(utente, { forza: true, motivo: "cestino non riuscito" }).then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
+          });
+        },
+        /* Passo 21 — le progressioni custom: un salvataggio, la riga di stato
+         * che dice cosa è successo, e la rilettura della pagina (l'elenco sta
+         * nel documento del programma, non nella scheda). */
+        onProgressioniCustom: (richiesta) => {
+          modificheInVolo += 1;
+          return editor.progressioniProgramma(richiesta).then((esito) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            if (esito && esito.ok) {
+              segnalaModifica((esito.testo || "progressione custom salvata") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+            } else {
+              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+            }
+            return sincronizza(utente, { forza: true, motivo: "progressioni custom" }).then(() => esito);
+          }, (e) => {
+            modificheInVolo = Math.max(0, modificheInVolo - 1);
+            segnalaModifica("progressione custom non salvata: " + (e && e.message ? e.message : "errore"), "errore");
+            return sincronizza(utente, { forza: true, motivo: "progressioni custom non riuscite" })
+              .then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
           });
         },
         onAnnulla: () => {

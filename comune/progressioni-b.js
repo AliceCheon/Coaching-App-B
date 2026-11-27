@@ -119,6 +119,30 @@ export const PRG = Object.freeze([
     w: [["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"], ["3", "4-6 + 8-8"]] }
 ]);
 
+/* --- Le progressioni custom (passo 21) ------------------------------------
+ * Una custom e' una tabella di otto settimane scritta a mano, non una formula.
+ * Vive dentro il documento del programma, che B scrive gia': nessuna raccolta
+ * nuova, quindi nessuna regola Firestore da chiedere.
+ * `PREFISSO_CUSTOM` distingue una custom dalle 21 voci del tastino e dalle 13
+ * della scheda: l'id che gira e' `custom:<id della voce>`. */
+export const CAMPO_CUSTOM = "progressioniCustom";
+export const PREFISSO_CUSTOM = "custom:";
+export const SETTIMANE_CUSTOM = 8;
+
+/* La base della riga: la S1 aveva davvero serie e ripetizioni, o si sta usando
+ * il ripiego del v31? Serve alla tabella: quando il ripiego c'entra, la
+ * tabella lo DICHIARA invece di far credere che la riga avesse quei numeri. */
+export function baseMancante(settimane) {
+  const elenco = Array.isArray(settimane) ? settimane : [];
+  const prima = elenco[0] || {};
+  const serie = parseInt(String(prima.serie == null ? "" : prima.serie).trim(), 10);
+  const rip = String(prima.ripetizioni == null ? "" : prima.ripetizioni).trim();
+  return {
+    serie: !serie || serie < 1 || serie > 12,
+    ripetizioni: rip === ""
+  };
+}
+
 /* --- Le 8 coppie che il v31 scriverebbe ---------------------------------- */
 
 /* r.7171-7176 (baseOf): la base si legge dalla SETTIMANA 1. Le serie: intero

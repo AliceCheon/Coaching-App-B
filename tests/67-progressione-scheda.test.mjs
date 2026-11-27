@@ -128,7 +128,9 @@ test("67.7 il pulsante della barra e' collegato", () => {
 });
 
 function vociSchedaDi(vista) {
-  return vista.split("\n").filter((r) => r.indexOf("vociScheda()") !== -1);
+  /* Passo 21: la lista della scheda ora porta anche le custom, quindi la firma
+   * ha un argomento: la guardia cerca la chiamata, non le parentesi vuote. */
+  return vista.split("\n").filter((r) => r.indexOf("vociScheda(") !== -1);
 }
 
 test("67.8 Custom su una scheda che ha gia' la S1 ovunque non scrive", () => {

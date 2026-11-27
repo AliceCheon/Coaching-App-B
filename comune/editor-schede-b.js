@@ -51,6 +51,7 @@ import { applicaScheda, messaggioApplicato, messaggioNonApplicato, messaggioElim
 import { leggiScheletroB, eliminaScheletroB } from "./scritture-b.js";
 import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
 import { pianificaScaricoTutte, TIPO_VOCE_SCARICO_TUTTE } from "./scarico-tutte.js";
+import { cambiaProgressioni } from "./progressioni-custom-b.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -366,7 +367,9 @@ export function creaEditorSchede(opzioni) {
         return { ok: true, voce: esitoS.voce, avvisoRegistro: avvisoS };
       }
 
-      if (String(voce.tipo || "") === "testata-programma") {
+      /* Passo 21 — le progressioni custom stanno nello stesso documento del
+       * programma: si annullano come la testata. */
+      if (String(voce.tipo || "") === "testata-programma" || String(voce.tipo || "") === "progressioni-custom") {
         const idDoc = String(voce.programma || "");
         if (!idDoc) return { ok: false, motivo: "la voce del registro non dice quale programma rimettere" };
         const lettoP = await conScadenza(leggiProgrammaB(db, uid, idDoc), "la lettura del programma");
@@ -424,6 +427,37 @@ export function creaEditorSchede(opzioni) {
       const avvisoVoce = await scriviVoceSicura(esito.voce);
       ultima = esito.voce;
       return { ok: true, voce: esito.voce, avvisoRegistro: avvisoVoce };
+    });
+  }
+
+  /* Passo 21 — le progressioni custom. Non sono una scheda: vivono dentro il
+   * documento del programma (programMeta.progressioniCustom), che B scrive
+   * gia', quindi nessuna raccolta nuova e nessuna regola Firestore da chiedere.
+   * Stessa regola di versione, stesse voci di registro, stesso Annulla. */
+  function progressioniProgramma(richiesta) {
+    const r = richiesta || {};
+    const idProgramma = String(r.idProgramma == null ? "" : r.idProgramma).trim();
+    if (!idProgramma) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato il programma: non ho scritto niente" });
+    return coda.esegui("programma", async () => {
+      const letto = await conScadenza(leggiProgrammaB(db, uid, idProgramma), "la lettura del programma");
+      if (!letto || !letto.esiste) return { ok: false, motivo: "il programma non e' ancora in B: fai prima la copia" };
+      const esito = cambiaProgressioni(letto.dati, Object.assign({}, r, { idProgramma: idProgramma }), { quando: quando(), uid: uid });
+      if (!esito.ok) return esito;
+      try {
+        await conScadenza(salvaProgrammaConVersione(db, uid, idProgramma, esito.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const avvisoVoce = await scriviVoceSicura(esito.voce);
+      ultima = esito.voce;
+      return {
+        ok: true,
+        voce: esito.voce,
+        custom: esito.custom,
+        elenco: esito.elenco,
+        testo: esito.testo,
+        avvisoRegistro: avvisoVoce
+      };
     });
   }
 
@@ -998,6 +1032,7 @@ export function creaEditorSchede(opzioni) {
     get ultima() { return ultima; },
     modifica: modifica,
     testataProgramma: testataProgramma,
+    progressioniProgramma: progressioniProgramma,
     notaScheda: notaScheda,
     togliScheda: togliScheda,
     copiaEsercizi: copiaEsercizi,

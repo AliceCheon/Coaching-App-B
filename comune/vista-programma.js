@@ -31,7 +31,8 @@ import {
   secondiRecupero, recuperoScrittoValido, tempoScrittoValido } from "./tut-rec.js";
 
 import { nomePulito } from "./nome-pulito.js";
-import { PROG, PRG } from "./progressioni-b.js";
+import { PROG, PRG, coppieRiga, coppieScheda, baseDaSettimane, baseMancante, PREFISSO_CUSTOM, SETTIMANE_CUSTOM } from "./progressioni-b.js";
+import { coppieCustom, riassuntoCustom } from "./progressioni-custom-b.js";
 import { creaSelettoreEserciziB } from "./selettore-esercizi-b.js";
 import { supAttivi } from "./modifiche-b.js";
 import { apriConsultabile } from "./vista-programma-consultabile.js";
@@ -219,10 +220,14 @@ function pulsanteVivo(doc, classe, testo, titolo, alClic) {
   return b;
 }
 
-/* --- Le progressioni (passo 20) ------------------------------------------
+/* --- Le progressioni (passo 20, cresciute al passo 21) -------------------
  * Il pannello e' quello del v31 (r.7305-7345): si apre sotto il pulsante, con
- * l'etichetta in maiuscoletto e una voce per riga. Stessi nomi di classe del
- * v31, cosi' l'aspetto e' quello di sempre e il foglio di B non si tocca.
+ * l'etichetta in maiuscoletto e una voce per riga. Il clic sulla voce la
+ * applica, come sempre. In piu', da ogni voce:
+ *  - «Vedi» apre la tabella delle otto settimane (sola lettura);
+ *  - «Duplica» ne fa una progressione custom con gli stessi valori;
+ *  - per le custom: «Modifica» (tabella e nome), «Elimina» (con conferma).
+ * In fondo c'e' «Crea progressione custom»: tabella nuova, da compilare.
  * Si chiude al clic fuori o dopo la scelta. */
 let pannelloProgressioni = null;
 
@@ -238,22 +243,375 @@ function chiudiProgressioni() {
   pannelloProgressioni = null;
 }
 
-function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
+function chiudiModaleProg(doc) {
+  const gia = doc.querySelector(".prog-modal");
+  if (gia && gia.parentNode) gia.parentNode.removeChild(gia);
+}
+
+/* Una finestra sopra la pagina, con lo stesso taglio delle Spiegazioni:
+ * intestazione, ×, Esc e clic sullo sfondo per chiudere. */
+function apriModaleProg(doc, titolo, nota) {
+  chiudiModaleProg(doc);
+  const modale = n(doc, "div", "pr-modal prog-modal");
+  const scatola = n(doc, "div", "pr-mbox prog-mbox");
+  const testa = doc.createElement("header");
+  const b = doc.createElement("b");
+  b.textContent = titolo;
+  const conta = doc.createElement("span");
+  conta.textContent = nota || "";
+  const x = doc.createElement("button");
+  x.type = "button";
+  x.className = "pr-mx";
+  x.setAttribute("aria-label", "Chiudi");
+  x.textContent = "\u00d7";
+  testa.appendChild(b);
+  testa.appendChild(conta);
+  testa.appendChild(x);
+  scatola.appendChild(testa);
+  modale.appendChild(scatola);
+  doc.body.appendChild(modale);
+  const chiudi = () => {
+    if (modale.parentNode) modale.parentNode.removeChild(modale);
+    doc.removeEventListener("keydown", suTasto, true);
+  };
+  function suTasto(ev) {
+    if (ev.key === "Escape" || ev.key === "Esc") { ev.stopPropagation(); chiudi(); }
+  }
+  x.addEventListener("click", chiudi);
+  modale.addEventListener("click", (ev) => { if (ev.target === modale) chiudi(); });
+  doc.addEventListener("keydown", suTasto, true);
+  return { modale: modale, scatola: scatola, chiudi: chiudi };
+}
+
+/* La tabella delle otto settimane: riga delle serie, riga delle ripetizioni.
+ * Una cella che non c'e' si legge «—»: non si scrive uno zero che non c'e'. */
+function tabellaOtto(doc, coppie) {
+  const t = n(doc, "table", "prog-table");
+  const thead = doc.createElement("thead");
+  const trh = doc.createElement("tr");
+  trh.appendChild(n(doc, "th", "prog-rh", "settimana"));
+  for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) trh.appendChild(n(doc, "th", "prog-th", "S" + (w + 1)));
+  thead.appendChild(trh);
+  t.appendChild(thead);
+  const corpo = doc.createElement("tbody");
+  [["serie", 0], ["ripetizioni", 1]].forEach((voce) => {
+    const etichetta = voce[0];
+    const k = voce[1];
+    const tr = doc.createElement("tr");
+    tr.appendChild(n(doc, "th", "prog-rh", etichetta));
+    for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) {
+      const c = coppie && coppie[w] ? String(coppie[w][k] == null ? "" : coppie[w][k]).trim() : "";
+      tr.appendChild(n(doc, "td", "prog-cell" + (c ? "" : " vuota"), c || "\u2014"));
+    }
+    corpo.appendChild(tr);
+  });
+  t.appendChild(corpo);
+  return t;
+}
+
+/* La frase che dice da dove viene la tabella: una formula del v31 o una custom
+ * salvata in questo programma. Mai una tabella senza dire la sua origine. */
+function origineProgressione(voce) {
+  const v = voce || {};
+  if (v.tipo === "custom") {
+    return "Progressione custom" + (v.da ? " (copiata da «" + nomePulito(v.da) + "»)" : "") +
+      ": la tabella e' salvata in questo programma e si puo' modificare.";
+  }
+  if (v.origine === "scheda") {
+    return "Formula «" + nomePulito(v.nome) + "» del v31, applicata a tutta la scheda. " + nomePulito(v.formula || "");
+  }
+  return "Formula «" + nomePulito(v.nome) + "» del v31: " + nomePulito(v.descrizione);
+}
+
+/* «Vedi»: la tabella in sola lettura, con la frase dell'origine. Da qui si
+ * duplica (una formula non si modifica in loco: si copia e si cambia la copia). */
+function apriTabellaProgressione(doc, voce, o) {
+  const opz = o || {};
+  const v = voce || {};
+  const coppie = Array.isArray(v.coppie) ? v.coppie : null;
+  const finestra = apriModaleProg(doc,
+    "\u00ab" + nomePulito(v.nome) + "\u00bb",
+    v.tipo === "custom" ? "custom \u00b7 8 settimane" : "formula \u00b7 8 settimane");
+  const scatola = finestra.scatola;
+  scatola.appendChild(n(doc, "p", "prog-origine", origineProgressione(v)));
+  if (coppie) {
+    scatola.appendChild(tabellaOtto(doc, coppie));
+  } else {
+    scatola.appendChild(n(doc, "p", "prog-nota",
+      "Questa voce non ha una tabella fissa: quando la applichi, ogni riga tiene la sua settimana 1 copiata su tutte le otto. Apri «Applica progressione» dalla riga per vedere i numeri di quella riga."));
+  }
+  if (opz.baseMancante && (opz.baseMancante.serie || opz.baseMancante.ripetizioni)) {
+    const pezzi = [];
+    if (opz.baseMancante.serie) pezzi.push("serie");
+    if (opz.baseMancante.ripetizioni) pezzi.push("ripetizioni");
+    scatola.appendChild(n(doc, "p", "prog-nota",
+      "La settimana 1 di questa riga non ha " + pezzi.join(" e ") + " scritte: la formula parte dal ripiego del v31 (3 serie \u00d7 8-10 rip.), come farebbe quando la applichi."));
+  }
+  if (v.tipo === "custom") {
+    scatola.appendChild(n(doc, "p", "prog-nota",
+      "Le celle vuote (—) sono settimane senza valore: applicandola, quella settimana resta senza serie o ripetizioni."));
+  }
+  const piedi = n(doc, "div", "prog-piedi");
+  const puoScrivere = Boolean(opz.idProgramma) && typeof opz.salvaCustom === "function";
+  const duplica = pulsanteVivo(doc, "prog-btn pri", v.tipo === "custom" ? "Duplica" : "Duplica in custom",
+    "crea una progressione custom con questi stessi valori", () => {
+      finestra.chiudi();
+      apriEditorProgressione(doc, {
+        azione: "crea",
+        nome: "Copia di " + nomePulito(v.nome),
+        coppie: coppie || [],
+        da: v.tipo === "custom" ? (v.idCustom || "") : v.id
+      }, opz);
+    });
+  if (!puoScrivere) {
+    duplica.disabled = true;
+    duplica.title = "apri un programma dalla zona B per salvare una progressione custom";
+  } else if (!coppie) {
+    duplica.disabled = true;
+    duplica.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e duplicala lì";
+  }
+  piedi.appendChild(duplica);
+  if (v.tipo === "custom") {
+    const modifica = pulsanteVivo(doc, "prog-btn", "Modifica la tabella", "cambia nome e celle di questa progressione custom", () => {
+      finestra.chiudi();
+      apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
+    });
+    if (!puoScrivere) { modifica.disabled = true; modifica.title = "serve un programma aperto dalla zona B"; }
+    piedi.appendChild(modifica);
+  }
+  piedi.appendChild(pulsanteVivo(doc, "prog-btn", "Chiudi", "chiudi la tabella", () => finestra.chiudi()));
+  scatola.appendChild(piedi);
+}
+
+/* Il messaggio d'errore dentro una finestra: si legge, non si inghiotte. */
+function erroreModale(doc, scatola, testo) {
+  let p = scatola.querySelector(".prog-err");
+  if (!p) {
+    p = n(doc, "p", "prog-err");
+    scatola.appendChild(p);
+  }
+  p.textContent = String(testo || "");
+  p.hidden = false;
+}
+
+/* «Crea» e «Modifica»: nome + otto colonne di serie e ripetizioni. Si salva una
+ * volta sola (una scrittura, una voce di registro, un Annulla). */
+function apriEditorProgressione(doc, dati, o) {
+  const d = dati || {};
+  const opz = o || {};
+  const custom = d.custom && typeof d.custom === "object" ? d.custom : null;
+  const soloNome = d.soloNome === true;
+  const modifica = d.azione === "modifica" && custom;
+  const base = custom ? coppieCustom(custom) : (Array.isArray(d.coppie) ? d.coppie : []);
+  const titolo = soloNome ? "Rinomina la progressione"
+    : (modifica ? "Modifica \u00ab" + nomePulito(custom.nome) + "\u00bb" : "Nuova progressione custom");
+  const finestra = apriModaleProg(doc, titolo, modifica ? "custom \u00b7 si salva nel programma" : "8 settimane");
+  const scatola = finestra.scatola;
+  scatola.appendChild(n(doc, "p", "prog-origine", soloNome
+    ? "Il nome si vede nell'elenco delle progressioni e nel registro delle modifiche."
+    : "Scrivi serie e ripetizioni settimana per settimana. Una cella vuota resta vuota: applicando la progressione, quella settimana non avra' ne' serie ne' ripetizioni."));
+
+  const forma = n(doc, "div", "prog-forma");
+  const etichettaNome = n(doc, "label", "prog-lab", "Nome");
+  const nome = doc.createElement("input");
+  nome.type = "text";
+  nome.className = "prog-in";
+  nome.maxLength = 60;
+  nome.value = nomePulito(custom ? custom.nome : d.nome);
+  nome.setAttribute("aria-label", "nome della progressione custom");
+  etichettaNome.appendChild(nome);
+  forma.appendChild(etichettaNome);
+  scatola.appendChild(forma);
+
+  const celle = [];
+  if (!soloNome) {
+    const t = n(doc, "table", "prog-table prog-edit");
+    const thead = doc.createElement("thead");
+    const trh = doc.createElement("tr");
+    trh.appendChild(n(doc, "th", "prog-rh", "settimana"));
+    for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) trh.appendChild(n(doc, "th", "prog-th", "S" + (w + 1)));
+    thead.appendChild(trh);
+    t.appendChild(thead);
+    const corpo = doc.createElement("tbody");
+    [["serie", 0], ["ripetizioni", 1]].forEach((riga) => {
+      const etichetta = riga[0];
+      const k = riga[1];
+      const tr = doc.createElement("tr");
+      tr.appendChild(n(doc, "th", "prog-rh", etichetta));
+      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) {
+        const td = doc.createElement("td");
+        td.className = "prog-cell";
+        const campo = doc.createElement("input");
+        campo.type = "text";
+        campo.className = "prog-in-cella";
+        campo.maxLength = 24;
+        campo.value = base && base[w] ? String(base[w][k] == null ? "" : base[w][k]) : "";
+        campo.setAttribute("data-settimana", String(w + 1));
+        campo.setAttribute("data-campo", etichetta);
+        campo.setAttribute("aria-label", etichetta + " della settimana " + (w + 1));
+        td.appendChild(campo);
+        tr.appendChild(td);
+        celle.push(campo);
+      }
+      corpo.appendChild(tr);
+    });
+    t.appendChild(corpo);
+    scatola.appendChild(t);
+  }
+
+  const piedi = n(doc, "div", "prog-piedi");
+  const salva = pulsanteVivo(doc, "prog-btn pri", soloNome ? "Salva il nome" : "Salva", "salva nel programma", () => {
+    if (!opz.idProgramma || typeof opz.salvaCustom !== "function") {
+      erroreModale(doc, scatola, "Questa pagina non ha un programma aperto: non salvo niente.");
+      return;
+    }
+    const nomeScritto = String(nome.value || "").trim();
+    let richiesta = null;
+    if (soloNome) {
+      richiesta = { idProgramma: opz.idProgramma, azione: "rinomina", id: custom ? custom.id : "", nome: nomeScritto };
+    } else if (modifica) {
+      const coppie = [];
+      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) coppie.push(["", ""]);
+      celle.forEach((campo) => {
+        const w = Number(campo.getAttribute("data-settimana")) - 1;
+        const k = campo.getAttribute("data-campo") === "serie" ? 0 : 1;
+        coppie[w][k] = String(campo.value || "").trim();
+      });
+      richiesta = { idProgramma: opz.idProgramma, azione: "settimane", id: custom.id, coppie: coppie, nome: nomeScritto };
+    } else {
+      const coppie = [];
+      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) coppie.push(["", ""]);
+      celle.forEach((campo) => {
+        const w = Number(campo.getAttribute("data-settimana")) - 1;
+        const k = campo.getAttribute("data-campo") === "serie" ? 0 : 1;
+        coppie[w][k] = String(campo.value || "").trim();
+      });
+      richiesta = { idProgramma: opz.idProgramma, azione: "crea", nome: nomeScritto, coppie: coppie, da: String(d.da || "") };
+    }
+    salva.disabled = true;
+    Promise.resolve(opz.salvaCustom(richiesta)).then((esito) => {
+      salva.disabled = false;
+      if (esito && esito.ok) { finestra.chiudi(); return; }
+      erroreModale(doc, scatola, (esito && esito.motivo) || "non ho salvato niente");
+    }, (e) => {
+      salva.disabled = false;
+      erroreModale(doc, scatola, "non ho salvato niente: " + (e && e.message ? e.message : "errore"));
+    });
+  });
+  piedi.appendChild(salva);
+  piedi.appendChild(pulsanteVivo(doc, "prog-btn", "Annulla", "non salvare niente", () => finestra.chiudi()));
+  scatola.appendChild(piedi);
+  if (nome.focus) { try { nome.focus(); } catch (e) { /* senza fuoco si scrive lo stesso */ } }
+}
+
+/* L'eliminazione chiede sempre conferma: le schede già scritte non cambiano,
+ * sparisce solo la ricetta. */
+function apriConfermaProgressione(doc, voce, o) {
+  const opz = o || {};
+  const v = voce || {};
+  const finestra = apriModaleProg(doc, "Eliminare \u00ab" + nomePulito(v.nome) + "\u00bb?", "progressione custom");
+  const scatola = finestra.scatola;
+  scatola.appendChild(n(doc, "p", "prog-origine",
+    "La progressione sparisce dall'elenco di questo programma. Le schede gi\u00e0 scritte non cambiano: restano con le settimane che hanno. Si pu\u00f2 annullare subito dopo."));
+  const piedi = n(doc, "div", "prog-piedi");
+  const elimina = pulsanteVivo(doc, "prog-btn danger", "Elimina", "elimina la progressione custom", () => {
+    if (!opz.idProgramma || typeof opz.salvaCustom !== "function") {
+      erroreModale(doc, scatola, "Questa pagina non ha un programma aperto: non elimino niente.");
+      return;
+    }
+    elimina.disabled = true;
+    Promise.resolve(opz.salvaCustom({ idProgramma: opz.idProgramma, azione: "elimina", id: v.idCustom || "" })).then((esito) => {
+      elimina.disabled = false;
+      if (esito && esito.ok) { finestra.chiudi(); return; }
+      erroreModale(doc, scatola, (esito && esito.motivo) || "non ho eliminato niente");
+    }, (e) => {
+      elimina.disabled = false;
+      erroreModale(doc, scatola, "non ho eliminato niente: " + (e && e.message ? e.message : "errore"));
+    });
+  });
+  piedi.appendChild(elimina);
+  piedi.appendChild(pulsanteVivo(doc, "prog-btn", "Annulla", "lasciala dov'\u00e8", () => finestra.chiudi()));
+  scatola.appendChild(piedi);
+}
+
+function apriProgressioni(doc, bottone, voci, etichetta, alScelta, opzioni) {
   chiudiProgressioni();
-  const pannello = n(doc, "div", "prog-panel");
+  const opz = opzioni || {};
+  const pannello = n(doc, "div", "prog-panel prog-ricco");
   pannello.appendChild(n(doc, "span", "tec-lab", etichetta));
+  /* Senza il documento del programma aperto non si salva niente: i tasti che
+   * scrivono si spengono e dicono perché (non fingono di funzionare). */
+  const puoScrivere = Boolean(opz.idProgramma) && typeof opz.salvaCustom === "function";
   voci.forEach((v) => {
+    const riga = n(doc, "div", "prog-row" + (v.tipo === "custom" ? " prog-row-custom" : ""));
     const b = n(doc, "button", "prog-item");
     b.type = "button";
+    if (v.tipo === "custom") b.appendChild(n(doc, "span", "prog-tag", "custom"));
     b.appendChild(n(doc, "b", "", nomePulito(v.nome)));
     b.appendChild(n(doc, "em", "", nomePulito(v.descrizione)));
     b.addEventListener("click", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       chiudiProgressioni();
-      alScelta(v.id);
+      alScelta(v);
     });
-    pannello.appendChild(b);
+    riga.appendChild(b);
+    const atti = n(doc, "span", "prog-acts");
+    atti.appendChild(pulsanteVivo(doc, "prog-act", "Vedi", "la tabella delle otto settimane, in sola lettura", (ev) => {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      apriTabellaProgressione(doc, v, opz);
+    }));
+    const duplica = pulsanteVivo(doc, "prog-act", "Duplica", "crea una progressione custom con questi valori", (ev) => {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      apriEditorProgressione(doc, {
+        azione: "crea",
+        nome: "Copia di " + nomePulito(v.nome),
+        coppie: Array.isArray(v.coppie) ? v.coppie : [],
+        da: v.tipo === "custom" ? (v.idCustom || "") : v.id
+      }, opz);
+    });
+    if (!puoScrivere) {
+      duplica.disabled = true;
+      duplica.title = "apri un programma dalla zona B per salvare una progressione custom";
+    } else if (!Array.isArray(v.coppie)) {
+      /* Le due voci della scheda senza tabella fissa copiano la S1 di ogni
+       * riga: non c'è una tabella da duplicare senza sapere la riga. */
+      duplica.disabled = true;
+      duplica.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e duplicala lì";
+    }
+    atti.appendChild(duplica);
+    if (v.tipo === "custom") {
+      const modificaVoce = pulsanteVivo(doc, "prog-act", "Modifica", "cambia nome e celle di questa progressione custom", (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
+      });
+      const eliminaVoce = pulsanteVivo(doc, "prog-act danger", "Elimina", "elimina questa progressione custom (chiede conferma)", (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        apriConfermaProgressione(doc, v, opz);
+      });
+      if (!puoScrivere) { modificaVoce.disabled = true; eliminaVoce.disabled = true; }
+      atti.appendChild(modificaVoce);
+      atti.appendChild(eliminaVoce);
+    }
+    riga.appendChild(atti);
+    pannello.appendChild(riga);
   });
+  const nuova = pulsanteVivo(doc, "prog-nuova", "\uff0b Crea progressione custom",
+    "una tabella nuova di otto settimane da compilare a mano", () => {
+      const coppie = [];
+      const base = opz.base || null;
+      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) {
+        coppie.push(base && !(opz.baseMancante && (opz.baseMancante.serie || opz.baseMancante.ripetizioni))
+          ? [String(base.s), String(base.r)]
+          : ["", ""]);
+      }
+      chiudiProgressioni();
+      apriEditorProgressione(doc, { azione: "crea", nome: "", coppie: coppie, da: "" }, opz);
+    });
+  if (!puoScrivere) {
+    nuova.disabled = true;
+    nuova.title = "apri un programma dalla zona B per salvare una progressione custom";
+  }
+  pannello.appendChild(nuova);
   doc.body.appendChild(pannello);
   const win = doc.defaultView;
   const r = bottone && bottone.getBoundingClientRect ? bottone.getBoundingClientRect() : null;
@@ -298,12 +656,51 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta) {
   }
 }
 
-/* Le due liste, nella forma che serve al pannello. */
-function vociRiga() {
-  return PROG.map((v) => ({ id: v[0], nome: v[1], descrizione: v[2] }));
+/* Le liste, nella forma che serve al pannello. Le custom stanno in coda, con
+ * la loro etichetta: si distinguono dalle formule a colpo d'occhio. */
+/* Quello che serve al pannello per leggere e per scrivere: il programma aperto
+ * (le custom vivono nel suo documento), l'elenco delle custom, la base della
+ * riga per la tabella, e la strada di scrittura dell'editor. */
+function opzioniProgressione(r, base, mancante) {
+  const prog = r && r.progressioni ? r.progressioni : null;
+  const mod = r && r.modifica ? r.modifica : null;
+  return {
+    idProgramma: prog ? String(prog.id || "") : "",
+    custom: prog && Array.isArray(prog.custom) ? prog.custom : [],
+    base: base || null,
+    baseMancante: mancante || null,
+    salvaCustom: mod && typeof mod.onProgressioniCustom === "function" ? mod.onProgressioniCustom : null
+  };
 }
-function vociScheda() {
-  return PRG.map((v) => ({ id: v.id, nome: v.n, descrizione: v.d }));
+
+function vociCustom(custom) {
+  return (Array.isArray(custom) ? custom : []).map((c) => ({
+    id: PREFISSO_CUSTOM + String(c.id || ""),
+    idCustom: String(c.id || ""),
+    nome: nomePulito(c.nome),
+    descrizione: "progressione custom \u00b7 " + riassuntoCustom(c),
+    tipo: "custom",
+    origine: "custom",
+    coppie: coppieCustom(c),
+    custom: c
+  }));
+}
+/* Le custom stanno in cima: sono quelle che Alice ha scritto, e con ventuno
+ * formule sotto resterebbero fuori dallo schermo. L'etichetta «custom» le
+ * distingue comunque dalle formule. */
+function vociRiga(base, custom) {
+  const out = PROG.map((v) => ({
+    id: v[0], nome: v[1], descrizione: v[2], tipo: "formula", origine: "riga",
+    coppie: coppieRiga(v[0], base)
+  }));
+  return vociCustom(custom).concat(out);
+}
+function vociScheda(custom) {
+  const out = PRG.map((v) => ({
+    id: v.id, nome: v.n, descrizione: v.d, tipo: "formula", origine: "scheda",
+    formula: v.d, coppie: v.w ? coppieScheda(v.id, null) : null
+  }));
+  return vociCustom(custom).concat(out);
 }
 
 function pulsanteSpento(doc, classe, testo, titolo) {
@@ -1612,12 +2009,21 @@ function tabellaEsercizi(doc, scheda, r) {
     }
     ese.appendChild(chips2);
 
+    /* Passo 21 — la tabella che «Vedi» mostra è quella di QUESTA riga: la base
+     * è la S1 dell'esercizio, con il ripiego del v31 dichiarato a parte. */
+    const settimaneRiga = (e.prescrizione && e.prescrizione.elencoSettimane) || [];
+    const baseRiga = baseDaSettimane(settimaneRiga);
+    const opzProg = opzioniProgressione(r, baseRiga, baseMancante(settimaneRiga));
+    const applicaRiga = (voce) => mod.onCambia({
+      idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione",
+      progressione: voce.id,
+      coppieCustom: voce.tipo === "custom" ? voce.coppie : null,
+      nomeProgressione: voce.tipo === "custom" ? nomePulito(voce.nome) : ""
+    });
     const prog = mod
       ? pulsanteVivo(doc, "tb-prog btn-prog", "", "applica progressione", () => apriProgressioni(doc, prog,
-        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
-        (pid) => mod.onCambia({
-          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
-        })))
+        vociRiga(baseRiga, opzProg.custom), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
+        applicaRiga, opzProg))
       : pulsanteSpento(doc, "tb-prog btn-prog", "", "applica progressione");
     /* Passo 28: il v31 intercetta .btn-prog sul document in cattura e
      * interrompe il clic prima del pulsante di B. Gestiamo solo questo
@@ -1625,10 +2031,8 @@ function tabellaEsercizi(doc, scheda, r) {
     if (mod) {
       prog.setAttribute("data-b-progressione", "true");
       prog.__bdApriProgressioni = () => apriProgressioni(doc, prog,
-        vociRiga(), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
-        (pid) => mod.onCambia({
-          idScheda: scheda.id, idEsercizio: e.id, esercizio: nomePulito(e.nome), campo: "progressione", progressione: pid
-        }));
+        vociRiga(baseRiga, opzProg.custom), "progressioni importate dalla tab Progressioni \u00b7 applica alle 8 settimane",
+        applicaRiga, opzProg);
       const win = doc.defaultView;
       if (win && !doc.__bdClicProgressione) {
         doc.__bdClicProgressione = true;
@@ -1971,9 +2375,14 @@ function barraStrumenti(doc, scheda, r) {
     "applica la progressione alle 8 settimane di tutte le righe", () => {
     if (!modificaCorrente) return;
     const idScheda = idSchedaVicino(btProgScheda);
-    apriProgressioni(doc, btProgScheda, vociScheda(),
+    const opzScheda = opzioniProgressione(r, null, null);
+    apriProgressioni(doc, btProgScheda, vociScheda(opzScheda.custom),
       "Le 8 settimane di tutte le righe di questa scheda vengono riscritte. Puoi annullare subito dopo.",
-      (pid) => modificaCorrente.onCambia({ idScheda: idScheda, campo: "progressione-scheda", progressione: pid }));
+      (voce) => modificaCorrente.onCambia({
+        idScheda: idScheda, campo: "progressione-scheda", progressione: voce.id,
+        coppieCustom: voce.tipo === "custom" ? voce.coppie : null,
+        nomeProgressione: voce.tipo === "custom" ? nomePulito(voce.nome) : ""
+      }), opzScheda);
   });
   bar.appendChild(btProgScheda);
   const btScheletro = modificaCorrente
@@ -2556,7 +2965,12 @@ export function renderProgramma(doc, contenitore, modello, calcoli) {
      * Scheletri resta spenta anche quando la raccolta c'e'. */
     scheletri: Array.isArray(r.scheletri) ? r.scheletri : null,
     /* Passo 41 — i programmi di B per il tasto «Cambia». */
-    altriProgrammi: Array.isArray(r.altriProgrammi) ? r.altriProgrammi : []
+    altriProgrammi: Array.isArray(r.altriProgrammi) ? r.altriProgrammi : [],
+    /* Passo 21 — il programma aperto e le sue progressioni custom: senza
+     * queste due righe il pannello non può né mostrarle né salvarle. */
+    progressioni: r.progressioni && typeof r.progressioni === "object"
+      ? { id: String(r.progressioni.id || ""), custom: Array.isArray(r.progressioni.custom) ? r.progressioni.custom : [] }
+      : null
   };
   contenitore.appendChild(testata(doc, pieno.modifica));
   const tre = n(doc, "div", "pr-grid");

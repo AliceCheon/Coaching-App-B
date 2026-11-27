@@ -24,7 +24,10 @@ import { separaRecupero, separaTempo } from "./tut-rec.js";
 import { prescrizione } from "./schede-v2.js";
 
 import { rigaTecnica as costruisciRigaTecnica, nomeTecnica, tecnicaCambiata, notaAutomatica as notaAutoTecnica, parametriValidi, eTecnica } from "./tecniche-b.js";
-import { coppieRiga, coppieScheda, baseDaSettimane, nomeProgressione, voceScheda } from "./progressioni-b.js";
+import {
+  coppieRiga, coppieScheda, baseDaSettimane, nomeProgressione, voceScheda,
+  PREFISSO_CUSTOM, CAMPO_CUSTOM
+} from "./progressioni-b.js";
 
 /* Il nome del campo che dice "a questa scheda ho messo mano in B". */
 import { validaSettimana, validaVolume, settimaneScheda, leggiPiano } from "./piano-scheda.js";
@@ -482,6 +485,19 @@ function coppieVuote(coppie) {
   return elenco.every((c) => testo(c && c[0]) === "" && testo(c && c[1]) === "");
 }
 
+/* Passo 21 — le otto coppie di una progressione custom, controllate. Se non
+ * sono otto coppie, torna null e il motore non scrive niente. */
+function coppieDaRichiesta(valore) {
+  if (!Array.isArray(valore) || valore.length !== 8) return null;
+  const out = [];
+  for (let w = 0; w < 8; w += 1) {
+    const c = valore[w];
+    if (!Array.isArray(c) || c.length < 2) return null;
+    out.push([testo(c[0]), testo(c[1])]);
+  }
+  return out;
+}
+
 /* Il numero resta numero quando il testo e' un numero: cosi' l'Annulla
  * riscrive il valore com'era, non "4" al posto di 4. */
 function valoreCella(scritto) {
@@ -560,14 +576,29 @@ export function applicaProgressione(dati, richiesta, opzioni) {
     return { ok: false, motivo: "questa scheda non porta le settimane scritte: la progressione si apre in un passo successivo" };
   }
   const pid = testo(r.progressione);
-  const coppie = coppieRiga(pid, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
-  if (!coppie) return { ok: false, motivo: "la progressione «" + pid + "» non esiste: non ho scritto niente" };
-  const nome = nomeProgressione(pid) || pid;
+  /* Passo 21 — una custom non è una formula: le otto coppie arrivano dalla
+   * pagina (lette dallo stesso documento del programma) e qui si controlla che
+   * siano davvero otto. Senza, non si scrive niente. */
+  const custom = pid.indexOf(PREFISSO_CUSTOM) === 0;
+  const coppie = custom
+    ? coppieDaRichiesta(r.coppieCustom)
+    : coppieRiga(pid, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
+  if (!coppie) {
+    return {
+      ok: false,
+      motivo: custom
+        ? "la progressione custom non porta le otto settimane: non ho scritto niente"
+        : "la progressione «" + pid + "» non esiste: non ho scritto niente"
+    };
+  }
+  const nome = custom ? (testo(r.nomeProgressione) || "progressione custom") : (nomeProgressione(pid) || pid);
   const prima = coppieAttuali(esercizio);
   if (stesseCoppie(prima, coppie)) {
     return {
       ok: false,
-      motivo: "la progressione «" + nome + "» non cambia nessuna cella: come nel v31 parla di carico, non di serie e ripetizioni. Non ho scritto niente."
+      motivo: custom
+        ? "la progressione custom «" + nome + "» non cambia nessuna cella di questa riga: non ho scritto niente."
+        : "la progressione «" + nome + "» non cambia nessuna cella: come nel v31 parla di carico, non di serie e ripetizioni. Non ho scritto niente."
     };
   }
   const nuovoEsercizio = scriviCoppie(esercizio, coppie);
@@ -948,8 +979,18 @@ export function applicaProgressioneScheda(dati, richiesta, opzioni) {
   const chiave = chiaveEsercizi(f);
   if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
   const elenco = f[chiave];
-  const voceProg = voceScheda(r.progressione);
-  if (!voceProg) return { ok: false, motivo: "questa progressione di scheda non esiste: non ho scritto niente" };
+  /* Passo 21 — anche una custom si applica a tutta la scheda: la sua tabella
+   * è una sola, uguale per ogni riga (una formula, invece, parte dalla S1 di
+   * ogni riga). */
+  const pid = testo(r.progressione);
+  const custom = pid.indexOf(PREFISSO_CUSTOM) === 0;
+  const voceProg = custom ? null : voceScheda(pid);
+  if (!custom && !voceProg) return { ok: false, motivo: "questa progressione di scheda non esiste: non ho scritto niente" };
+  const coppieFisse = custom ? coppieDaRichiesta(r.coppieCustom) : null;
+  if (custom && !coppieFisse) {
+    return { ok: false, motivo: "la progressione custom non porta le otto settimane: non ho scritto niente" };
+  }
+  const nomeProg = custom ? (testo(r.nomeProgressione) || "progressione custom") : voceProg.n;
 
   const vive = [];
   for (let i = 0; i < elenco.length; i += 1) {
@@ -970,14 +1011,14 @@ export function applicaProgressioneScheda(dati, richiesta, opzioni) {
   for (let k = 0; k < vive.length; k += 1) {
     const i = vive[k];
     const esercizio = elenco[i];
-    const coppie = coppieScheda(voceProg.id, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
+    const coppie = custom ? coppieFisse : coppieScheda(voceProg.id, baseDaSettimane(prescrizione(esercizio).elencoSettimane));
     const prima = coppieAttuali(esercizio);
     nuove[i] = scriviCoppie(esercizio, coppie);
     if (!stesseCoppie(prima, coppie)) cambia = true;
     righe.push({ idEsercizio: testo(esercizio.id), esercizio: nomeDi(esercizio), prima: prima, dopo: coppie });
   }
   if (!cambia) {
-    return { ok: false, motivo: "la progressione «" + voceProg.n + "» non cambia nessuna cella di questa scheda: non ho scritto niente" };
+    return { ok: false, motivo: "la progressione «" + nomeProg + "» non cambia nessuna cella di questa scheda: non ho scritto niente" };
   }
   const nuovo = chiudiDocumento(dati, f, chiave, nuove, quando, o.uid, "progressione-scheda");
   const voce = {
@@ -991,8 +1032,8 @@ export function applicaProgressioneScheda(dati, richiesta, opzioni) {
     idEsercizio: "",
     settimana: null,
     campo: "progressione-scheda",
-    progressione: voceProg.id,
-    nomeProgressione: voceProg.n,
+    progressione: custom ? pid : voceProg.id,
+    nomeProgressione: nomeProg,
     righe: righe,
     dopoTesto: String(righe.length) + " righe",
     versionePrima: versioneDi(dati),
@@ -1111,6 +1152,9 @@ export function annullaModifica(dati, voce, opzioni) {
   /* PASSO 4a — il piano della scheda e la testata del programma si
    * annullano sul loro documento, non su un elenco di esercizi. */
   if (tipo === "piano-scheda" || tipo === "testata-programma") return annullaPianoETestata(dati, v, quando, o.uid);
+  /* Passo 21 — le progressioni custom vivono nel documento del programma: si
+   * rimette l'elenco di prima com'era, creazioni ed eliminazioni comprese. */
+  if (tipo === "progressioni-custom") return annullaProgressioniCustom(dati, v, quando, o.uid);
 
   /* B.21 — i comandi dell'igiene portano l'elenco INTERO di prima:
    * l'annullamento lo rimette in blocco, una volta sola, e con lui tornano
@@ -1289,7 +1333,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "togli-scheda")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "togli-scheda" || v.tipo === "progressioni-custom")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -2100,6 +2144,62 @@ export function togliSchedaDalProgramma(dati, richiesta, opzioni) {
 }
 
 /* L'annullamento delle modifiche qui sopra. */
+/* Passo 21 — l'Annulla di una scrittura sulle progressioni custom: si rimette
+ * l'elenco INTERO di prima (creare, duplicare, modificare, rinominare ed
+ * eliminare si annullano tutti allo stesso modo). Niente si cancella: la voce
+ * dell'Annulla cita quella che ha annullato. */
+function annullaProgressioniCustom(dati, v, quando, uid) {
+  const nuovo = Object.assign({}, dati);
+  const elenco = (Array.isArray(v.prima) ? v.prima : []).map((x) => {
+    const voce = x && typeof x === "object" ? x : {};
+    const settimane = [];
+    const lette = Array.isArray(voce.settimane) ? voce.settimane : [];
+    for (let w = 0; w < 8; w += 1) {
+      const s = lette[w] && typeof lette[w] === "object" ? lette[w] : {};
+      settimane.push({ serie: testo(s.serie), ripetizioni: testo(s.ripetizioni) });
+    }
+    return { id: testo(voce.id), nome: testo(voce.nome), da: testo(voce.da), settimane: settimane };
+  });
+  if (nuovo.programMeta && typeof nuovo.programMeta === "object") {
+    const meta = Object.assign({}, nuovo.programMeta);
+    if (elenco.length) meta[CAMPO_CUSTOM] = elenco; else delete meta[CAMPO_CUSTOM];
+    meta.updatedAt = quando;
+    nuovo.programMeta = meta;
+  } else if (nuovo.program && typeof nuovo.program === "object") {
+    const prog = Object.assign({}, nuovo.program);
+    if (elenco.length) prog[CAMPO_CUSTOM] = elenco; else delete prog[CAMPO_CUSTOM];
+    prog.updatedAt = quando;
+    nuovo.program = prog;
+  } else if (elenco.length) {
+    nuovo[CAMPO_CUSTOM] = elenco;
+  } else {
+    delete nuovo[CAMPO_CUSTOM];
+  }
+  const versionePrima = versioneDi(dati);
+  nuovo.versione = versionePrima + 1;
+  nuovo[MARCHIO_B] = { quando: quando, da: uid == null ? null : String(uid), ultima: "progressioni-custom" };
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "annulla-modifica",
+    origine: "annullamento-in-B",
+    annullaDi: testo(v.idVoce),
+    programma: testo(v.programma),
+    scheda: "",
+    codice: "",
+    esercizio: "",
+    idEsercizio: "",
+    settimana: null,
+    campo: "progressioni-custom",
+    prima: Array.isArray(v.dopo) ? v.dopo : [],
+    dopo: elenco,
+    dopoTesto: "progressioni custom rimesse com'erano",
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+  return { ok: true, dati: nuovo, voce: voce };
+}
+
 function annullaPianoETestata(dati, v, quando, uid) {
   const campo = testo(v.campo);
   const nuovo = Object.assign({}, dati);

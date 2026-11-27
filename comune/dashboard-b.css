@@ -831,3 +831,56 @@ body[data-theme="light"] .pr-arrivo{color:#7b4bbf;border-color:#7b4bbf;opacity:1
 .cestino-esito[data-tono="ok"]{color:var(--verde);font-weight:700}
 .cestino-esito[data-tono="errore"]{color:var(--rosa);font-weight:700}
 .cestino-fila{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+
+/* Passo 21 — le progressioni custom: la riga dell'elenco con «Vedi» e
+   «Duplica» (e per le custom «Modifica» e «Elimina»), il tasto «Crea
+   progressione custom», la tabella delle otto settimane e la finestra che la
+   modifica. Stessi colori del pannello del v31: quello resta scuro anche nel
+   tema chiaro, perché vive sopra la tabella. */
+.prog-panel.prog-ricco{min-width:330px;max-width:486px}
+.prog-panel .prog-row{display:flex;flex-wrap:wrap;align-items:center;gap:3px;padding:2px 0;
+  border-bottom:1px solid rgba(201,167,255,.12)}
+.prog-panel .prog-row:last-of-type{border-bottom:0}
+.prog-panel .prog-row .prog-item{flex:1 1 190px;min-width:0}
+.prog-panel .prog-item b{display:inline}
+.prog-panel .prog-tag{font:800 7.5px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;
+  color:#1B1026;background:#C9A7FF;border-radius:4px;padding:2px 4px;margin-right:6px;vertical-align:1px}
+.prog-panel .prog-acts{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto;padding:0 6px 3px}
+.prog-panel .prog-act{border:1px solid rgba(201,167,255,.32);background:transparent;color:#CBBBD7;
+  font:700 9px/1 'Nunito Sans',sans-serif;padding:4px 5px;border-radius:6px;cursor:pointer;letter-spacing:.02em}
+.prog-panel .prog-act:hover{border-color:#FF4FA3;color:#fff}
+.prog-panel .prog-act.danger:hover{border-color:#FF7AB8;color:#FFC9E4}
+.prog-panel .prog-act[disabled]{opacity:.45;cursor:not-allowed}
+.prog-panel .prog-nuova{margin-top:8px;width:100%;border:1px solid rgba(201,167,255,.45);border-radius:9px;
+  background:transparent;color:#FFC9E4;font:800 10.5px/1 'Nunito Sans',sans-serif;padding:9px 8px;cursor:pointer}
+.prog-panel .prog-nuova:hover{background:rgba(255,79,163,.16);border-color:#FF4FA3;color:#fff}
+.prog-panel .prog-nuova[disabled]{opacity:.5;cursor:not-allowed}
+
+/* La finestra (tabella e modifica): usa lo scheletro .pr-modal/.pr-mbox del v31. */
+.prog-mbox{width:min(760px,100%)}
+.prog-origine{margin:2px 0 8px;font-size:12px;line-height:1.5;color:var(--lav)}
+.prog-nota{margin:8px 0 0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+.prog-err{margin:8px 0 0;font-size:11.5px;line-height:1.4;color:#FF9CC8;font-weight:700}
+.prog-table{width:100%;border-collapse:collapse;margin:10px 0 2px;table-layout:fixed}
+.prog-table th,.prog-table td{border:1px solid var(--line);padding:6px 4px;text-align:center;
+  font-size:11px;color:var(--testo)}
+.prog-table thead .prog-th,.prog-table thead .prog-rh{font:800 9.5px/1 'JetBrains Mono',monospace;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--lav);background:var(--card-2)}
+.prog-table .prog-rh{font:700 10.5px/1 'Nunito Sans',sans-serif;color:var(--muted);text-align:left;padding-left:8px}
+.prog-table td.prog-cell{font:700 11px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.prog-table td.prog-cell.vuota{color:var(--fioco)}
+.prog-forma{display:flex;align-items:center;gap:8px;margin:6px 0 2px;flex-wrap:wrap}
+.prog-lab{display:flex;align-items:center;gap:8px;font:700 11px/1 'Nunito Sans',sans-serif;color:var(--muted)}
+.prog-in{min-width:240px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;
+  color:var(--testo);font:600 12.5px/1.2 'Nunito Sans',sans-serif;padding:7px 9px}
+.prog-in:focus{outline:2px solid var(--purple);outline-offset:0}
+.prog-in-cella{width:100%;max-width:72px;background:var(--card-2);border:1px solid var(--line);border-radius:6px;
+  color:var(--testo);font:700 11px/1 'JetBrains Mono',monospace;padding:5px 4px;text-align:center}
+.prog-in-cella:focus{outline:2px solid var(--purple);outline-offset:0}
+.prog-piedi{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+.prog-btn{border:1px solid var(--line);background:var(--card-2);color:var(--lav);border-radius:9px;
+  font:800 11px/1 'Nunito Sans',sans-serif;padding:8px 13px;cursor:pointer}
+.prog-btn:hover{border-color:var(--purple);color:var(--testo)}
+.prog-btn.pri{background:linear-gradient(135deg,#FF4FA3,#A855F7);border:0;color:#fff}
+.prog-btn.danger{border-color:#FF7AB8;color:#FFC9E4}
+.prog-btn[disabled]{opacity:.5;cursor:not-allowed}
