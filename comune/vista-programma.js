@@ -20,6 +20,7 @@ import { settimaneEsercizi } from "./piano-scheda.js";
 import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.js";
 
 import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
+import { testoNota } from "./testo-nota.js";
 import { codiceDistretto, nomeDistretto } from "./distretti-b.js";
 import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
@@ -219,13 +220,14 @@ function pulsanteVivo(doc, classe, testo, titolo, alClic) {
   return b;
 }
 
-/* --- Le progressioni (passo 20, cresciute al passo 21) -------------------
+/* --- Le progressioni (passo 20, cresciute ai passi 21 e 26) ---------------
  * Il pannello e' quello del v31 (r.7305-7345): si apre sotto il pulsante, con
  * l'etichetta in maiuscoletto e una voce per riga. Il clic sulla voce la
  * applica, come sempre. In piu', da ogni voce:
  *  - «Vedi» apre la tabella delle otto settimane (sola lettura);
- *  - «Duplica» ne fa una progressione custom con gli stessi valori;
- *  - per le custom: «Modifica» (tabella e nome), «Elimina» (con conferma).
+ *  - «Modifica» apre la tabella modificabile (passo 26): le custom vere, le
+ *    formule come copia; dentro ci sono «Aggiorna» e «Salva come»;
+ *  - per le custom: «Elimina» (con conferma).
  * In fondo c'e' «Crea progressione custom»: tabella nuova, da compilare.
  * Si chiude al clic fuori o dopo la scelta. */
 let pannelloProgressioni = null;
@@ -352,32 +354,24 @@ export function apriTabellaProgressione(doc, voce, o) {
   }
   const piedi = n(doc, "div", "prog-piedi");
   const puoScrivere = Boolean(opz.idProgramma) && typeof opz.salvaCustom === "function";
-  const duplica = pulsanteVivo(doc, "prog-btn pri", v.tipo === "custom" ? "Duplica" : "Duplica in custom",
-    "crea una progressione custom con questi stessi valori", () => {
-      finestra.chiudi();
-      apriEditorProgressione(doc, {
-        azione: "crea",
-        nome: "Copia di " + nomePulito(v.nome),
-        coppie: coppie || [],
-        da: v.tipo === "custom" ? (v.idCustom || "") : v.id
-      }, opz);
-    });
+  /* Il tasto principale è «Modifica»: sulle custom apre quella vera, sulle
+   * formule la copia (le formule del v31 non si cambiano). Il vecchio
+   * «Duplica in custom» non c'è più: si duplica con «Salva come». */
+  const modifica = pulsanteVivo(doc, "prog-btn pri", "Modifica", v.tipo === "custom"
+    ? "cambia nome e celle di questa progressione custom"
+    : "apre la tabella con questi valori in una progressione custom: la formula non si cambia", () => {
+    finestra.chiudi();
+    apriModificaVoce(doc, v, opz);
+  });
+  modifica.setAttribute("data-prog-modifica", String(v.tipo === "custom" ? (v.idCustom || "") : v.id));
   if (!puoScrivere) {
-    duplica.disabled = true;
-    duplica.title = "apri un programma dalla zona B per salvare una progressione custom";
-  } else if (!coppie) {
-    duplica.disabled = true;
-    duplica.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e duplicala lì";
+    modifica.disabled = true;
+    modifica.title = "apri un programma dalla zona B per salvare una progressione custom";
+  } else if (!puoModificareVoce(v)) {
+    modifica.disabled = true;
+    modifica.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e modificala lì";
   }
-  piedi.appendChild(duplica);
-  if (v.tipo === "custom") {
-    const modifica = pulsanteVivo(doc, "prog-btn", "Modifica la tabella", "cambia nome e celle di questa progressione custom", () => {
-      finestra.chiudi();
-      apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
-    });
-    if (!puoScrivere) { modifica.disabled = true; modifica.title = "serve un programma aperto dalla zona B"; }
-    piedi.appendChild(modifica);
-  }
+  piedi.appendChild(modifica);
   piedi.appendChild(pulsanteVivo(doc, "prog-btn", "Chiudi", "chiudi la tabella", () => finestra.chiudi()));
   scatola.appendChild(piedi);
 }
@@ -393,22 +387,98 @@ function erroreModale(doc, scatola, testo) {
   p.hidden = false;
 }
 
-/* «Crea» e «Modifica»: nome + otto colonne di serie e ripetizioni. Si salva una
- * volta sola (una scrittura, una voce di registro, un Annulla). */
+/* «Modifica» di una voce della libreria: sulle CUSTOM apre quella vera, sulle
+ * formule ne apre una COPIA (le formule del v31 non si cambiano: passo 21).
+ * Ritorna false se la voce non porta una tabella da cui partire. */
+export function apriModificaVoce(doc, voce, o) {
+  const v = voce || {};
+  const opz = o || {};
+  if (v.tipo === "custom" && v.custom && typeof v.custom === "object") {
+    apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
+    return true;
+  }
+  if (!Array.isArray(v.coppie)) return false;
+  apriEditorProgressione(doc, {
+    azione: "crea",
+    nome: "Copia di " + nomePulito(v.nome),
+    coppie: v.coppie,
+    da: v.id || ""
+  }, opz);
+  return true;
+}
+
+/* Una voce si modifica se è una custom o se porta una tabella da copiare. */
+export function puoModificareVoce(voce) {
+  const v = voce || {};
+  return v.tipo === "custom" || Array.isArray(v.coppie);
+}
+
+/* Il nome di una copia senza doppio «Copia di». */
+function nomeCopia(base) {
+  const b = String(base == null ? "" : base).trim();
+  if (!b) return "Copia";
+  return /^copia di /i.test(b) ? b : "Copia di " + b;
+}
+
+/* «Salva come» non deve creare due voci con lo stesso nome: se il nome è già
+ * in elenco si aggiunge 2, 3… (le progressioni si scelgono per nome). */
+function nomeLibero(nome, usati) {
+  const b = String(nome == null ? "" : nome).trim();
+  if (!b) return b;
+  const presi = Object.create(null);
+  (Array.isArray(usati) ? usati : []).forEach((x) => { presi[String(x).toLowerCase()] = true; });
+  if (!presi[b.toLowerCase()]) return b;
+  for (let i = 2; i <= 99; i += 1) {
+    const candidato = b + " " + i;
+    if (!presi[candidato.toLowerCase()]) return candidato;
+  }
+  return b;
+}
+
+/* «Modifica»: nome + otto colonne di serie e ripetizioni, e in fondo i due
+ * tasti che Alice ha chiesto (27/11/2026):
+ *  - «Aggiorna» salva le modifiche sulla progressione che si sta modificando
+ *    (se è una copia non ancora salvata, la crea: è quella la copia);
+ *  - «Salva come» ne crea una nuova con il nome scritto, senza toccare
+ *    l'originale: duplicare nasce dall'editing, non da un tasto a parte.
+ * Ogni salvataggio è UNA scrittura, con la sua voce di registro e l'Annulla. */
 export function apriEditorProgressione(doc, dati, o) {
   const d = dati || {};
   const opz = o || {};
   const custom = d.custom && typeof d.custom === "object" ? d.custom : null;
   const soloNome = d.soloNome === true;
-  const modifica = d.azione === "modifica" && custom;
+  /* «corrente» = la custom che questa finestra sta modificando, se esiste già
+   * in B. Su una formula (o su «Crea») parte a null: è una copia da salvare. */
+  let corrente = d.azione === "modifica" && custom && custom.id
+    ? { id: String(custom.id), nome: nomePulito(custom.nome) }
+    : null;
+  /* Le custom che conosciamo: la lista passata dalla pagina è una fotografia,
+   * e dopo un salvataggio è vecchia. Si tiene aggiornata con l'elenco che
+   * torna dalla scrittura, così «Salva come» non crea nomi doppi. */
+  let elencoNoto = Array.isArray(opz.custom) ? opz.custom.slice() : [];
+  const ricorda = (esito) => {
+    if (esito && Array.isArray(esito.elenco)) elencoNoto = esito.elenco.slice();
+    else if (esito && esito.custom) elencoNoto = elencoNoto.concat([esito.custom]);
+  };
+  const daFormula = !corrente && Boolean(String(d.da || "").trim());
   const base = custom ? coppieCustom(custom) : (Array.isArray(d.coppie) ? d.coppie : []);
   const titolo = soloNome ? "Rinomina la progressione"
-    : (modifica ? "Modifica \u00ab" + nomePulito(custom.nome) + "\u00bb" : "Nuova progressione custom");
-  const finestra = apriModaleProg(doc, titolo, modifica ? "custom \u00b7 si salva nel programma" : "8 settimane");
+    : (corrente ? "Modifica \u00ab" + nomePulito(corrente.nome) + "\u00bb" : "Nuova progressione custom");
+  const finestra = apriModaleProg(doc, titolo, soloNome ? "custom \u00b7 si salva nel programma" : (corrente ? "custom \u00b7 si salva nel programma" : "8 settimane"));
   const scatola = finestra.scatola;
-  scatola.appendChild(n(doc, "p", "prog-origine", soloNome
-    ? "Il nome si vede nell'elenco delle progressioni e nel registro delle modifiche."
-    : "Scrivi serie e ripetizioni settimana per settimana. Una cella vuota resta vuota: applicando la progressione, quella settimana non avra' ne' serie ne' ripetizioni."));
+  const origine = n(doc, "p", "prog-origine", "");
+  const notaOrigine = () => {
+    if (soloNome) return "Il nome si vede nell'elenco delle progressioni e nel registro delle modifiche.";
+    if (corrente) {
+      return "\u00abAggiorna\u00bb salva le modifiche su \u00ab" + nomePulito(corrente.nome) + "\u00bb; \u00abSalva come\u00bb ne fa una nuova e lascia l'originale com'\u00e8.";
+    }
+    if (daFormula) {
+      return "La formula del v31 non si cambia: qui stai creando una progressione custom con i suoi valori. \u00abAggiorna\u00bb salva questa copia; \u00abSalva come\u00bb ne fa un'altra con un nome nuovo.";
+    }
+    return "Scrivi serie e ripetizioni settimana per settimana. Una cella vuota resta vuota: applicando la progressione, quella settimana non avr\u00e0 n\u00e9 serie n\u00e9 ripetizioni.";
+  };
+  origine.textContent = notaOrigine();
+  scatola.appendChild(origine);
 
   const forma = n(doc, "div", "prog-forma");
   const etichettaNome = n(doc, "label", "prog-lab", "Nome");
@@ -458,46 +528,103 @@ export function apriEditorProgressione(doc, dati, o) {
     scatola.appendChild(t);
   }
 
+  const coppieDalleCelle = () => {
+    const coppie = [];
+    for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) coppie.push(["", ""]);
+    celle.forEach((campo) => {
+      const w = Number(campo.getAttribute("data-settimana")) - 1;
+      const k = campo.getAttribute("data-campo") === "serie" ? 0 : 1;
+      coppie[w][k] = String(campo.value || "").trim();
+    });
+    return coppie;
+  };
+
   const piedi = n(doc, "div", "prog-piedi");
-  const salva = pulsanteVivo(doc, "prog-btn pri", soloNome ? "Salva il nome" : "Salva", "salva nel programma", () => {
+  let inCorso = false;
+  const spegni = (acceso) => {
+    inCorso = !acceso;
+    Array.from(piedi.querySelectorAll("button")).forEach((b) => { b.disabled = !acceso; });
+  };
+  const fallito = (motivo) => {
+    spegni(true);
+    erroreModale(doc, scatola, motivo || "non ho salvato niente");
+  };
+  const senzaProgramma = () => {
     if (!opz.idProgramma || typeof opz.salvaCustom !== "function") {
       erroreModale(doc, scatola, "Questa pagina non ha un programma aperto: non salvo niente.");
-      return;
+      return true;
     }
-    const nomeScritto = String(nome.value || "").trim();
-    let richiesta = null;
-    if (soloNome) {
-      richiesta = { idProgramma: opz.idProgramma, azione: "rinomina", id: custom ? custom.id : "", nome: nomeScritto };
-    } else if (modifica) {
-      const coppie = [];
-      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) coppie.push(["", ""]);
-      celle.forEach((campo) => {
-        const w = Number(campo.getAttribute("data-settimana")) - 1;
-        const k = campo.getAttribute("data-campo") === "serie" ? 0 : 1;
-        coppie[w][k] = String(campo.value || "").trim();
+    return false;
+  };
+  /* Dopo che «Aggiorna» ha creato una copia, la finestra NON si chiude: da lì
+   * «Aggiorna» modifica quella copia e «Salva come» ne fa un'altra. */
+  const diventaModifica = (fatta, nomeScritto) => {
+    if (!fatta || !String(fatta.id || "")) return false;
+    corrente = { id: String(fatta.id), nome: nomePulito(fatta.nome || nomeScritto) };
+    const testa = scatola.querySelector("header b");
+    if (testa) testa.textContent = "Modifica \u00ab" + nomePulito(corrente.nome) + "\u00bb";
+    origine.textContent = notaOrigine();
+    const segno = scatola.querySelector(".prog-err");
+    if (segno) segno.hidden = true;
+    const avviso = n(doc, "p", "prog-nota-salvata", "Copia salvata: da qui \u00abAggiorna\u00bb la modifica, \u00abSalva come\u00bb ne fa un'altra.");
+    scatola.insertBefore(avviso, piedi);
+    return true;
+  };
+
+  const aggiorna = pulsanteVivo(doc, "prog-btn pri", "Aggiorna",
+    soloNome ? "salva il nome" : (corrente ? "salva le modifiche su questa progressione" : "salva questa copia come progressione custom"),
+    () => {
+      if (inCorso || senzaProgramma()) return;
+      const nomeScritto = String(nome.value || "").trim();
+      let richiesta = null;
+      if (soloNome) {
+        richiesta = { idProgramma: opz.idProgramma, azione: "rinomina", id: custom ? custom.id : "", nome: nomeScritto };
+      } else if (corrente) {
+        richiesta = { idProgramma: opz.idProgramma, azione: "settimane", id: corrente.id, coppie: coppieDalleCelle(), nome: nomeScritto };
+      } else {
+        richiesta = {
+          idProgramma: opz.idProgramma, azione: "crea", nome: nomeScritto,
+          coppie: coppieDalleCelle(), da: String(d.da || "")
+        };
+      }
+      spegni(false);
+      Promise.resolve(opz.salvaCustom(richiesta)).then((esito) => {
+        if (!esito || !esito.ok) { fallito((esito && esito.motivo) || "non ho salvato niente"); return; }
+        if (soloNome || corrente || !diventaModifica(esito.custom, nomeScritto)) {
+          ricorda(esito);
+          spegni(true);
+          finestra.chiudi();
+          return;
+        }
+        ricorda(esito);
+        spegni(true);
+      }, (e) => {
+        fallito("non ho salvato niente: " + (e && e.message ? e.message : "errore"));
       });
-      richiesta = { idProgramma: opz.idProgramma, azione: "settimane", id: custom.id, coppie: coppie, nome: nomeScritto };
-    } else {
-      const coppie = [];
-      for (let w = 0; w < SETTIMANE_CUSTOM; w += 1) coppie.push(["", ""]);
-      celle.forEach((campo) => {
-        const w = Number(campo.getAttribute("data-settimana")) - 1;
-        const k = campo.getAttribute("data-campo") === "serie" ? 0 : 1;
-        coppie[w][k] = String(campo.value || "").trim();
-      });
-      richiesta = { idProgramma: opz.idProgramma, azione: "crea", nome: nomeScritto, coppie: coppie, da: String(d.da || "") };
-    }
-    salva.disabled = true;
-    Promise.resolve(opz.salvaCustom(richiesta)).then((esito) => {
-      salva.disabled = false;
-      if (esito && esito.ok) { finestra.chiudi(); return; }
-      erroreModale(doc, scatola, (esito && esito.motivo) || "non ho salvato niente");
-    }, (e) => {
-      salva.disabled = false;
-      erroreModale(doc, scatola, "non ho salvato niente: " + (e && e.message ? e.message : "errore"));
     });
-  });
-  piedi.appendChild(salva);
+  piedi.appendChild(aggiorna);
+
+  const salvaCome = pulsanteVivo(doc, "prog-btn", "Salva come",
+    "salva con un nome nuovo: l'originale resta com'\u00e8", () => {
+      if (inCorso || senzaProgramma()) return;
+      const baseNome = corrente ? corrente.nome : nomePulito(d.nome);
+      const scritto = String(nome.value || "").trim();
+      const usati = elencoNoto.map((c) => nomePulito(c && c.nome));
+      const nuovoNome = nomeLibero(scritto && scritto !== baseNome ? scritto : nomeCopia(baseNome), usati);
+      spegni(false);
+      Promise.resolve(opz.salvaCustom({
+        idProgramma: opz.idProgramma, azione: "crea", nome: nuovoNome,
+        coppie: coppieDalleCelle(), da: corrente ? corrente.id : String(d.da || "")
+      })).then((esito) => {
+        if (!esito || !esito.ok) { fallito((esito && esito.motivo) || "non ho salvato niente"); return; }
+        ricorda(esito);
+        spegni(true);
+        finestra.chiudi();
+      }, (e) => {
+        fallito("non ho salvato niente: " + (e && e.message ? e.message : "errore"));
+      });
+    });
+  if (!soloNome) piedi.appendChild(salvaCome);
   piedi.appendChild(pulsanteVivo(doc, "prog-btn", "Annulla", "non salvare niente", () => finestra.chiudi()));
   scatola.appendChild(piedi);
   if (nome.focus) { try { nome.focus(); } catch (e) { /* senza fuoco si scrive lo stesso */ } }
@@ -559,36 +686,31 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta, opzioni) {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       apriTabellaProgressione(doc, v, opz);
     }));
-    const duplica = pulsanteVivo(doc, "prog-act", "Duplica", "crea una progressione custom con questi valori", (ev) => {
+    /* «Modifica» è il tasto principale (27/11/2026): sulle custom apre quella
+     * vera, sulle formule la copia. «Aggiorna» e «Salva come» stanno dentro. */
+    const modificaVoce = pulsanteVivo(doc, "prog-act", "Modifica", v.tipo === "custom"
+      ? "cambia nome e celle di questa progressione custom"
+      : "apre la tabella con questi valori in una progressione custom: la formula non si cambia", (ev) => {
       if (ev && ev.stopPropagation) ev.stopPropagation();
-      apriEditorProgressione(doc, {
-        azione: "crea",
-        nome: "Copia di " + nomePulito(v.nome),
-        coppie: Array.isArray(v.coppie) ? v.coppie : [],
-        da: v.tipo === "custom" ? (v.idCustom || "") : v.id
-      }, opz);
+      apriModificaVoce(doc, v, opz);
     });
+    modificaVoce.setAttribute("data-prog-modifica", String(v.tipo === "custom" ? (v.idCustom || "") : v.id));
     if (!puoScrivere) {
-      duplica.disabled = true;
-      duplica.title = "apri un programma dalla zona B per salvare una progressione custom";
-    } else if (!Array.isArray(v.coppie)) {
+      modificaVoce.disabled = true;
+      modificaVoce.title = "apri un programma dalla zona B per salvare una progressione custom";
+    } else if (!puoModificareVoce(v)) {
       /* Le due voci della scheda senza tabella fissa copiano la S1 di ogni
-       * riga: non c'è una tabella da duplicare senza sapere la riga. */
-      duplica.disabled = true;
-      duplica.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e duplicala lì";
+       * riga: non c'è una tabella da cui partire senza sapere la riga. */
+      modificaVoce.disabled = true;
+      modificaVoce.title = "questa voce copia la settimana 1 di ogni riga: apri «Applica progressione» dalla riga e modificala lì";
     }
-    atti.appendChild(duplica);
+    atti.appendChild(modificaVoce);
     if (v.tipo === "custom") {
-      const modificaVoce = pulsanteVivo(doc, "prog-act", "Modifica", "cambia nome e celle di questa progressione custom", (ev) => {
-        if (ev && ev.stopPropagation) ev.stopPropagation();
-        apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
-      });
       const eliminaVoce = pulsanteVivo(doc, "prog-act danger", "Elimina", "elimina questa progressione custom (chiede conferma)", (ev) => {
         if (ev && ev.stopPropagation) ev.stopPropagation();
         apriConfermaProgressione(doc, v, opz);
       });
-      if (!puoScrivere) { modificaVoce.disabled = true; eliminaVoce.disabled = true; }
-      atti.appendChild(modificaVoce);
+      if (!puoScrivere) eliminaVoce.disabled = true;
       atti.appendChild(eliminaVoce);
     }
     riga.appendChild(atti);
@@ -1045,6 +1167,133 @@ function rendiValoreModificabile(doc, span, mod, info, componi) {
     span.textContent = valore || vuoto;
     span.title = valore || "";
     chiudiScrittura(doc, span, info.campo);
+  });
+}
+
+/* Il testo di una cella contenteditable, con gli a capo veri: `<br>` e i
+ * blocchi del browser valgono una riga nuova. Così il testo salvato è quello
+ * che si legge, non una riga lunga con le parole attaccate. */
+export function testoDaCella(nodo) {
+  if (!nodo) return "";
+  let testo = "";
+  const figli = nodo.childNodes || [];
+  for (let i = 0; i < figli.length; i += 1) {
+    const f = figli[i];
+    if (!f) continue;
+    if (f.nodeType === 3) { testo += String(f.nodeValue || ""); continue; }
+    if (f.nodeType !== 1) continue;
+    const tag = String(f.tagName || "").toLowerCase();
+    if (tag === "br") { testo += "\n"; continue; }
+    const dentro = testoDaCella(f);
+    testo += dentro;
+    if (/^(div|p|li|tr)$/.test(tag) && dentro && i < figli.length - 1) testo += "\n";
+  }
+  return testo;
+}
+
+/* Scrive un pezzo di testo dove sta il cursore, senza toccare il resto. */
+function inserisciTesto(doc, span, testo) {
+  const v = String(testo == null ? "" : testo);
+  const win = doc && doc.defaultView ? doc.defaultView : null;
+  const sel = win && typeof win.getSelection === "function" ? win.getSelection() : null;
+  try {
+    if (sel && sel.rangeCount) {
+      const r = sel.getRangeAt(0);
+      r.deleteContents();
+      const nodo = doc.createTextNode(v);
+      r.insertNode(nodo);
+      r.setStartAfter(nodo);
+      r.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r);
+      return true;
+    }
+  } catch (e) { /* si prova la strada semplice */ }
+  span.appendChild(doc.createTextNode(v));
+  return false;
+}
+
+/* La colonna «Descr. / Setup»: si scrive dentro la cella, come nel v31
+ * (`contenteditable`), ma il testo va sull'ESERCIZIO della scheda. Si salva
+ * uscendo dal campo o con Ctrl+Invio; Invio da solo va a capo; Esc rimette
+ * com'era. Mentre si scrive la pagina non si ridisegna: la classe `scrittura`
+ * è quella che `cellaInModifica()` in desktop/app-v31.js già conosce. */
+function rendiCellaNota(doc, pn, mod, info) {
+  const prima = String(info.valore || "");
+  pn.setAttribute("contenteditable", "true");
+  pn.setAttribute("spellcheck", "false");
+  pn.setAttribute("role", "textbox");
+  pn.setAttribute("aria-multiline", "true");
+  pn.setAttribute("data-campo", "nota-esercizio");
+  pn.setAttribute("data-prima", prima);
+  pn.setAttribute("title", "scrivi qui: si salva uscendo dal campo (o con Ctrl+Invio)");
+  const td = typeof pn.closest === "function" ? pn.closest("td") : null;
+
+  const apri = () => {
+    if (pn.classList) pn.classList.toggle("scrittura", true);
+    pn.setAttribute("data-aperto", testoDaCella(pn));
+    if (td && td.classList) td.classList.toggle("in-scrittura", true);
+    togliErroreCella(pn);
+  };
+  const chiudi = () => {
+    if (pn.classList) pn.classList.toggle("scrittura", false);
+    if (td && td.classList) td.classList.toggle("in-scrittura", false);
+  };
+
+  pn.addEventListener("focus", apri);
+  pn.addEventListener("keydown", (ev) => {
+    if (!ev) return;
+    if (ev.key === "Enter" || ev.key === "Invio") {
+      if (ev.ctrlKey || ev.metaKey) {
+        ev.preventDefault();
+        if (typeof pn.blur === "function") pn.blur();
+        return;
+      }
+      /* Invio da solo va a capo: la nota è su più righe. */
+      ev.preventDefault();
+      inserisciTesto(doc, pn, "\n");
+      return;
+    }
+    if (ev.key === "Escape" || ev.key === "Esc") {
+      ev.preventDefault();
+      pn.textContent = prima;
+      if (typeof pn.blur === "function") pn.blur();
+    }
+  });
+  /* Il testo incollato entra semplice: niente HTML dentro la cella. */
+  pn.addEventListener("paste", (ev) => {
+    if (!ev || typeof ev.preventDefault !== "function") return;
+    const dati = ev.clipboardData || (ev.originalEvent && ev.originalEvent.clipboardData) || null;
+    const testo = dati && typeof dati.getData === "function" ? dati.getData("text/plain") : "";
+    if (!testo) return;
+    ev.preventDefault();
+    inserisciTesto(doc, pn, String(testo).replace(/\r\n?/g, "\n"));
+  });
+  pn.addEventListener("blur", () => {
+    const valore = testoDaCella(pn).replace(/\r\n?/g, "\n").replace(/[ \t]+$/gm, "").replace(/\n{4,}/g, "\n\n\n").trim();
+    const aperto = String(pn.getAttribute("data-aperto") == null ? prima : pn.getAttribute("data-aperto")).replace(/\r\n?/g, "\n").trim();
+    /* Uscire senza cambiare niente è un no-op: nessuna scrittura. */
+    if (valore === aperto) {
+      pn.textContent = prima;
+      pn.title = prima || "scrivi qui: si salva uscendo dal campo (o con Ctrl+Invio)";
+      chiudi();
+      return;
+    }
+    pn.textContent = valore;
+    pn.title = valore || "scrivi qui: si salva uscendo dal campo (o con Ctrl+Invio)";
+    if (typeof mod.onCambia === "function") {
+      const attesa = mod.onCambia({
+        idScheda: info.idScheda, codice: info.codice,
+        idEsercizio: info.idEsercizio, indiceEsercizio: info.indice,
+        esercizio: info.esercizio, settimana: null,
+        campo: "nota-esercizio", valore: valore, prima: prima
+      });
+      pn.setAttribute("data-prima", valore);
+      if (attesa && typeof attesa.then === "function") {
+        attesa.then((r) => { if (r && r.ok === false) mostraErroreCella(doc, pn, r.motivo); }, () => {});
+      }
+    }
+    chiudi();
   });
 }
 
@@ -2030,6 +2279,12 @@ function tabellaEsercizi(doc, scheda, r) {
     ese.appendChild(prog);
     tr.appendChild(ese);
 
+    /* I dati che ogni scrittura porta con sé: la scheda, l'esercizio, il suo
+     * indice. Servono alla colonna Descr./Setup e a Rec/TUT. */
+    const datiCella = {
+      idScheda: scheda.id, codice: scheda.codice, esercizio: String(e.nome == null ? "" : e.nome).trim(),
+      idEsercizio: e.id, indice: indice
+    };
         /* La regola di colonna (solo a schermo, i dati non si toccano): REC resta
      * in colonna se e’ un recupero vero (cifre, intervalli, min/sec), TUT se e’
      * uno schema di cifre. Una frase di coach si sposta in Descr./Setup con
@@ -2046,11 +2301,24 @@ function tabellaEsercizi(doc, scheda, r) {
     const tutMostrato = nomePulito(tutParti.valore);
     const recFrase = nomePulito(recParti.frase);
     const tutFrase = nomePulito(tutParti.frase);
-    const notaTesto = nomePulito(e.nota) || "";
+    /* La Descr./Setup è una frase, non un nome: niente maiuscola d'ufficio
+     * (testoNota), altrimenti quello che si salva non è quello che si legge. */
+    const notaTesto = testoNota(e.nota);
 
     const nota = n(doc, "td", "c-note");
     const pn = n(doc, "span", "p8-note", notaTesto);
     pn.setAttribute("data-ph", "nota coach\u2026");
+    /* Passo 26 (Alice, 27/11/2026): «è in descrizione/setup che non mi fa
+     * scrivere». La cella era un testo e basta: ora, con l'editor acceso, si
+     * scrive DENTRO la cella (contenteditable + classe scrittura, la stessa
+     * strada di serie/recupero/TUT) e il testo si salva sull'ESERCIZIO,
+     * quello da cui nasce `e.nota`. Le righe REC/TUT spostate restano fuori
+     * dal campo: sono della prescrizione, non della nota, e non si duplicano. */
+    if (mod && typeof mod.onCambia === "function") {
+      rendiCellaNota(doc, pn, mod, Object.assign({}, datiCella, { valore: notaTesto }));
+    } else {
+      pn.setAttribute("title", "si modifica dalla scheda in Programma");
+    }
     nota.appendChild(pn);
     if (recFrase && notaTesto.indexOf(recFrase) === -1) {
       nota.appendChild(n(doc, "div", "p8-note spostata", etichettaSpostata("REC", recFrase)));
@@ -2065,10 +2333,6 @@ function tabellaEsercizi(doc, scheda, r) {
      * valgono per tutte le settimane. Con l'editor acceso la cella mostra il
      * testo intero, perche' e' quello che si modifica; in sola lettura la frase
      * di coach torna spostata in Descr./Setup come prima. */
-    const datiCella = {
-      idScheda: scheda.id, codice: scheda.codice, esercizio: String(e.nome == null ? "" : e.nome).trim(),
-      idEsercizio: e.id, indice: indice
-    };
     const rec = n(doc, "td", "c-rec");
     if (mod) {
       rendiCellaRecupero(doc, rec, mod, Object.assign({}, datiCella, { valore: recMostrato, intero: recTesto }));

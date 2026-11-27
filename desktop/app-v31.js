@@ -88,7 +88,11 @@ function caricaFoglioB(doc, base) {
   const l = doc.createElement("link");
   l.id = "foglio-b";
   l.rel = "stylesheet";
-  l.href = new URL("../comune/dashboard-b.css", base || import.meta.url).href;
+  /* Passo 26 — anche il foglio porta la build nella URL: come i moduli, non
+   * deve arrivare dalla cache la versione di ieri. */
+  const versione = doc.defaultView && doc.defaultView.BD_B && doc.defaultView.BD_B.build
+    ? "?v=" + encodeURIComponent(String(doc.defaultView.BD_B.build)) : "";
+  l.href = new URL("../comune/dashboard-b.css", base || import.meta.url).href + versione;
   doc.body.appendChild(l);
 }
 if (typeof document !== "undefined") caricaFoglioB(document);
@@ -551,6 +555,10 @@ export function testoEsito(richiesta, esito) {
   }
   if (r.campo === "riga") {
     return "riga tolta · Annulla per rimetterla";
+  }
+  if (r.campo === "nota-esercizio") {
+    return "descr./setup di «" + nomePulito(v.esercizio || "") + "» " + (String((v.dopo == null ? "" : v.dopo)).trim() ? "salvata" : "tolto") +
+      " · Annulla per rimettere com'era";
   }
   if (r.campo === "applica-scheletro") {
     return (esito && esito.testo) || "scheletro applicato: righe senza carichi \u00b7 Annulla per rimettere com'era";
@@ -1569,6 +1577,7 @@ function doveVoce(voce) {
   if (tipo === "modifica-progressione-scheda") {
     return "progressione «" + (v.nomeProgressione || "") + "» su " + ((v.righe || []).length) + " righe";
   }
+  if (tipo === "nota-esercizio") return "descr./setup di " + nomePulito(v.esercizio || "");
   if (tipo === "cancella-riga") return "riga tolta: " + nomePulito(v.esercizio || "");
   if (tipo === "sostituzione-riga") return "sostituzione: «" + nomePulito((v.prima || {}).nome || "") + "» con «" + nomePulito(v.esercizio || "") + "»";
   if (tipo === "annulla-modifica") {
@@ -1576,6 +1585,7 @@ function doveVoce(voce) {
     if (v.campo === "progressione") return "progressione di " + nomePulito(v.esercizio || "") + " riportata indietro";
     if (v.campo === "progressione-scheda") return "progressione di scheda riportata indietro";
     if (v.campo === "superserie") return "superserie rimessa come prima";
+    if (v.campo === "nota-esercizio") return "la descr./setup di «" + nomePulito(v.esercizio || "") + "» rimessa";
   }
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";

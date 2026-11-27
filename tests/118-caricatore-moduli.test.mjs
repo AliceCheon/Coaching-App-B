@@ -56,7 +56,8 @@ function grafo(entry) {
     if (/import\s*\(/.test(testo)) dinamici.push(file);
     trovati.forEach((spec) => {
       if (!spec.startsWith(".")) return; /* solo file locali: niente pacchetti */
-      const pieno = resolve(dirname(file), spec);
+      /* Passo 26 — la query della build non fa parte del percorso. */
+      const pieno = resolve(dirname(file), spec.split("?")[0]);
       if (!existsSync(pieno)) { mancanti.push({ da: file, spec }); return; }
       coda.push(pieno);
     });
@@ -69,10 +70,16 @@ const rel = (p) => relative(radice, p).split(sep).join("/");
 
 test("118.1 la pagina ha un solo ingresso: desktop/app-v31.js", () => {
   const html = readFileSync(join(radice, "desktop", "index.html"), "utf8");
-  const moduli = [...html.matchAll(/<script[^>]+type=["']module["'][^>]*src=["']([^"']+)["']/g)]
+  /* Passo 26 — il tag porta la build in fondo (`./app-v31.js?v=b0.70-…`): è
+   * la versione nella URL che impedisce a una copia vecchia in cache di
+   * servire il codice di ieri. Il percorso del file resta quello, e l'ingresso
+   * resta uno solo. */
+  const grezzi = [...html.matchAll(/<script[^>]+type=["']module["'][^>]*src=["']([^"']+)["']/g)]
     .map((m) => m[1])
     .filter((s) => s.startsWith(".")); /* i beacon esterni (Cloudflare) non sono moduli dell'app */
-  assert.deepEqual(moduli, ["./app-v31.js"], "la pagina deve caricare un solo modulo: " + moduli.join(", "));
+  const moduli = grezzi.map((s) => s.split("?")[0]);
+  assert.deepEqual(moduli, ["./app-v31.js"], "la pagina deve caricare un solo modulo: " + grezzi.join(", "));
+  assert.match(grezzi[0], /^\.\/app-v31\.js\?v=\S+$/, "l'ingresso deve portare la build nella URL: " + grezzi[0]);
   assert.ok(existsSync(INGRESSO), "manca il file d'ingresso " + rel(INGRESSO));
 });
 

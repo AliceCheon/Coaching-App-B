@@ -68,8 +68,11 @@ test("44.02 a schermo non resta nessun trattino basso, e l'Ultima resta legata a
   const testo = doc.body.textContent;
   assert.ok(!testo.includes("_"), "nessun trattino basso visibile a schermo");
   ["Dorsali e braccia", "Dorso e petto", "Riscaldamento e mobilita", "Lat machine triangolo",
-    "Punta i piedi", "REC: No recupero tra le braccia e poi",
-    "TUT: Eccentrica controllata e poi explosiva", "Test 12rm", "90\"", "26/10/2026 \u00b7 40 kg"]
+    "REC: No recupero tra le braccia e poi",
+    "TUT: Eccentrica controllata e poi explosiva", "Test 12rm", "90\"", "26/10/2026 \u00b7 40 kg",
+    /* Passo 26 — la Descr./Setup è una frase: il trattino basso va via, ma la
+     * maiuscola d'ufficio non si aggiunge (il v31 mostrava il testo com'era). */
+    "punta i piedi"]
     .forEach((frase) => assert.ok(testo.includes(frase), "manca: " + frase));
 });
 
@@ -78,7 +81,10 @@ test("44.03 la guardia: nessuna vista disegna un testo dai dati senza passare da
     .map((f) => "comune/" + f).concat(["desktop/app-v31.js"]);
   assert.ok(fileViste.length >= 6, "tutte le viste devono stare nella guardia: " + fileViste.join(", "));
   const TOKENE = /\.(nome|nota|note|descrizione|messaggio|focus|fase|stato)\b/g;
-  const PERMESSO = /nomePulito\(|chiavePrestazione\(|ultimaVolta\(|localeCompare|esercizio:.{0,3}String[(]|\bif\s*\(/;
+  /* Passo 26 — `testoNota` è la variante per le FRASI (una nota non prende la
+   * maiuscola d'ufficio): toglie il trattino basso come nomePulito, e sta in
+   * comune/testo-nota.js. */
+  const PERMESSO = /nomePulito\(|testoNota\(|chiavePrestazione\(|ultimaVolta\(|localeCompare|esercizio:.{0,3}String[(]|\bif\s*\(/;
   const colpevoli = [];
   fileViste.forEach((file) => {
     fs.readFileSync(file, "utf8").split(/\r?\n/).forEach((riga, i) => {

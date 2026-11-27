@@ -11,7 +11,8 @@
  *
  *  173.1 «Vedi» mostra davvero la tabella che la formula produce, con i numeri
  *        di PROGRULE (non una tabella disegnata a parte);
- *  173.2 «Duplica» crea una custom con gli stessi valori, e la custom compare
+ *  173.2 «Modifica» su una formula apre la copia con gli stessi valori, e la
+ *        custom compare
  *        nell'elenco con la sua etichetta;
  *  173.3 modificare una cella cambia solo quella;
  *  173.4 salvare e rileggere dopo un «refresh» restituisce la custom, con
@@ -179,11 +180,11 @@ test("173.1b se la S1 non ha serie o ripetizioni, la tabella lo dichiara", () =>
 
 /* ---------- 173.2: duplicare crea una custom uguale --------------------- */
 
-test("173.2 «Duplica» crea una custom con gli stessi valori", () => {
+test("173.2 «Modifica» su una formula apre la copia con gli stessi valori", () => {
   const s = paginaVera();
   const p = apriPannello(s);
   const voce = rigaVoce(p.pannello, "Doppia progressione");
-  tastoIn(voce, "Duplica").click();
+  tastoIn(voce, "Modifica").click();
 
   const modale = s.doc.querySelector(".prog-modal");
   assert.ok(modale, "si apre la finestra della nuova custom");
@@ -197,7 +198,9 @@ test("173.2 «Duplica» crea una custom con gli stessi valori", () => {
   assert.equal(campo(2, "serie").value, "4", "S2 serie");
   assert.equal(campo(2, "ripetizioni").value, "9", "S2 ripetizioni");
 
-  tastoIn(modale, "Salva").click();
+  /* Passo 26 — il tasto in fondo è «Aggiorna»: su una copia che non esiste
+   * ancora la CREA, ed è quella la copia che sta modificando. */
+  tastoIn(modale, "Aggiorna").click();
   assert.equal(s.custom_chiamate.length, 1, "un salvataggio solo");
   const richiesta = s.custom_chiamate[0];
   assert.equal(richiesta.azione, "crea");
@@ -371,7 +374,7 @@ test("173.6 «Elimina» chiede conferma: prima nessuna scrittura, poi una sola",
   assert.equal(s.custom_chiamate[0].idProgramma, "program-v2-meta-prg173");
 });
 
-test("173.6b senza un programma aperto, creare e duplicare dicono perché non si può", () => {
+test("173.6b senza un programma aperto, creare e modificare dicono perché non si può", () => {
   const s = paginaVera({ senzaProgramma: true });
   const p = apriPannello(s);
   const nuova = tastoIn(p.pannello, "\uff0b Crea progressione custom");
@@ -379,8 +382,8 @@ test("173.6b senza un programma aperto, creare e duplicare dicono perché non si
   assert.equal(nuova.disabled, true, "senza il documento del programma è spento, non finge di salvare");
   assert.match(String(nuova.title || ""), /programma/, "il perché si legge: " + nuova.title);
   const voce = rigaVoce(p.pannello, "Carico lineare");
-  const duplica = tastoIn(voce, "Duplica");
-  assert.equal(duplica.disabled, true, "anche duplicare è spento");
+  const modifica = tastoIn(voce, "Modifica");
+  assert.equal(modifica.disabled, true, "anche modificare è spento");
   /* e la pagina non scrive niente, comunque */
   assert.equal(s.chiamate.length, 0);
   assert.equal(s.custom_chiamate.length, 0);
@@ -405,7 +408,7 @@ test("173.7 le custom non toccano le formule e non aprono raccolte nuove", () =>
 
 /* La pagina del v31 mostrava tredici schede e «Applica alla scheda», un tasto
  * che agiva su una tabella statica. Ora è la libreria vera: 21 formule della
- * riga + 13 della scheda + le custom, ognuna con «Vedi» e «Duplica». */
+ * riga + 13 della scheda + le custom, ognuna con «Vedi» e «Modifica». */
 function paginaLibreria(custom) {
   const dom = new JSDOM(pagina, { url: "https://alicecheon.github.io/Coaching-App-B/desktop/" });
   const doc = dom.window.document;
@@ -418,14 +421,15 @@ function paginaLibreria(custom) {
   return { dom, doc, salvate, quante, griglia: doc.getElementById("pag-progressioni") };
 }
 
-test("173.8 la pagina Progressioni è la libreria: tutte le voci, Vedi e Duplica", () => {
+test("173.8 la pagina Progressioni è la libreria: tutte le voci, Vedi e Modifica", () => {
   const s = paginaLibreria([]);
   assert.equal(s.quante, PROG.length + PRG.length, "21 formule della riga + 13 della scheda");
   const carte = Array.from(s.griglia.querySelectorAll(".pr-libgrid .pr-card"));
   assert.equal(carte.length, PROG.length + PRG.length);
   const prima = carte[0];
   assert.ok(tastoIn(prima, "Vedi la tabella"), "ogni voce si vede");
-  assert.ok(tastoIn(prima, "Duplica in custom"), "ogni voce si duplica");
+  assert.ok(tastoIn(prima, "Modifica"), "ogni voce si modifica");
+  assert.equal(tastoIn(prima, "Duplica in custom"), null, "il vecchio «Duplica in custom» non c'è più");
   /* il vecchio tasto che fingeva di applicare non c'è più */
   assert.equal(tastoIn(prima, "Applica alla scheda"), null, "niente più «Applica alla scheda» finto");
   const nuova = tastoIn(s.griglia.querySelector(".pr-libbar"), "\uff0b Crea progressione custom");
@@ -464,7 +468,7 @@ test("173.8c le custom della pagina si modificano dalla stessa finestra", async 
   assert.equal(nome.value, "Mia");
   const celle = Array.from(modale.querySelectorAll("input.prog-in-cella"));
   assert.equal(celle.length, 16);
-  tastoIn(modale, "Salva").click();
+  tastoIn(modale, "Aggiorna").click();
   assert.equal(s.salvate.length, 1, "una scrittura sola");
   assert.equal(s.salvate[0].azione, "settimane");
   assert.equal(s.salvate[0].id, "pc-1");

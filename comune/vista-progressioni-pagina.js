@@ -7,8 +7,10 @@
  * progressione custom"».
  *
  * Qui la pagina diventa la LIBRERIA: le 21 formule della riga, le 13 della
- * scheda e le custom del programma aperto, tutte con «Vedi» e «Duplica» (e le
- * custom con «Modifica» ed «Elimina»). Applicare resta dove si sa su che riga:
+ * scheda e le custom del programma aperto, tutte con «Vedi» e col tasto
+ * principale «Modifica» (passo 26: dentro ci sono «Aggiorna» e «Salva come»;
+ * il vecchio «Duplica in custom» non c'è più), e le custom con «Elimina».
+ * Applicare resta dove si sa su che riga:
  * «Applica progressione» dentro Programma, o «Applica progressione a tutta la
  * scheda». Così la pagina non finge di scrivere su una tabella che non c'è.
  *
@@ -17,7 +19,7 @@
  */
 import { PROG, PRG, coppieRiga, coppieScheda } from "./progressioni-b.js";
 import { coppieCustom, riassuntoCustom } from "./progressioni-custom-b.js";
-import { apriTabellaProgressione, apriEditorProgressione, apriConfermaProgressione } from "./vista-programma.js";
+import { apriTabellaProgressione, apriEditorProgressione, apriModificaVoce, puoModificareVoce, apriConfermaProgressione } from "./vista-programma.js";
 import { nomePulito } from "./nome-pulito.js";
 
 /* La base d'esempio per le formule della riga: la pagina non sa quale riga
@@ -101,7 +103,7 @@ export function montaPaginaProgressioni(doc, opzioni) {
     conta.id = "pr-libn";
     barra.appendChild(conta);
     barra.appendChild(n(doc, "span", "pr-libhint",
-      "Ogni voce si vede (le otto settimane) e si duplica in una progressione custom."));
+      "Ogni voce si vede (le otto settimane) o si modifica; da l\u00ec si aggiorna o si salva con un nome nuovo."));
     const nuova = tasto(doc, "pr-btn pri", "\uff0b Crea progressione custom", "una tabella nuova di otto settimane da compilare a mano", () => {
       apriEditorProgressione(doc, { azione: "crea", nome: "", coppie: [], da: "" }, opz);
     });
@@ -130,30 +132,26 @@ export function montaPaginaProgressioni(doc, opzioni) {
     });
     vedi.setAttribute("data-lib-vedi", v.id);
     piedi.appendChild(vedi);
-    const duplica = tasto(doc, "pr-btn", v.tipo === "custom" ? "Duplica" : "Duplica in custom",
-      "crea una progressione custom con questi valori", () => {
-        apriEditorProgressione(doc, {
-          azione: "crea",
-          nome: "Copia di " + nomePulito(v.nome),
-          coppie: Array.isArray(v.coppie) ? v.coppie : [],
-          da: v.tipo === "custom" ? (v.idCustom || "") : v.id
-        }, opz);
-      });
-    duplica.setAttribute("data-lib-duplica", v.id);
-    if (!puoScrivere || !Array.isArray(v.coppie)) {
-      duplica.disabled = true;
-      duplica.title = !puoScrivere
-        ? "apri un programma dalla zona B per salvare una progressione custom"
-        : "questa voce copia la settimana 1 di ogni riga: duplicala dalla riga, in Programma";
+    /* Passo 26 — il tasto principale è «Modifica»: sulle custom apre quella
+     * vera, sulle formule la copia (la formula del v31 non si cambia). Dentro
+     * la finestra ci sono «Aggiorna» (salva le modifiche) e «Salva come» (ne
+     * fa una nuova): così duplicare nasce dall'editing, non da un tasto a
+     * parte. Il vecchio «Duplica in custom» è stato tolto. */
+    const modifica = tasto(doc, "pr-btn pri", "Modifica", v.tipo === "custom"
+      ? "cambia nome e celle di questa progressione custom"
+      : "apre la tabella con questi valori in una progressione custom: la formula non si cambia", () => {
+      apriModificaVoce(doc, v, opz);
+    });
+    modifica.setAttribute("data-lib-modifica", String(v.tipo === "custom" ? (v.idCustom || "") : v.id));
+    if (!puoScrivere) {
+      modifica.disabled = true;
+      modifica.title = "apri un programma dalla zona B per salvare una progressione custom";
+    } else if (!puoModificareVoce(v)) {
+      modifica.disabled = true;
+      modifica.title = "questa voce copia la settimana 1 di ogni riga: modificala dalla riga, in Programma";
     }
-    piedi.appendChild(duplica);
+    piedi.appendChild(modifica);
     if (v.tipo === "custom") {
-      const modifica = tasto(doc, "pr-btn", "Modifica", "cambia nome e celle di questa progressione custom", () => {
-        apriEditorProgressione(doc, { azione: "modifica", custom: v.custom }, opz);
-      });
-      modifica.setAttribute("data-lib-modifica", v.idCustom);
-      if (!puoScrivere) modifica.disabled = true;
-      piedi.appendChild(modifica);
       const elimina = tasto(doc, "pr-btn danger", "Elimina", "elimina questa progressione custom (chiede conferma)", () => {
         apriConfermaProgressione(doc, v, opz);
       });

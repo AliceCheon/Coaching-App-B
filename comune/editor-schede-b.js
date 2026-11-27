@@ -22,6 +22,7 @@ import {
 import {
   cambiaSerieRipetizioni,
   cambiaRecTempo,
+  cambiaNotaEsercizio,
   idVoceRegistro,
   annullaModifica,
   ultimaAnnullabile,
@@ -262,6 +263,10 @@ export function creaEditorSchede(opzioni) {
         esito = cambiaSerieRipetizioni(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "recupero" || campo === "tempo") {
         esito = cambiaRecTempo(letto.dati, r, { quando: quando(), uid: uid });
+      } else if (campo === "nota-esercizio") {
+        /* Passo 26 — la colonna «Descr. / Setup»: il testo va sull'esercizio,
+         * non sulla scheda. Stessa coda, stessa versione, stesso Annulla. */
+        esito = cambiaNotaEsercizio(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "progressione") {
         esito = applicaProgressione(letto.dati, r, { quando: quando(), uid: uid });
       } else if (campo === "progressione-scheda") {

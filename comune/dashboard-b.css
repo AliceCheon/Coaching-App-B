@@ -613,6 +613,16 @@
   color:var(--lav);white-space:pre-wrap}
 .p8-r .p8-note:empty::before{content:attr(data-ph);color:var(--muto);opacity:.55;font-style:italic}
 
+/* Passo 26 (27/11/2026) — la colonna «Descr. / Setup» si scrive dentro la
+ * cella, come nel v31: il testo resta testo (niente caselle), ma cliccandolo
+ * si entra in scrittura. L'alone leggero dice che si può. */
+.p8-r .p8-note[contenteditable="true"]{cursor:text;border-radius:6px}
+.p8-r .p8-note[contenteditable="true"]:hover{background:rgba(255,79,163,.10);box-shadow:0 0 0 1px rgba(255,79,163,.22)}
+.p8-r .p8-note[contenteditable="true"].scrittura,
+#pag-programma-1 td.c-note .p8-note.scrittura{background:rgba(255,79,163,.20);outline:none;
+  box-shadow:0 0 0 1px rgba(255,79,163,.55);white-space:pre-wrap;max-width:none}
+#pag-programma-1 td.c-note.in-scrittura,td.c-note.in-scrittura{overflow:visible}
+
 .p8-tab tbody td.c-rec{padding:2px 3px;text-align:center;vertical-align:middle}
 .p8-tab tbody td.c-tut{padding:2px 3px;text-align:center;vertical-align:middle}
 

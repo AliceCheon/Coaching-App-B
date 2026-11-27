@@ -95,7 +95,9 @@ test("43.04 a schermo: la frase va in Descr./Setup, la colonna dice \u2014, il n
   assert.equal(tut(0).textContent, "\u2014");
 
   assert.equal(rec(1).textContent, "1'30\"");
-  assert.equal(nota(1).textContent.indexOf("Punta i piedi"), 0);
+  /* Passo 26 — la Descr./Setup non prende la maiuscola d'ufficio: si legge
+   * come l'ha scritta Alice (il trattino basso, però, resta fuori). */
+  assert.equal(nota(1).textContent.indexOf("punta i piedi"), 0);
   assert.ok(nota(1).textContent.includes("REC: No recupero tra le braccia e poi"));
   assert.equal(tut(1).textContent, "\u2014");
 

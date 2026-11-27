@@ -1264,6 +1264,55 @@ export function annullaModifica(dati, voce, opzioni) {
     return { ok: true, dati: nuovoDati, voce: voceNota };
   }
 
+  if (tipo === "nota-esercizio") {
+    const f = foglioDi(dati);
+    if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+    const chiave = chiaveEsercizi(f);
+    const elenco = chiave && Array.isArray(f[chiave]) ? f[chiave] : null;
+    if (!elenco) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+    const indice = trovaEsercizio(elenco, { idEsercizio: v.idEsercizio, esercizio: v.esercizio });
+    if (indice < 0) return { ok: false, motivo: "l'esercizio della nota non si ritrova in questa scheda" };
+    const esercizio = elenco[indice];
+    const primaNota = v.primaPiano == null ? testo(v.prima) : testo(v.primaPiano);
+    const nuovoEsercizio = Object.assign({}, esercizio);
+    let scritto = 0;
+    CHIAVI_NOTA.forEach((k) => {
+      if (!Object.prototype.hasOwnProperty.call(esercizio, k)) return;
+      scritto += 1;
+      nuovoEsercizio[k] = primaNota;
+    });
+    if (!scritto) {
+      if (!primaNota) return { ok: false, motivo: "la riga non ha una nota da rimettere" };
+      nuovoEsercizio[CHIAVI_NOTA[0]] = primaNota;
+    }
+    const nuovoElenco = elenco.slice();
+    nuovoElenco[indice] = nuovoEsercizio;
+    const nuovoFoglio = Object.assign({}, f);
+    nuovoFoglio[chiave] = nuovoElenco;
+    const nuovoDati = Object.assign({}, dati, { sheet: nuovoFoglio });
+    nuovoDati.versione = versioneDi(dati) + 1;
+    nuovoDati[MARCHIO_B] = { quando: quando, da: o.uid == null ? null : String(o.uid), ultima: "nota-riga" };
+    const voceNota = {
+      idVoce: idVoceRegistro(quando),
+      quando: quando,
+      tipo: "annulla-modifica",
+      origine: "annullamento-in-B",
+      annullaDi: String(v.idVoce || ""),
+      scheda: testo(v.scheda),
+      codice: codiceScheda(nuovoDati),
+      esercizio: testo(v.esercizio),
+      idEsercizio: testo(v.idEsercizio),
+      settimana: null,
+      campo: "nota-esercizio",
+      prima: testo(v.dopo),
+      dopo: primaNota,
+      dopoTesto: primaNota ? "nota della riga rimessa com'era" : "nota della riga tolta",
+      versionePrima: versioneDi(dati),
+      versioneDopo: nuovoDati.versione
+    };
+    return { ok: true, dati: nuovoDati, voce: voceNota };
+  }
+
   if (tipo === "togli-scheda") {
     const prima = v.primaPiano && typeof v.primaPiano === "object" ? v.primaPiano : {};
     const nuovoDati = Object.assign({}, dati);
@@ -1333,7 +1382,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "togli-scheda" || v.tipo === "progressioni-custom")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "nota-esercizio" || v.tipo === "togli-scheda" || v.tipo === "progressioni-custom")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;
@@ -2042,6 +2091,106 @@ export function cambiaNotaScheda(dati, richiesta, opzioni) {
     versionePrima: versionePrima,
     versioneDopo: nuovo.versione
   };
+  return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: valore };
+}
+
+/* ---------- La Descr./Setup della riga (passo 26) --------------------------
+ * Alice (27/11/2026): «è in descrizione/setup che non mi fa scrivere». La
+ * colonna della tabella mostra `e.nota`: la nota dell'ESERCIZIO, non quella
+ * della scheda. Qui c'e' la strada di scrittura: si rilegge la scheda, si
+ * scrive sull'esercizio che ha quell'id, con versione +1, il marchio di B, la
+ * voce del registro e l'Annulla.
+ *
+ * Le chiavi sono le stesse che legge schede-v2 (note, nota, note2): si
+ * scrivono TUTTE quelle che esistono gia', cosi' nessuna vista resta col
+ * valore vecchio; se non ce n'e' nessuna si crea `note`, che e' la prima che
+ * la lettura guarda. Vuoto = nota tolta dalla riga.
+ */
+export const LUNGHEZZA_MASSIMA_NOTA_RIGA = 1000;
+
+function notaDiEsercizio(esercizio) {
+  const e = esercizio && typeof esercizio === "object" ? esercizio : {};
+  for (let i = 0; i < CHIAVI_NOTA.length; i += 1) {
+    if (Object.prototype.hasOwnProperty.call(e, CHIAVI_NOTA[i])) return { chiave: CHIAVI_NOTA[i], valore: testo(e[CHIAVI_NOTA[i]]) };
+  }
+  return { chiave: "", valore: "" };
+}
+
+export function cambiaNotaEsercizio(dati, richiesta, opzioni) {
+  const r = richiesta || {};
+  const o = opzioni || {};
+  const f = foglioDi(dati);
+  if (!f) return { ok: false, motivo: "questo documento non contiene una scheda" };
+  const chiave = chiaveEsercizi(f);
+  if (!chiave) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const elenco = f[chiave];
+  if (!Array.isArray(elenco)) return { ok: false, motivo: "la scheda non ha un elenco di esercizi" };
+  const indice = trovaEsercizio(elenco, r);
+  if (indice < 0) return { ok: false, motivo: "l'esercizio non si ritrova in questa scheda: non ho scritto niente" };
+  const esercizio = elenco[indice];
+  if (!esercizio || typeof esercizio !== "object") return { ok: false, motivo: "l'esercizio non e' leggibile" };
+  if (esercizio.deletedAt) return { ok: false, motivo: "l'esercizio e' cancellato" };
+
+  const valore = String(r.valore == null ? "" : r.valore).replace(/\r\n?/g, "\n").trim();
+  if (valore.length > LUNGHEZZA_MASSIMA_NOTA_RIGA) {
+    return {
+      ok: false,
+      motivo: "la descrizione supera i " + LUNGHEZZA_MASSIMA_NOTA_RIGA + " caratteri: accorciala di " +
+        (valore.length - LUNGHEZZA_MASSIMA_NOTA_RIGA)
+    };
+  }
+  const letto = notaDiEsercizio(esercizio);
+  const prima = letto.valore;
+  if (prima === valore) return { ok: false, motivo: "il valore non e' cambiato" };
+
+  const nuovoEsercizio = Object.assign({}, esercizio);
+  let scritto = 0;
+  CHIAVI_NOTA.forEach((k) => {
+    if (!Object.prototype.hasOwnProperty.call(esercizio, k)) return;
+    scritto += 1;
+    /* La chiave resta anche quando il testo si svuota: la riga torna com'era
+     * senza cambiare forma, e l'Annulla può rimetterci il testo. */
+    nuovoEsercizio[k] = valore;
+  });
+  if (!scritto) {
+    if (!valore) return { ok: false, motivo: "il valore non e' cambiato" };
+    nuovoEsercizio[CHIAVI_NOTA[0]] = valore;
+  }
+
+  const nuovoElenco = elenco.slice();
+  nuovoElenco[indice] = nuovoEsercizio;
+  const nuovoFoglio = Object.assign({}, f);
+  nuovoFoglio[chiave] = nuovoElenco;
+
+  const quando = o.quando ? String(o.quando) : new Date().toISOString();
+  const versionePrima = versioneDi(dati);
+  const nuovo = Object.assign({}, dati, { sheet: nuovoFoglio });
+  nuovo.versione = versionePrima + 1;
+  nuovo[MARCHIO_B] = {
+    quando: quando,
+    da: o.uid == null ? null : String(o.uid),
+    ultima: "nota-riga"
+  };
+
+  const voce = {
+    idVoce: idVoceRegistro(quando),
+    quando: quando,
+    tipo: "nota-esercizio",
+    origine: "modifica-fatta-in-B",
+    scheda: testo(r.idScheda),
+    codice: codiceScheda(nuovo),
+    esercizio: nomeDi(esercizio),
+    idEsercizio: testo(esercizio.id),
+    settimana: null,
+    campo: "nota-esercizio",
+    prima: prima,
+    dopo: valore,
+    primaPiano: prima === "" ? null : prima,
+    dopoTesto: valore ? "nota della riga salvata" : "nota della riga tolta",
+    versionePrima: versionePrima,
+    versioneDopo: nuovo.versione
+  };
+
   return { ok: true, dati: nuovo, voce: voce, prima: prima, dopo: valore };
 }
 
