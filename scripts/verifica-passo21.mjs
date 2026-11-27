@@ -180,6 +180,28 @@ await page.waitForTimeout(2200);
 doc = await leggiPhone();
 console.log("nome dopo la rinomina:", ((doc.programMeta.progressioniCustom || [])[0] || {}).nome, "| id:", idCustom);
 
+console.log("=== 10. la pagina Progressioni del menu");
+await page.evaluate(() => window.BDVAI("progressioni"));
+await page.waitForTimeout(700);
+console.log("conteggio:", (await page.locator("#pr-libn").textContent() || "").trim());
+console.log("carte:", await page.locator("#pr-libgrid .pr-card").count(), "(21 riga + 13 scheda + custom)");
+const carta = page.locator("#pr-libgrid .pr-card").filter({ hasText: "Doppia progressione" }).first();
+await carta.locator("button[data-lib-vedi]").click();
+await page.waitForTimeout(400);
+console.log("tabella dalla pagina: settimane", await page.locator(".prog-modal table.prog-table thead th").count());
+await page.locator(".prog-modal .pr-mx").click();
+await page.waitForTimeout(300);
+await carta.locator("button[data-lib-duplica]").click();
+await page.waitForTimeout(400);
+await page.locator(".prog-modal button", { hasText: /^Salva$/ }).click();
+await page.waitForTimeout(2600);
+console.log("dopo il salvataggio:", (await page.locator("#pr-libn").textContent() || "").trim(), "| carte:", await page.locator("#pr-libgrid .pr-card").count());
+doc = await leggiPhone();
+console.log("custom in B:", (doc.programMeta.progressioniCustom || []).length);
+await page.screenshot({ path: "/tmp/passo21-pagina.png" });
+
+await page.evaluate(() => window.BDVAI("programma-1"));
+await page.waitForTimeout(800);
 await page.screenshot({ path: "/tmp/passo21.png" });
 console.log("errori di pagina:", errori.length ? errori.join(" | ") : "nessuno");
 await browser.close();

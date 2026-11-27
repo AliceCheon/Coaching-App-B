@@ -32,6 +32,7 @@ import { elencoScheletri, salvaScheletroCostruito } from "../comune/scheletri.js
 import { montaPaginaScheletri } from "../comune/vista-scheletri-pagina.js";
 import { programmaDaScheletro, scriviProgrammaNuovo } from "../comune/nuovo-programma-b.js";
 import { renderProgramma } from "../comune/vista-programma.js";
+import { montaPaginaProgressioni } from "../comune/vista-progressioni-pagina.js";
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
 import { chiedeRilettura } from "../comune/ridisegno-b.js";
@@ -862,6 +863,28 @@ export async function avvia(doc, win) {
       };
     });
     rp.onSalvaCome = salvaComeNuovoProgramma;
+
+    /* Passo 21 — le progressioni custom: un salvataggio, la riga di stato che
+     * dice cosa è successo, e la rilettura della pagina (l'elenco sta nel
+     * documento del programma, non nella scheda). La usano il pannello della
+     * scheda e la pagina «Progressioni». */
+    const salvaProgressioneCustom = (richiesta) => {
+      modificheInVolo += 1;
+      return editor.progressioniProgramma(richiesta).then((esito) => {
+        modificheInVolo = Math.max(0, modificheInVolo - 1);
+        if (esito && esito.ok) {
+          segnalaModifica((esito.testo || "progressione custom salvata") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
+        } else {
+          segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
+        }
+        return sincronizza(utente, { forza: true, motivo: "progressioni custom" }).then(() => esito);
+      }, (e) => {
+        modificheInVolo = Math.max(0, modificheInVolo - 1);
+        segnalaModifica("progressione custom non salvata: " + (e && e.message ? e.message : "errore"), "errore");
+        return sincronizza(utente, { forza: true, motivo: "progressioni custom non riuscite" })
+          .then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
+      });
+    };
     const scorrimentoPrima = prendiScorrimento(doc, win);
     if (contenitore) {
       stato.ridisegni += 1;
@@ -1002,26 +1025,9 @@ export async function avvia(doc, win) {
             return sincronizza(utente, { forza: true, motivo: "cestino non riuscito" }).then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
           });
         },
-        /* Passo 21 — le progressioni custom: un salvataggio, la riga di stato
-         * che dice cosa è successo, e la rilettura della pagina (l'elenco sta
-         * nel documento del programma, non nella scheda). */
-        onProgressioniCustom: (richiesta) => {
-          modificheInVolo += 1;
-          return editor.progressioniProgramma(richiesta).then((esito) => {
-            modificheInVolo = Math.max(0, modificheInVolo - 1);
-            if (esito && esito.ok) {
-              segnalaModifica((esito.testo || "progressione custom salvata") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
-            } else {
-              segnalaModifica((esito && esito.motivo) || "non ho scritto niente", "errore");
-            }
-            return sincronizza(utente, { forza: true, motivo: "progressioni custom" }).then(() => esito);
-          }, (e) => {
-            modificheInVolo = Math.max(0, modificheInVolo - 1);
-            segnalaModifica("progressione custom non salvata: " + (e && e.message ? e.message : "errore"), "errore");
-            return sincronizza(utente, { forza: true, motivo: "progressioni custom non riuscite" })
-              .then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
-          });
-        },
+        /* Passo 21 — le progressioni custom (la funzione sta sopra: la usa
+         * anche la pagina «Progressioni»). */
+        onProgressioniCustom: salvaProgressioneCustom,
         onAnnulla: () => {
           editor.annulla().then((esito) => {
             segnalaModifica(esito.ok
@@ -1125,6 +1131,16 @@ export async function avvia(doc, win) {
       },
       segnala: segnalaModifica,
       sincronizza: () => sincronizza(utente, { forza: true, motivo: "piano della scheda" })
+    });
+
+    /* Passo 21 — la pagina «Progressioni» del menu: la stessa libreria del
+     * pannello (21 formule della riga, 13 della scheda, le custom del
+     * programma aperto), con Vedi, Duplica e, per le custom, Modifica ed
+     * Elimina. Si ridisegna a ogni rilettura. */
+    montaPaginaProgressioni(doc, {
+      idProgramma: attivo && attivo.programma ? String(attivo.programma.docId || attivo.programma.id || "") : "",
+      custom: attivo && attivo.programma ? elencoCustom(attivo.programma) : [],
+      salvaCustom: salvaProgressioneCustom
     });
 
     if (nomeVoce) nomeVoce.textContent = attivo ? nomePulito(rp.profilo.nome) : "nessun programma letto";
@@ -1620,6 +1636,16 @@ if (typeof document !== "undefined") {
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaImpostazioni);
   else collegaImpostazioni();
+}
+
+/* Passo 21 — la pagina «Progressioni»: si monta subito, così il v31 non
+ * lascia le sue tredici schede con «Applica alla scheda» (un tasto che agiva su
+ * una tabella statica). Prima dell'accesso le custom non si vedono e i tasti
+ * che scrivono sono spenti; dopo la lettura si rimonta con i dati veri. */
+if (typeof document !== "undefined") {
+  const collegaProgressioni = () => { montaPaginaProgressioni(document, {}); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collegaProgressioni);
+  else collegaProgressioni();
 }
 
 /* Passo 34 — la pagina Scheletri: le linguette e «Miei scheletri» si montano al

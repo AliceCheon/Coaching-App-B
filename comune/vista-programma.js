@@ -236,7 +236,7 @@ let pannelloProgressioni = null;
  * doverlo ricevere per parametro. */
 let modificaCorrente = null;
 
-function chiudiProgressioni() {
+export function chiudiProgressioni() {
   if (pannelloProgressioni && pannelloProgressioni.parentNode) {
     pannelloProgressioni.parentNode.removeChild(pannelloProgressioni);
   }
@@ -325,7 +325,7 @@ function origineProgressione(voce) {
 
 /* «Vedi»: la tabella in sola lettura, con la frase dell'origine. Da qui si
  * duplica (una formula non si modifica in loco: si copia e si cambia la copia). */
-function apriTabellaProgressione(doc, voce, o) {
+export function apriTabellaProgressione(doc, voce, o) {
   const opz = o || {};
   const v = voce || {};
   const coppie = Array.isArray(v.coppie) ? v.coppie : null;
@@ -396,7 +396,7 @@ function erroreModale(doc, scatola, testo) {
 
 /* «Crea» e «Modifica»: nome + otto colonne di serie e ripetizioni. Si salva una
  * volta sola (una scrittura, una voce di registro, un Annulla). */
-function apriEditorProgressione(doc, dati, o) {
+export function apriEditorProgressione(doc, dati, o) {
   const d = dati || {};
   const opz = o || {};
   const custom = d.custom && typeof d.custom === "object" ? d.custom : null;
@@ -506,7 +506,7 @@ function apriEditorProgressione(doc, dati, o) {
 
 /* L'eliminazione chiede sempre conferma: le schede già scritte non cambiano,
  * sparisce solo la ricetta. */
-function apriConfermaProgressione(doc, voce, o) {
+export function apriConfermaProgressione(doc, voce, o) {
   const opz = o || {};
   const v = voce || {};
   const finestra = apriModaleProg(doc, "Eliminare \u00ab" + nomePulito(v.nome) + "\u00bb?", "progressione custom");

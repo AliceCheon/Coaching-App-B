@@ -27,11 +27,12 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { PROG, PROGRULE, coppieRiga, baseDaSettimane } from "../comune/progressioni-b.js";
+import { PROG, PRG, PROGRULE, coppieRiga, baseDaSettimane } from "../comune/progressioni-b.js";
 import { elencoCustom, coppieCustom, cambiaProgressioni } from "../comune/progressioni-custom-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { renderProgramma } from "../comune/vista-programma.js";
+import { montaPaginaProgressioni } from "../comune/vista-progressioni-pagina.js";
 import { applicaProgressione, applicaProgressioneScheda, annullaModifica } from "../comune/modifiche-b.js";
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -398,4 +399,74 @@ test("173.7 le custom non toccano le formule e non aprono raccolte nuove", () =>
   /* il campo vive nel documento del programma, non in una raccolta nuova */
   assert.match(puro, /programMeta/);
   assert.match(readFileSync(join(radice, "comune", "progressioni-b.js"), "utf8"), /progressioniCustom/);
+});
+
+/* ---------- la pagina «Progressioni» del menu ---------------------------- */
+
+/* La pagina del v31 mostrava tredici schede e «Applica alla scheda», un tasto
+ * che agiva su una tabella statica. Ora è la libreria vera: 21 formule della
+ * riga + 13 della scheda + le custom, ognuna con «Vedi» e «Duplica». */
+function paginaLibreria(custom) {
+  const dom = new JSDOM(pagina, { url: "https://alicecheon.github.io/Coaching-App-B/desktop/" });
+  const doc = dom.window.document;
+  const salvate = [];
+  const quante = montaPaginaProgressioni(doc, {
+    idProgramma: "program-v2-meta-prg173",
+    custom: custom || [],
+    salvaCustom: (richiesta) => { salvate.push(richiesta); return Promise.resolve({ ok: true, testo: "salvata" }); }
+  });
+  return { dom, doc, salvate, quante, griglia: doc.getElementById("pag-progressioni") };
+}
+
+test("173.8 la pagina Progressioni è la libreria: tutte le voci, Vedi e Duplica", () => {
+  const s = paginaLibreria([]);
+  assert.equal(s.quante, PROG.length + PRG.length, "21 formule della riga + 13 della scheda");
+  const carte = Array.from(s.griglia.querySelectorAll(".pr-libgrid .pr-card"));
+  assert.equal(carte.length, PROG.length + PRG.length);
+  const prima = carte[0];
+  assert.ok(tastoIn(prima, "Vedi la tabella"), "ogni voce si vede");
+  assert.ok(tastoIn(prima, "Duplica in custom"), "ogni voce si duplica");
+  /* il vecchio tasto che fingeva di applicare non c'è più */
+  assert.equal(tastoIn(prima, "Applica alla scheda"), null, "niente più «Applica alla scheda» finto");
+  const nuova = tastoIn(s.griglia.querySelector(".pr-libbar"), "\uff0b Crea progressione custom");
+  assert.ok(nuova, "il tasto «Crea progressione custom» c'è anche qui");
+  /* il tasto delle formule della riga dichiara l'esempio: 3 × 8-10 */
+  const esempio = carte[0].querySelector(".pr-esempio");
+  assert.ok(esempio, "la tabella d'esempio è dichiarata, non spacciata per la riga di Alice: " + (esempio && esempio.textContent));
+});
+
+test("173.8b la pagina mostra la tabella d'esempio e il duplicato parte da lì", async () => {
+  const s = paginaLibreria([]);
+  const carta = Array.from(s.griglia.querySelectorAll(".pr-card")).filter((c) => String(c.textContent).indexOf("Doppia progressione") !== -1)[0];
+  assert.ok(carta, "la voce Doppia progressione c'è");
+  tastoIn(carta, "Vedi la tabella").click();
+  const modale = s.doc.querySelector(".prog-modal");
+  assert.ok(modale, "«Vedi» apre la tabella");
+  const tabella = modale.querySelector("table.prog-table");
+  assert.ok(tabella, "la tabella c'è");
+  /* base d'esempio 3 × 8-10: la prima settimana della doppia progressione */
+  assert.equal(cellaTabella(tabella, 0, 1), "3");
+  assert.equal(cellaTabella(tabella, 1, 1), "8");
+  assert.equal(cellaTabella(tabella, 1, 8), "10");
+  assert.ok(String(modale.textContent).indexOf("Formula «Doppia progressione»") !== -1);
+});
+
+test("173.8c le custom della pagina si modificano dalla stessa finestra", async () => {
+  const s = paginaLibreria([unaCustom("Mia", coppieRiga("volume-progression", { s: 4, r: "8-10" }))]);
+  const carte = Array.from(s.griglia.querySelectorAll(".pr-card"));
+  assert.equal(carte.length, PROG.length + PRG.length + 1, "le custom stanno nell'elenco");
+  const carta = carte[0];
+  assert.equal(String(carta.querySelector("h3 span").textContent), "custom", "la prima è la custom, con l'etichetta");
+  tastoIn(carta, "Modifica").click();
+  const modale = s.doc.querySelector(".prog-modal");
+  assert.ok(modale, "la finestra di modifica si apre");
+  const nome = modale.querySelector("input.prog-in");
+  assert.equal(nome.value, "Mia");
+  const celle = Array.from(modale.querySelectorAll("input.prog-in-cella"));
+  assert.equal(celle.length, 16);
+  tastoIn(modale, "Salva").click();
+  assert.equal(s.salvate.length, 1, "una scrittura sola");
+  assert.equal(s.salvate[0].azione, "settimane");
+  assert.equal(s.salvate[0].id, "pc-1");
+  assert.equal(s.salvate[0].idProgramma, "program-v2-meta-prg173");
 });
