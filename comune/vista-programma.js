@@ -1234,6 +1234,20 @@ function rendiCellaNota(doc, pn, mod, info) {
     pn.setAttribute("data-aperto", testoDaCella(pn));
     if (td && td.classList) td.classList.toggle("in-scrittura", true);
     togliErroreCella(pn);
+    /* Arrivando col tasto Tab il cursore finirebbe all'inizio del testo e si
+     * scriverebbe al contrario. Si mette in fondo; un clic col mouse lo porta
+     * dove si è cliccato, come sempre. */
+    const win = doc.defaultView;
+    const sel = win && typeof win.getSelection === "function" ? win.getSelection() : null;
+    if (sel && doc.activeElement === pn) {
+      try {
+        const r = doc.createRange();
+        r.selectNodeContents(pn);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch (e) { /* senza selezione si scrive lo stesso */ }
+    }
   };
   const chiudi = () => {
     if (pn.classList) pn.classList.toggle("scrittura", false);
