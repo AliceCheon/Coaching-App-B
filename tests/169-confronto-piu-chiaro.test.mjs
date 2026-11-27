@@ -236,8 +236,8 @@ test("169.3 il volume è quello della scheda scelta: cambia cambiando scheda, e 
   assert.match(testo, /serie non scritte in questa settimana|nessuna serie scritta in questa settimana/,
     "la settimana che la scheda non scrive non diventa uno zero");
   assert.equal(colonna(scenaCorta.doc, "uno").querySelector(".pc-vol"), null, "e non mostra i numeri di un'altra scheda");
-  assert.match(scenaCorta.doc.querySelector(".pc-diff-t").textContent, /Scheda A \u00b7 settimana 5/,
-    "anche le differenze dicono scheda e settimana");
+  assert.match(scenaCorta.doc.querySelector(".pc-vol-t").textContent, /settimana 5/,
+    "il blocco Volume dice la settimana che si sta guardando");
 });
 
 test("169.4 più schede accese: il volume di tutte insieme, e si sa quale si confronta", () => {
@@ -275,8 +275,16 @@ test("169.4 più schede accese: il volume di tutte insieme, e si sa quale si con
   /* Le barre sono due e stanno nella stessa pista: A di sfondo, B sopra. */
   assert.ok(glutei.querySelector(".pc-vol2-pista .pc-vol2-bar-a"), "la barra A c'è");
   assert.ok(glutei.querySelector(".pc-vol2-pista .pc-vol2-bar-b"), "la barra B c'è");
-  /* Le differenze restano al loro posto: il blocco volume non le ha toccate. */
-  assert.ok(doc.querySelector(".pc-differenze"), "le differenze della scheda ci sono ancora");
+  /* Passo 28: la tabella «Differenze» non c'è più (Alice: «non mi serve»), e al
+   * suo posto non resta un buco: il blocco Volume è il primo dopo le colonne. */
+  assert.equal(doc.querySelector(".pc-differenze"), null, "la tabella Differenze non è più disegnata");
+  assert.equal(doc.querySelector(".pc-diff-t"), null, "e non resta nemmeno il suo titolo");
+  const dopoDuetto = doc.querySelector(".pc-duetto").nextElementSibling;
+  assert.notEqual(dopoDuetto.className, "pc-differenze", "tra le colonne e il volume non c'è più nessuna tabella");
+  const volume = doc.querySelector(".pc-volume-sett");
+  assert.ok(volume, "il blocco Volume c'è");
+  assert.ok(dopoDuetto === volume || dopoDuetto.nextElementSibling === volume,
+    "subito dopo le colonne (e l'eventuale nota) arriva il blocco Volume, senza buco");
 
   /* Almeno una resta accesa: spegnere l'ultima non fa niente. */
   tastoScheda(doc, "A").click();
@@ -294,18 +302,36 @@ test("169.4 più schede accese: il volume di tutte insieme, e si sa quale si con
 test("169.5 la finestra è più grande, resta fissa e la pagina sotto non si allunga", () => {
   const regolaBox = /\.pc-modale \.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola della finestra c'è");
-  const larghezza = /width:\s*min\((\d+)px,\s*100%\)/.exec(regolaBox[1]);
-  assert.ok(larghezza, "ha una larghezza massima dichiarata");
-  assert.ok(Number(larghezza[1]) >= 1500, "larga quasi tutto lo schermo: " + larghezza[1] + " px");
+  /* Passo 28: larga 1680 px al massimo ma non più del 96% dello schermo, alta
+   * 94vh e mai oltre 100vh meno 32 px: un margine vero ai lati e in altezza. */
+  const larghezza = /width:\s*min\((\d+)px,\s*(\d+)vw\)/.exec(regolaBox[1]);
+  assert.ok(larghezza, "ha una larghezza massima dichiarata, in px e in vw");
+  assert.ok(Number(larghezza[1]) >= 1560, "larga quasi tutto lo schermo: " + larghezza[1] + " px");
+  assert.ok(Number(larghezza[2]) <= 97, "ma lascia un margine ai lati: " + larghezza[2] + "vw");
   const altezza = /height:\s*(\d+)vh/.exec(regolaBox[1]);
   assert.ok(altezza, "ha un'altezza in vh");
   assert.notEqual(altezza[1], "88", "non è più ferma a 88vh: la finestra è stata alzata");
-  assert.ok(Number(altezza[1]) >= 90, "alta almeno il 90% dello schermo: " + altezza[1] + "vh");
+  assert.ok(Number(altezza[1]) >= 92, "alta almeno il 92% dello schermo: " + altezza[1] + "vh");
   assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*\d+px\)/, "e non esce dallo schermo");
   assert.match(regolaBox[1], /overflow:\s*hidden/, "la scatola non scorre: scorre il corpo");
   const regolaCorpo = /\.pc-corpo-confronto\{([^}]*)\}/.exec(css);
   assert.match(regolaCorpo[1], /overflow:\s*auto/, "il corpo scorre dentro la finestra");
   assert.match(regolaCorpo[1], /min-height:\s*0/);
+  /* Passo 28: il testo non tocca più i bordi — ogni fascia ha il suo respiro. */
+  const interno = (regola) => {
+    const m = /padding:\s*([\d.]+)px\s+([\d.]+)px/.exec(regola);
+    return m ? { sopra: Number(m[1]), lato: Number(m[2]) } : null;
+  };
+  const respiroCorpo = interno(regolaCorpo[1]);
+  assert.ok(respiroCorpo, "il corpo dichiara il suo margine interno");
+  assert.ok(respiroCorpo.lato >= 16 && respiroCorpo.lato <= 24,
+    "margine interno vero ai lati del corpo: " + respiroCorpo.lato + " px");
+  const regolaTesta = /\.pc-finestra-testa\{([^}]*)\}/.exec(css);
+  const respiroTesta = interno(regolaTesta[1]);
+  assert.ok(respiroTesta && respiroTesta.lato >= 16, "e la testa pure: " + (respiroTesta && respiroTesta.lato) + " px");
+  const regolaPiede = /\.pc-piede\{([^}]*)\}/.exec(css);
+  const respiroPiede = interno(regolaPiede[1]);
+  assert.ok(respiroPiede && respiroPiede.lato >= 16, "e il piede pure: " + (respiroPiede && respiroPiede.lato) + " px");
 
   const { dom, doc, modale, prima } = scena();
   /* Pannello fisso, non un pezzo di pagina: la pagina sotto non si muove. */

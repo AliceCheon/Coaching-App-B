@@ -31,7 +31,7 @@
 
 import { nomePulito } from "./nome-pulito.js";
 import {
-  modelloConsultabile, grandezzeProgramma, confrontoSettimana, settimaneDelConfronto,
+  modelloConsultabile, grandezzeProgramma, settimaneDelConfronto,
   valoriSettimana, volumeDelleSchede, FORMULA_DENSITA, MOTIVO_CARICO
 } from "./programma-consultabile.js";
 import { nomeCopia, fraseCopia } from "./salva-come-programma.js";
@@ -402,64 +402,13 @@ function colonnaProgramma(doc, voci) {
   return col;
 }
 
-/* Le differenze per distretto DELLA SCHEDA E DELLA SETTIMANA scelte (passo 44:
- * prima erano del programma intero, e non cambiando scheda sembravano sbagliate
- * — lo erano). Δ è «questo meno quello in uso»: verde quando il consultato ne
- * ha di più, rosso quando ne ha di meno. Se un distretto c'è da una parte sola,
- * la riga dice «non registrato» e non calcola nessuna differenza: zero non si
- * inventa. Se una delle due schede non esiste, non si confronta niente e si
- * dice perché, invece di mostrare i numeri di un'altra scheda. */
-function sezioneDifferenze(doc, confronto, nomeUno, nomeDue, etichetta, opzioni) {
-  const o = opzioni || {};
-  const box = el(doc, "section", "pc-differenze");
-  box.setAttribute("aria-label", "Differenze della settimana");
-  box.appendChild(el(doc, "h5", "pc-diff-t",
-    "Differenze \u00b7 " + (etichetta || "settimana " + confronto.settimana)));
-  if (o.schedaMancante) {
-    box.appendChild(el(doc, "p", "pc-diff-vuoto",
-      "\u00ab" + o.schedaMancante + "\u00bb non ha questa scheda: qui non c'è niente da confrontare, "
-      + "e i numeri di un'altra scheda non si mostrano al posto suo."));
-    return box;
-  }
-  if (!confronto.righe.length) {
-    box.appendChild(el(doc, "p", "pc-diff-vuoto",
-      "Nessun distretto con serie scritte in questa settimana, in nessuno dei due programmi."));
-    return box;
-  }
-  const tab = el(doc, "table", "pc-tab pc-diff-tab");
-  const thead = el(doc, "thead");
-  const trh = el(doc, "tr", "pc-diff-int");
-  ["Distretto", nomeUno, nomeDue, "\u0394"].forEach((t, i) => {
-    const th = el(doc, "th", ["pc-dn", "pc-d1", "pc-d2", "pc-delta"][i], t);
-    trh.appendChild(th);
-  });
-  thead.appendChild(trh);
-  tab.appendChild(thead);
-  const corpo = el(doc, "tbody");
-  confronto.righe.forEach((r) => {
-    const riga = el(doc, "tr", "pc-diff-riga");
-    riga.setAttribute("data-distretto", r.distretto);
-    riga.setAttribute("data-genere", r.genere);
-    riga.appendChild(el(doc, "td", "pc-dn", nomePulito(r.distretto)));
-    riga.appendChild(el(doc, "td", "pc-d1", r.uno == null ? TRATTINO : numeroInChiaro(r.uno)));
-    riga.appendChild(el(doc, "td", "pc-d2", r.due == null ? TRATTINO : numeroInChiaro(r.due)));
-    const delta = el(doc, "td", "pc-delta");
-    if (r.genere !== "confronto") {
-      delta.className = "pc-delta non";
-      delta.textContent = NON;
-      riga.setAttribute("title", "il distretto non è registrato in uno dei due programmi: la differenza non si calcola");
-    } else {
-      delta.className = "pc-delta " + (r.delta > 0 ? "su" : (r.delta < 0 ? "giu" : "pari"));
-      delta.textContent = differenzaInChiaro(r.delta);
-      if (r.variazione != null) delta.setAttribute("title", "variazione " + variazioneInChiaro(r.variazione));
-    }
-    riga.appendChild(delta);
-    corpo.appendChild(riga);
-  });
-  tab.appendChild(corpo);
-  box.appendChild(tab);
-  return box;
-}
+/* Passo 28 — la tabella «Differenze» è stata tolta dalla finestra su richiesta
+ * di Alice (27/11/2026). Restano qui le funzioni pure che la alimentavano
+ * (confrontoSettimana in comune/programma-consultabile.js) perché non
+ * toccano il DOM: nessuno le chiama più.
+ * L'idea di «differenza per distretto» ora la racconta il blocco «Volume»:
+ * due barre sulla stessa scala, il Δ a destra e «Tutte le settimane».
+ */
 
 /* I numeri di UNA scheda (o null se quella scheda non è nel programma): è la
  * lettura che alimenta pastiglie, totali e differenze del passo 44. */
@@ -1190,20 +1139,11 @@ export function apriConfronto(doc, opzioni) {
         "Righe con nomi diversi: sono accoppiate per posizione nella scheda, non è lo stesso esercizio."));
     }
 
-    /* Le differenze per distretto: gli stessi numeri della scheda in confronto,
-     * e il titolo dice quale scheda e quale settimana. */
-    const etichettaDiff = "Scheda " + nomeDiScheda(schedaScelta) + " \u00b7 settimana " + n;
-    if (!schedaUno || !schedaDue) {
-      const mancante = !schedaUno ? nomeUno : nomeDue;
-      corpo.appendChild(sezioneDifferenze(doc, { settimana: n, righe: [] }, nomeUno, nomeDue,
-        etichettaDiff, { schedaMancante: mancante }));
-    } else {
-      const conf = confrontoSettimana(
-        { perSettimana: [settUno] }, { perSettimana: [settDue] }, 1,
-        { nomeUno: nomeUno, nomeDue: nomeDue });
-      conf.settimana = n;
-      corpo.appendChild(sezioneDifferenze(doc, conf, nomeUno, nomeDue, etichettaDiff));
-    }
+    /* Passo 28 — la tabella «Differenze · scheda X · settimana Y» non c'è più:
+     * Alice (27/11/2026) ha detto che non le serve, perché il blocco «Volume»
+     * qui sotto fa lo stesso lavoro meglio (due barre sulla stessa scala, il Δ
+     * per distretto e la griglia di tutte le settimane). Al suo posto non resta
+     * niente da leggere: il volume è il primo blocco dopo le due colonne. */
 
     /* Passo 27 — il volume per distretto è il blocco del mockup nuovo: A di
      * sfondo e B sopra, le schede accese sommate, «Tutte le settimane» a

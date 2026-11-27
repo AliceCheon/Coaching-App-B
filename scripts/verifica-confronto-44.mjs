@@ -74,8 +74,6 @@ const pastiglie = (doc, quale) => Array.from(colonna(doc, quale).querySelectorAl
   .map((v) => euro(v.textContent));
 const nomi = (doc, quale) => Array.from(colonna(doc, quale).querySelectorAll("tbody tr"))
   .map((tr) => euro(tr.children[0].textContent));
-const differenze = (doc) => Array.from(doc.querySelectorAll(".pc-diff-riga"))
-  .map((tr) => euro(tr.textContent));
 const tasto = (doc, codice) => doc.querySelector('.pc-st[data-scheda="' + codice + '"]');
 
 function foglioDiScheda(doc, titolo) {
@@ -91,8 +89,6 @@ function foglioDiScheda(doc, titolo) {
   console.log("  finestra: " + euro(testa ? testa.textContent : "—"));
   console.log("  colonna sinistra: " + pastiglie(doc, "a").join(" | "));
   console.log("  colonna destra:   " + pastiglie(doc, "b").join(" | "));
-  console.log("  titolo differenze: " + euro((doc.querySelector(".pc-diff-t") || {}).textContent || "—"));
-  console.log("  prima riga differenze: " + (differenze(doc)[0] || "—"));
   console.log("  volume per distretto: " + (volume.join("  ;;  ") || "—"));
   console.log("  righe sinistra: " + nomi(doc, "a").join(" / "));
   console.log("  righe destra:   " + nomi(doc, "b").join(" / "));

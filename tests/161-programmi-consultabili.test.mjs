@@ -190,20 +190,22 @@ test("161.5 dal pannello «Cambia» e dall'Archivio si guarda senza attivare nie
   assert.match(testo, /Intensità di carico/);
   assert.match(testo, /non disponibile/);
   assert.match(testo, /logbook/);
-  /* petto: 4 serie nel consultato, 5 in uso → Δ «−1»; i dorsali stanno solo nel
-   * primo, quindi «non registrato», mai zero. */
-  /* Passo 44: la scheda accesa è la A del consultato (panca 4) contro la A
-   * dell'altro (panca 5) → Δ «−1» in rosso; i dorsali stanno solo nel secondo. */
-  const petto = corpo.querySelector('[data-distretto="Pettorali"]');
+  /* petto: 4 serie nel consultato, 5 in uso → +1; i dorsali stanno solo nel
+   * primo, quindi «n.d.» col motivo, mai zero.
+   * Passo 28: la tabella «Differenze» non c'è più; la stessa regola la racconta
+   * il blocco Volume (Δ = in uso meno consultato, come nel mockup). */
+  const petto = corpo.querySelector('.pc-vol2-riga[data-distretto="Pettorali"]');
   assert.ok(petto, "la riga dei pettorali c'è");
-  assert.equal(petto.querySelector(".pc-d1").textContent, "4");
-  assert.equal(petto.querySelector(".pc-d2").textContent, "5");
-  assert.equal(petto.querySelector(".pc-delta").textContent, "\u22121", "4 − 5 = −1");
-  assert.match(petto.querySelector(".pc-delta").className, /giu/, "e in rosso: qui se ne fanno meno");
-  const dorsali = corpo.querySelector('[data-distretto="Dorsali"]');
-  assert.equal(dorsali.querySelector(".pc-delta").textContent, "non registrato");
-  assert.equal(dorsali.querySelector(".pc-d1").textContent, "3", "il valore di chi ce l'ha resta");
-  assert.equal(dorsali.querySelector(".pc-d2").textContent, "\u2014", "dall'altra parte un trattino, non uno zero");
+  assert.equal(petto.querySelector(".pc-vol2-nome small").textContent, "4 \u2192 5");
+  assert.equal(petto.querySelector(".pc-vol2-delta b").textContent, "\u25b2 +1", "5 − 4 = +1");
+  assert.equal(petto.querySelector(".pc-vol2-delta").getAttribute("data-stato"), "su",
+    "e in verde: qui se ne fanno di più");
+  const dorsali = corpo.querySelector('.pc-vol2-riga[data-distretto="Dorsali"]');
+  assert.equal(dorsali.querySelector(".pc-vol2-nome small").textContent, "3 \u2192 \u2013",
+    "il valore di chi ce l'ha resta, dall'altra parte un trattino, non uno zero");
+  assert.equal(dorsali.querySelector(".pc-vol2-delta").getAttribute("data-stato"), "nd");
+  assert.equal(dorsali.querySelector(".pc-vol2-delta b").textContent, "n.d.");
+  assert.equal(dorsali.querySelector(".pc-vol2-delta small").textContent, "manca B");
 
   /* --- dall'Archivio --- */
   const apri = [];

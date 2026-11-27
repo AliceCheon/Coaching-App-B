@@ -140,12 +140,13 @@ test("163.1 la finestra: due file di tab ferme, due colonne, scroll dentro", () 
 
   const regolaBox = /\.pc-box-confronto\{([^}]*)\}/.exec(css);
   assert.ok(regolaBox, "la regola .pc-box-confronto c'è");
-  assert.match(regolaBox[1], /height:\s*92vh/, "alta quasi quanto lo schermo (92vh, passo 44)");
-  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*40px\)/, "e non esce dallo schermo");
+  /* Passo 28: la finestra è 94vh (non più 92vh) e larga min(1680px, 96vw). */
+  assert.match(regolaBox[1], /height:\s*94vh/, "alta quasi quanto lo schermo (94vh, passo 28)");
+  assert.match(regolaBox[1], /max-height:\s*calc\(100vh\s*-\s*32px\)/, "e non esce dallo schermo");
   assert.match(regolaBox[1], /overflow:\s*hidden/, "la scatola non scorre: scorre il corpo");
-  const larghezza = /width:\s*min\((\d+)px,\s*100%\)/.exec(regolaBox[1]);
-  assert.ok(larghezza, "ha una larghezza massima dichiarata");
-  assert.equal(Number(larghezza[1]), 1560, "larga fino a 1560 px: quasi tutto lo schermo (passo 44)");
+  const larghezza = /width:\s*min\((\d+)px,\s*96vw\)/.exec(regolaBox[1]);
+  assert.ok(larghezza, "ha una larghezza massima dichiarata, con un margine ai lati");
+  assert.equal(Number(larghezza[1]), 1680, "larga fino a 1680 px (passo 28)");
 
   const regolaCorpo = /\.pc-corpo-confronto\{([^}]*)\}/.exec(css);
   assert.match(regolaCorpo[1], /overflow:\s*auto/, "il corpo scorre dentro");
@@ -278,7 +279,7 @@ test("163.3 cambiare settimana cambia serie, ripetizioni e volumi delle due colo
   assert.deepEqual(tot(doc, "due"), ["10", "3", "0,77 serie/min"],
     "serie, esercizi e densità della scheda A dell'altro programma");
   assert.equal(doc.querySelector(".pc-duetto").getAttribute("data-settimana"), "4");
-  assert.match(doc.querySelector(".pc-diff-t").textContent, /settimana 4/, "il titolo delle differenze segue la settimana");
+  assert.match(doc.querySelector(".pc-vol-t").textContent, /settimana 4/, "anche il blocco Volume segue la settimana");
   assert.match(doc.querySelector(".pc-finestra-sotto").textContent, /Settimana 4/, "e la finestra dice cosa sta mostrando");
 });
 
@@ -365,47 +366,47 @@ test("163.6 le righe delle due colonne sono allineate, col trattino dove manca",
   /* Le due tabelle restano allineate: le righe hanno la stessa altezza fissa. */
   const regola = /\.pc-col-tab td\{([^}]*)\}/.exec(css);
   assert.ok(regola, "la regola delle celle c'è");
-  assert.match(regola[1], /height:\s*38px/, "righe di altezza fissa: le due colonne non scivolano");
+  const altezzaFissa = Number(/height:\s*(\d+)px/.exec(regola[1])[1]);
+  assert.ok(altezzaFissa >= 40, "righe di altezza fissa, e alte (passo 28): le due colonne non scivolano");
 });
 
 test("163.7 i distretti di un programma solo: «non registrato», mai zero", () => {
+  /* Passo 28: la tabella «Differenze» non c'è più; la regola «un distretto che
+   * sta da una parte sola non diventa uno zero» la dice il blocco Volume, che
+   * è quello che Alice legge adesso. Le cifre qui sono le stesse del caso. */
   const { doc } = scena();
-  /* Passo 44: le differenze sono quelle della SCHEDA A scelta. Il petto sta
-   * nella scheda B del consultato, quindi qui non c'è: la riga dei pettorali
-   * arriva dall'altro programma e la differenza non si calcola. */
-  const petto = rigaDiff(doc, "Pettorali");
-  assert.equal(petto.getAttribute("data-genere"), "non-registrato");
-  assert.equal(petto.querySelector(".pc-d1").textContent, "\u2014");
-  assert.equal(petto.querySelector(".pc-d2").textContent, "5");
-  assert.equal(petto.querySelector(".pc-delta").textContent, "non registrato");
+  const rigaVolume = (d) => doc.querySelector('.pc-vol2-riga[data-distretto="' + d + '"]');
+  const deltaDi = (d) => rigaVolume(d).querySelector(".pc-vol2-delta");
 
-  [["Glutei", "4"]].forEach(([d, valore]) => {
-    const riga = rigaDiff(doc, d);
-    assert.ok(riga, "la riga di " + d + " c'è");
-    assert.equal(riga.getAttribute("data-genere"), "non-registrato");
-    assert.equal(riga.querySelector(".pc-d1").textContent, valore, "il valore di chi ce l'ha resta");
-    assert.equal(riga.querySelector(".pc-d2").textContent, "\u2014", "dall'altra parte un trattino");
-    assert.equal(riga.querySelector(".pc-delta").textContent, "non registrato", "e la differenza lo dice a parole");
-    assert.ok(!/\b0\b/.test(riga.textContent), "nessuno zero inventato");
+  /* I pettorali stanno nella scheda B del consultato (non accesa): la riga
+   * arriva dall'altro programma e il Δ non si calcola. */
+  const petto = rigaVolume("Pettorali");
+  assert.equal(petto.querySelector(".pc-vol2-nome small").textContent, "\u2013 \u2192 5",
+    "il valore di chi ce l'ha resta, dall'altra parte un trattino");
+  assert.equal(deltaDi("Pettorali").getAttribute("data-stato"), "nd");
+  assert.equal(deltaDi("Pettorali").querySelector("b").textContent, "n.d.");
+  assert.equal(deltaDi("Pettorali").querySelector("small").textContent, "manca A");
+
+  [["Glutei", "4 \u2192 \u2013", "manca B"]].forEach(([d, valori, motivo]) => {
+    assert.equal(rigaVolume(d).querySelector(".pc-vol2-nome small").textContent, valori,
+      "il valore di " + d + " c'è, e solo da una parte");
+    assert.equal(deltaDi(d).getAttribute("data-stato"), "nd", "il Δ non si inventa");
+    assert.equal(deltaDi(d).querySelector("b").textContent, "n.d.", "e lo dice a parole");
+    assert.equal(deltaDi(d).querySelector("small").textContent, motivo, "col motivo: " + motivo);
   });
-  [["Dorsali", "3"]].forEach(([d, valore]) => {
-    const riga = rigaDiff(doc, d);
-    assert.equal(riga.querySelector(".pc-d1").textContent, "\u2014");
-    assert.equal(riga.querySelector(".pc-d2").textContent, valore);
-    assert.equal(riga.querySelector(".pc-delta").textContent, "non registrato");
-  });
+  assert.equal(rigaVolume("Dorsali").querySelector(".pc-vol2-nome small").textContent, "\u2013 \u2192 3");
+  assert.equal(deltaDi("Dorsali").getAttribute("data-stato"), "nd");
 
-  /* I femorali ci sono da tutte e due le parti: stessa cifra, Δ «=». */
-  const femorali = rigaDiff(doc, "Femorali");
-  assert.equal(femorali.getAttribute("data-genere"), "confronto");
-  assert.equal(femorali.querySelector(".pc-delta").textContent, "=");
-  assert.match(femorali.querySelector(".pc-delta").className, /pari/);
+  /* I femorali ci sono da tutte e due le parti: stessa cifra, Δ «= 0». */
+  assert.equal(rigaVolume("Femorali").querySelector(".pc-vol2-nome small").textContent, "3 \u2192 3");
+  assert.equal(deltaDi("Femorali").getAttribute("data-stato"), "pari");
 
-  /* Il verde quando il consultato ne ha di più: settimana 8, femorali 4 contro 3. */
+  /* Settimana 8: femorali 4 nel consultato e 3 in uso. Il Δ del blocco Volume
+   * è «in uso meno consultato» (come nel mockup), quindi scende: −1, in rosa. */
   tasto(doc, 8).click();
-  const femoraliOtto = rigaDiff(doc, "Femorali");
-  assert.equal(femoraliOtto.querySelector(".pc-delta").textContent, "+1");
-  assert.match(femoraliOtto.querySelector(".pc-delta").className, /su/, "in verde");
+  assert.equal(deltaDi("Femorali").getAttribute("data-stato"), "giu", "in rosa: l'in uso ne ha di meno");
+  assert.equal(deltaDi("Femorali").querySelector("b").textContent, "\u25bc \u22121");
+  assert.match(deltaDi("Femorali").className, /pc-vol2-delta/);
 });
 
 test("163.8 densità dichiarata, carico dichiarato, e i recuperi che mancano detti per scheda", () => {
