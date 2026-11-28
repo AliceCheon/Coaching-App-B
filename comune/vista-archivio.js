@@ -149,6 +149,7 @@ export function renderArchivio(doc, contenitore, opzioni) {
   const opz = opzioni || {};
   const righe = Array.isArray(opz.righe) ? opz.righe : [];
   const elimina = typeof opz.elimina === "function" ? opz.elimina : null;
+  const esporta = typeof opz.esporta === "function" ? opz.esporta : null;
   while (contenitore.firstChild) contenitore.firstChild.remove();
 
   if (!righe.length) {
@@ -194,6 +195,31 @@ export function renderArchivio(doc, contenitore, opzioni) {
       }
       nome.appendChild(doc.createTextNode(" "));
       nome.appendChild(guarda);
+    }
+    /* Passo 35 — «Esporta esercizi»: anche dall'Archivio, sulla riga del
+     * programma. Il file e' lo stesso di Programmi (tutte le schede del
+     * programma): cosi' Alice non deve prima aprirlo. Se le schede di quel
+     * programma non sono state lette, il tasto e' spento e dice perche'. */
+    if (esporta) {
+      const bottone = doc.createElement("button");
+      bottone.type = "button";
+      bottone.className = "pg-guarda";
+      bottone.setAttribute("data-esporta-programma", String(riga.id || ""));
+      if (!riga.gruppo || !riga.esercizi) {
+        bottone.disabled = true;
+        bottone.setAttribute("aria-disabled", "true");
+        const motivo = "spento: le schede di questo programma non sono state lette, quindi non c'è niente da esportare";
+        bottone.textContent = "Esporta esercizi";
+        bottone.title = motivo;
+        bottone.setAttribute("aria-label", "Esporta esercizi — " + motivo);
+      } else {
+        bottone.textContent = "Esporta esercizi";
+        bottone.title = "scarica un file con gli esercizi di tutte le schede di «" + nomePulito(riga.nome) + "»";
+        bottone.setAttribute("aria-label", "Esporta esercizi: scarica un file JSON con tutti gli esercizi delle schede del programma");
+        bottone.addEventListener("click", () => esporta(riga));
+      }
+      nome.appendChild(doc.createTextNode(" "));
+      nome.appendChild(bottone);
     }
     /* Passo 25 — UN cestino per riga, accanto ai tasti del programma. Sul
      * programma in uso è spento e dice perché (aprine un altro, poi eliminalo):

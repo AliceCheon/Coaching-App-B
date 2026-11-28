@@ -22,6 +22,7 @@ import { chiavePrestazione, PROGRAMMA_NON_REGISTRATO as NON } from "./programma.
 import { elencoTecniche, nomeTecnica, notaVisibile, recTecnica, eTecnica } from "./tecniche-b.js";
 import { testoNota } from "./testo-nota.js";
 import { codiceDistretto, nomeDistretto } from "./distretti-b.js";
+import { esportaProgramma } from "./esporta-esercizi-b.js";
 import { analisiProgrammazione, settimaneDelleSchede, tonnellaggioInParola } from "./analisi-programmazione.js";
 import { settimanePerTabella, indiceScarico } from "./schede-v2.js";
 import {
@@ -2410,6 +2411,45 @@ function pulsanteStampa(doc, testo, titolo, tipo) {
   return b;
 }
 
+/* PASSO 35 — «Esporta esercizi»: Alice non ha il backup di B, quindi il file
+ * lo produce la pagina. Il clic scarica un JSON con TUTTI gli esercizi di
+ * TUTTE le schede del programma aperto (non solo quella nella barra): nome,
+ * distretto, scheda, serie della prima settimana, settimane, articolazioni.
+ * Il contenuto lo costruisce `comune/esporta-esercizi-b.js` (funzione pura);
+ * qui si costruisce solo il tasto e si dice com'e' andata. */
+function pulsanteEsporta(doc, r, barra) {
+  const letto = Boolean(r && r.profilo && r.profilo.presente && Array.isArray(r.schede));
+  if (!letto || r.schede.length === 0) {
+    /* Brief passo 35, punto 5: se il programma non e' letto il tasto e' spento
+     * e dice perche'. Non si usa `pulsanteSpento`: il suo titolo parla di una
+     * pagina che non scrive, che qui non c'entra. */
+    const spento = n(doc, "button", "pr-btn", "Esporta esercizi");
+    spento.type = "button";
+    spento.disabled = true;
+    spento.setAttribute("aria-disabled", "true");
+    spento.setAttribute("data-esporta", "spento");
+    const motivo = letto
+      ? "spento: questo programma non ha schede attive, quindi non c'è niente da esportare"
+      : "spento: il programma non è stato letto, quindi non c'è niente da esportare";
+    spento.title = motivo;
+    spento.setAttribute("aria-label", "Esporta esercizi — " + motivo);
+    return spento;
+  }
+  const b = pulsanteVivo(doc, "pr-btn", "Esporta esercizi",
+    "scarica un file con gli esercizi di tutte le schede del programma: nome, distretto, serie, settimane e articolazioni",
+    () => {
+      const esito = esportaProgramma(doc, r);
+      if (esito.ok === true) {
+        mostraEsitoCopia(doc, barra, "File scaricato: " + esito.esercizi + " esercizi da " + esito.schede + " schede \u00b7 " + esito.nomeFile, true);
+      } else {
+        mostraEsitoCopia(doc, barra, esito.motivo || "non ho potuto scaricare il file", false);
+      }
+    });
+  b.setAttribute("data-esporta", "1");
+  b.setAttribute("aria-label", "Esporta esercizi: scarica un file JSON con tutti gli esercizi delle schede, con distretto, serie, settimane e articolazioni");
+  return b;
+}
+
 /* La fila del v31, nell'ordine del v31. Tutti spenti: sono comandi che
  * scrivono (o che aprono finestre di modifica), tranne le due stampe, che
  * sarebbero letture e si accenderanno quando Alice lo dice. */
@@ -2629,6 +2669,7 @@ function barraStrumenti(doc, scheda, r) {
   bar.appendChild(btSpiega);
   bar.appendChild(pulsanteStampa(doc, "Stampa Compatta", "stampa la scheda come sta adesso, tutte le settimane in fila", "compatta"));
   bar.appendChild(pulsanteStampa(doc, "Stampa da Compilare", "stampa una settimana con le caselle vuote da spuntare a mano", "compilare"));
+  bar.appendChild(pulsanteEsporta(doc, r, bar));
   /* PASSO 23 — il tasto diceva «Suggerimenti: ON» ma non accendeva niente:
    * un motore di suggerimenti non c'è. Ora il testo dice che non sono
    * disponibili e il titolo dice perché, invece di far credere che siano
@@ -2970,6 +3011,10 @@ function schede(doc, r) {
     c.appendChild(n(doc, "p", "pg-vuoto", r.schede === null
       ? "Nessuna scheda per questo programma nei dati letti" + (r.schedeMotivo ? " — " + r.schedeMotivo : "") + "."
       : "Il programma non ha schede attive: nessun pannello da mostrare."));
+    /* Passo 35: senza schede non c'è una barra dove mettere «Esporta
+     * esercizi». Il tasto resta qui, spento, e dice perché: non sparisce
+     * lasciando credere che l'esportazione non esista. */
+    c.appendChild(pulsanteEsporta(doc, r, null));
     if (r.archiviate && r.archiviate.length) {
       c.appendChild(n(doc, "p", "pr-hint", "Schede archiviate di questo programma: " + r.archiviate.length + " — restano nei dati, la pagina non le disegna più."));
     }

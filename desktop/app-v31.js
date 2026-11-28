@@ -45,6 +45,7 @@ import { chiedeRilettura } from "../comune/ridisegno-b.js";
 import { renderVolume } from "../comune/vista-volume.js";
 import { renderSpecializzazione } from "../comune/vista-specializzazione.js";
 import { elencoArchivio, renderArchivio } from "../comune/vista-archivio.js";
+import { esportaProgramma } from "../comune/esporta-esercizi-b.js";
 import { apriConsultabile } from "../comune/vista-programma-consultabile.js";
 import { pianoCopiaProgramma, scriviProgrammaCopiato } from "../comune/salva-come-programma.js";
 import { seduteLogbook } from "../comune/logbook.js";
@@ -1288,6 +1289,20 @@ export async function avvia(doc, win) {
             segnalaModifica("programma non eliminato: " + (e && e.message ? e.message : "errore"), "errore");
             return sincronizza(utente, { forza: true, motivo: "eliminazione non riuscita" }).then(() => ({ ok: false, motivo: e && e.message ? e.message : "errore" }));
           });
+        },
+        /* Passo 35 — «Esporta esercizi» sulla riga del programma: lo stesso
+         * file che si scarica da Programmi, senza doverlo prima aprire. */
+        esporta: (riga) => {
+          const esito = esportaProgramma(doc, {
+            profilo: profiloProgramma(riga.programma),
+            schede: riga.gruppo && riga.gruppo.schede,
+            archiviate: riga.gruppo && riga.gruppo.archiviate
+          });
+          if (esito.ok === true) {
+            segnalaModifica("File scaricato: " + esito.esercizi + " esercizi da " + esito.schede + " schede · " + esito.nomeFile, "ok");
+          } else {
+            segnalaModifica(esito.motivo || "non ho potuto scaricare il file", "errore");
+          }
         }
       });
     }
