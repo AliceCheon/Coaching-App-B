@@ -39,8 +39,8 @@ function documento() {
 }
 
 test("77.1 il catalogo e' quello del v31 con i doppioni uniti piu' le aggiunte di A: nomi e distretti sempre pieni", () => {
-  assert.equal(conteggioCatalogoB(), 546);
-  assert.equal(CATALOGO_ESERCIZI_B.length, 546);
+  assert.equal(conteggioCatalogoB(), 551);
+  assert.equal(CATALOGO_ESERCIZI_B.length, 551);
   const visti = Object.create(null);
   let doppioni = 0;
   CATALOGO_ESERCIZI_B.forEach((v) => {
@@ -85,15 +85,16 @@ test("77.1 il catalogo e' quello del v31 con i doppioni uniti piu' le aggiunte d
   });
   /* Le altre 370 arrivano dal backup di A (passo 32): l'elenco nome per nome e'
    * nella guardia 183, qui si controlla che il conto torni. */
-  assert.equal(CATALOGO_ESERCIZI_B.filter((v) => !delV31.has(v.n)).length, 377, "le aggiunte sono 7 del passo 20 + 370 del passo 32");
+  /* 382 = 7 del passo 20 + 370 dal backup di A + 5 chiesti da Alice il 28/11 */
+  assert.equal(CATALOGO_ESERCIZI_B.filter((v) => !delV31.has(v.n)).length, 382, "le aggiunte sono 7 del passo 20 + 370 del passo 32 + 5 del 28/11");
 });
 
 test("77.2 la ricerca come nel v31: nome o distretto, senza maiuscole, vuota = tutto", () => {
-  assert.equal(cercaNelCatalogoB("").length, 546);
-  assert.equal(cercaNelCatalogoB("   ").length, 546);
-  assert.equal(cercaNelCatalogoB(null).length, 546);
+  assert.equal(cercaNelCatalogoB("").length, 551);
+  assert.equal(cercaNelCatalogoB("   ").length, 551);
+  assert.equal(cercaNelCatalogoB(null).length, 551);
   const curl = cercaNelCatalogoB("curl");
-  assert.ok(curl.length > 0 && curl.length < 546, "la cerca per nome deve restringere il campo");
+  assert.ok(curl.length > 0 && curl.length < 551, "la cerca per nome deve restringere il campo");
   curl.forEach((v) => assert.ok(v.n.toLowerCase().indexOf("curl") > -1));
   const distretto = cercaNelCatalogoB("bicipiti");
   assert.ok(distretto.length > 0, "la cerca per distretto deve trovare");
@@ -117,8 +118,8 @@ test("77.3 il selettore apre con tutte le voci, filtra, e alla scelta restituisc
   assert.ok(card, "il modal sta nel documento");
   assert.equal(card.getAttribute("aria-label"), "Database esercizi");
   let voci = s.velo.querySelectorAll(".bdsel-it");
-  assert.equal(voci.length, 546);
-  assert.ok(s.velo.querySelector(".bdsel-n").textContent.indexOf("546") > -1, "il contatore dice 546");
+  assert.equal(voci.length, 551);
+  assert.ok(s.velo.querySelector(".bdsel-n").textContent.indexOf("551") > -1, "il contatore dice 551");
   /* la ricerca filtra come la 77.2 */
   const casella = s.velo.querySelector(".bdsel-q");
   casella.value = "curl";
@@ -145,7 +146,7 @@ test("77.4 Esc chiude senza scegliere; la x pure; riapertura pulita; nessuna scr
   assert.ok(s.velo.hidden, "Esc chiude");
   assert.equal(prese.length, 0, "Esc non sceglie");
   s.apri();
-  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 546, "alla riapertura la ricerca riparte pulita");
+  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 551, "alla riapertura la ricerca riparte pulita");
   s.velo.querySelector(".bdsel-x").dispatchEvent(new d.defaultView.MouseEvent("click", { bubbles: true }));
   assert.ok(s.velo.hidden, "la x chiude");
   assert.equal(prese.length, 0);

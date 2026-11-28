@@ -60,8 +60,11 @@ test("129.1 la mappa copre tutti gli esercizi che descrive, e chi manca è dichi
    * quelli che descrive, gli altri escono da articolazioniDi() come
    * «nonMappato», senza punti. */
   const senzaRiga = CATALOGO_ESERCIZI_B.filter((v) => !MAPPA_ARTICOLARE[v.n]);
-  assert.equal(CATALOGO_ESERCIZI_B.length, 546);
-  assert.equal(senzaRiga.length, 370, "le sole voci senza una riga propria sono le 370 arrivate da A");
+  assert.equal(CATALOGO_ESERCIZI_B.length, 551);
+  /* 375 = 370 dal backup di A + le 5 che Alice ha chiesto il 28/11 (Bird dog,
+   * Wall-ball, Kettlebell swing, American swing, Thruster): anche queste non
+   * hanno una riga articolare, e non se la inventa nessuno. */
+  assert.equal(senzaRiga.length, 375, "le sole voci senza una riga propria sono le 370 di A più le 5 del 28/11");
   senzaRiga.forEach((v) => {
     const a = articolazioniDi(v.n);
     if (a.nonMappato) {
@@ -120,7 +123,7 @@ test("129.4 il doppione conta col nome vero: l'alias resta, il doppione non è p
   assert.equal(ALIAS["Push ups"], "Push Up");
   /* Passo 23: il doppione rovinato non è più nel catalogo, ma il suo nome
    * resta come alias e conta lo stesso esercizio. */
-  assert.equal(CATALOGO_ESERCIZI_B.length, 546);
+  assert.equal(CATALOGO_ESERCIZI_B.length, 551);
   assert.equal(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45Â°"), false);
   assert.ok(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45°"));
 });

@@ -35,6 +35,10 @@ import { montaPaginaScheletri } from "../comune/vista-scheletri-pagina.js";
 import { programmaDaScheletro, scriviProgrammaNuovo } from "../comune/nuovo-programma-b.js";
 import { renderProgramma } from "../comune/vista-programma.js";
 import { montaPaginaProgressioni } from "../comune/vista-progressioni-pagina.js";
+import { CATALOGO_ESERCIZI_B } from "../comune/catalogo-esercizi-b.js";
+
+/* Passo 33 — il catalogo vivo per gli script non-modulo della pagina */
+if (typeof window !== "undefined" && window) window.BD_CATALOGO = CATALOGO_ESERCIZI_B;
 import { collegaPiano } from "../comune/piano-vivo.js";
 import { pianiDalleSchede } from "../comune/piano-scheda.js";
 import { chiedeRilettura } from "../comune/ridisegno-b.js";

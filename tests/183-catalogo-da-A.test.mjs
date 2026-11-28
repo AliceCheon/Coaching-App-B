@@ -12,7 +12,7 @@
  *          pagina) e non è un doppione, né per nome né come alias; i 176 di
  *          prima non hanno cambiato distretto;
  *   183.3  niente underscore nei nomi, la pagina dice lo stesso numero del
- *          catalogo (546) e le 370 voci nel blocco #db-aggiunte sono esattamente
+ *          catalogo (551) e le 370 voci nel blocco #db-aggiunte sono esattamente
  *          quelle aggiunte, nome per nome.
  *
  * Le liste qui sotto vengono dal backup e NON vanno rigenerate a mano: se un
@@ -454,7 +454,7 @@ test("183.3 niente underscore, i numeri della pagina tornano, e le voci sono que
   });
 
   /* Il numero del catalogo e quello della pagina sono lo stesso. */
-  assert.equal(conteggioCatalogoB(), 546, "il catalogo deve avere 546 esercizi");
+  assert.equal(conteggioCatalogoB(), 551, "il catalogo deve avere 551 esercizi");
   const dom = new JSDOM(HTML, { url: "http://localhost/desktop/index.html" });
   const doc = dom.window.document;
   const testa = doc.querySelector("#pag-database-esercizi .db-testa h2");
@@ -466,10 +466,19 @@ test("183.3 niente underscore, i numeri della pagina tornano, e le voci sono que
   const blocco = doc.getElementById("db-aggiunte");
   assert.ok(blocco, "manca il blocco #db-aggiunte");
   const extra = [...new JSDOM("<table><tbody>" + blocco.textContent + "</tbody></table>").window.document.querySelectorAll("tr.riga")];
-  assert.equal(extra.length, AGGIUNTI.length, "il blocco non porta tutte le voci aggiunte");
-  const nomiBlocco = extra.map((r) => r.querySelector("td.nm").firstChild.textContent).sort((a, b) => a.localeCompare(b, "it"));
+  /* Il blocco porta le 370 di A più le 5 chieste da Alice il 28/11 (Bird dog,
+   * Wall-ball, Kettlebell swing, American swing, Thruster): la prova conta il
+   * blocco intero, non solo le voci di A. */
+  assert.equal(extra.length, AGGIUNTI.length + 5, "il blocco non porta tutte le voci aggiunte (370 di A + 5 del 28/11)");
+  const CINQUE = ["Bird dog", "Wall-ball", "Kettlebell swing", "American swing", "Thruster"];
+  const nomiBlocco = extra.map((r) => r.querySelector("td.nm").firstChild.textContent)
+    .filter((n) => CINQUE.indexOf(n) === -1)
+    .sort((a, b) => a.localeCompare(b, "it"));
   const nomiAttesi = AGGIUNTI.map((x) => x[0]).sort((a, b) => a.localeCompare(b, "it"));
   assert.deepEqual(nomiBlocco, nomiAttesi, "il blocco e la lista degli aggiunti non hanno gli stessi nomi");
+  CINQUE.forEach((n) => {
+    assert.ok(extra.some((r) => r.querySelector("td.nm").firstChild.textContent === n), "manca dal blocco la voce chiesta il 28/11: " + n);
+  });
   extra.forEach((r) => {
     assert.ok(DISTRETTI_PAGINA.includes(r.getAttribute("data-g")), "riga aggiunta con distretto non valido: " + r.getAttribute("data-n"));
   });
