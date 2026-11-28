@@ -42,7 +42,8 @@ test("132.1 maiuscolo, spazi doppi, accenti e «1x»: stessi punti del nome esat
   const storti = ["PANCA PIANA", "curl   manubri", " Hip Thrust ", "Leg  Extensìon", "Calf machine 1x", "crunch classìci"];
   assert.deepEqual(massimi(scheda(storti)), massimi(scheda(ESATTI)));
   const r = stressRiepilogo(scheda(storti));
-  assert.equal(r.mediaIntera, 22, "la media resta quella del nome esatto");
+  /* 25 dal 28/11: l'Hip Thrust carica anche la caviglia (confermato da Alice). */
+  assert.equal(r.mediaIntera, 25, "la media resta quella del nome esatto");
   assert.equal(r.piuSollecitata.articolazione, "caviglia");
   assert.equal(r.righeConArticolazione, 6);
   assert.equal(r.righeSenza, 0);

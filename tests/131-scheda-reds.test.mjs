@@ -89,9 +89,10 @@ test("131.4 pagina vera, zona B finta: numero, articolazione più sollecitata e 
   assert.equal(esito.riepilogo.leggibile, true);
 
   assert.equal(carta(doc).getAttribute("data-reds"), "calcolato");
-  /* PASSO 6e: A e B sommate, caviglia 18 serie su 12 di tolleranza = 150% */
-  assert.equal(testo(doc, "[data-reds-num]"), "18 serie");
-  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 18 serie");
+  /* PASSO 6e: A e B sommate. Dal 28/11 l'Hip Thrust carica anche la caviglia
+   * (confermato da Alice), quindi la caviglia passa da 18 a 20,5 serie. */
+  assert.equal(testo(doc, "[data-reds-num]"), "20,5 serie");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 20,5 serie");
   assert.equal(testo(doc, "[data-reds-stato]"), "caviglia");
   assert.match(testo(doc, "[data-reds-nota]"), /7 righe lette/);
 
@@ -137,7 +138,7 @@ test("131.6 schede legate all'id del documento: si trovano e la carta le somma",
   const doc = dom.window.document;
   riempiRischioDaZonaB(doc, legate);
   assert.equal(carta(doc).getAttribute("data-reds"), "calcolato");
-  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 18 serie");
+  assert.equal(testo(doc, "[data-reds-piu]"), "caviglia · 20,5 serie");
 
   /* e vale anche quando la chiave e' un'altra cosa che finisce con l'id */
   const coda = zona({

@@ -61,10 +61,14 @@ test("129.1 la mappa copre tutti gli esercizi che descrive, e chi manca è dichi
    * «nonMappato», senza punti. */
   const senzaRiga = CATALOGO_ESERCIZI_B.filter((v) => !MAPPA_ARTICOLARE[v.n]);
   assert.equal(CATALOGO_ESERCIZI_B.length, 551);
-  /* 375 = 370 dal backup di A + le 5 che Alice ha chiesto il 28/11 (Bird dog,
-   * Wall-ball, Kettlebell swing, American swing, Thruster): anche queste non
-   * hanno una riga articolare, e non se la inventa nessuno. */
-  assert.equal(senzaRiga.length, 375, "le sole voci senza una riga propria sono le 370 di A più le 5 del 28/11");
+  /* 372 = 375 (370 di A + 5 del 28/11) meno le tre che Alice ha confermato in
+   * chat il 28/11: Hip thrust (anca; ginocchio e caviglia), Crunch inverso
+   * (colonna lombare; anca) e Crab walk con elastico (anca; ginocchio). */
+  /* 373: le 375 meno «Crunch inverso» e «Crab walk con elastico», le due
+   * confermate in chat che hanno una voce propria nel catalogo. «Hip thrust»
+   * nel catalogo si chiama «Hip Thrust» (parola sua, non una voce nuova): la
+   * riga aggiornata è quella, con anca principale e ginocchio + caviglia. */
+  assert.equal(senzaRiga.length, 373, "le voci senza riga sono 373: le 375 meno le due con voce propria");
   senzaRiga.forEach((v) => {
     const a = articolazioniDi(v.n);
     if (a.nonMappato) {

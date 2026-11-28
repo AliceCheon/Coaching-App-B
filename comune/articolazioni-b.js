@@ -114,8 +114,8 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Goblet squat": { p: "ginocchio", s: ["anca", "colonna toracica"] },
   "Hack Squat con elastico": { p: "ginocchio", s: ["anca"] },
   "Hamstring Destroyers": { p: "ginocchio", s: ["anca"] },
-  "Hip Thrust": { p: "anca", s: ["ginocchio"] },
-  "Hip Thrust statico": { p: "anca", s: ["ginocchio"] },
+  "Hip Thrust": { p: "anca", s: ["ginocchio", "caviglia"] },
+  "Hip Thrust statico": { p: "anca", s: ["ginocchio", "caviglia"] },
   "Hip Trust mono": { p: "anca", s: ["ginocchio"] },
   "Hollow position": { p: "colonna lombare", s: ["anca"] },
   "Hypersetensioni con cuscino": { p: "colonna lombare", s: ["anca"] },
@@ -220,7 +220,10 @@ export const MAPPA_ARTICOLARE = Object.freeze({
   "Triset glutei": { p: "anca", s: ["colonna lombare"] },
   "Vertical Traction": { p: "spalla", s: ["gomito", "colonna toracica"] },
   "Vogatore": { p: null, s: [] },
-  "Y raises cavo alto": { p: "spalla", s: ["colonna toracica"] }
+  "Y raises cavo alto": { p: "spalla", s: ["colonna toracica"] },
+  "Hip thrust": { p: "anca", s: ["ginocchio", "caviglia"] },
+  "Crunch inverso": { p: "colonna lombare", s: ["anca"] },
+  "Crab walk con elastico": { p: "anca", s: ["ginocchio"] },
 });
 
 /* PASSO 10: i doppioni e la tolleranza dei nomi stanno in un posto solo —

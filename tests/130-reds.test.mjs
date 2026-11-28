@@ -82,9 +82,11 @@ test("130.2 massimo settimanale, percentuale e settimana del massimo: conto a ma
   assert.equal(cent(voce(r, "ginocchio").percentuale), 29.55, "6,5 su 22");
 
   const caviglia = voce(r, "caviglia");
-  assert.equal(caviglia.massimo, 5);
+  /* 28/11: Alice ha confermato che l'Hip Thrust carica anche la caviglia: i suoi
+   * 2,5 si sommano ai 5 del Calf machine nella settimana di picco. */
+  assert.equal(caviglia.massimo, 7.5);
   assert.equal(caviglia.massimoSettimana, 3, "il picco è in settimana 3, non in 1");
-  assert.equal(cent(caviglia.percentuale), 41.67, "5 su 12");
+  assert.equal(cent(caviglia.percentuale), 62.5, "7,5 su 12 (Hip Thrust + Calf machine)");
 
   assert.equal(voce(r, "colonna lombare").massimo, 2);
   assert.equal(cent(voce(r, "colonna lombare").percentuale), 11.11);
@@ -94,13 +96,14 @@ test("130.2 massimo settimanale, percentuale e settimana del massimo: conto a ma
 
 test("130.3 media, articolazione più sollecitata e nessuna sopra il 100%", () => {
   const r = stressRiepilogo(scheda);
-  /* (20 + 31,25 + 15 + 22,7272… + 29,5454… + 41,6666… + 11,1111… + 5,5555…) / 8 */
-  const atteso = (20 + 31.25 + 15 + (5 / 22) * 100 + (6.5 / 22) * 100 + (5 / 12) * 100 + (2 / 18) * 100 + (1 / 18) * 100) / 8;
+  /* (20 + 31,25 + 15 + 22,7272… + 29,5454… + 62,5 + 11,1111… + 5,5555…) / 8
+   * La caviglia è 62,5 perché l'Hip Thrust (2,5) si somma al Calf machine (5). */
+  const atteso = (20 + 31.25 + 15 + (5 / 22) * 100 + (6.5 / 22) * 100 + (7.5 / 12) * 100 + (2 / 18) * 100 + (1 / 18) * 100) / 8;
   assert.equal(cent(r.media), cent(atteso));
   assert.equal(r.mediaIntera, Math.round(atteso));
-  assert.equal(r.mediaIntera, 22, "media 176,86 / 8 = 22,11 → 22");
+  assert.equal(r.mediaIntera, 25, "media con la caviglia a 62,5 → 25");
   assert.equal(r.piuSollecitata.articolazione, "caviglia");
-  assert.equal(cent(r.piuSollecitata.percentuale), 41.67);
+  assert.equal(cent(r.piuSollecitata.percentuale), 62.5);
   assert.deepEqual(r.sopraCento, []);
 });
 
@@ -137,9 +140,9 @@ test("130.6 sulla pagina vera la carta mostra la struttura più caricata", () =>
   assert.ok(carta, "la carta RED-S c'è");
   assert.equal(carta.getAttribute("data-reds"), "calcolato");
   /* PASSO 6e: il numero grande e' la struttura piu' caricata, non la media */
-  assert.equal(carta.querySelector("[data-reds-num]").textContent, "5 serie");
+  assert.equal(carta.querySelector("[data-reds-num]").textContent, "7,5 serie");
   assert.equal(carta.querySelector("[data-reds-stato]").textContent, "caviglia");
-  assert.equal(carta.querySelector("[data-reds-piu]").textContent, "caviglia · 5 serie");
+  assert.equal(carta.querySelector("[data-reds-piu]").textContent, "caviglia · 7,5 serie");
   const nota = carta.querySelector("[data-reds-nota]").textContent;
   assert.match(nota, /Calcolato sulla scheda attiva: 8 articolazioni, tolleranze di partenza/);
   assert.match(nota, /6 righe lette/);
