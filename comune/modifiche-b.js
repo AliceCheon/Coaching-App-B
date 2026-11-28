@@ -1152,8 +1152,9 @@ export function annullaModifica(dati, voce, opzioni) {
   /* PASSO 4a — il piano della scheda e la testata del programma si
    * annullano sul loro documento, non su un elenco di esercizi. */
   if (tipo === "piano-scheda" || tipo === "testata-programma") return annullaPianoETestata(dati, v, quando, o.uid);
-  /* Passo 21 — le progressioni custom vivono nel documento del programma: si
-   * rimette l'elenco di prima com'era, creazioni ed eliminazioni comprese. */
+  /* Passo 21 — l'Annulla di una voce VECCHIA sulla progressione: prima del
+   * passo 31 le custom stavano nel documento del programma. Le voci nuove
+   * hanno il tipo `progressioni-libreria` e si annullano sulla raccolta. */
   if (tipo === "progressioni-custom") return annullaProgressioniCustom(dati, v, quando, o.uid);
 
   /* B.21 — i comandi dell'igiene portano l'elenco INTERO di prima:
@@ -1382,7 +1383,7 @@ export function ultimaAnnullabile(registro) {
   elenco.forEach((d) => { if (d.dati.annullaDi) rifatte[String(d.dati.annullaDi)] = true; });
   const candidate = elenco
     .map((d) => Object.assign({}, d.dati, { idVoce: String(d.dati.idVoce || d.id || "") }))
-    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "nota-esercizio" || v.tipo === "togli-scheda" || v.tipo === "progressioni-custom")
+    .filter((v) => (v.tipo === "modifica-serie-ripetizioni" || v.tipo === "modifica-rec-tut" || v.tipo === "modifica-progressione" || v.tipo === "modifica-progressione-scheda" || v.tipo === "cancella-riga" || v.tipo === "aggiunta-riga" || v.tipo === "modifica-tecnica" || v.tipo === "sostituzione-riga" || v.tipo === "superserie" || v.tipo === "attiva-programma" || v.tipo === "bozza-programma" || v.tipo === "piano-scheda" || v.tipo === "testata-programma" || v.tipo === "copia-esercizi" || v.tipo === "sposta-esercizi" || v.tipo === "scarico-tutte" || v.tipo === "applica-scheletro" || v.tipo === "nota-scheda" || v.tipo === "nota-esercizio" || v.tipo === "togli-scheda" || v.tipo === "progressioni-custom" || v.tipo === "progressioni-libreria")
       && v.idVoce && !rifatte[v.idVoce]);
   candidate.sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
   return candidate.length ? candidate[candidate.length - 1] : null;

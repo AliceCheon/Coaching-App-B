@@ -25,7 +25,7 @@ import { programmaAttivo } from "../comune/lettura-dati.js";
 import { leggiZonaBCompleta } from "../comune/lettura-b.js";
 import { leggiZonaB, leggiFotografia, scriviVoceRegistro, senzaUndefined, leggiScheletriB, leggiScheletroB, salvaScheletroConVersione, eliminaScheletroB } from "../comune/scritture-b.js";
 import { creaEditorSchede } from "../comune/editor-schede-b.js";
-import { elencoCustom } from "../comune/progressioni-custom-b.js";
+import { elencoVecchie, unisciSenzaDoppioni } from "../comune/progressioni-libreria-b.js";
 import { ultimaAnnullabile } from "../comune/modifiche-b.js";
 import { riepilogoProgramma, schedePerProgramma, profiloProgramma } from "../comune/programma.js";
 import { riepilogoPianificazione } from "../comune/pianificazione.js";
@@ -655,6 +655,9 @@ export async function avvia(doc, win) {
   let utenteCorrente = null;
   let sincronizzaEsterno = null;
   let editorCorrente = null;
+  /* Passo 31 — la migrazione delle progressioni custom si fa una volta per
+   * sessione: dopo, la libreria e' la sola fonte. */
+  let migrazioneProgressioni = null;
   /* B.21 — la fotografia di APERTURA delle schede: si prende una volta sola,
    * alla prima lettura riuscita della sessione, e non si rinfresca più.
    * Dopo ogni scrittura la pagina rilegge (sincronizza -> leggi): se la
@@ -683,6 +686,12 @@ export async function avvia(doc, win) {
     const esclusioni = zona.esclusioni;
     const sedutePulite = applicaEsclusioni(sedute.sedute, esclusioni);
     const programmi = { programmi: zona.programmi };
+    /* Passo 31 — le progressioni custom: prima la raccolta (una sola per
+     * utente, visibile da ogni programma), poi quelle che stanno ancora dentro
+     * i programmi e non sono ancora state copiate. Stesso nome e stesse otto
+     * settimane = una voce sola: niente doppioni a schermo. */
+    const vecchieProgressioni = elencoVecchie(zona.programmi);
+    const progressioniCustom = unisciSenzaDoppioni(zona.progressioni || [], vecchieProgressioni);
     const schedeV2 = zona.schedeV2;
     /* PASSO 14d — «Patologie o infortuni» vive nel registro: la dichiarazione
      * e' l'ultima voce che nessuno ha annullato. Se il registro non si e' letto,
@@ -767,6 +776,24 @@ export async function avvia(doc, win) {
       ultimaVoce: ultimaAnnullabile(registroB)
     });
     editorCorrente = editor;
+    /* Passo 31 — le progressioni custom che stavano dentro i programmi si
+     * copiano nella raccolta una volta sola (id stabile: riaprire non
+     * duplica). Se la raccolta non si e' letta non si tocca niente: senza
+     * sapere cosa c'e' gia', una copia potrebbe raddoppiare. */
+    if (!migrazioneProgressioni && vecchieProgressioni.length && !zona.erroriLettura.progressioni) {
+      modificheInVolo += 1;
+      migrazioneProgressioni = editor.migraProgressioniCustom(programmi.programmi).then((esito) => {
+        modificheInVolo = Math.max(0, modificheInVolo - 1);
+        if (esito && esito.copiate > 0) {
+          segnalaModifica((esito.testo || "progressioni spostate nella libreria") + " \u00b7 ora si vedono da tutti i programmi", "ok");
+          return sincronizza(utente, { forza: true, motivo: "progressioni migrate" }).then(() => esito);
+        }
+        return esito;
+      }, (e) => {
+        modificheInVolo = Math.max(0, modificheInVolo - 1);
+        return { ok: false, motivo: e && e.message ? e.message : "migrazione non riuscita" };
+      });
+    }
     /* Passo 35 — aprire il programma appena creato passa dallo stesso «Attiva»
      * di sempre: una voce di registro, l'Annulla che rimette com'era. */
     globalThis.BD_ATTIVA_PROGRAMMA = (idProgramma) => {
@@ -951,7 +978,7 @@ export async function avvia(doc, win) {
      * scheda e la pagina «Progressioni». */
     const salvaProgressioneCustom = (richiesta) => {
       modificheInVolo += 1;
-      return editor.progressioniProgramma(richiesta).then((esito) => {
+      return editor.progressioniLibreria(richiesta).then((esito) => {
         modificheInVolo = Math.max(0, modificheInVolo - 1);
         if (esito && esito.ok) {
           segnalaModifica((esito.testo || "progressione custom salvata") + (esito.avvisoRegistro ? " \u00b7 MA: " + esito.avvisoRegistro : ""), "ok");
@@ -972,11 +999,12 @@ export async function avvia(doc, win) {
 
     }
     if (contenitore) renderProgramma(doc, contenitore, { presente: Boolean(attivo) }, Object.assign({}, rp, {
-      /* Passo 21 — le progressioni custom stanno nel documento del programma
-       * aperto: qui si dice quale è e cosa porta, così il pannello le mostra. */
+      /* Passo 31 — le progressioni custom arrivano dalla raccolta condivisa
+       * (una sola per utente), quindi il pannello le mostra da qualunque
+       * programma si sia aperto. `id` resta per i tasti che scrivono. */
       progressioni: {
         id: attivo && attivo.programma ? String(attivo.programma.docId || attivo.programma.id || "") : "",
-        custom: attivo && attivo.programma ? elencoCustom(attivo.programma) : []
+        custom: progressioniCustom
       },
       modifica: {
         attivo: true,
@@ -1193,12 +1221,13 @@ export async function avvia(doc, win) {
     });
 
     /* Passo 21 — la pagina «Progressioni» del menu: la stessa libreria del
-     * pannello (21 formule della riga, 13 della scheda, le custom del
-     * programma aperto), con Vedi, Duplica e, per le custom, Modifica ed
-     * Elimina. Si ridisegna a ogni rilettura. */
+     * pannello (21 formule della riga, 13 della scheda, le custom), con Vedi,
+     * Modifica e, per le custom, Elimina. Dal passo 31 le custom arrivano
+     * dalla raccolta condivisa: le stesse da ogni programma. Si ridisegna a
+     * ogni rilettura. */
     montaPaginaProgressioni(doc, {
       idProgramma: attivo && attivo.programma ? String(attivo.programma.docId || attivo.programma.id || "") : "",
-      custom: attivo && attivo.programma ? elencoCustom(attivo.programma) : [],
+      custom: progressioniCustom,
       salvaCustom: salvaProgressioneCustom
     });
 
@@ -1578,6 +1607,7 @@ function doveVoce(voce) {
     return "progressione «" + (v.nomeProgressione || "") + "» su " + ((v.righe || []).length) + " righe";
   }
   if (tipo === "nota-esercizio") return "descr./setup di " + nomePulito(v.esercizio || "");
+  if (tipo === "progressioni-libreria") return "progressione «" + nomePulito(v.nome || "") + "» nella libreria";
   if (tipo === "cancella-riga") return "riga tolta: " + nomePulito(v.esercizio || "");
   if (tipo === "sostituzione-riga") return "sostituzione: «" + nomePulito((v.prima || {}).nome || "") + "» con «" + nomePulito(v.esercizio || "") + "»";
   if (tipo === "annulla-modifica") {
@@ -1586,6 +1616,7 @@ function doveVoce(voce) {
     if (v.campo === "progressione-scheda") return "progressione di scheda riportata indietro";
     if (v.campo === "superserie") return "superserie rimessa come prima";
     if (v.campo === "nota-esercizio") return "la descr./setup di «" + nomePulito(v.esercizio || "") + "» rimessa";
+    if (v.campo === "progressioni-libreria") return "le progressioni della libreria rimesse com'erano";
   }
   if (v.settimana) return "S" + v.settimana + " " + v.campo;
   const nome = v.campo === "recupero" ? "rec" : "TUT";

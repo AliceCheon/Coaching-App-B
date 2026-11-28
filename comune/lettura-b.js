@@ -20,6 +20,7 @@
 import { SOTTO_B } from "./modello-dati.js";
 import { leggiZonaB, leggiFotografia } from "./scritture-b.js";
 import { ricostruisciSchede } from "./schede-v2.js";
+import { elencoLibreria } from "./progressioni-libreria-b.js";
 
 function testo(valore) {
   return valore == null ? "" : String(valore).trim();
@@ -262,7 +263,7 @@ export async function leggiZonaBCompleta(db, uid) {
     (valore) => ({ ok: true, valore: valore, errore: null }),
     (errore) => ({ ok: false, valore: null, errore: motivoLettura(errore) })
   );
-  const [fotografiaE, documentiProgrammi, documentiSchede, documentiSedute, esclusioniE, documentiScheletriE, registroE] = await Promise.all([
+  const [fotografiaE, documentiProgrammi, documentiSchede, documentiSedute, esclusioniE, documentiScheletriE, registroE, documentiProgressioniE] = await Promise.all([
     prendi(leggiFotografia(db, uid)),
     leggiZonaB(db, uid, SOTTO_B.programmi),
     leggiZonaB(db, uid, SOTTO_B.schede),
@@ -273,11 +274,17 @@ export async function leggiZonaBCompleta(db, uid) {
      * che si scrive gia' da tutti i passi. La lettura entra qui con il suo
      * errore: se fallisce lo si DICHIARA (`registroErrore`), non si finge un
      * registro vuoto. Nullo ≠ errore. */
-    prendi(leggiZonaB(db, uid, SOTTO_B.registro))
+    prendi(leggiZonaB(db, uid, SOTTO_B.registro)),
+    /* PASSO 31 — la libreria delle progressioni custom: una raccolta sola per
+     * utente, cosi' una custom si vede da ogni programma. Anche questa lettura
+     * porta il suo errore: una raccolta vuota e una illeggibile non sono la
+     * stessa cosa. */
+    prendi(leggiZonaB(db, uid, SOTTO_B.progressioni))
   ]);
   const fotografia = fotografiaE.valore;
   const esclusioni = esclusioniE.ok ? esclusioniE.valore : [];
   const documentiScheletri = documentiScheletriE.ok ? documentiScheletriE.valore : [];
+  const documentiProgressioni = documentiProgressioniE.ok ? documentiProgressioniE.valore : [];
 
   const p = programmiDaDocumenti(documentiProgrammi);
   const s = seduteDaDocumenti(documentiSedute);
@@ -290,6 +297,7 @@ export async function leggiZonaBCompleta(db, uid) {
     sedute: s,
     schedeV2,
     scheletri: documentiScheletri,
+    progressioni: elencoLibreria(documentiProgressioni),
     esclusioni,
     registro: registroE.valore,
     registroErrore: registroE.errore,
@@ -299,7 +307,8 @@ export async function leggiZonaBCompleta(db, uid) {
       fotografia: fotografiaE.errore,
       esclusioni: esclusioniE.errore,
       scheletri: documentiScheletriE.errore,
-      registro: registroE.errore
+      registro: registroE.errore,
+      progressioni: documentiProgressioniE.errore
     },
     esito: statoZonaB({
       fotografia,

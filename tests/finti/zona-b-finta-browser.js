@@ -39,7 +39,8 @@
     schede: [scheda],
     sedute: [{ id: "sed-1", dati: { session: { id: "sed-1", dateInput: "2026-10-26", sessionCode: "A", exercises: [{ name: "Trazioni_assistite", kg: 42.5 }] } } }],
     esclusioni: [],
-    registro: []
+    registro: [],
+    progressioni: []
   };
 
   var LETTURA = 60, SCRITTURA = 25;
@@ -57,7 +58,7 @@
   /* La memoria resta dall'altra parte della navigazione (localStorage): e'
    * quello che serve alla prova del ripristino dopo la ricarica. */
   var CHIAVE_MEMORIA = "bd-b-finta-v1";
-  var sottoTutte = ["programmi", "schede", "sedute", "esclusioni", "registro"];
+  var sottoTutte = ["programmi", "schede", "sedute", "esclusioni", "registro", "progressioni"];
   var salva = null;
   var documentiDi = function (sotto) {
     if (!scaffale[sotto]) {
@@ -101,6 +102,15 @@
         return attesa(SCRITTURA).then(function () {
           sguarda(nuovi || {}, sotto + "/" + id);
           documentiDi(sotto).set(id, copia(nuovi || {}));
+          if (salva) salva();
+          inVolo -= 1;
+        });
+      },
+      /* Passo 31 — la libreria delle progressioni si elimina davvero. */
+      delete: function () {
+        inVolo += 1;
+        return attesa(SCRITTURA).then(function () {
+          documentiDi(sotto).delete(id);
           if (salva) salva();
           inVolo -= 1;
         });

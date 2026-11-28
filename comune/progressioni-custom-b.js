@@ -10,10 +10,15 @@
  * ripetizioni per settimana), con un nome suo: si crea, si duplica da una
  * formula, si modifica cella per cella, si rinomina e si elimina.
  *
- * Dove vivono: dentro il documento del PROGRAMMA che si sta guardando
- * (`programMeta.progressioniCustom`, oppure `program.progressioniCustom` per i
- * programmi v1), che è un documento che B scrive già. Nessuna raccolta nuova:
- * le regole Firestore di Alice non si toccano.
+ * Dove vivono: fino al passo 26 dentro il documento del PROGRAMMA che si stava
+ * guardando (`programMeta.progressioniCustom`, oppure `program.progressioniCustom`
+ * per i programmi v1). Dal passo 31 vivono nella raccolta
+ * `bdB_atleti/{uid}/progressioni` (regola pubblicata da Alice il 28/11/2026) e
+ * questo modulo resta il MOTORE: normalizza le otto settimane e applica
+ * crea · settimane · rinomina · elimina. A scrivere è
+ * `comune/scritture-b.js`; a mettere la voce nella raccolta è
+ * `comune/progressioni-libreria-b.js`. Il campo dentro il programma si legge
+ * ancora solo per la migrazione e per l'Annulla di una voce vecchia.
  *
  * Questo modulo è puro: niente DOM, niente rete, niente scritture. Entra il
  * documento del programma, escono il documento nuovo e la voce di registro;
@@ -70,8 +75,9 @@ function normalizzaVoce(grezza, indice, quante) {
   };
 }
 
-/* L'elenco delle custom del programma, sempre un array (vuoto se non ce ne
- * sono). Accetta sia il documento vero sia il meta già letto dalla pagina. */
+/* L'elenco delle custom di UN documento (vecchia posizione dentro il
+ * programma), sempre un array (vuoto se non ce ne sono). Accetta sia il
+ * documento vero sia il meta già letto dalla pagina. */
 export function elencoCustom(dati) {
   const c = contenitore(dati) || {};
   const grezzo = Array.isArray(c[CAMPO_CUSTOM]) ? c[CAMPO_CUSTOM] : [];

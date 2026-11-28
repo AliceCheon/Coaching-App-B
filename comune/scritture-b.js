@@ -26,7 +26,8 @@ const AMMESSE = Object.freeze([
   SOTTO_B.sedute,
   SOTTO_B.esclusioni,
   SOTTO_B.registro,
-  SOTTO_B.scheletri
+  SOTTO_B.scheletri,
+  SOTTO_B.progressioni
 ]);
 
 /* uid e id ammessi: testo non vuoto, senza barre (niente percorsi dentro). */
@@ -306,4 +307,40 @@ export async function salvaScheletroConVersione(db, uid, id, dati) {
   const documento = Object.assign({}, dati, { versione: versione, aggiornatoIl: new Date().toISOString() });
   await riferimentoB(db, uid, SOTTO_B.scheletri, id).set(senzaUndefined(documento));
   return { id: String(id), versione: versione };
+}
+
+/* ---------- Progressioni custom (passo 31) -------------------------------
+ * Una custom e' una tabella di otto settimane con un nome. Dal passo 31 vive
+ * nella raccolta `progressioni`: cosi' la stessa custom si vede da ogni
+ * programma, non solo da quello in cui e' stata scritta. La versione avanza
+ * come per le schede, quindi due finestre aperte sullo stesso documento non
+ * si sovrascrivono in silenzio; creare (versione attesa 0) e' la stessa
+ * strada della prima scrittura di uno scheletro.
+ */
+export function leggiProgressioneB(db, uid, id) {
+  const rif = riferimentoB(db, uid, SOTTO_B.progressioni, id);
+  return rif.get().then((istantanea) => {
+    if (!istantanea || !istantanea.exists) return { id: String(id), esiste: false, dati: null };
+    return { id: String(id), esiste: true, dati: (istantanea.data && istantanea.data()) || {} };
+  });
+}
+
+export async function salvaProgressioneConVersione(db, uid, id, dati, versioneAttesa) {
+  const letto = await leggiProgressioneB(db, uid, id);
+  const sulDisco = letto.esiste ? Number(letto.dati.versione) || 0 : 0;
+  const attesa = Number(versioneAttesa) || 0;
+  if (sulDisco !== attesa) {
+    throw new ErroreVersione("la progressione e' cambiata nel frattempo (versione " + sulDisco +
+      " invece di " + attesa + "): non ho scritto niente");
+  }
+  const documento = Object.assign({}, dati, { versione: attesa + 1, aggiornatoIl: new Date().toISOString() });
+  await riferimentoB(db, uid, SOTTO_B.progressioni, id).set(senzaUndefined(documento));
+  return { id: String(id), versione: attesa + 1 };
+}
+
+export async function eliminaProgressioneB(db, uid, id) {
+  const letto = await leggiProgressioneB(db, uid, id);
+  if (!letto.esiste) throw new ErroreVersione("la progressione non e' piu' in B: niente da eliminare");
+  await riferimentoB(db, uid, SOTTO_B.progressioni, id).delete();
+  return { id: String(id) };
 }

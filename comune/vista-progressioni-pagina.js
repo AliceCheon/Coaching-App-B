@@ -7,9 +7,12 @@
  * progressione custom"».
  *
  * Qui la pagina diventa la LIBRERIA: le 21 formule della riga, le 13 della
- * scheda e le custom del programma aperto, tutte con «Vedi» e col tasto
- * principale «Modifica» (passo 26: dentro ci sono «Aggiorna» e «Salva come»;
- * il vecchio «Duplica in custom» non c'è più), e le custom con «Elimina».
+ * scheda e le progressioni custom, tutte con «Vedi» e col tasto principale
+ * «Modifica» (passo 26: dentro ci sono «Aggiorna» e «Salva come»; il vecchio
+ * «Duplica in custom» non c'è più), e le custom con «Elimina».
+ * Passo 31: le custom vivono in una raccolta sola per utente
+ * (`bdB_atleti/{uid}/progressioni`), quindi questa pagina mostra le stesse
+ * voci da qualunque programma si sia aperto.
  * Applicare resta dove si sa su che riga:
  * «Applica progressione» dentro Programma, o «Applica progressione a tutta la
  * scheda». Così la pagina non finge di scrivere su una tabella che non c'è.
@@ -159,7 +162,7 @@ export function montaPaginaProgressioni(doc, opzioni) {
       if (!puoScrivere) elimina.disabled = true;
       piedi.appendChild(elimina);
     }
-    piedi.appendChild(n(doc, "span", "pr-cmeta", v.tipo === "custom" ? "salvata nel programma" : "formula del v31"));
+    piedi.appendChild(n(doc, "span", "pr-cmeta", v.tipo === "custom" ? "nella libreria, tutti i programmi" : "formula del v31"));
     carta.appendChild(piedi);
     griglia.appendChild(carta);
   });

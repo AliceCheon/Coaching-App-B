@@ -84,6 +84,16 @@ export function creaZonaBFinta(opzioni = {}) {
         registri.scritture.push({ percorso: sotto + "/" + id, dati: JSON.parse(JSON.stringify(nuovi || {})) });
         avvisa(sotto, id);
         registri.scrittureInVolo -= 1;
+      },
+      /* Passo 31 — la libreria delle progressioni si elimina davvero: il
+       * finto deve conoscere anche .delete(), come l'SDK vero. */
+      delete: async () => {
+        registri.scrittureInVolo += 1;
+        await attesa(latenzaScrittura);
+        documentiDi(sotto).delete(id);
+        registri.scritture.push({ percorso: sotto + "/" + id, dati: null, eliminato: true });
+        avvisa(sotto, id);
+        registri.scrittureInVolo -= 1;
       }
     };
   }
@@ -155,6 +165,11 @@ export function creaZonaBFinta(opzioni = {}) {
         elenco.push({ id: chiave, dati: valore == null ? null : JSON.parse(JSON.stringify(valore)) });
       });
       return elenco;
+    },
+    /* Un documento scritto dal test, senza passare dalla pagina: serve a
+     * cambiare programma attivo fra un giro e l'altro (passo 31). */
+    scrivi: (sotto, id, dati) => {
+      documentiDi(String(sotto)).set(String(id), JSON.parse(JSON.stringify(dati == null ? null : dati)));
     }
   };
 }

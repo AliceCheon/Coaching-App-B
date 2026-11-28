@@ -121,10 +121,14 @@ export const PRG = Object.freeze([
 
 /* --- Le progressioni custom (passo 21) ------------------------------------
  * Una custom e' una tabella di otto settimane scritta a mano, non una formula.
- * Vive dentro il documento del programma, che B scrive gia': nessuna raccolta
- * nuova, quindi nessuna regola Firestore da chiedere.
+ * Dal passo 31 vive nella raccolta `bdB_atleti/{uid}/progressioni` (una sola
+ * per utente), cosi' si vede da ogni programma: prima stava dentro il
+ * documento del programma in cui era nata.
  * `PREFISSO_CUSTOM` distingue una custom dalle 21 voci del tastino e dalle 13
  * della scheda: l'id che gira e' `custom:<id della voce>`. */
+/* Passo 31 — e' la chiave della VECCHIA posizione (dentro il programma). La
+ * usano solo la migrazione e l'Annulla di una voce vecchia: le custom nuove
+ * stanno nella raccolta `progressioni`. */
 export const CAMPO_CUSTOM = "progressioniCustom";
 export const PREFISSO_CUSTOM = "custom:";
 export const SETTIMANE_CUSTOM = 8;

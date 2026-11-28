@@ -24,7 +24,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { PROG, PRG, PROGRULE, coppieRiga } from "../comune/progressioni-b.js";
-import { elencoCustom, coppieCustom, cambiaProgressioni } from "../comune/progressioni-custom-b.js";
+import { coppieCustom } from "../comune/progressioni-custom-b.js";
+import { elencoLibreria, cambiaLibreria } from "../comune/progressioni-libreria-b.js";
 import { riepilogoProgramma } from "../comune/programma.js";
 import { ricostruisciSchede } from "../comune/schede-v2.js";
 import { renderProgramma } from "../comune/vista-programma.js";
@@ -261,31 +262,48 @@ test("177.4b se «Copia di …» esiste già, «Salva come» aggiunge 2 invece d
   assert.equal(s2.salvate[0].azione, "crea");
 });
 
-test("177.5 il motore: aggiornare non tocca le altre, salvare come aggiunge una voce", () => {
+test("177.5 il motore della libreria: «Aggiorna» non tocca le altre, «Salva come» aggiunge una voce", () => {
+  /* Passo 31: la custom vive in un documento della raccolta, non più nel
+   * documento del programma. Il motore è lo stesso; qui si controlla che il
+   * risultato sia UN documento con la sua versione. */
+  const voce = unaCustom("Mia", coppieRiga("volume-progression", { s: 4, r: "8-10" }));
   const documento = {
-    id: "program-v2-meta-prg177", programId: "prg177", versione: 5,
-    programMeta: Object.assign({}, META, { progressioniCustom: [unaCustom("Mia", coppieRiga("volume-progression", { s: 4, r: "8-10" }))] })
+    id: "pm-uno",
+    dati: {
+      tipo: "progressione", id: "pm-uno", nome: "Mia", da: voce.da,
+      settimane: voce.settimane, creatoIl: ORA, versione: 2
+    }
   };
-  const aggiornata = cambiaProgressioni(documento, {
-    idProgramma: "prg177", azione: "settimane", id: "pc-1",
-    nome: "Mia", coppie: [["5", "8-10"], ["5", "8-10"], ["5", "8-10"], ["5", "8-10"], ["5", "8-10"], ["5", "8-10"], ["5", "8-10"], ["5", "8-10"]]
+  const elenco = elencoLibreria([documento]);
+  assert.equal(elenco.length, 1, "la raccolta ha una custom");
+  assert.equal(elenco[0].versione, 2, "la versione arriva dal documento");
+
+  const cinque = Array.from({ length: 8 }, () => ["5", "8-10"]);
+  const aggiornata = cambiaLibreria(elenco, {
+    azione: "settimane", id: "pm-uno", nome: "Mia", coppie: cinque
   }, { quando: ORA, uid: "u1" });
   assert.equal(aggiornata.ok, true, aggiornata.motivo);
-  const dopoAggiorna = elencoCustom(aggiornata.dati);
-  assert.equal(dopoAggiorna.length, 1, "aggiornare non aggiunge voci");
-  assert.equal(copiaCella(dopoAggiorna[0], 1, 0), "5");
+  assert.equal(aggiornata.azione, "settimane");
+  assert.equal(aggiornata.id, "pm-uno", "«Aggiorna» scrive sulla stessa custom");
+  assert.equal(aggiornata.versioneAttesa, 2, "la versione attesa è quella della raccolta");
+  assert.equal(aggiornata.documento.nome, "Mia");
+  assert.equal(aggiornata.documento.settimane[0].serie, "5", "la cella modificata viaggia nel documento");
+  assert.equal(aggiornata.voce.tipo, "progressioni-libreria", "la voce di registro è quella nuova");
+  assert.equal(aggiornata.voce.azione, "settimane");
+  assert.equal(copiaCella(aggiornata.custom, 1, 0), "5");
 
-  const copiata = cambiaProgressioni(aggiornata.dati, {
-    idProgramma: "prg177", azione: "crea", nome: "Mia più", da: "pc-1",
-    coppie: [["6", "8-10"], ["6", "8-10"], ["6", "8-10"], ["6", "8-10"], ["6", "8-10"], ["6", "8-10"], ["6", "8-10"], ["6", "8-10"]]
+  const sei = Array.from({ length: 8 }, () => ["6", "8-10"]);
+  const copiata = cambiaLibreria(elenco, {
+    azione: "crea", nome: "Mia più", da: "pm-uno", coppie: sei
   }, { quando: "2026-11-27T12:31:00.000Z", uid: "u1" });
   assert.equal(copiata.ok, true, copiata.motivo);
-  const dopoCopia = elencoCustom(copiata.dati);
-  assert.equal(dopoCopia.length, 2, "«Salva come» aggiunge una voce");
-  assert.equal(dopoCopia[0].nome, "Mia", "l'originale c'è ancora");
-  assert.equal(copiaCella(dopoCopia[0], 1, 0), "5", "l'originale tiene le sue modifiche, non quelle della copia");
-  assert.equal(dopoCopia[1].nome, "Mia più");
-  assert.equal(copiaCella(dopoCopia[1], 1, 0), "6", "la copia porta le modifiche nuove");
+  assert.equal(copiata.azione, "crea");
+  assert.equal(copiata.versioneAttesa, 0, "una copia nuova parte da zero");
+  assert.notEqual(copiata.id, "pm-uno", "la copia è un altro documento");
+  assert.equal(copiata.documento.nome, "Mia più");
+  assert.equal(copiata.documento.settimane[0].serie, "6", "la copia porta le modifiche nuove");
+  assert.equal(elenco.length, 1, "il «Salva come» non tocca l'elenco di partenza: l'originale resta com'è");
+
   /* Le formule del v31 non sono state toccate: sono costanti. */
   assert.equal(PROG.length, 21);
   assert.equal(typeof PROGRULE["volume-progression"], "function");

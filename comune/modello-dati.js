@@ -118,6 +118,10 @@ export const SOTTO_B = Object.freeze({
   esclusioni: "esclusioni",
   registro: "registro",
   scheletri: "scheletri",
+  /* Passo 31 — la libreria delle progressioni custom: una raccolta sola per
+   * utente, cosi' una custom si vede da ogni programma (la regola Firestore
+   * l'ha pubblicata Alice il 28/11/2026). */
+  progressioni: "progressioni",
 });
 
 /* Errore esplicito per qualunque scrittura fuori dalla zona B. */

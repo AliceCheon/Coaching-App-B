@@ -17,7 +17,9 @@ import {
   scriviVoceRegistro,
   leggiZonaB,
   leggiProgrammaB,
-  salvaProgrammaConVersione
+  salvaProgrammaConVersione,
+  salvaProgressioneConVersione,
+  eliminaProgressioneB
 } from "./scritture-b.js";
 import {
   cambiaSerieRipetizioni,
@@ -53,7 +55,16 @@ import { applicaScheda, messaggioApplicato, messaggioNonApplicato, messaggioElim
 import { leggiScheletroB, eliminaScheletroB } from "./scritture-b.js";
 import { pianificaAttivazione, pianificaBozza, pianificaRipristino, TIPO_VOCE_ATTIVA, TIPO_VOCE_BOZZA } from "./attiva-programma.js";
 import { pianificaScaricoTutte, TIPO_VOCE_SCARICO_TUTTE } from "./scarico-tutte.js";
-import { cambiaProgressioni } from "./progressioni-custom-b.js";
+import {
+  elencoLibreria,
+  cambiaLibreria,
+  pianoAnnulla,
+  pianoMigrazione,
+  programmaSenzaCustom,
+  fraseMigrazione,
+  TIPO_VOCE,
+  TIPO_VOCE_MIGRAZIONE
+} from "./progressioni-libreria-b.js";
 
 /* codice scheda -> id del documento in B. Se lo stesso codice compare su due
  * documenti non si sceglie a caso: quel codice resta fuori dalla mappa e la
@@ -392,6 +403,10 @@ export function creaEditorSchede(opzioni) {
         return { ok: true, voce: esitoP.voce, avvisoRegistro: avvisoP };
       }
 
+      /* Passo 31 — le progressioni custom ora vivono nella loro raccolta:
+       * l'Annulla riscrive li' l'elenco di prima. */
+      if (String(voce.tipo || "") === TIPO_VOCE) return annullaLibreria(voce);
+
       const idScheda = documentoScheda(voce.scheda);
       if (!idScheda) {
         return { ok: false, motivo: "la voce del registro non porta a una scheda di B · " + schedaNonTrovata(voce.scheda) };
@@ -436,21 +451,24 @@ export function creaEditorSchede(opzioni) {
     });
   }
 
-  /* Passo 21 — le progressioni custom. Non sono una scheda: vivono dentro il
-   * documento del programma (programMeta.progressioniCustom), che B scrive
-   * gia', quindi nessuna raccolta nuova e nessuna regola Firestore da chiedere.
-   * Stessa regola di versione, stesse voci di registro, stesso Annulla. */
-  function progressioniProgramma(richiesta) {
+  /* Passo 31 — le progressioni custom vivono nella raccolta `progressioni`
+   * (una sola per utente): cosi' la stessa tabella si vede da ogni programma.
+   * Il motore e' quello di sempre, con le sue difese; qui cambia solo DOVE
+   * finisce il risultato: un documento della raccolta, non il campo dentro il
+   * programma. Versione +1, marchio, voce di registro e Annulla come prima. */
+  function progressioniLibreria(richiesta) {
     const r = richiesta || {};
-    const idProgramma = String(r.idProgramma == null ? "" : r.idProgramma).trim();
-    if (!idProgramma) return Promise.resolve({ ok: false, motivo: "la pagina non ha passato il programma: non ho scritto niente" });
     return coda.esegui("programma", async () => {
-      const letto = await conScadenza(leggiProgrammaB(db, uid, idProgramma), "la lettura del programma");
-      if (!letto || !letto.esiste) return { ok: false, motivo: "il programma non e' ancora in B: fai prima la copia" };
-      const esito = cambiaProgressioni(letto.dati, Object.assign({}, r, { idProgramma: idProgramma }), { quando: quando(), uid: uid });
+      const documenti = await conScadenza(leggiZonaB(db, uid, "progressioni"), "la lettura delle progressioni");
+      const elenco = elencoLibreria(documenti);
+      const esito = cambiaLibreria(elenco, r, { quando: quando(), uid: uid });
       if (!esito.ok) return esito;
       try {
-        await conScadenza(salvaProgrammaConVersione(db, uid, idProgramma, esito.dati, Number(letto.dati.versione) || 0), "la scrittura del programma");
+        if (esito.azione === "elimina") {
+          await conScadenza(eliminaProgressioneB(db, uid, esito.id), "l'eliminazione della progressione");
+        } else {
+          await conScadenza(salvaProgressioneConVersione(db, uid, esito.id, esito.documento, esito.versioneAttesa), "la scrittura della progressione");
+        }
       } catch (e) {
         return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
       }
@@ -464,6 +482,142 @@ export function creaEditorSchede(opzioni) {
         testo: esito.testo,
         avvisoRegistro: avvisoVoce
       };
+    });
+  }
+
+  /* Passo 31 — la migrazione una volta sola: le custom che stavano dentro i
+   * programmi si copiano nella raccolta (id stabile + stesso nome e stesse
+   * settimane = niente doppioni), poi il campo vecchio si toglie dal
+   * programma. Se una copia non passa, quel programma tiene le sue custom:
+   * niente sparisce. */
+  function migraProgressioniCustom(programmi) {
+    const elencoProgrammi = Array.isArray(programmi) ? programmi : [];
+    return coda.esegui("programma", async () => {
+      const documenti = await conScadenza(leggiZonaB(db, uid, "progressioni"), "la lettura delle progressioni");
+      const libreria = elencoLibreria(documenti);
+      const piano = pianoMigrazione(elencoProgrammi, libreria, { quando: quando(), uid: uid });
+      let copiate = 0;
+      let pulite = 0;
+      let rimaste = 0;
+      /* Un programma alla volta: prima le copie, poi si toglie il campo. */
+      const perProgramma = Object.create(null);
+      piano.copie.forEach((c) => {
+        const k = c.daProgramma || "";
+        if (!perProgramma[k]) perProgramma[k] = [];
+        perProgramma[k].push(c);
+      });
+      const chiavi = Object.keys(perProgramma);
+      /* Anche i programmi le cui custom erano gia' tutte in raccolta: si
+       * toglie il campo vecchio, cosi' non torna fuori se la custom viene
+       * modificata nella libreria. */
+      (piano.daPulire || []).forEach((id) => { if (chiavi.indexOf(id) === -1) chiavi.push(id); });
+      for (let i = 0; i < chiavi.length; i += 1) {
+        const idProgramma = chiavi[i];
+        const copie = perProgramma[idProgramma] || [];
+        let tutte = true;
+        for (let j = 0; j < copie.length; j += 1) {
+          try {
+            await conScadenza(salvaProgressioneConVersione(db, uid, copie[j].id, copie[j].documento, 0), "la copia della progressione");
+            copiate += 1;
+          } catch (e) {
+            tutte = false;
+          }
+        }
+        if (!tutte || !idProgramma) { rimaste += copie.length; continue; }
+        try {
+          const letto = await conScadenza(leggiProgrammaB(db, uid, idProgramma), "la lettura del programma da ripulire");
+          if (letto && letto.esiste) {
+            const nuovo = programmaSenzaCustom(letto.dati, { quando: quando(), uid: uid });
+            await conScadenza(salvaProgrammaConVersione(db, uid, idProgramma, nuovo, Number(letto.dati.versione) || 0), "la scrittura del programma ripulito");
+            pulite += 1;
+          }
+        } catch (e) {
+          /* la copia e' in libreria: il campo vecchio resta, ma non si mostra
+           * due volte (l'unione dei doppioni lo salta) */
+          rimaste += copie.length;
+        }
+      }
+      if (copiate > 0 || pulite > 0) {
+        const adesso = quando();
+        const voce = {
+          idVoce: idVoceRegistro(adesso),
+          quando: adesso,
+          tipo: TIPO_VOCE_MIGRAZIONE,
+          origine: "migrazione-in-B",
+          programma: "",
+          scheda: "",
+          codice: "",
+          esercizio: "",
+          idEsercizio: "",
+          settimana: null,
+          campo: "progressioni-libreria",
+          azione: "migra",
+          trovate: piano.trovate,
+          copiate: copiate,
+          giaPresenti: piano.giaPresenti,
+          dopoTesto: fraseMigrazione(piano.trovate, copiate, piano.giaPresenti),
+          versionePrima: null,
+          versioneDopo: null
+        };
+        await scriviVoceSicura(voce);
+      }
+      return {
+        ok: true,
+        trovate: piano.trovate,
+        copiate: copiate,
+        pulite: pulite,
+        giaPresenti: piano.giaPresenti,
+        rimaste: rimaste,
+        testo: fraseMigrazione(piano.trovate, copiate, piano.giaPresenti)
+      };
+    });
+  }
+
+  /* L'Annulla di una scrittura sulla libreria: l'elenco di prima torna nella
+   * raccolta (chi c'era si riscrive, chi non c'era si toglie), con una voce
+   * nuova che cita quella annullata. */
+  function annullaLibreria(voce) {
+    const v = voce || {};
+    return coda.esegui("programma", async () => {
+      const documenti = await conScadenza(leggiZonaB(db, uid, "progressioni"), "la lettura delle progressioni");
+      const attuale = elencoLibreria(documenti);
+      const piano = pianoAnnulla(v.prima, attuale, { quando: quando(), uid: uid });
+      if (piano.vuoto) return { ok: false, motivo: "le progressioni erano gia' come prima: non ho scritto niente" };
+      try {
+        for (let i = 0; i < piano.elimina.length; i += 1) {
+          await conScadenza(eliminaProgressioneB(db, uid, piano.elimina[i]), "la rimozione della progressione");
+        }
+        const scrivi = piano.crea.concat(piano.aggiorna);
+        for (let i = 0; i < scrivi.length; i += 1) {
+          await conScadenza(salvaProgressioneConVersione(db, uid, scrivi[i].id, scrivi[i].documento, scrivi[i].versioneAttesa), "la scrittura della progressione");
+        }
+      } catch (e) {
+        return { ok: false, motivo: e && e.message ? e.message : "scrittura non riuscita" };
+      }
+      const adesso = quando();
+      const voceNuova = {
+        idVoce: idVoceRegistro(adesso),
+        quando: adesso,
+        tipo: "annulla-modifica",
+        origine: "annullamento-in-B",
+        annullaDi: String(v.idVoce || ""),
+        programma: "",
+        scheda: "",
+        codice: "",
+        esercizio: "",
+        idEsercizio: "",
+        settimana: null,
+        campo: "progressioni-libreria",
+        prima: Array.isArray(v.dopo) ? v.dopo : [],
+        dopo: Array.isArray(v.prima) ? v.prima : [],
+        dopoTesto: "progressioni rimesse com'erano",
+        versionePrima: null,
+        versioneDopo: null
+      };
+      const avviso = await scriviVoceSicura(voceNuova);
+      const registro = await conScadenza(leggiZonaB(db, uid, "registro"), "la lettura del registro");
+      ultima = ultimaAnnullabile((Array.isArray(registro) ? registro : []).concat([{ id: voceNuova.idVoce, dati: voceNuova }]));
+      return { ok: true, voce: voceNuova, avvisoRegistro: avviso };
     });
   }
 
@@ -1084,7 +1238,8 @@ export function creaEditorSchede(opzioni) {
     get ultima() { return ultima; },
     modifica: modifica,
     testataProgramma: testataProgramma,
-    progressioniProgramma: progressioniProgramma,
+    progressioniLibreria: progressioniLibreria,
+    migraProgressioniCustom: migraProgressioniCustom,
     notaScheda: notaScheda,
     togliScheda: togliScheda,
     copiaEsercizi: copiaEsercizi,

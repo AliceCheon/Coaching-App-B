@@ -464,7 +464,7 @@ export function apriEditorProgressione(doc, dati, o) {
   const base = custom ? coppieCustom(custom) : (Array.isArray(d.coppie) ? d.coppie : []);
   const titolo = soloNome ? "Rinomina la progressione"
     : (corrente ? "Modifica \u00ab" + nomePulito(corrente.nome) + "\u00bb" : "Nuova progressione custom");
-  const finestra = apriModaleProg(doc, titolo, soloNome ? "custom \u00b7 si salva nel programma" : (corrente ? "custom \u00b7 si salva nel programma" : "8 settimane"));
+  const finestra = apriModaleProg(doc, titolo, soloNome ? "custom \u00b7 si salva nella libreria" : (corrente ? "custom \u00b7 si salva nella libreria" : "8 settimane"));
   const scatola = finestra.scatola;
   const origine = n(doc, "p", "prog-origine", "");
   const notaOrigine = () => {
@@ -638,7 +638,7 @@ export function apriConfermaProgressione(doc, voce, o) {
   const finestra = apriModaleProg(doc, "Eliminare \u00ab" + nomePulito(v.nome) + "\u00bb?", "progressione custom");
   const scatola = finestra.scatola;
   scatola.appendChild(n(doc, "p", "prog-origine",
-    "La progressione sparisce dall'elenco di questo programma. Le schede gi\u00e0 scritte non cambiano: restano con le settimane che hanno. Si pu\u00f2 annullare subito dopo."));
+    "La progressione sparisce dalla libreria, quindi da tutti i programmi. Le schede gi\u00e0 scritte non cambiano: restano con le settimane che hanno. Si pu\u00f2 annullare subito dopo."));
   const piedi = n(doc, "div", "prog-piedi");
   const elimina = pulsanteVivo(doc, "prog-btn danger", "Elimina", "elimina la progressione custom", () => {
     if (!opz.idProgramma || typeof opz.salvaCustom !== "function") {
@@ -793,8 +793,10 @@ function apriProgressioni(doc, bottone, voci, etichetta, alScelta, opzioni) {
 /* Le liste, nella forma che serve al pannello. Le custom stanno in coda, con
  * la loro etichetta: si distinguono dalle formule a colpo d'occhio. */
 /* Quello che serve al pannello per leggere e per scrivere: il programma aperto
- * (le custom vivono nel suo documento), l'elenco delle custom, la base della
- * riga per la tabella, e la strada di scrittura dell'editor. */
+ * (serve a sapere se i tasti possono scrivere), l'elenco delle custom — che
+ * dal passo 31 arriva dalla raccolta condivisa, non dal documento del
+ * programma —, la base della riga per la tabella e la strada di scrittura
+ * dell'editor. */
 function opzioniProgressione(r, base, mancante) {
   const prog = r && r.progressioni ? r.progressioni : null;
   const mod = r && r.modifica ? r.modifica : null;
