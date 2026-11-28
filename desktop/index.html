@@ -1146,7 +1146,18 @@ h2.titolo i{font-style:italic;font-weight:600;color:var(--lav)}
 #pag-study-time .st-card h4{font:700 13px/1.35 'Nunito Sans',sans-serif;color:var(--testo);margin:0 0 6px}
 #pag-study-time .st-card p{font:400 12px/1.6 'Nunito Sans',sans-serif;color:var(--muto);margin:0;overflow-wrap:anywhere}
 #pag-study-time .st-fig{flex:0 0 auto;margin:0;width:clamp(150px,32%,250px);min-height:var(--st-fig-h);align-self:stretch;border-radius:8px;overflow:hidden;border:1px solid #4a3160;background:#1d1426;cursor:zoom-in;display:grid;place-items:center}
+/* Passo 30 — la figura riempie l'ALTEZZA della carta: `height:100%` con
+   `width:auto` fa crescere il riquadro quanto basta all'immagine (e
+   `object-fit:contain` non la deforma mai). Prima la larghezza era fissa
+   (`clamp(150px,32%,250px)`): un'immagine larga ci stava dentro solo in
+   orizzontale e sopra e sotto restavano due bande nere (la carta «Muscoli
+   adduttori», stesa da una carta vicina più alta). Il minimo di 200 px sul
+   testo tiene il riquadro onesto anche sulle carte con molto testo: la figura
+   arriva a ~84% dell'altezza della carta senza mangiarsi la colonna. */
+#pag-study-time .st-card:not(.st-wide) .st-txt{min-width:200px}
+#pag-study-time .st-fig:not(.st-fig-wide){width:auto;max-width:calc(100% - 212px)}
 #pag-study-time .st-fig img{display:block;width:100%;height:100%;max-height:100%;object-fit:contain;object-position:center}
+#pag-study-time .st-fig:not(.st-fig-wide) img{width:auto;max-width:100%}
 #pag-study-time .st-notecards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
 #pag-study-time .st-nc{background:linear-gradient(180deg,var(--surface2),var(--surface));border:1px solid var(--linea);border-radius:12px;padding:13px 14px}
 #pag-study-time .st-nc h4{font:700 12.5px/1.3 'Nunito Sans',sans-serif;color:var(--core);margin:0 0 7px;text-transform:uppercase;letter-spacing:.05em}
@@ -2226,6 +2237,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
     <div id="ms-copy-esito" role="status"></div>
     <div id="ms-out"></div>
+    <div id="ms-reset-conf"></div>
    </div>
    <div class="ms-box">
     <div class="ms-boxh"><b>Storico sessioni</b><span class="ms-legend">somma delle 7 pliche, % grasso stimata, massa magra</span></div>
@@ -2705,7 +2717,45 @@ document.addEventListener('DOMContentLoaded',function(){
     esito('Questo browser non mi lascia copiare negli appunti: '+quanti+(quanti===1?' sessione':' sessioni')+' restano in archivio.',true);
    }
   };
-  var rz=q("ms-reset"); if(rz)rz.onclick=function(){ ST.sessioni=[];ST.sync=null;save();render();q("ms-out").innerHTML='<p class="ms-note2">Archivio locale svuotato.</p>'; };
+  /* Passo 30 — «Svuota archivio» prima chiede, in chiaro: quante sessioni e
+     quante misure escono, e che resta tutto dentro questo browser (qui si
+     scrive solo in localStorage: B e le schede non si toccano). Lo stesso
+     riquadro in pagina delle altre conferme (`.pr-conf`, Annulla/Conferma),
+     niente finestrelle del browser. Annullando non cambia niente. */
+  var rz=q("ms-reset"); if(rz)rz.onclick=function(){
+   var box=q("ms-reset-conf"); if(!box)return;
+   if(box.firstChild) return;
+   var n=ST.sessioni.length, punti=0, pliche=0;
+   ST.sessioni.forEach(function(s){
+    var c=s.circ||{}; for(var k in c){ if(c[k]!=null)punti++; }
+    ["pl7","pl3"].forEach(function(chiave){
+     var p=s[chiave]||{};
+     for(var kk in p){ if((p[kk]||[]).filter(function(x){return x!=null;}).length)pliche++; }
+    });
+   });
+   if(!n){ box.innerHTML='<p class="ms-note2">L\'archivio locale è già vuoto: non c\'è niente da togliere.</p>'; return; }
+   var crea=function(tag,classe,testo){ var e=document.createElement(tag); if(classe)e.className=classe; if(testo!=null)e.appendChild(document.createTextNode(testo)); return e; };
+   var d=crea("div","pr-conf"); d.setAttribute("role","dialog"); d.setAttribute("aria-label","conferma");
+   d.appendChild(crea("p","pr-conf-titolo","Svuota l'archivio locale?"));
+   var conto='Escono '+n+(n===1?' sessione':' sessioni')+' dallo storico';
+   if(punti||pliche) conto+=' ('+punti+(punti===1?' misura corporea':' misure corporee')+' e '+pliche+(pliche===1?' plica':' pliche')+')';
+   d.appendChild(crea("p","",conto+'.'));
+   d.appendChild(crea("p","pr-conf-avviso","Tocca solo la copia salvata in questo browser: i dati su B e le schede non si toccano."));
+   var fila=crea("div","pr-conf-fila");
+   var annulla=crea("button","pr-btn","Annulla"); annulla.type="button";
+   var conferma=crea("button","pr-btn danger","Svuota l'archivio"); conferma.type="button";
+   var chiudi=function(){ box.innerHTML=""; };
+   annulla.addEventListener("click",chiudi);
+   conferma.addEventListener("click",function(){
+    ST.sessioni=[];ST.sync=null;save();render();chiudi();
+    q("ms-out").innerHTML='<p class="ms-note2">Archivio locale svuotato: '+n+(n===1?' sessione tolta':' sessioni tolte')+'. I dati su B non sono stati toccati.</p>';
+   });
+   d.addEventListener("keydown",function(ev){
+    if(ev.key==="Escape"||ev.keyCode===27){ if(ev.preventDefault)ev.preventDefault(); chiudi(); }
+   });
+   fila.appendChild(annulla); fila.appendChild(conferma); d.appendChild(fila); box.appendChild(d);
+   if(annulla.focus)annulla.focus();
+  };
 
   window.addEventListener("message",function(ev){
    var d=ev.data;
@@ -7736,6 +7786,12 @@ html[data-theme="light"] .pr-esito[data-esito="non-salvato"]{color:#A61345}
   color:var(--muted);font:inherit;font-size:10.6px;padding:1px 7px;cursor:pointer}
 .pg-guarda:hover{border-color:var(--rosa);color:var(--rosa)}
 .pg-guarda[disabled]{opacity:.5;cursor:not-allowed}
+/* Passo 30 — il cestino spento (programma in uso) si vede spento a colpo
+   d'occhio: sbiadito e in grigio, con il bordo tratteggiato; non si preme.
+   Il `title` e l'`aria-label` dicono perché. */
+.pg-cestino{font-size:12px;line-height:1.1}
+.pg-cestino[disabled]{opacity:.28;filter:grayscale(1);border-style:dashed;color:var(--fioco)}
+.pg-cestino[disabled]:hover{border-color:var(--line);color:var(--fioco)}
 /* Passo 43/43c: il confronto è una finestra alta quanto lo schermo che scorre
    dentro di sé: due file di tab (settimane, schede) ferme in cima e sotto la
    finestra divisa in due colonne — il programma consultato a sinistra, quello
@@ -10974,7 +11030,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 })();
 </script>
 <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e rispondeva 405 -->
-<script src="../app-config-b.js?v=b0.75-passo31-progressioni-libreria-unica"></script>
+<script src="../app-config-b.js?v=b0.76-passo30-ritocchi"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -11307,7 +11363,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   pitta();
 })();
 </script>
-<script type="module" src="./app-v31.js?v=b0.75-passo31-progressioni-libreria-unica"></script>
+<script type="module" src="./app-v31.js?v=b0.76-passo30-ritocchi"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff72c2'/%3E%3Crect x='6' y='14' width='20' height='4' rx='2' fill='%23fff'/%3E%3Crect x='3' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3Crect x='25' y='10' width='4' height='12' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 </body>
 </html>

@@ -405,9 +405,9 @@ function colonnaProgramma(doc, voci) {
 }
 
 /* Passo 28 — la tabella «Differenze» è stata tolta dalla finestra su richiesta
- * di Alice (27/11/2026). Restano qui le funzioni pure che la alimentavano
- * (confrontoSettimana in comune/programma-consultabile.js) perché non
- * toccano il DOM: nessuno le chiama più.
+ * di Alice (27/11/2026). Passo 30 — anche la funzione pura che la alimentava
+ * (le differenze per distretto di una settimana) è stata tolta da
+ * comune/programma-consultabile.js: nessuno la chiamava più.
  * L'idea di «differenza per distretto» ora la racconta il blocco «Volume»:
  * due barre sulla stessa scala, il Δ a destra e «Tutte le settimane».
  */

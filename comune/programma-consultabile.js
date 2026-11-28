@@ -449,55 +449,6 @@ export function settimaneDelConfronto(gruppi, opzioni) {
   return tasti;
 }
 
-/* Le differenze per distretto di UNA settimana fra due programmi.
- * Un distretto che nella settimana ha serie da una parte sola NON vale zero:
- * la riga è «non registrato» e la differenza non si calcola. */
-export function confrontoSettimana(uno, due, numero, opzioni) {
-  const o = opzioni || {};
-  const n = Math.max(1, Number(numero) || 1);
-  const settimanaDi = (g) => {
-    const elenco = g && Array.isArray(g.perSettimana) ? g.perSettimana : [];
-    return elenco[n - 1] || null;
-  };
-  const a = settimanaDi(uno);
-  const b = settimanaDi(due);
-  const distretti = [];
-  [a, b].forEach((sett) => {
-    if (!sett) return;
-    (Array.isArray(sett.volume) ? sett.volume : []).forEach((v) => {
-      if (distretti.indexOf(v.distretto) === -1) distretti.push(v.distretto);
-    });
-  });
-  const serieDi = (sett, d) => {
-    if (!sett) return null;
-    const voce = (Array.isArray(sett.volume) ? sett.volume : []).filter((v) => v.distretto === d)[0];
-    return voce ? voce.serie : null;
-  };
-  const righe = distretti.map((d) => {
-    const serieUno = serieDi(a, d);
-    const serieDue = serieDi(b, d);
-    const manca = serieUno == null || serieDue == null;
-    return {
-      distretto: d,
-      uno: serieUno,
-      due: serieDue,
-      delta: manca ? null : Math.round((serieUno - serieDue) * 100) / 100,
-      variazione: manca ? null : variazionePct(serieDue, serieUno),
-      genere: manca ? "non-registrato" : "confronto"
-    };
-  });
-  righe.sort((x, y) => Math.max(y.uno || 0, y.due || 0) - Math.max(x.uno || 0, x.due || 0)
-    || x.distretto.localeCompare(y.distretto, "it"));
-  return {
-    settimana: n,
-    righe: righe,
-    uno: a,
-    due: b,
-    nomeUno: o.nomeUno || "",
-    nomeDue: o.nomeDue || ""
-  };
-}
-
 /* La variazione in percentuale, solo dove ci sono entrambi i valori e quello
  * di partenza non è zero. Altrimenti null: la pagina scrive «—», non un
  * numero che sembra un dato. */
