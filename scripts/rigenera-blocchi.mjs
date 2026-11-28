@@ -15,7 +15,9 @@ if (inizio < 0 || fine < 0) throw new Error("sezioni del documento non trovate")
 
 let diff = "";
 try {
-  diff = execFileSync("git", ["diff", "--no-index", "-U0", join(radice, "pc", "index.html"), join(radice, "desktop", "index.html")], { encoding: "utf8" });
+  /* maxBuffer: con le voci di A (passo 32) il diff supera 1 MB, il default di
+   * execFileSync, e arriverebbe troncato. */
+  diff = execFileSync("git", ["diff", "--no-index", "-U0", join(radice, "pc", "index.html"), join(radice, "desktop", "index.html")], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 } catch (e) { diff = String((e && e.stdout) || ""); }
 
 const hunks = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)]

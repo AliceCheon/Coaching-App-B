@@ -53,10 +53,27 @@ const scheda = {
 const voce = (conto, nome) => conto.articolazioni.filter((a) => a.articolazione === nome)[0] || null;
 const somma = (a) => a.reduce((acc, v) => acc + v, 0);
 
-test("129.1 la mappa copre tutti i 176 esercizi del catalogo, con le articolazioni vere", () => {
+test("129.1 la mappa copre tutti gli esercizi che descrive, e chi manca è dichiarato non mappato", () => {
   assert.ok(Object.keys(MAPPA_ARTICOLARE).length >= 176, "la mappa ha almeno i 176 esercizi veri");
-  CATALOGO_ESERCIZI_B.forEach((v) => {
-    assert.ok(MAPPA_ARTICOLARE[v.n], "manca " + v.n);
+  /* PASSO 32: i 370 esercizi arrivati dal backup di A non hanno una riga nella
+   * tabella articolare di Alice, e non se la inventa nessuno: la mappa copre
+   * quelli che descrive, gli altri escono da articolazioniDi() come
+   * «nonMappato», senza punti. */
+  const senzaRiga = CATALOGO_ESERCIZI_B.filter((v) => !MAPPA_ARTICOLARE[v.n]);
+  assert.equal(CATALOGO_ESERCIZI_B.length, 546);
+  assert.equal(senzaRiga.length, 370, "le sole voci senza una riga propria sono le 370 arrivate da A");
+  senzaRiga.forEach((v) => {
+    const a = articolazioniDi(v.n);
+    if (a.nonMappato) {
+      /* nessuna riga e nessun nome vicino: niente punti, dichiarato */
+      assert.equal(Object.keys(a.punti).length, 0, "una voce non mappata non dà punti: " + v.n);
+      assert.equal(a.principale, null, "una voce non mappata non ha principale: " + v.n);
+    } else {
+      /* il nome si riconduce a un esercizio della tabella (la stessa regola che
+       * l'app usa da sempre): eredita le sue articolazioni, non se le inventa */
+      assert.ok(MAPPA_ARTICOLARE[a.catalogo], "la voce " + v.n + " rimanda a un esercizio senza riga: " + a.catalogo);
+      assert.equal(a.principale, MAPPA_ARTICOLARE[a.catalogo].p, "articolazioni diverse da quelle della riga: " + v.n);
+    }
   });
   assert.deepEqual(ARTICOLAZIONI.slice(), [
     "spalla", "gomito", "polso", "anca", "ginocchio", "caviglia", "colonna lombare", "colonna toracica"
@@ -101,9 +118,9 @@ test("129.4 il doppione conta col nome vero: l'alias resta, il doppione non è p
   assert.equal(nomeCanonico("Pressa 45Â°"), "Pressa 45°");
   assert.deepEqual(articolazioniDi("Pressa 45Â°").punti, articolazioniDi("Pressa 45°").punti);
   assert.equal(ALIAS["Push ups"], "Push Up");
-  /* Passo 23: il doppione rovinato non è più nel catalogo (176 voci), ma il
-   * suo nome resta come alias e conta lo stesso esercizio. */
-  assert.equal(CATALOGO_ESERCIZI_B.length, 176);
+  /* Passo 23: il doppione rovinato non è più nel catalogo, ma il suo nome
+   * resta come alias e conta lo stesso esercizio. */
+  assert.equal(CATALOGO_ESERCIZI_B.length, 546);
   assert.equal(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45Â°"), false);
   assert.ok(CATALOGO_ESERCIZI_B.some((v) => v.n === "Pressa 45°"));
 });

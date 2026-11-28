@@ -6,8 +6,8 @@
  *        lo dice), non il costruttore d'esempio del v31
  *  174.2 Impostazioni: build vera da app-config-b.js, schede ed esercizi
  *        contati dai dati; nessun «4» e nessun «179» scritti a mano
- *  174.3 Database esercizi: 176 voci, le stesse del catalogo del selettore,
- *        nessun doppione da codifica
+ *  174.3 Database esercizi: le voci del catalogo del selettore (546),
+ *        nessun doppione da codifica (176 righe scritte + 370 in #db-aggiunte)
  *  174.4 la settimana del blocco è la stessa nei tre punti (Dashboard,
  *        Overview, Pianificazione) e, se manca il dato, lo stesso motivo
  *  174.5 Archivio: Sedute e Ultima contano il logbook dell'Overview
@@ -89,12 +89,21 @@ test("174.2 Impostazioni non ha più numeri scritti a mano: build vera, schede e
 
 /* ------------------------------------------------------------------ 174.3 */
 
-test("174.3 il Database esercizi usa il catalogo: 176 voci, nessun doppione, le stesse del selettore", () => {
+test("174.3 il Database esercizi usa il catalogo: 546 voci, nessun doppione, le stesse del selettore", () => {
   const dom = new JSDOM(HTML, { url: "http://localhost/desktop/index.html" });
   const doc = dom.window.document;
-  const righe = [...doc.querySelectorAll("#db-body tr.riga")];
-  assert.equal(righe.length, 176, "la tabella deve avere le 176 voci del catalogo");
-  assert.equal(conteggioCatalogoB(), 176);
+  /* Le voci del v31 e del passo 20 sono righe scritte nella tabella; le 370
+   * arrivate dal backup di A (passo 32) stanno in #db-aggiunte e la pagina le
+   * mette in tabella alla prima apertura: qui si leggono tutte e due. */
+  const scritte = [...doc.querySelectorAll("#db-body tr.riga")];
+  assert.equal(scritte.length, 176, "la tabella deve avere le 176 voci scritte");
+  const blocco = doc.getElementById("db-aggiunte");
+  assert.ok(blocco, "manca il blocco #db-aggiunte con le voci di A");
+  const extra = [...new JSDOM("<table><tbody>" + blocco.textContent + "</tbody></table>").window.document.querySelectorAll("tr.riga")];
+  assert.equal(extra.length, 370, "il blocco #db-aggiunte deve portare le 370 voci di A");
+  const righe = scritte.concat(extra);
+  assert.equal(righe.length, 546, "la tabella deve avere le 546 voci del catalogo");
+  assert.equal(conteggioCatalogoB(), 546);
 
   const normalizza = (n) => String(n == null ? "" : n).replace(/Â°/g, "°").replace(/\s+/g, " ").trim().toLowerCase();
   const nomiPagina = righe.map((r) => {
@@ -104,11 +113,13 @@ test("174.3 il Database esercizi usa il catalogo: 176 voci, nessun doppione, le 
   const nomiCatalogo = CATALOGO_ESERCIZI_B.map((v) => normalizza(v.n));
   assert.deepEqual([...nomiPagina].sort(), [...nomiCatalogo].sort(), "la pagina e il catalogo non hanno le stesse voci");
   assert.equal(new Set(nomiPagina).size, nomiPagina.length, "la pagina ha ancora doppioni");
-  assert.equal(HTML.slice(HTML.indexOf('<tbody id="db-body">'), HTML.indexOf("</tbody>", HTML.indexOf('<tbody id="db-body">'))).includes("Â°"), false, "resta un nome rovinato dalla codifica");
+  const tbody = HTML.slice(HTML.indexOf('<tbody id="db-body">'), HTML.indexOf("</tbody>", HTML.indexOf('<tbody id="db-body">')));
+  assert.equal(tbody.includes("Â°"), false, "resta un nome rovinato dalla codifica");
+  assert.equal(blocco.textContent.includes("Â°"), false, "resta un nome rovinato nel blocco di A");
 
   const testa = doc.querySelector("#pag-database-esercizi .db-testa h2");
-  assert.match(testa.textContent, /176 esercizi/);
-  assert.match(doc.querySelector('#pag-database-esercizi .db-tabs button[data-t="db"]').textContent, /176/);
+  assert.match(testa.textContent, /546 esercizi/);
+  assert.match(doc.querySelector('#pag-database-esercizi .db-tabs button[data-t="db"]').textContent, /546/);
   const sezione = HTML.slice(HTML.indexOf('id="pag-database-esercizi"'), HTML.indexOf('id="pag-progressioni"'));
   assert.equal(sezione.includes("179"), false, "dentro la pagina resta un «179»");
 });
@@ -351,7 +362,7 @@ test("174.9 la pagina vera: nastro, settimana, archivio, nomi, versione e nota d
 
   assert.equal(String(doc.getElementById("st-ver").textContent).trim(), "b0.test-174");
   assert.equal(String(doc.getElementById("st-schede").textContent).trim(), "1");
-  assert.equal(String(doc.getElementById("st-esercizi").textContent).trim(), "176");
+  assert.equal(String(doc.getElementById("st-esercizi").textContent).trim(), String(conteggioCatalogoB()));
 
   assert.ok(String(doc.querySelector(".rail .chi").textContent).startsWith("Alice"), "la barra laterale non ha il nome dall'anagrafica");
   assert.equal(String(doc.querySelector(".dc-nome").textContent).trim(), "Alice");

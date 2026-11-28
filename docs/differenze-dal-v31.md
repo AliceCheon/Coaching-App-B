@@ -102,106 +102,107 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - righe 2991 — aggiornaMappa();
 - righe 3004 — if(cnt&&(fv//fo))cnt.textContent=vis+" di "+sed().length+" sedute";
 - righe 3016 — <div id="pianificazione-viva"></div>
-- righe 3024-3027 — <h2>DB Esercizi <i>176 esercizi</i></h2>
-- righe 3032 — <span class="rv-ch"><span id="db-conta" style="font-size:11px;color:var(--fioco);font-weight:700">17
-- righe 3041-3216 — </thead><tbody id="db-body"><tr class="riga" data-n="curl cavo basso con bilancere piccolo" data-g="
-- righe 3220 — <p class="rv-nota">Nel tuo gestionale la testata dice <b>267 esercizi · 62 prehab</b>; qui ci sono i
-- righe 3233 — <p class="pr-sub">Le regole con cui le settimane salgono. Per applicare una progressione alla singol
-- righe 3243 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{display:block}
-- righe 3457-3458 — </div><button class="sp-btn" id="sp-guida">Guida Specializzazione</button></div>
-- righe 3462 — (riga vuota)
-- righe 3465-3467 — <div class="v-occhiello">Programmi &middot; Curve di forza</div>
-- righe 3470-3472 — <div class="cv-card" id="cv-real" data-curva="non-calcolata">
-- righe 3475 — <section class="voce-pag" id="pag-scheletri">
-- righe 3481 — scegli le serie. Quando salvi, lo scheletro entra nella tua raccolta e da lì lo applichi a una sched
-- righe 3485-3486 — <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: i template della l
-- righe 3502-3504 — <label class="sk-check" title="C'è una sola atleta: non c'è a chi altro renderlo disponibile"><input
-- righe 3507 — <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un program
-- righe 3518-3519 — <div class="sk-qh">Questionario</div>
-- righe 3529 — <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div id="programma-attivo"></div
-- righe 3571 — <div class="pr-acts"><button class="pr-btn" id="pr-confronta" type="button">Confronta con un altro p
-- righe 3615-3616 — <button class="pr-btn" id="pr-sugg" type="button" title="spento: i suggerimenti automatici non ci so
-- righe 3649 — <div class="p8-box" id="box-A"><div class="p8-head"><div><div class="p8-nome">Scheda A - Dorsali, Sp
-- righe 3660 — (riga vuota)
-- righe 3693 — (riga vuota)
-- righe 3697 — <p class="pr-mhint">I programmi salvati. La libreria degli esercizi sta nel <b>Database esercizi</b>
-- righe 3713-3714 — <div><b>Scarico</b><p>La settimana che la scheda segna come scarico tiene la tecnica e toglie volume
-- righe 3773 — </div></div></section><section class="voce-pag" id="pag-impostazioni">
-- righe 3778-3780 — <p><span class="st-badge on" id="st-sync-badge">● cloud · zona B</span></p>
-- righe 3783-3784 — <p class="st-nota" id="st-coda-nota" role="status">Sto controllando la coda locale…</p>
-- righe 3787 — <p class="st-nota" id="st-esporta-nota" role="status" hidden></p>
-- righe 3796-3800 — <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
-- righe 3804-3808 — <p>Quello che questa pagina non fa ancora, e il motivo vero.</p>
-- righe 4453 — <p class="v-testo">Tutti i programmi del backup, attivo compreso: si leggono, non si modificano. Ser
-- righe 4457 — <tbody id="archivio-corpo"></tbody>
-- righe 4462 — <li>Le sedute del 2026 che non hanno un programma associato vengono dallo storico Excel, prima che l
-- righe 5610-5618 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si
-- righe 5704 — (riga vuota)
-- righe 5706-5709 — /* Passo 39: quando uno scheletro viene riaperto dal suo elenco, qui resta il
-- righe 5807 — (riga vuota)
-- righe 5872 — apriSug(sug, t);
-- righe 5889 — apriSug(sug, t);
-- righe 5893-5920 — /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
-- righe 5923-5924 — function rinumera(){
-- righe 5934 — stato.idModificato = null;
-- righe 5939 — (riga vuota)
-- righe 5942-5990 — /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
-- righe 6166-6168 — /* Passo 40: le tabelle dentro i pannelli hanno la loro intestazione (thead):
-- righe 6313 — "pag-database-esercizi":[["Centosettantasei esercizi veri.","Nell'OVERLAP il pallino pieno è il bers
-- righe 6326 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
-- righe 6550 — "impostazioni":["Impostazioni","Quello che l'app sa di s\u00e9: dove salva, cosa manca, che versione
-- righe 6585 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
-- righe 6606-6674 — /* ---- ricordare la chiusura, pagina per pagina, in questa sessione ---- */
-- righe 6679-6690 — if(!esplicito&&chiusaQui()){ bub.classList.add('off'); return; }
-- righe 6696-6698 — d.setAttribute('data-s',v[2]); sistema(true);
-- righe 6712-6713 — ava.addEventListener('pointerup',function(){ if(!on)return; on=false; if(mv) sistema(); });
-- righe 6717 — if(v){ setTimeout(parla,120); setTimeout(function(){ if(!chiusaQui()) sistema(); },700); }
-- righe 6774-6778 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
-- righe 6913 — <input id="bdsw-q" type="text" placeholder="cerca un esercizio nel catalogo…" autocomplete="off">
-- righe 7285 — (riga vuota)
-- righe 7296 — (riga vuota)
-- righe 7449-7450 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
-- righe 7515-7521 — #pag-programma-1 .pr-sw.off,
-- righe 7584-7620 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
-- righe 7732-8027 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
-- righe 8058 — (riga vuota)
-- righe 8085-8112 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
-- righe 8157 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
-- righe 8203 — (riga vuota)
-- righe 8253-8254 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
-- righe 8327 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
-- righe 8606 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
-- righe 8763 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
-- righe 8865 — if (cont) cont.textContent = this.filtrate().length + (this.filtrate().length === 1 ? ' seduta' : ' 
-- righe 8869-8871 — for (i2 = 0; i2 < a2.length; i2++) a2[i2].textContent = (this.fonte // 'istantanea incorporata') + '
-- righe 9070 — listaModal('Confronta con un altro programma', 'Confronto tra programmi: nel mockup la vista di diff
-- righe 9075 — listaModal('Copia da un altro programma', 'I programmi della Libreria: la copia reale non è collegat
-- righe 9151-9152 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
-- righe 9605 — var SEED = {config:{}, sessioni:[]};
-- righe 9620-9623 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
-- righe 9647-9650 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
-- righe 9657-9687 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
-- righe 9690-9695 — function logbookVivo(){
-- righe 9698-9701 — function pittaOverview(){
-- righe 9704-9743 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
-- righe 9756-9758 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
-- righe 9764-9766 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
-- righe 9769 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
-- righe 9775 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
-- righe 9783-9785 — el('ov-barsn').textContent = PV.letto
-- righe 9788-9791 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
-- righe 9795-9802 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
-- righe 9805 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
-- righe 9813-9833 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
-- righe 9836-9848 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
-- righe 9887 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
-- righe 9938 — if(false){
-- righe 10135 — '<div class="ese-chips2">' +
-- righe 10686-10689 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
-- righe 10694 — kpi.innerHTML =
-- righe 10869-10878 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
-- righe 10988 — (riga vuota)
-- righe 11032-11367 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 3024-3027 — <h2>DB Esercizi <i>546 esercizi</i></h2>
+- righe 3031-3032 — <select id="db-sel" class="db-sel"><option value="all">Tutti i distretti</option><option value="Addo
+- righe 3041-3589 — </thead><tbody id="db-body"><tr class="riga" data-n="curl cavo basso con bilancere piccolo" data-g="
+- righe 3593 — <p class="rv-nota">Nel tuo gestionale la testata dice <b>267 esercizi · 62 prehab</b>; qui ci sono i
+- righe 3606 — <p class="pr-sub">Le regole con cui le settimane salgono. Per applicare una progressione alla singol
+- righe 3616 — <div class="rv" id="rv-vivo"></div><style>.rv,.sp,.db2{display:block}
+- righe 3821-3848 — <script id="db-aggiunte-js">
+- righe 3858-3859 — </div><button class="sp-btn" id="sp-guida">Guida Specializzazione</button></div>
+- righe 3863 — (riga vuota)
+- righe 3866-3868 — <div class="v-occhiello">Programmi &middot; Curve di forza</div>
+- righe 3871-3873 — <div class="cv-card" id="cv-real" data-curva="non-calcolata">
+- righe 3876 — <section class="voce-pag" id="pag-scheletri">
+- righe 3882 — scegli le serie. Quando salvi, lo scheletro entra nella tua raccolta e da lì lo applichi a una sched
+- righe 3886-3887 — <button class="sk-tab" type="button" disabled aria-disabled="true" title="spento: i template della l
+- righe 3903-3905 — <label class="sk-check" title="C'è una sola atleta: non c'è a chi altro renderlo disponibile"><input
+- righe 3908 — <button class="sk-crea" id="sk-crea-programma" type="button" title="dallo scheletro nasce un program
+- righe 3919-3920 — <div class="sk-qh">Questionario</div>
+- righe 3930 — <section class="voce-pag" id="pag-programma-1"><div class="pg-wrap"><div id="programma-attivo"></div
+- righe 3972 — <div class="pr-acts"><button class="pr-btn" id="pr-confronta" type="button">Confronta con un altro p
+- righe 4016-4017 — <button class="pr-btn" id="pr-sugg" type="button" title="spento: i suggerimenti automatici non ci so
+- righe 4050 — <div class="p8-box" id="box-A"><div class="p8-head"><div><div class="p8-nome">Scheda A - Dorsali, Sp
+- righe 4061 — (riga vuota)
+- righe 4094 — (riga vuota)
+- righe 4098 — <p class="pr-mhint">I programmi salvati. La libreria degli esercizi sta nel <b>Database esercizi</b>
+- righe 4114-4115 — <div><b>Scarico</b><p>La settimana che la scheda segna come scarico tiene la tecnica e toglie volume
+- righe 4174 — </div></div></section><section class="voce-pag" id="pag-impostazioni">
+- righe 4179-4181 — <p><span class="st-badge on" id="st-sync-badge">● cloud · zona B</span></p>
+- righe 4184-4185 — <p class="st-nota" id="st-coda-nota" role="status">Sto controllando la coda locale…</p>
+- righe 4188 — <p class="st-nota" id="st-esporta-nota" role="status" hidden></p>
+- righe 4197-4201 — <div class="st-row"><span>Build</span><b id="st-ver"></b></div>
+- righe 4205-4209 — <p>Quello che questa pagina non fa ancora, e il motivo vero.</p>
+- righe 4854 — <p class="v-testo">Tutti i programmi del backup, attivo compreso: si leggono, non si modificano. Ser
+- righe 4858 — <tbody id="archivio-corpo"></tbody>
+- righe 4863 — <li>Le sedute del 2026 che non hanno un programma associato vengono dallo storico Excel, prima che l
+- righe 6011-6019 — { /* B.14l: il testo a pezzi, la data dentro uno span vero: prima il tag si
+- righe 6105 — (riga vuota)
+- righe 6107-6110 — /* Passo 39: quando uno scheletro viene riaperto dal suo elenco, qui resta il
+- righe 6208 — (riga vuota)
+- righe 6273 — apriSug(sug, t);
+- righe 6290 — apriSug(sug, t);
+- righe 6294-6321 — /* L'elenco si apre sotto, ma se la riga è in fondo alla finestra si apre
+- righe 6324-6325 — function rinumera(){
+- righe 6335 — stato.idModificato = null;
+- righe 6340 — (riga vuota)
+- righe 6343-6391 — /* Passo 34: «Salva Scheletro» scrive nella raccolta vera (comune/vista-scheletri-pagina.js).
+- righe 6567-6569 — /* Passo 40: le tabelle dentro i pannelli hanno la loro intestazione (thead):
+- righe 6714 — "pag-database-esercizi":[["Cinquecentoquarantasei esercizi veri.","Nell'OVERLAP il pallino pieno è i
+- righe 6727 — var LABEL={"pag-dashboard":"Dashboard","pag-dati-cliente":"Dati cliente","pag-salute-recupero":"Salu
+- righe 6951 — "impostazioni":["Impostazioni","Quello che l'app sa di s\u00e9: dove salva, cosa manca, che versione
+- righe 6986 — if(navigator.userActivation&&navigator.userActivation.hasBeenActive===false)return;/* niente audio p
+- righe 7007-7075 — /* ---- ricordare la chiusura, pagina per pagina, in questa sessione ---- */
+- righe 7080-7091 — if(!esplicito&&chiusaQui()){ bub.classList.add('off'); return; }
+- righe 7097-7099 — d.setAttribute('data-s',v[2]); sistema(true);
+- righe 7113-7114 — ava.addEventListener('pointerup',function(){ if(!on)return; on=false; if(mv) sistema(); });
+- righe 7118 — if(v){ setTimeout(parla,120); setTimeout(function(){ if(!chiusaQui()) sistema(); },700); }
+- righe 7175-7179 — /* la spia «Test» (B.16a-2): un insieme solo - nascosta senza .on, visibile
+- righe 7314 — <input id="bdsw-q" type="text" placeholder="cerca un esercizio nel catalogo…" autocomplete="off">
+- righe 7686 — (riga vuota)
+- righe 7697 — (riga vuota)
+- righe 7850-7851 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
+- righe 7916-7922 — #pag-programma-1 .pr-sw.off,
+- righe 7985-8021 — #pag-programma-1 .pr-shd-f{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end
+- righe 8133-8428 — /* Passo 41/42: il pannello di «Cambia» - l'elenco dei programmi di B.
+- righe 8459 — (riga vuota)
+- righe 8486-8513 — /* ---- zebra (B.14h): un tono per esercizio, classi z-a/z-b; i due toni per
+- righe 8558 — html body #pag-programma-1 td.c-rec .rec,html body #pag-programma-1 td.c-ese .ese-name{white-space:n
+- righe 8604 — (riga vuota)
+- righe 8654-8655 — /* ---- settimane: due celle, SER e REPS affiancate (niente RM) ---- */
+- righe 8728 — html body .p7-donut .dperche{max-width:150px;text-align:center;font:500 9px/1.3 'Inter',system-ui,sa
+- righe 9007 — window.BD_LB_SEED = null; /* passo 3c: tolto il seme di esempio del logbook; le sedute vere arrivano
+- righe 9164 — ese.push('<div class="lb-ex"><b>' + sc(e.np // e.n) + '</b>' + (window.BD_LB_EXCAT && BD_LB_EXCAT[e.
+- righe 9266 — if (cont) cont.textContent = this.filtrate().length + (this.filtrate().length === 1 ? ' seduta' : ' 
+- righe 9270-9272 — for (i2 = 0; i2 < a2.length; i2++) a2[i2].textContent = (this.fonte // 'istantanea incorporata') + '
+- righe 9471 — listaModal('Confronta con un altro programma', 'Confronto tra programmi: nel mockup la vista di diff
+- righe 9476 — listaModal('Copia da un altro programma', 'I programmi della Libreria: la copia reale non è collegat
+- righe 9552-9553 — /* Passo B.20b: anche la Stampa da Compilare vive in comune/vista-programma.js
+- righe 10006 — var SEED = {config:{}, sessioni:[]};
+- righe 10021-10024 — var P_ST = window.BDPesoB ? window.BDPesoB.leggiPeso() : { stato:'non-letto', pesate:[], motivo:'il 
+- righe 10048-10051 — var P_PROF = window.BDPesoB ? window.BDPesoB.leggiProfilo(null) : { confermato:false, altezza:null, 
+- righe 10058-10088 — /* ---------- Passo 18: l'Overview conta dal programma letto e dal logbook ----------
+- righe 10091-10096 — function logbookVivo(){
+- righe 10099-10102 — function pittaOverview(){
+- righe 10105-10144 — var aderE = OV ? OV.aderenza({ sedute: LV.sedute, letto: LV.letto, motivoLogbook: LV.motivo, giorni:
+- righe 10157-10159 — var delta = (ultimo && primo) ? (ultimo.w - primo.w) : null;
+- righe 10165-10167 — {l:'Carico', v: cOk ? it(carE.serie) : '-', u: cOk ? 'serie S' + carE.settimana : '',
+- righe 10170 — return '<div class="p7-k' + (k.on ? '' : ' nd') + '"' + (k.id ? ' id="' + k.id + '"' : '') + '><div 
+- righe 10176 — PV.righe.forEach(function(r){ var v = r.serie[0]; if(!r.dist // r.dist === '-' // v === null) return
+- righe 10184-10186 — el('ov-barsn').textContent = PV.letto
+- righe 10189-10192 — /* Passo 32: disegno nelle misure vere del riquadro (prima era un 100x34
+- righe 10196-10203 — var xdi = function(i){ return 8 + i * ((W - 18) / (pesi.length - 1)); };
+- righe 10206 — el('ov-pesot').textContent = 'Andamento peso · ' + P_TESTO;
+- righe 10214-10234 — el('ov-sed').innerHTML = '<span class="p7-chip">' + (LV.letto ? 'nessuna seduta nel logbook' : LV.mo
+- righe 10237-10249 — if(el('tb-bmr') && (!P_PROF.confermato // P_PROF.mancanti.length // PESO === null)){
+- righe 10288 — bf = GRASSO === null ? ' · massa magra non registrata: Katch non calcolabile' : ' · grasso stimato '
+- righe 10339 — if(false){
+- righe 10536 — '<div class="ese-chips2">' +
+- righe 11087-11090 — /* I riquadri dell'analisi non sono in pagina (la linguetta mostra la tabella):
+- righe 11095 — kpi.innerHTML =
+- righe 11270-11279 — // Passo 30: nei campi si lascia al browser la cronologia del testo.
+- righe 11389 — (riga vuota)
+- righe 11433-11768 — <!-- beacon Cloudflare tolto (passo 16b): su GitHub Pages chiamava il collettore RUM di Cloudflare e
 
 ### Cosa è cambiato, per passi (prosa, non blocchi)
 
@@ -246,3 +247,5 @@ Una riga per blocco: il numero di riga (o l'intervallo) in `desktop/index.html` 
 - **Passo 43e · punto 15 della lista** — nella carta «Programma» **giorni a settimana**, **settimane** e **rotazione delle schede** si scrivono come Data inizio e Fase: «Gg/sett» è una tendina da 1 a 7, «Settimane» un campo numerico (1…52), «Rotazione schede» un campo di testo che accetta «A B C D», «A,B,C,D» e «ABCD» (normalizza in maiuscolo e toglie spazi e virgole). Le pastiglie restano come anteprima di quello che è scritto e il «+» aggiunge al campo la lettera successiva. La scrittura passa dalla stessa strada di Data e Fase (`cambiaTestataProgramma` → `comune/scritture-b.js`, versione che avanza, marchio e voce di registro con `prima`/`dopo`), quindi lo stesso Annulla rimette il valore di prima — rotazione compresa. Il campo vuoto toglie il valore («giorni a settimana tolti dal programma», «rotazione tolta dal programma»); un rifiuto (0 giorni, 99 settimane, lettere ripetute o più di sette) non scrive niente, dice il motivo in italiano accanto al campo e lascia il valore scritto per correggerlo. Il prospetto delle settimane segue `durationWeeks` (8 settimane = 8 righe, 12 = 12) e con 7 giorni a settimana mostra 7 colonne. Schede, scarico e il resto della pagina restano come sono.
 - **Passo 43f · i salvataggi (primo punto della lista)** — quello che si scrive in **anagrafica** e nel **quaderno** torna dopo il refresh. Prima la voce finiva nel registro e la pagina, a pagina nuova, mostrava «—»: la lettura consegna `{ id, dati }` e i due lettori (`anagraficaDalRegistro`, `quadernoDalRegistro`) cercavano `tipo` e `dopo` sul contenitore invece che dentro `dati`, quindi non trovavano niente. Ora leggono le due forme (piatto e `{ id, dati }`, come fa già `datiVoce` dell'anamnesi) e prendono l'ultima voce **per data**, non per posizione nell'elenco. In più, dopo ogni lettura riuscita la pagina riapplica i valori ai campi già montati: l'anagrafica si riempie dal registro (prima solo dalla memoria di sessione), il quaderno pure, e i tasti a scelta (Sesso, Lingua, Obiettivo) tornano accesi. Il contatore delle versioni riparte dal registro, così la voce nuova dopo un refresh è `v2` e non di nuovo `v1`. Una casella aperta non si tocca: chi sta scrivendo non perde una lettera. «Patologie o infortuni» funzionava già e resta com'è.
 - **Passo 23 (giro di controllo, primo blocco)** — le voci che si potevano correggere senza decidere niente di nuovo, una per una. (1) Il nastro non dice più «35 esercizi» dal costruttore d'esempio del v31: conta gli esercizi del programma aperto (lo stesso numero della carta, «1 scheda · 6 esercizi») e, senza programma, dice che non c'è; la data dell'ultima seduta resta quella vera del logbook. (2) «Compila / Modifica» in Dati cliente → Anamnesi non è più muto: apre la riga «Patologie o infortuni», le mette il fuoco e lo dice nella riga d'avviso; non scrive niente da sé. (3) «Importa» e «Copia i dati (JSON)» di Misure scrivono l'esito DOVE SI GUARDA: accanto al tasto e nella riga di stato (prima finiva nella linguetta Misure, nascosta); l'errore del JSON e il rifiuto degli appunti si leggono anche loro lì. (4) Il Database esercizi usa il catalogo condiviso col selettore: i dieci doppioni da codifica (il simbolo ° letto come «Â°») sono uniti, 186 → **176** voci, e restano come alias nel riconoscimento; la tabella è rigenerata dal catalogo, con i sette esercizi del passo 20 che prima mancavano (senza BS/TUT, dichiarato nella riga). (5) La settimana del blocco è UNA funzione, `comune/settimana-blocco.js`, usata da Dashboard, Overview e Pianificazione: le tre dicono «settimana 8 di 8» (o la stessa frase col motivo quando i dati mancano). (6) Archivio: Sedute e Ultima leggono lo stesso logbook dell'Overview (una seduta si attribuisce a un programma solo se il codice della scheda è di un programma solo) — 1 e 26/10/2026, non più «non registrato»; quelle non attribuibili restano fuori e la nota lo dice. (7) Impostazioni mostra la build vera di `app-config-b.js` e conta schede ed esercizi dai dati; «Alice Clemente» scritto a mano in cinque punti (barra laterale, Dati cliente, Salute, Misure, Monitor peso) ora viene dall'account e dall'anagrafica: senza cognome nel profilo si legge solo «Alice». (9) La nota da sviluppatori nell'Overview è una frase per l'utente: «1 seduta letta dal logbook; il diario non è collegato». (12) Il BMI dice QUALE dato manca (con il peso e senza altezza: «manca l'altezza»), e «SESSIONI» è diventato «Sessioni di plicometria». Minori: «Suggerimenti: non disponibili» col perché nel titolo, il pannello «Applica progressione» si chiude con Esc, i singolari («1 seduta», «1 sessione»), e «Confronta con un altro programma» / «Copia da un altro programma» scritti interi. Mascotte, fumetto, Study time e lampadina restano al blocco dopo (impaginazione da guardare insieme). I dieci doppioni uniti nel catalogo (copia rovinata dalla codifica → nome tenuto): «Alzata laterale su panca inclinata 30Â°» → «Alzata laterale su panca inclinata 30°»; «Alzate laterali + alzate frontali panca 70Â°» → «… 70°»; «Crunch gambe 90Â°» → «Crunch gambe 90°»; «Curls martello panca inlinata 45Â°» → «… 45°»; «Curls panca 45Â°» → «Curls panca 45°»; «French press panca 40Â°» → «French press panca 40°»; «Military al multypower panca70Â°» → «… panca70°»; «Pressa 45Â°» → «Pressa 45°»; «Pressa45Â° piedi alti schienale chiuso» → «Pressa45° piedi alti schienale chiuso»; «Rematore manubri panca 30Â°» → «Rematore manubri panca 30°».
+
+- **Passo 32 — il catalogo si prende gli esercizi di Barbell Diva A** — dal backup di A (587 record) entrano **370 esercizi** che B non aveva, con il distretto preso dai muscoli del record, dal distretto che A scrive, o dal nome (parole di palestra, non la ricerca grezza: «lat» dentro «laterali» avrebbe dato Dorsali a tutte le alzate laterali). I nomi sono puliti (niente underscore) e in ordine alfabetico; le 176 voci di prima non cambiano nome né distretto. Restano fuori **31 nomi** senza un distretto riconoscibile (o con due esercizi in una riga) e **19 righe** che non sono esercizi (2 frasi, 1 segnaposto, 16 nomi di WOD). Il catalogo passa da 176 a **546**. Le 370 righe nuove non stanno nel DOM all'avvio: stanno nel blocco `#db-aggiunte` e la tabella le prende la prima volta che si apre **Database esercizi** (la guardia 183 le confronta nome per nome); il filtro per distretto guadagna «Adduttori» e «Attivazione». Le articolazioni dei nuovi non sono inventate: le voci che non hanno una riga nella tabella di Alice escono «non mappate», senza punti (guardia 129 aggiornata). Il diff col v31 ha superato 1 MB e `execFileSync` lo troncava: `maxBuffer` alzato nella guardia 42 e in `rigenera-blocchi`.

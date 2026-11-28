@@ -20,7 +20,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 
-import { CATALOGO_ESERCIZI_B, cercaNelCatalogoB } from "../comune/catalogo-esercizi-b.js";
+import { CATALOGO_ESERCIZI_B, cercaNelCatalogoB, conteggioCatalogoB } from "../comune/catalogo-esercizi-b.js";
 import { creaSelettoreEserciziB } from "../comune/selettore-esercizi-b.js";
 
 function documento() {
@@ -89,10 +89,10 @@ test("80.3 tornare su Tutti azzera, la riapertura riparte pulita; nessuna scritt
   const gruppo = GRUPPI[0];
   menu.value = gruppo;
   menu.dispatchEvent(new d.defaultView.Event("change", { bubbles: true }));
-  assert.ok(s.velo.querySelectorAll(".bdsel-it").length < 176, "il filtro stringe");
+  assert.ok(s.velo.querySelectorAll(".bdsel-it").length < conteggioCatalogoB(), "il filtro stringe");
   menu.value = "";
   menu.dispatchEvent(new d.defaultView.Event("change", { bubbles: true }));
-  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 176, "«Tutti» riporta tutto");
+  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, conteggioCatalogoB(), "«Tutti» riporta tutto");
   /* un gruppo di fila: il secondo sostituisce il primo (un gruppo per volta) */
   const secondo = GRUPPI[1];
   menu.value = gruppo;
@@ -105,7 +105,7 @@ test("80.3 tornare su Tutti azzera, la riapertura riparte pulita; nessuna scritt
   s.chiudi();
   s.apri();
   assert.equal(menu.value, "", "il menù riparte su Tutti");
-  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, 176, "alla riapertura tutto l'elenco");
+  assert.equal(s.velo.querySelectorAll(".bdsel-it").length, conteggioCatalogoB(), "alla riapertura tutto l'elenco");
   assert.equal(s.velo.querySelector(".bdsel-q").value, "", "la ricerca riparte pulita");
   /* nessuna scrittura: storage intatto, zero script */
   assert.equal(d.defaultView.localStorage.length, 0);

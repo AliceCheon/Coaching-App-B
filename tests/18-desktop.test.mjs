@@ -87,5 +87,5 @@ test("18.10 la bolla mantiene coda e classe del contratto", () => {
 });
 
 test("18.11 build della fase", () => {
-  assert.match(config, /build:\s*"b0\.\d+-[a-z0-9-]+"/);
+  assert.match(config, /build:\s*"b0\.\d+-[A-Za-z0-9-]+"/);
 });

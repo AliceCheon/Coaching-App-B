@@ -105,7 +105,11 @@ export const DA_PAROLA_A_DISTRETTO = Object.freeze([
   [["erettori", "lombari", "centro schiena", "schiena", "trapezio"], "Centro schiena"],
   [["addominali", "addome", "obliqui", "core"], "Addominali"],
   [["polpacci", "polpaccio", "calf"], "Polpacci"],
-  [["cardio", "corsa"], "Cardio"]
+  [["cardio", "corsa"], "Cardio"],
+  /* PASSO 32: «Attivazione» è il distretto delle righe di attivazione (la
+   * pagina lo ha come etichetta sua), e una voce di catalogo che lo porta
+   * deve uscire dal resolver con lo stesso nome. */
+  [["attivazione"], "Attivazione"]
 ]);
 
 /* Una parola di A, il nostro distretto (o stringa vuota). */

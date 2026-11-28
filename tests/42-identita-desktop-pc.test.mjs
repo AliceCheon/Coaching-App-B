@@ -19,7 +19,11 @@ const blocchiDichiarati = [...documento.matchAll(/- righe (\d+)(?:-(\d+))?/gm)]
 
 function leggiDiff() {
   try {
-    return execFileSync("git", ["diff", "--no-index", "-U0", join(radice, "pc", "index.html"), join(radice, "desktop", "index.html")], { encoding: "utf8" });
+    /* PASSO 32: il desktop ha 370 righe in più (le voci di A) e il diff ha
+     * superato il limite di cattura di execFileSync (1 MB di default): senza
+     * maxBuffer il diff arrivava troncato e i blocchi in fondo sembravano
+     * morti. */
+    return execFileSync("git", ["diff", "--no-index", "-U0", join(radice, "pc", "index.html"), join(radice, "desktop", "index.html")], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   } catch (e) {
     /* git esce 1 quando i file differiscono: è il caso normale. */
     return String((e && e.stdout) || "");

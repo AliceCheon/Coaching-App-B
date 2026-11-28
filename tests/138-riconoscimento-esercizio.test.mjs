@@ -69,9 +69,14 @@ test("138.1 i quattro passi del resolver, e l'ambiguità dichiarata", () => {
   assert.equal(vicino.chiave, "Pendulum focus glutei");
 
   /* 3. contiene una chiave sola */
-  const dentro = risolviEsercizio("Panca piana con bilanciere");
+  const dentro = risolviEsercizio("Panca piana presa larga");
   assert.equal(dentro.come, "contiene");
   assert.equal(dentro.chiave, "Panca piana");
+  /* PASSO 32: «Panca piana con bilanciere» adesso è un esercizio del catalogo
+   * (arriva dal backup di A), quindi si riconosce al passo esatto. */
+  const aggiunto = risolviEsercizio("Panca piana con bilanciere");
+  assert.equal(aggiunto.come, "esatto");
+  assert.equal(aggiunto.chiave, "Panca piana con bilanciere");
 
   /* 4. contenuto in una chiave sola */
   const fuori = risolviEsercizio("Tricipiti cavo alto");
@@ -84,9 +89,10 @@ test("138.1 i quattro passi del resolver, e l'ambiguità dichiarata", () => {
   assert.equal(ambiguo.chiave, null);
   assert.ok(ambiguo.candidati.length > 1, "l'ambiguità porta i candidati con sé");
 
-  /* il catalogo di base è quello vero: 176 voci (i dieci doppioni da codifica
-   * sono uniti al passo 23), distretti della casa */
-  assert.equal(catalogoBase().length, 176);
+  /* il catalogo di base è quello vero: 546 voci (i dieci doppioni da codifica
+   * sono uniti al passo 23; 370 arrivano dal backup di A nel passo 32),
+   * distretti della casa */
+  assert.equal(catalogoBase().length, 546);
   assert.equal(catalogoBase().filter((v) => !v.distretto).length, 0, "ogni voce ha un distretto tradotto");
 });
 
